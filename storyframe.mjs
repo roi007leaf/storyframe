@@ -60,14 +60,9 @@ Hooks.once('socketlib.ready', () => {
 // Hook: getSceneControlButtons (register GM button)
 Hooks.on('getSceneControlButtons', (controls) => {
   console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
-  console.log(`${MODULE_ID} | controls type:`, typeof controls, 'isArray:', Array.isArray(controls));
-  console.log(`${MODULE_ID} | controls value:`, controls);
+  console.log(`${MODULE_ID} | controls.token:`, controls.token);
 
   if (!game.user?.isGM) return;
-  if (!Array.isArray(controls)) {
-    console.warn(`${MODULE_ID} | controls is not an array, skipping`);
-    return;
-  }
 
   const storyframeControl = {
     name: 'storyframe',
@@ -83,11 +78,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
     button: true
   };
 
-  const tokens = controls.find(c => c.name === 'token');
-  console.log(`${MODULE_ID} | Found token controls:`, !!tokens);
-  if (tokens) {
-    tokens.tools.push(storyframeControl);
+  // v13 uses object structure, not array
+  if (controls.token) {
+    if (!controls.token.tools) controls.token.tools = [];
+    controls.token.tools.push(storyframeControl);
     console.log(`${MODULE_ID} | Added StoryFrame button to token controls`);
+  } else {
+    console.warn(`${MODULE_ID} | token controls not found`);
   }
 });
 
