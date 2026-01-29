@@ -60,9 +60,14 @@ Hooks.once('socketlib.ready', () => {
 // Hook: getSceneControlButtons (register GM button)
 Hooks.on('getSceneControlButtons', (controls) => {
   console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
+  console.log(`${MODULE_ID} | controls type:`, typeof controls, 'isArray:', Array.isArray(controls));
+  console.log(`${MODULE_ID} | controls value:`, controls);
 
   if (!game.user?.isGM) return;
-  if (!Array.isArray(controls)) return;
+  if (!Array.isArray(controls)) {
+    console.warn(`${MODULE_ID} | controls is not an array, skipping`);
+    return;
+  }
 
   const storyframeControl = {
     name: 'storyframe',
