@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Module scaffold, data layer, socket security
 - [x] **Phase 2: GM Interface** - Control window, journal picker, speaker management
-- [ ] **Phase 3: Player Viewer** - Gallery view with all speakers, layout options, real-time updates
+- [x] **Phase 3: Player Viewer** - Gallery view with all speakers, layout options, real-time updates
 - [ ] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
 
 ## Phase Details
@@ -81,10 +81,11 @@ Plans:
   2. Active speaker state restores when GM reconnects
   3. Journal selection saves with speaker data
   4. Control window remembers position and size between sessions
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 04-01-PLAN.md — Window state persistence (position validation, minimized state, auto-reopen)
+- [ ] 04-02-PLAN.md — Keyboard shortcuts (configurable keybindings)
 
 ## Progress
 
@@ -96,4 +97,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
 | 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
-| 4. Polish | 0/TBD | Not started | - |
+| 4. Polish | 0/2 | Not started | - |
