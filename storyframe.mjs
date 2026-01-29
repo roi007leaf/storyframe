@@ -6,6 +6,19 @@ import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 // Module constants
 const MODULE_ID = 'storyframe';
 
+/**
+ * Validate window position to ensure it's visible on screen
+ * Clamps to visible screen bounds
+ */
+export function validatePosition(saved) {
+  return {
+    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
+    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
+    width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
+    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight))
+  };
+}
+
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
   console.log(`${MODULE_ID} | Initializing`);
@@ -54,6 +67,27 @@ Hooks.once('init', () => {
       list: 'List',
       horizontal: 'Horizontal'
     }
+  });
+
+  game.settings.register(MODULE_ID, 'gmWindowMinimized', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
+  game.settings.register(MODULE_ID, 'playerViewerMinimized', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
+  game.settings.register(MODULE_ID, 'gmWindowWasOpen', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false
   });
 });
 
@@ -137,6 +171,12 @@ Hooks.once('ready', async () => {
     return;
   }
   await game.storyframe.stateManager.load();
+
+  // GM auto-open logic (after stateManager.load)
+  if (game.user.isGM && game.settings.get(MODULE_ID, 'gmWindowWasOpen')) {
+    game.storyframe.gmApp = new GMInterfaceApp();
+    game.storyframe.gmApp.render(true);
+  }
 
   // Initialize player viewer for non-GM users
   if (!game.user.isGM) {
