@@ -15,6 +15,7 @@ game.storyframe = {
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
   console.log(`${MODULE_ID} | Initializing`);
+  console.log(`${MODULE_ID} | game.storyframe exists in init:`, !!game.storyframe);
 
   // Register settings (must be in init hook)
   try {
@@ -37,11 +38,15 @@ Hooks.once('init', () => {
   } catch (err) {
     console.error(`${MODULE_ID} | Error registering settings:`, err);
   }
+
+  console.log(`${MODULE_ID} | game.storyframe exists at end of init:`, !!game.storyframe);
 });
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
   console.log(`${MODULE_ID} | Setup`);
+  console.log(`${MODULE_ID} | game.storyframe exists in setup:`, !!game.storyframe);
+  console.log(`${MODULE_ID} | game.storyframe value:`, game.storyframe);
   try {
     game.storyframe.stateManager = new StateManager();
     console.log(`${MODULE_ID} | StateManager created:`, !!game.storyframe.stateManager);
