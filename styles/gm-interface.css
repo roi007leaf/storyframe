@@ -135,12 +135,19 @@
   min-height: 0;
 }
 
-/* Content images */
+/* Journal entry styling - inherit Foundry's journal CSS */
+.page-content.journal-entry-page {
+  padding: 1rem;
+}
+
+.journal-entry-content {
+  /* Let Foundry's journal CSS handle styling */
+}
+
+/* Ensure images work properly */
 .page-content img {
   max-width: 100%;
   height: auto;
-  display: block;
-  margin: 1rem 0;
 }
 
 .page-content figure {
