@@ -103,12 +103,15 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           // Render content based on page type
           switch (page.type) {
             case 'text':
+              console.log('StoryFrame | Page object:', page);
+              console.log('StoryFrame | Raw content:', page.text.content);
               currentPageContent = await TextEditor.enrichHTML(page.text.content, {
                 async: true,
                 secrets: game.user.isGM,
                 documents: true,
                 rolls: true
               });
+              console.log('StoryFrame | Enriched HTML:', currentPageContent);
               break;
 
             case 'image':
@@ -179,6 +182,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachJournalSelectorHandler();
     this._attachContentImageDrag();
     this._attachDragDropHandlers();
+
+    // Debug: log content area structure
+    const contentArea = this.element.querySelector('.page-content');
+    if (contentArea) {
+      console.log('StoryFrame | Content area classes:', contentArea.className);
+      console.log('StoryFrame | Content area HTML:', contentArea.innerHTML.substring(0, 500));
+    }
   }
 
   _attachContentImageDrag() {
