@@ -120,13 +120,60 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| *(populated by roadmapper)* | | |
+| FOUN-01 | Phase 1 | Pending |
+| FOUN-02 | Phase 1 | Pending |
+| FOUN-03 | Phase 1 | Pending |
+| FOUN-04 | Phase 2 | Pending |
+| FOUN-05 | Phase 2 | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Pending |
+| DATA-07 | Phase 1 | Pending |
+| GMUI-01 | Phase 2 | Pending |
+| GMUI-02 | Phase 2 | Pending |
+| GMUI-03 | Phase 2 | Pending |
+| GMUI-04 | Phase 2 | Pending |
+| GMUI-05 | Phase 2 | Pending |
+| GMUI-06 | Phase 2 | Pending |
+| GMUI-07 | Phase 2 | Pending |
+| GMUI-08 | Phase 2 | Pending |
+| GMUI-09 | Phase 2 | Pending |
+| GMUI-10 | Phase 2 | Pending |
+| GMUI-11 | Phase 2 | Pending |
+| GMUI-12 | Phase 2 | Pending |
+| GALL-01 | Phase 2 | Pending |
+| GALL-02 | Phase 2 | Pending |
+| GALL-03 | Phase 2 | Pending |
+| GALL-04 | Phase 2 | Pending |
+| GALL-05 | Phase 2 | Pending |
+| GALL-06 | Phase 2 | Pending |
+| GALL-07 | Phase 2 | Pending |
+| GALL-08 | Phase 2 | Pending |
+| JOUR-01 | Phase 2 | Pending |
+| JOUR-02 | Phase 2 | Pending |
+| JOUR-03 | Phase 2 | Pending |
+| JOUR-04 | Phase 2 | Pending |
+| JOUR-05 | Phase 4 | Pending |
+| PLAY-01 | Phase 3 | Pending |
+| PLAY-02 | Phase 3 | Pending |
+| PLAY-03 | Phase 3 | Pending |
+| PLAY-04 | Phase 3 | Pending |
+| PLAY-05 | Phase 3 | Pending |
+| PLAY-06 | Phase 3 | Pending |
+| PLAY-07 | Phase 3 | Pending |
+| CONV-01 | Phase 4 | Pending |
+| CONV-02 | Phase 4 | Pending |
+| CONV-03 | Phase 4 | Pending |
+| CONV-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1 requirements: 35 total
-- Mapped to phases: (pending roadmap)
-- Unmapped: (pending roadmap)
+- v1 requirements: 45 total
+- Mapped to phases: 45/45 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-29*
-*Last updated: 2026-01-29 after initial definition*
+*Last updated: 2026-01-29 after roadmap creation*
