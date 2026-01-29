@@ -45,14 +45,18 @@
   </div>
 
   <!-- Middle: Content Area -->
-  <div class="content-area journal-sheet">
+  <section class="content-area journal-entry-content flexcol">
     {{#if currentPageContent}}
-      <div class="page-header">
-        <h2>{{currentPageName}}</h2>
-      </div>
-      <div class="page-content journal-entry-page">
-        <div class="journal-entry-content">
-          {{{currentPageContent}}}
+      <div class="journal-entry-pages single-page">
+        <div class="scrollable">
+          <article class="journal-entry-page text" data-page-type="text">
+            <header class="journal-page-header">
+              <h2>{{currentPageName}}</h2>
+            </header>
+            <section class="journal-page-content">
+              {{{currentPageContent}}}
+            </section>
+          </article>
         </div>
       </div>
     {{else}}
@@ -61,7 +65,7 @@
         <p>Select a journal and page to view content</p>
       </div>
     {{/if}}
-  </div>
+  </section>
 
   <!-- Right: Speakers Gallery -->
   <div class="speakers-sidebar">

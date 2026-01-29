@@ -103,61 +103,66 @@
   white-space: nowrap;
 }
 
-/* Middle: Content Area */
-.content-area {
+/* Middle: Content Area - Match Foundry's journal structure */
+.content-area.journal-entry-content {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 1.5rem;
   background: var(--color-bg-content);
   overflow: hidden;
   min-height: 0;
 }
 
-.page-header {
-  margin-bottom: 1rem;
-  padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--color-border-light);
-  flex-shrink: 0;
+.journal-entry-pages {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
 }
 
-.page-header h2 {
+.journal-entry-pages .scrollable {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  min-height: 0;
+}
+
+/* Journal page article */
+.journal-entry-page {
+  background: var(--color-parchment, #f8f4e8);
+  color: var(--color-text-dark-primary);
+  padding: 0;
+  min-height: 100%;
+}
+
+.journal-page-header {
+  padding: 1.5rem 1.5rem 1rem;
+  border-bottom: 2px solid var(--color-border-light);
+}
+
+.journal-page-header h2 {
   margin: 0;
   font-size: 1.8rem;
   color: var(--color-text-dark-primary);
 }
 
-.page-content {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
-  line-height: 1.6;
-  min-height: 0;
-}
-
-/* Journal entry styling - inherit Foundry's journal CSS */
-.storyframe .page-content.journal-entry-page {
-  padding: 0;
-  background: var(--color-parchment, #f8f4e8);
-  color: var(--color-text-dark-primary);
-}
-
-.storyframe .journal-entry-content {
+.journal-page-content {
   padding: 1.5rem;
-  /* Ensure journal content has proper context for CSS selectors */
+  line-height: 1.6;
 }
 
 /* Ensure images work properly */
-.page-content img {
+.journal-page-content img {
   max-width: 100%;
   height: auto;
 }
 
-.page-content figure {
+.journal-page-content figure {
   margin: 1rem 0;
 }
 
-.page-content figure img {
+.journal-page-content figure img {
   margin: 0;
 }
 

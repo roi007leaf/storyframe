@@ -31,7 +31,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-interface.hbs',
-      scrollable: ['.page-list', '.content-area', '.speaker-gallery']
+      scrollable: ['.page-list', '.journal-entry-pages .scrollable', '.speaker-gallery']
     }
   };
 
@@ -185,10 +185,11 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachDragDropHandlers();
 
     // Debug: log content area structure
-    const contentArea = this.element.querySelector('.page-content');
+    const contentArea = this.element.querySelector('.journal-page-content');
     if (contentArea) {
       console.log('StoryFrame | Content area classes:', contentArea.className);
       console.log('StoryFrame | Content area HTML:', contentArea.innerHTML.substring(0, 500));
+      console.log('StoryFrame | Article classes:', contentArea.closest('article')?.className);
     }
   }
 
