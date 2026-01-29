@@ -1,58 +1,70 @@
-<div class="split-container">
-  <div class="journal-pane">
-    <div class="journal-selector">
+<div class="storyframe-header">
+  <div class="journal-selector">
+    <label>Journal:</label>
+    <select name="journal" data-action="selectJournal">
+      <option value="">-- Select Journal --</option>
+      {{#each journals}}
+        <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
+      {{/each}}
+    </select>
+  </div>
+</div>
+
+<div class="three-column-layout">
+  <!-- Left: Page TOC -->
+  <div class="page-toc">
+    <div class="toc-header">
       <input type="text"
-             name="journal-search"
-             placeholder="Search Journals"
-             data-action="searchJournals"
+             name="page-search"
+             placeholder="Search Pages"
+             data-action="searchPages"
              autocomplete="off">
-      <div class="journal-list">
-        {{#if journals.length}}
-          {{#each journals}}
-            <div class="journal-item {{#if (eq this.id ../selectedJournal)}}selected{{/if}}"
-                 data-action="selectJournal"
-                 data-journal-id="{{this.id}}"
-                 title="{{this.name}}">
-              <i class="fas fa-book"></i>
-              <span>{{this.name}}</span>
-            </div>
-          {{/each}}
-        {{else}}
-          <div class="empty-state">No journals found</div>
-        {{/if}}
-      </div>
     </div>
-
-    {{#if hasMultiplePages}}
-    <div class="page-nav">
-      <button type="button" data-action="prevPage" {{#unless hasPrevPage}}disabled{{/unless}}>
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      <span class="page-indicator">Page {{currentPage}} of {{totalPages}}</span>
-      <button type="button" data-action="nextPage" {{#unless hasNextPage}}disabled{{/unless}}>
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
-    {{/if}}
-
-    <div class="journal-content">
-      {{#if journalContent}}
-        {{{journalContent}}}
+    <div class="page-list">
+      {{#if pages.length}}
+        {{#each pages}}
+          <div class="page-item {{#if (eq @index ../currentPageIndex)}}selected{{/if}}"
+               data-action="selectPage"
+               data-page-index="{{@index}}"
+               title="{{this.name}}">
+            <span class="page-number">{{add @index 1}}.</span>
+            <span class="page-name">{{this.name}}</span>
+          </div>
+        {{/each}}
       {{else}}
         <div class="empty-state">
-          <p>No journal selected</p>
-          <p>Select a journal from the dropdown above</p>
+          {{#if selectedJournal}}
+            No pages found
+          {{else}}
+            Select a journal above
+          {{/if}}
         </div>
       {{/if}}
     </div>
   </div>
 
-  <div class="resize-handle"></div>
+  <!-- Middle: Content Area -->
+  <div class="content-area">
+    {{#if currentPageContent}}
+      <div class="page-header">
+        <h2>{{currentPageName}}</h2>
+      </div>
+      <div class="page-content">
+        {{{currentPageContent}}}
+      </div>
+    {{else}}
+      <div class="empty-state">
+        <p>No page selected</p>
+        <p>Select a journal and page to view content</p>
+      </div>
+    {{/if}}
+  </div>
 
-  <div class="gallery-pane">
-    <div class="gallery-header">
+  <!-- Right: Speakers Gallery -->
+  <div class="speakers-sidebar">
+    <div class="sidebar-header">
       <h3>Speakers</h3>
-      <div class="gallery-actions">
+      <div class="sidebar-actions">
         <button type="button" data-action="addSpeakerFromImage" title="Add speaker from image">
           <i class="fas fa-plus"></i>
         </button>
@@ -78,8 +90,8 @@
         {{/each}}
       {{else}}
         <div class="empty-state">
-          <p>No speakers added yet</p>
-          <p>Drag actors here or use the + button</p>
+          <p>No speakers</p>
+          <p>Drag actors here or use +</p>
         </div>
       {{/if}}
     </div>

@@ -20,27 +20,26 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     },
     actions: {
       selectJournal: GMInterfaceApp._onSelectJournal,
-      searchJournals: GMInterfaceApp._onSearchJournals,
+      selectPage: GMInterfaceApp._onSelectPage,
+      searchPages: GMInterfaceApp._onSearchPages,
       addSpeakerFromImage: GMInterfaceApp._onAddSpeakerFromImage,
       setSpeaker: GMInterfaceApp._onSetSpeaker,
       removeSpeaker: GMInterfaceApp._onRemoveSpeaker,
-      clearSpeaker: GMInterfaceApp._onClearSpeaker,
-      prevPage: GMInterfaceApp._onPrevPage,
-      nextPage: GMInterfaceApp._onNextPage
+      clearSpeaker: GMInterfaceApp._onClearSpeaker
     }
   };
 
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-interface.hbs',
-      scrollable: ['.journal-content', '.speaker-gallery']
+      scrollable: ['.page-list', '.content-area', '.speaker-gallery']
     }
   };
 
   constructor(options = {}) {
     super(options);
     this.currentPageIndex = 0;
-    this.searchFilter = '';
+    this.pageSearchFilter = '';
 
     // Load saved position
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -53,63 +52,58 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const state = game.storyframe.stateManager.getState();
     if (!state) {
       return {
-        journals: {},
+        journals: [],
         selectedJournal: null,
-        journalContent: null,
+        pages: [],
+        currentPageIndex: 0,
+        currentPageContent: null,
+        currentPageName: null,
         speakers: [],
         activeSpeaker: null,
-        hasSpeakers: false,
-        hasMultiplePages: false,
-        currentPage: 0,
-        totalPages: 0,
-        hasPrevPage: false,
-        hasNextPage: false
+        hasSpeakers: false
       };
     }
 
-    // Build journals array with search filter
-    let journals = game.journal.map(journal => ({
+    // Build journals array
+    const journals = game.journal.map(journal => ({
       id: journal.uuid,
       name: journal.name
     }));
 
-    // Apply search filter
-    if (this.searchFilter) {
-      const filter = this.searchFilter.toLowerCase();
-      journals = journals.filter(j => j.name.toLowerCase().includes(filter));
-    }
-
-    let journalContent = null;
     let pages = [];
-    let hasMultiplePages = false;
-    let currentPage = 0;
-    let totalPages = 0;
-    let hasPrevPage = false;
-    let hasNextPage = false;
+    let currentPageContent = null;
+    let currentPageName = null;
 
-    // Load active journal content
+    // Load pages from active journal
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
-        pages = journal.pages.filter(p => p.type === 'text');
-        totalPages = pages.length;
+        let allPages = journal.pages.filter(p => p.type === 'text').map(p => ({
+          name: p.name,
+          _page: p
+        }));
 
-        if (totalPages > 0) {
+        // Apply page search filter
+        if (this.pageSearchFilter) {
+          const filter = this.pageSearchFilter.toLowerCase();
+          allPages = allPages.filter(p => p.name.toLowerCase().includes(filter));
+        }
+
+        pages = allPages;
+
+        // Get current page content
+        if (pages.length > 0) {
           // Clamp page index
-          this.currentPageIndex = Math.max(0, Math.min(this.currentPageIndex, totalPages - 1));
+          this.currentPageIndex = Math.max(0, Math.min(this.currentPageIndex, pages.length - 1));
 
-          const page = pages[this.currentPageIndex];
-          journalContent = await TextEditor.enrichHTML(page.text.content, {
+          const page = pages[this.currentPageIndex]._page;
+          currentPageName = page.name;
+          currentPageContent = await TextEditor.enrichHTML(page.text.content, {
             async: true,
             secrets: game.user.isGM,
             documents: true,
             rolls: true
           });
-
-          hasMultiplePages = totalPages > 1;
-          currentPage = this.currentPageIndex + 1;
-          hasPrevPage = this.currentPageIndex > 0;
-          hasNextPage = this.currentPageIndex < totalPages - 1;
         }
       }
     }
@@ -139,15 +133,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     return {
       journals,
       selectedJournal: state.activeJournal,
-      journalContent,
+      pages,
+      currentPageIndex: this.currentPageIndex,
+      currentPageContent,
+      currentPageName,
       speakers,
       activeSpeaker: state.activeSpeaker,
-      hasSpeakers: speakers.length > 0,
-      hasMultiplePages,
-      currentPage,
-      totalPages,
-      hasPrevPage,
-      hasNextPage
+      hasSpeakers: speakers.length > 0
     };
   }
 
@@ -242,13 +234,23 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   // --- Action Handlers ---
 
   static async _onSelectJournal(event, target) {
-    const journalId = target.dataset.journalId;
+    const journalId = target.value;
     this.currentPageIndex = 0;
+    this.pageSearchFilter = '';
     await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
   }
 
-  static async _onSearchJournals(event, target) {
-    this.searchFilter = target.value;
+  static async _onSelectPage(event, target) {
+    const pageIndex = parseInt(target.dataset.pageIndex);
+    if (!isNaN(pageIndex)) {
+      this.currentPageIndex = pageIndex;
+      this.render();
+    }
+  }
+
+  static async _onSearchPages(event, target) {
+    this.pageSearchFilter = target.value;
+    this.currentPageIndex = 0; // Reset to first page when searching
     this.render();
   }
 
@@ -299,26 +301,5 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
   static async _onClearSpeaker(event, target) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(null);
-  }
-
-  static async _onPrevPage(event, target) {
-    if (this.currentPageIndex > 0) {
-      this.currentPageIndex--;
-      this.render();
-    }
-  }
-
-  static async _onNextPage(event, target) {
-    const state = game.storyframe.stateManager.getState();
-    if (state?.activeJournal) {
-      const journal = await fromUuid(state.activeJournal);
-      if (journal) {
-        const pages = journal.pages.filter(p => p.type === 'text');
-        if (this.currentPageIndex < pages.length - 1) {
-          this.currentPageIndex++;
-          this.render();
-        }
-      }
-    }
   }
 }
