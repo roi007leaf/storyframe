@@ -17,22 +17,26 @@ Hooks.once('init', () => {
   };
 
   // Register settings (must be in init hook)
-  game.settings.register(MODULE_ID, 'debug', {
-    name: game.i18n.localize('STORYFRAME.Settings.Debug'),
-    hint: game.i18n.localize('STORYFRAME.Settings.DebugHint'),
-    scope: 'world',
-    config: true,
-    type: Boolean,
-    default: false
-  });
+  try {
+    game.settings.register(MODULE_ID, 'debug', {
+      name: 'Debug Mode',
+      hint: 'Enable debug logging to console',
+      scope: 'world',
+      config: true,
+      type: Boolean,
+      default: false
+    });
 
-  game.settings.register(MODULE_ID, 'gmWindowPosition', {
-    name: 'GM Window Position',
-    scope: 'client',
-    config: false,
-    type: Object,
-    default: {}
-  });
+    game.settings.register(MODULE_ID, 'gmWindowPosition', {
+      name: 'GM Window Position',
+      scope: 'client',
+      config: false,
+      type: Object,
+      default: {}
+    });
+  } catch (err) {
+    console.error(`${MODULE_ID} | Error registering settings:`, err);
+  }
 });
 
 // Hook: setup (Documents available, settings readable)
