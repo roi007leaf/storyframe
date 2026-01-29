@@ -51,7 +51,11 @@
         <div class="scrollable">
           <article class="journal-entry-page {{pageType}} {{#if pageLevel}}level{{pageLevel}}{{/if}}" data-page-type="{{pageType}}">
             <header class="journal-page-header">
-              <h2>{{currentPageName}}</h2>
+              {{#if (eq pageLevel 1)}}
+                <h1>{{currentPageName}}</h1>
+              {{else}}
+                <h2>{{currentPageName}}</h2>
+              {{/if}}
             </header>
             <section class="journal-page-content">
               {{{currentPageContent}}}
