@@ -79,10 +79,14 @@ Hooks.on('getSceneControlButtons', (controls) => {
   };
 
   // v13 uses object structure with "tokens" (plural)
+  console.log(`${MODULE_ID} | controls.tokens exists:`, !!controls.tokens);
+  console.log(`${MODULE_ID} | controls.tokens value:`, controls.tokens);
+
   if (controls.tokens) {
+    console.log(`${MODULE_ID} | Inside if block, about to add button`);
     if (!controls.tokens.tools) controls.tokens.tools = [];
     controls.tokens.tools.push(storyframeControl);
-    console.log(`${MODULE_ID} | Added StoryFrame button to tokens controls`);
+    console.log(`${MODULE_ID} | Added StoryFrame button, tools array length:`, controls.tokens.tools.length);
   } else {
     console.warn(`${MODULE_ID} | tokens controls not found`);
   }
