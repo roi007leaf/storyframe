@@ -145,66 +145,67 @@
   min-height: 100%;
 }
 
-.journal-page-header {
+.storyframe-container .journal-page-header {
   padding: var(--sf-space-lg) var(--sf-space-xl) var(--sf-space-md);
   border-bottom: 1px solid var(--sf-border-subtle);
 }
 
-.journal-page-header h2 {
+.storyframe-container .journal-page-header h2 {
   margin: 0;
   font-size: var(--sf-font-xl);
   line-height: var(--sf-leading-tight);
   color: var(--color-text-dark-primary);
 }
 
-.journal-page-content {
+/* Scope all journal-page-content styles to StoryFrame only */
+.storyframe-container .journal-page-content {
   max-width: var(--sf-content-width);
   margin: 0 auto;
   padding: var(--sf-space-xl);
   line-height: var(--sf-leading-relaxed);
 }
 
-.journal-page-content p {
+.storyframe-container .journal-page-content p {
   margin-bottom: var(--sf-space-md);
 }
 
-.journal-page-content h1,
-.journal-page-content h2,
-.journal-page-content h3 {
+.storyframe-container .journal-page-content h1,
+.storyframe-container .journal-page-content h2,
+.storyframe-container .journal-page-content h3 {
   margin-top: var(--sf-space-lg);
   margin-bottom: var(--sf-space-sm);
   line-height: var(--sf-leading-tight);
 }
 
-.journal-page-content h1 {
+.storyframe-container .journal-page-content h1 {
   font-size: var(--sf-font-xl);
 }
 
-.journal-page-content h2 {
+.storyframe-container .journal-page-content h2 {
   font-size: var(--sf-font-lg);
 }
 
-.journal-page-content h3 {
+.storyframe-container .journal-page-content h3 {
   font-size: var(--sf-font-base);
   font-weight: 600;
 }
 
 /* Ensure images work properly */
-.journal-page-content img {
+.storyframe-container .journal-page-content img {
   max-width: 100%;
   height: auto;
   cursor: grab;
 }
 
-.journal-page-content img:active {
+.storyframe-container .journal-page-content img:active {
   cursor: grabbing;
 }
 
-.journal-page-content figure {
+.storyframe-container .journal-page-content figure {
   margin: 1rem 0;
 }
 
-.journal-page-content figure img {
+.storyframe-container .journal-page-content figure img {
   margin: 0;
 }
 
