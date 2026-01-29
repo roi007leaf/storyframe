@@ -44,12 +44,17 @@ Hooks.once('setup', () => {
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
   console.log(`${MODULE_ID} | Registering sockets`);
+  if (!game.storyframe) {
+    console.error(`${MODULE_ID} | game.storyframe namespace not initialized`);
+    return;
+  }
   game.storyframe.socketManager = new SocketManager();
 });
 
 // Hook: getSceneControlButtons (register GM button)
 Hooks.on('getSceneControlButtons', (controls) => {
-  if (!game.user.isGM) return;
+  if (!game.user?.isGM) return;
+  if (!Array.isArray(controls)) return;
 
   const storyframeControl = {
     name: 'storyframe',
@@ -57,7 +62,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
     icon: 'fas fa-book-open',
     visible: game.user.isGM,
     onClick: () => {
-      if (!game.storyframe.gmApp) {
+      if (!game.storyframe?.gmApp) {
         game.storyframe.gmApp = new GMInterfaceApp();
       }
       game.storyframe.gmApp.render(true);
@@ -74,5 +79,9 @@ Hooks.on('getSceneControlButtons', (controls) => {
 // Hook: ready (UI operations, everything loaded)
 Hooks.once('ready', async () => {
   console.log(`${MODULE_ID} | Ready`);
+  if (!game.storyframe?.stateManager) {
+    console.error(`${MODULE_ID} | StateManager not initialized`);
+    return;
+  }
   await game.storyframe.stateManager.load();
 });
