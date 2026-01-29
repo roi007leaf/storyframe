@@ -62,6 +62,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.currentPageIndex = 0;
     this.pageSearchFilter = '';
     this._stateRestored = false;
+    this.cssScraper = new CSSScraper();
+    this.styleElement = null;
 
     // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -207,6 +209,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachContentImageDrag();
     this._attachDragDropHandlers();
 
+    // Scrape and inject journal styles
+    if (context.selectedJournal) {
+      await this._updateJournalStyles(context.selectedJournal);
+    } else {
+      this._clearJournalStyles();
+    }
+
     // Restore state on first render only
     if (!this._stateRestored) {
       // Mark window as open (for reconnect auto-open)
@@ -341,6 +350,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   async _onClose(options) {
+    // Clean up injected styles
+    if (this.styleElement) {
+      this.styleElement.remove();
+      this.styleElement = null;
+    }
+
     // Save window position
     await game.settings.set(MODULE_ID, 'gmWindowPosition', {
       top: this.position.top,
@@ -443,5 +458,31 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
     // Open native journal editor
     journal.sheet.render(true);
+  }
+
+  async _updateJournalStyles(journalUuid) {
+    const journal = await fromUuid(journalUuid);
+    if (!journal) return;
+
+    // Extract CSS
+    const cssText = this.cssScraper.extractJournalCSS(journal);
+
+    // Namespace rules
+    const scopedCSS = this.cssScraper.namespaceCSSRules(cssText);
+
+    // Inject into document
+    if (!this.styleElement) {
+      this.styleElement = document.createElement('style');
+      this.styleElement.id = 'storyframe-journal-styles';
+      document.head.appendChild(this.styleElement);
+    }
+
+    this.styleElement.textContent = scopedCSS;
+  }
+
+  _clearJournalStyles() {
+    if (this.styleElement) {
+      this.styleElement.textContent = '';
+    }
   }
 }

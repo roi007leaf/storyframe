@@ -258,3 +258,37 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
     }
   }
 });
+
+// Hook: updateJournalEntry (watch for journal content changes)
+Hooks.on('updateJournalEntry', async (journal, changed, options, userId) => {
+  const state = game.storyframe.stateManager.getState();
+  if (journal.uuid !== state?.activeJournal) return;
+
+  // Clear cache for updated journal
+  if (game.storyframe.gmApp?.cssScraper) {
+    game.storyframe.gmApp.cssScraper.clearCache(journal.uuid);
+  }
+
+  // Re-scrape and inject
+  if (game.user.isGM && game.storyframe.gmApp?.rendered) {
+    await game.storyframe.gmApp._updateJournalStyles(journal.uuid);
+  }
+});
+
+// Hook: closeJournalSheet (watch for editor closing after edits)
+Hooks.on('closeJournalSheet', async (sheet, html) => {
+  const state = game.storyframe.stateManager.getState();
+  if (sheet.document.uuid !== state?.activeJournal) return;
+
+  // Clear cache - styles may have changed
+  if (game.storyframe.gmApp?.cssScraper) {
+    game.storyframe.gmApp.cssScraper.clearCache(sheet.document.uuid);
+  }
+
+  // Re-scrape with delay to ensure stylesheets detached/updated
+  setTimeout(async () => {
+    if (game.user.isGM && game.storyframe.gmApp?.rendered) {
+      await game.storyframe.gmApp._updateJournalStyles(sheet.document.uuid);
+    }
+  }, 200);
+});
