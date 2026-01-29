@@ -76,7 +76,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const state = game.storyframe.stateManager.getState();
     if (!state) {
       return {
-        containerClasses: 'journal-sheet-container',
+        containerClasses: '',
         journals: [],
         selectedJournal: null,
         pages: [],
@@ -102,7 +102,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     let currentPageName = null;
     let pageType = 'text'; // Default to text
     let pageLevel = null;
-    let containerClasses = 'journal-sheet-container'; // Base class
+    let containerClasses = ''; // System/module-specific classes only
 
     // Load pages from active journal
     if (state.activeJournal) {
@@ -118,12 +118,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           }
         }
 
-        // Fallback: build classes manually
-        if (containerClasses === 'journal-sheet-container') {
-          // Add system ID
-          containerClasses += ` ${game.system.id}`;
+        // Fallback: build classes manually if not extracted from sheet
+        if (!containerClasses) {
+          // Start with system ID
+          containerClasses = game.system.id;
 
-          // Add module-specific classes
+          // Add module-specific suffixes
           if (game.modules.get('pf2e-beginner-box')?.active) {
             containerClasses += '-bb';
           }
