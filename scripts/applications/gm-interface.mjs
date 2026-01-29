@@ -240,12 +240,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachContentImageDrag();
     this._attachDragDropHandlers();
 
-    // Scrape and inject journal styles
-    if (context.selectedJournal) {
-      await this._updateJournalStyles(context.selectedJournal);
-    } else {
-      this._clearJournalStyles();
-    }
+    // CSS injection disabled - relying on class structure instead
+    // PF2e/system CSS applies naturally via matching class names
+    // (Scraping + namespacing broke PF2e selectors like .pf2e-bb .box-text)
 
     // Restore state on first render only
     if (!this._stateRestored) {
