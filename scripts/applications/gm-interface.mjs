@@ -258,9 +258,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachContentImageDrag();
     this._attachDragDropHandlers();
 
-    // CSS injection disabled - relying on class structure instead
-    // PF2e/system CSS applies naturally via matching class names
-    // (Scraping + namespacing broke PF2e selectors like .pf2e-bb .box-text)
+    // Inject system/module CSS if needed
+    this._injectSystemCSS(context.containerClasses);
 
     // Restore state on first render only
     if (!this._stateRestored) {
@@ -407,6 +406,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       this.styleElement = null;
     }
 
+    // Clean up injected system CSS
+    const injectedCSS = document.getElementById('storyframe-pf2e-bb-styles');
+    if (injectedCSS) {
+      injectedCSS.remove();
+    }
+
     // Save window position
     await game.settings.set(MODULE_ID, 'gmWindowPosition', {
       top: this.position.top,
@@ -534,6 +539,27 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   _clearJournalStyles() {
     if (this.styleElement) {
       this.styleElement.textContent = '';
+    }
+  }
+
+  /**
+   * Inject system/module CSS files when needed
+   * (e.g., pf2e-beginner-box CSS for pf2e-bb class)
+   */
+  _injectSystemCSS(containerClasses) {
+    // Check if we need to inject PF2e Beginner Box CSS
+    if (containerClasses?.includes('pf2e-bb')) {
+      const cssId = 'storyframe-pf2e-bb-styles';
+
+      // Only inject if not already present
+      if (!document.getElementById(cssId)) {
+        const link = document.createElement('link');
+        link.id = cssId;
+        link.rel = 'stylesheet';
+        link.href = 'modules/pf2e-beginner-box/styles/pf2e-bb.css';
+        document.head.appendChild(link);
+        console.log('StoryFrame | Injected PF2e Beginner Box CSS');
+      }
     }
   }
 }
