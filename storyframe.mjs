@@ -1,6 +1,7 @@
 import { StateManager } from './scripts/state-manager.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
+import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 
 // Module constants
 const MODULE_ID = 'storyframe';
@@ -30,6 +31,13 @@ Hooks.once('init', () => {
 
   game.settings.register(MODULE_ID, 'gmWindowPosition', {
     name: 'GM Window Position',
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {}
+  });
+
+  game.settings.register(MODULE_ID, 'playerViewerPosition', {
     scope: 'client',
     config: false,
     type: Object,
@@ -93,6 +101,24 @@ Hooks.on('getSceneControlButtons', (controls) => {
   } else {
     console.warn(`${MODULE_ID} | tokens controls not found`);
   }
+
+  // Player button (non-GM only)
+  if (!game.user?.isGM && controls.tokens) {
+    if (!controls.tokens.tools) controls.tokens.tools = {};
+    controls.tokens.tools.storyframePlayer = {
+      name: 'storyframe-player',
+      title: 'StoryFrame Viewer',
+      icon: 'fas fa-user',
+      visible: true,
+      onClick: () => {
+        if (!game.storyframe?.playerViewer) {
+          game.storyframe.playerViewer = new PlayerViewerApp();
+        }
+        game.storyframe.playerViewer.render(true);
+      },
+      button: true
+    };
+  }
 });
 
 // Hook: ready (UI operations, everything loaded)
@@ -103,4 +129,47 @@ Hooks.once('ready', async () => {
     return;
   }
   await game.storyframe.stateManager.load();
+
+  // Initialize player viewer for non-GM users
+  if (!game.user.isGM) {
+    game.storyframe.playerViewer = new PlayerViewerApp();
+
+    // Auto-open if activeSpeaker already set
+    const state = game.storyframe.stateManager.getState();
+    if (state?.activeSpeaker) {
+      game.storyframe.playerViewer.render(true);
+    }
+  }
+});
+
+// Hook: updateScene (listen for flag changes on all clients)
+Hooks.on('updateScene', async (scene, changed, options, userId) => {
+  // Only current scene
+  if (scene.id !== game.scenes.current?.id) return;
+
+  // Only storyframe flags
+  if (!changed.flags?.storyframe) return;
+
+  console.log(`${MODULE_ID} | Scene flags updated`);
+
+  // Reload state
+  await game.storyframe.stateManager.load();
+  const state = game.storyframe.stateManager.getState();
+
+  // Update GM interface if open
+  if (game.user.isGM && game.storyframe.gmApp?.rendered) {
+    game.storyframe.gmApp.render();
+  }
+
+  // Update player viewer
+  if (!game.user.isGM) {
+    const viewer = game.storyframe.playerViewer;
+    if (state?.activeSpeaker && !viewer.rendered) {
+      viewer.render(true);  // Auto-open
+    } else if (!state?.activeSpeaker && viewer.rendered) {
+      viewer.close();  // Auto-close
+    } else if (viewer.rendered) {
+      viewer.render();  // Update display
+    }
+  }
 });

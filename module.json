@@ -18,7 +18,8 @@
     "storyframe.mjs"
   ],
   "styles": [
-    "styles/gm-interface.css"
+    "styles/gm-interface.css",
+    "styles/player-viewer.css"
   ],
   "socket": true,
   "relationships": {
