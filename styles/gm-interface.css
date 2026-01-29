@@ -130,8 +130,8 @@
 
 /* Journal page article */
 .journal-entry-page {
-  background: var(--color-parchment, #f8f4e8);
-  color: var(--color-text-dark-primary);
+  background: var(--color-bg-content);
+  color: var(--color-text-light-primary);
   padding: 0;
   min-height: 100%;
 }
