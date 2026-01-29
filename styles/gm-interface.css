@@ -9,30 +9,36 @@
 
 /* Header with Journal Selector */
 .storyframe-header {
-  padding: 0.75rem 1rem;
-  border-bottom: 2px solid var(--color-border-dark);
+  padding: var(--sf-space-md);
+  border-bottom: 1px solid var(--sf-border-subtle);
   background: var(--color-bg-header);
 }
 
 .storyframe-header .journal-selector {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: var(--sf-space-sm);
 }
 
 .storyframe-header .journal-selector label {
-  font-weight: bold;
-  font-size: 0.9rem;
+  font-weight: 600;
+  font-size: var(--sf-font-sm);
   white-space: nowrap;
 }
 
 .storyframe-header .journal-selector select {
   flex: 1;
-  padding: 0.35rem 0.5rem;
-  border: 1px solid var(--color-border-dark);
-  border-radius: 3px;
+  padding: var(--sf-space-sm);
+  border: 1px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-md);
   background: var(--color-bg-input);
   color: var(--color-text-dark-primary);
+  transition: border-color var(--sf-transition-base) var(--sf-ease-out);
+}
+
+.storyframe-header .journal-selector select:focus {
+  outline: none;
+  border-color: var(--color-text-hyperlink);
 }
 
 /* Three Column Layout */
@@ -47,20 +53,20 @@
   flex: 0 0 280px;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-sidebar);
-  border-right: 1px solid var(--color-border-dark);
+  background: var(--sf-bg-elevated);
+  border-right: 1px solid var(--sf-border-subtle);
 }
 
 .toc-header {
-  padding: 0.5rem;
-  border-bottom: 1px solid var(--color-border-dark);
+  padding: var(--sf-space-md);
+  border-bottom: 1px solid var(--sf-border-subtle);
 }
 
 .toc-header input[type="text"] {
   width: 100%;
-  padding: 0.5rem;
-  border: 1px solid var(--color-border-dark);
-  border-radius: 3px;
+  padding: var(--sf-space-sm);
+  border: 1px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-md);
   background: var(--color-bg-input);
   color: var(--color-text-dark-primary);
 }
@@ -73,27 +79,28 @@
 .page-item {
   display: flex;
   align-items: baseline;
-  gap: 0.5rem;
-  padding: 0.5rem 0.75rem;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-sm) var(--sf-space-md);
   cursor: pointer;
-  border-bottom: 1px solid var(--color-border-light);
-  transition: all 0.2s;
+  border-bottom: 1px solid var(--sf-border-subtle);
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
 }
 
 .page-item:hover {
-  background: var(--color-bg-btn-hover);
+  background: var(--sf-bg-hover);
+  transform: translateX(2px);
 }
 
 .page-item.selected {
   background: var(--color-bg-option);
   border-left: 3px solid var(--color-text-hyperlink);
-  font-weight: bold;
+  font-weight: 600;
 }
 
 .page-number {
   flex-shrink: 0;
-  color: var(--color-text-dark-secondary);
-  font-size: 0.9rem;
+  color: var(--sf-text-muted);
+  font-size: var(--sf-font-sm);
 }
 
 .page-name {
@@ -137,19 +144,47 @@
 }
 
 .journal-page-header {
-  padding: 1.5rem 1.5rem 1rem;
-  border-bottom: 2px solid var(--color-border-light);
+  padding: var(--sf-space-lg) var(--sf-space-xl) var(--sf-space-md);
+  border-bottom: 1px solid var(--sf-border-subtle);
 }
 
 .journal-page-header h2 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: var(--sf-font-xl);
+  line-height: var(--sf-leading-tight);
   color: var(--color-text-dark-primary);
 }
 
 .journal-page-content {
-  padding: 1.5rem;
-  line-height: 1.6;
+  max-width: var(--sf-content-width);
+  margin: 0 auto;
+  padding: var(--sf-space-xl);
+  line-height: var(--sf-leading-relaxed);
+}
+
+.journal-page-content p {
+  margin-bottom: var(--sf-space-md);
+}
+
+.journal-page-content h1,
+.journal-page-content h2,
+.journal-page-content h3 {
+  margin-top: var(--sf-space-lg);
+  margin-bottom: var(--sf-space-sm);
+  line-height: var(--sf-leading-tight);
+}
+
+.journal-page-content h1 {
+  font-size: var(--sf-font-xl);
+}
+
+.journal-page-content h2 {
+  font-size: var(--sf-font-lg);
+}
+
+.journal-page-content h3 {
+  font-size: var(--sf-font-base);
+  font-weight: 600;
 }
 
 /* Ensure images work properly */
@@ -177,49 +212,51 @@
   display: flex;
   flex-direction: column;
   background: var(--color-bg-sidebar);
-  border-left: 1px solid var(--color-border-dark);
-  padding: 1rem;
+  border-left: 1px solid var(--sf-border-subtle);
+  padding: var(--sf-space-lg);
 }
 
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border-dark);
+  margin-bottom: var(--sf-space-md);
+  padding-bottom: var(--sf-space-sm);
+  border-bottom: 1px solid var(--sf-border-subtle);
 }
 
 .sidebar-header h3 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: var(--sf-font-lg);
 }
 
 .sidebar-actions {
   display: flex;
-  gap: 0.25rem;
+  gap: var(--sf-space-xs);
 }
 
 .sidebar-actions button {
-  padding: 0.25rem 0.5rem;
+  padding: var(--sf-space-xs) var(--sf-space-sm);
   background: var(--color-bg-btn);
-  border: 1px solid var(--color-border-dark);
-  border-radius: 3px;
+  border: 1px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-md);
   cursor: pointer;
   color: var(--color-text-dark-primary);
-  transition: all 0.2s;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
 }
 
 .sidebar-actions button:hover {
   background: var(--color-bg-btn-hover);
   border-color: var(--color-border-highlight);
+  transform: translateY(-1px);
+  box-shadow: var(--sf-shadow-sm);
 }
 
 /* Speaker Gallery */
 .speaker-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
-  gap: 0.75rem;
+  gap: var(--sf-space-md);
   overflow-y: auto;
 }
 
@@ -262,8 +299,9 @@
 
 .speaker-name {
   text-align: center;
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
+  font-size: var(--sf-font-sm);
+  letter-spacing: 0.01em;
+  margin-top: var(--sf-space-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -300,12 +338,12 @@
 /* Empty State */
 .empty-state {
   text-align: center;
-  color: var(--color-text-dark-secondary);
-  padding: 2rem 1rem;
-  line-height: 1.6;
+  color: var(--sf-text-muted);
+  padding: var(--sf-space-2xl) var(--sf-space-lg);
+  line-height: var(--sf-leading-relaxed);
 }
 
 .empty-state p {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
+  margin: var(--sf-space-sm) 0;
+  font-size: var(--sf-font-sm);
 }
