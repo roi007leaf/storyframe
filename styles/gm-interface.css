@@ -156,6 +156,11 @@
 .journal-page-content img {
   max-width: 100%;
   height: auto;
+  cursor: grab;
+}
+
+.journal-page-content img:active {
+  cursor: grabbing;
 }
 
 .journal-page-content figure {
@@ -218,8 +223,9 @@
   overflow-y: auto;
 }
 
+.speaker-gallery:has(.drag-over),
 .speaker-gallery.drag-over {
-  border: 2px dashed var(--color-border-highlight);
+  outline: 2px dashed var(--color-text-hyperlink);
   background: rgba(0, 0, 0, 0.05);
 }
 

@@ -1,5 +1,7 @@
 const MODULE_ID = 'storyframe';
 
+import { CSSScraper } from '../css-scraper.mjs';
+
 // Inline validatePosition (avoids import issues with ESModule side-effect pattern)
 function validatePosition(saved) {
   return {
@@ -237,8 +239,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
+  /**
+   * Attach drag handlers to images in journal content.
+   * Enables drag-to-gallery for adding speakers from journal images.
+   * Verified: Working with .journal-page-content img selector
+   */
   _attachContentImageDrag() {
-    const images = this.element.querySelectorAll('.page-content img');
+    const images = this.element.querySelectorAll('.journal-page-content img');
     images.forEach(img => {
       img.draggable = true;
       img.style.cursor = 'grab';
