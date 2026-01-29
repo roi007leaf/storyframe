@@ -13,6 +13,7 @@
   padding: var(--sf-space-md);
   border-bottom: 1px solid var(--sf-border-subtle);
   background: var(--color-bg-header);
+  color: var(--color-text-light-primary); /* Light text for dark header */
 }
 
 .storyframe-header .journal-selector {
@@ -25,6 +26,7 @@
   font-weight: 600;
   font-size: var(--sf-font-sm);
   white-space: nowrap;
+  color: var(--color-text-light-primary);
 }
 
 .storyframe-header .journal-selector select {
@@ -56,6 +58,7 @@
   flex-direction: column;
   background: var(--sf-bg-elevated);
   border-right: 1px solid var(--sf-border-subtle);
+  color: var(--color-text-light-primary); /* Light text for dark sidebar */
 }
 
 .toc-header {
@@ -69,7 +72,7 @@
   border: 1px solid var(--sf-border-subtle);
   border-radius: var(--sf-radius-md);
   background: var(--color-bg-input);
-  color: var(--color-text-dark-primary);
+  color: var(--color-text-light-primary); /* Light text for visibility */
 }
 
 .page-list {
@@ -101,7 +104,7 @@
 
 .page-number {
   flex-shrink: 0;
-  color: var(--sf-text-muted);
+  color: var(--color-text-light-secondary); /* Light muted text */
   font-size: var(--sf-font-sm);
 }
 
@@ -175,6 +178,7 @@
   background: var(--color-bg-sidebar);
   border-left: 1px solid var(--sf-border-subtle);
   padding: var(--sf-space-lg);
+  color: var(--color-text-light-primary); /* Light text for dark sidebar */
 }
 
 .sidebar-header {
@@ -308,7 +312,7 @@
 /* Empty State */
 .empty-state {
   text-align: center;
-  color: var(--sf-text-muted);
+  color: var(--color-text-light-secondary); /* Light muted text */
   padding: var(--sf-space-2xl) var(--sf-space-lg);
   line-height: var(--sf-leading-relaxed);
 }
