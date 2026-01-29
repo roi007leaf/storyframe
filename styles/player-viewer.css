@@ -1,0 +1,49 @@
+/* Player Viewer Styling */
+
+.storyframe.player-viewer .speaker-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  height: 100%;
+}
+
+.storyframe.player-viewer .speaker-portrait {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.storyframe.player-viewer .speaker-portrait img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.player-viewer .speaker-info {
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.storyframe.player-viewer .speaker-info h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.storyframe.player-viewer .no-speaker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-light-secondary);
+}
+
+.storyframe.player-viewer .no-speaker .hint {
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+}

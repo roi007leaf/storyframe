@@ -1,0 +1,15 @@
+<div class="speaker-display">
+  {{#if noSpeaker}}
+    <div class="no-speaker">
+      <p>No speaker active</p>
+      <p class="hint">Waiting for GM...</p>
+    </div>
+  {{else}}
+    <div class="speaker-portrait">
+      <img src="{{speaker.img}}" alt="{{speaker.name}}">
+    </div>
+    <div class="speaker-info">
+      <h2>{{speaker.name}}</h2>
+    </div>
+  {{/if}}
+</div>
