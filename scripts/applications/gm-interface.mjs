@@ -77,8 +77,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
-        let allPages = journal.pages.filter(p => p.type === 'text').map(p => ({
+        // Support all page types (text, image, pdf, video)
+        let allPages = journal.pages.map(p => ({
           name: p.name,
+          type: p.type,
           _page: p
         }));
 
@@ -97,12 +99,42 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           const page = pages[this.currentPageIndex]._page;
           currentPageName = page.name;
-          currentPageContent = await TextEditor.enrichHTML(page.text.content, {
-            async: true,
-            secrets: game.user.isGM,
-            documents: true,
-            rolls: true
-          });
+
+          // Render content based on page type
+          switch (page.type) {
+            case 'text':
+              currentPageContent = await TextEditor.enrichHTML(page.text.content, {
+                async: true,
+                secrets: game.user.isGM,
+                documents: true,
+                rolls: true
+              });
+              break;
+
+            case 'image':
+              if (page.src) {
+                currentPageContent = `<img src="${page.src}" alt="${page.name}" style="max-width: 100%; height: auto;">`;
+                if (page.image?.caption) {
+                  currentPageContent += `<p class="caption">${page.image.caption}</p>`;
+                }
+              }
+              break;
+
+            case 'pdf':
+              if (page.src) {
+                currentPageContent = `<iframe src="${page.src}" style="width: 100%; height: 100%; min-height: 600px; border: none;"></iframe>`;
+              }
+              break;
+
+            case 'video':
+              if (page.src) {
+                currentPageContent = `<video controls style="max-width: 100%; height: auto;"><source src="${page.src}"></video>`;
+              }
+              break;
+
+            default:
+              currentPageContent = `<p>Unsupported page type: ${page.type}</p>`;
+          }
         }
       }
     }
