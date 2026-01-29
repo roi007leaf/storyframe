@@ -12,16 +12,16 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 Phase: 3 of 4 (Player Viewer)
 Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-01-29 — Completed Phase 3 (Player Viewer)
+Last activity: 2026-01-29 — Completed 03-01-PLAN.md (gallery re-implementation)
 
 Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5
-- Average duration: 24min
-- Total execution time: 2.1 hours
+- Total plans completed: 6
+- Average duration: 13min
+- Total execution time: 1.4 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [████████░░] 75%
 |-------|-------|-------|----------|
 | 1. Foundation | 2/2 | 3min | 1.5min |
 | 2. GM Interface | 2/2 | 57min | 28.5min |
-| 3. Player Viewer | 1/1 | 68min | 68min |
+| 3. Player Viewer | 1/1 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 01-02 (2min), 02-01 (1min), 02-02 (56min), 03-01 (68min)
-- Trend: UI layer work takes longer (template + CSS + hooks)
+- Last 5 plans: 02-01 (1min), 02-02 (56min), 03-01 (68min initial), 03-01 (3min re-impl)
+- Trend: Re-implementations faster than initial builds
 
 *Updated after each plan completion*
 
@@ -77,12 +77,15 @@ From 02-02:
 - TextEditor: use foundry.applications.ux.TextEditor.implementation.enrichHTML
 - Drag-drop: support images from content + actors from sidebar
 
-From 03-01:
+From 03-01 (gallery re-implementation):
+- Gallery visibility tied to speakers.length, not activeSpeaker
+- Gallery stays open during narration (activeSpeaker null)
+- Only closes when speakers array empty
 - updateScene hook auto-broadcasts flag changes to all clients
 - Filter updateScene to current scene only (scene.id check)
-- Auto-open/close viewer based on activeSpeaker state
-- Player button in token controls for manual open
-- Client-scoped settings for window position persistence
+- Layout toggle via header action button (HEADER_ACTIONS pattern)
+- 3 layout modes: grid/list/horizontal with client setting persistence
+- Same icon (fas fa-book-open) for GM and player buttons
 
 ### Pending Todos
 
@@ -94,6 +97,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29
-Stopped at: Phase 3 complete, ready for Phase 4 planning
+Last session: 2026-01-29T16:54:54Z
+Stopped at: Completed 03-01-PLAN.md (gallery re-implementation)
 Resume file: None
