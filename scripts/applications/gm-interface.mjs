@@ -177,7 +177,29 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   _onRender(context, options) {
     super._onRender(context, options);
     this._attachJournalSelectorHandler();
+    this._attachContentImageDrag();
     this._attachDragDropHandlers();
+  }
+
+  _attachContentImageDrag() {
+    const images = this.element.querySelectorAll('.page-content img');
+    images.forEach(img => {
+      img.draggable = true;
+      img.style.cursor = 'grab';
+
+      img.addEventListener('dragstart', (e) => {
+        img.style.cursor = 'grabbing';
+        e.dataTransfer.setData('text/plain', JSON.stringify({
+          type: 'StoryFrameImage',
+          src: img.src,
+          alt: img.alt || 'Speaker'
+        }));
+      });
+
+      img.addEventListener('dragend', () => {
+        img.style.cursor = 'grab';
+      });
+    });
   }
 
   _attachJournalSelectorHandler() {
@@ -212,8 +234,34 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       e.preventDefault();
       gallery.classList.remove('drag-over');
 
-      const data = TextEditor.getDragEventData(e);
+      // Try to get StoryFrameImage data first (images from content)
+      const plainData = e.dataTransfer.getData('text/plain');
+      if (plainData) {
+        try {
+          const imageData = JSON.parse(plainData);
+          if (imageData.type === 'StoryFrameImage') {
+            const label = await Dialog.prompt({
+              title: 'Speaker Name',
+              content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
+              callback: (html) => html.querySelector('[name="label"]').value,
+              rejectClose: false
+            });
 
+            if (label) {
+              await game.storyframe.socketManager.requestAddSpeaker({
+                imagePath: imageData.src,
+                label
+              });
+            }
+            return;
+          }
+        } catch (err) {
+          // Not JSON or not our data, continue to Actor handling
+        }
+      }
+
+      // Handle Actor drops from sidebar
+      const data = TextEditor.getDragEventData(e);
       if (data.type === 'Actor') {
         const actor = await fromUuid(data.uuid);
         if (actor) {
