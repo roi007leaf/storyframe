@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-29 — Completed 01-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Phase complete
+Last activity: 2026-01-29 — Completed 01-02-PLAN.md
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 1
-- Average duration: 1min
-- Total execution time: 0.02 hours
+- Total plans completed: 2
+- Average duration: 1.5min
+- Total execution time: 0.05 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Foundation | 1/2 | 1min | 1min |
+| 1. Foundation | 2/2 | 3min | 1.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (1min)
-- Trend: Just started
+- Last 5 plans: 01-01 (1min), 01-02 (2min)
+- Trend: Consistent pace
 
 *Updated after each plan completion*
 
@@ -52,6 +52,12 @@ From 01-01:
 - Settings registered in init hook (not setup/ready)
 - ESModule format with side-effect entry (no exports)
 
+From 01-02:
+- State persists to Scene flags (scene-specific speaker lists)
+- Socket handlers use executeAsGM for GM permission validation
+- Speakers support both actorUuid and imagePath for flexibility
+- Deleted actor handling with fallback to mystery-man icon
+
 ### Pending Todos
 
 None yet.
@@ -62,6 +68,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 14:41 UTC
-Stopped at: Completed 01-01-PLAN.md (module scaffold)
+Last session: 2026-01-29 12:45 UTC
+Stopped at: Completed 01-02-PLAN.md (data layer complete - Phase 1 finished)
 Resume file: None
