@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 2 of 4 (GM Interface)
-Plan: 1 of 2 in current phase
-Status: In progress
-Last activity: 2026-01-29 — Completed 02-01-PLAN.md
+Plan: 2 of 2 in current phase
+Status: Complete
+Last activity: 2026-01-29 — Completed Phase 2 (GM Interface)
 
-Progress: [███░░░░░░░] 30%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 3
-- Average duration: 1.3min
-- Total execution time: 0.07 hours
+- Total plans completed: 4
+- Average duration: 15min
+- Total execution time: 1.0 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1. Foundation | 2/2 | 3min | 1.5min |
-| 2. GM Interface | 1/2 | 1min | 1min |
+| 2. GM Interface | 2/2 | 57min | 28.5min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (1min), 01-02 (2min), 02-01 (1min)
-- Trend: Consistent pace
+- Last 5 plans: 01-01 (1min), 01-02 (2min), 02-01 (1min), 02-02 (56min)
+- Trend: Complex v13 integration required significant debugging
 
 *Updated after each plan completion*
 
@@ -65,6 +65,17 @@ From 02-01:
 - Active speaker uses border + shadow highlight
 - Remove button appears on thumbnail hover
 
+From 02-02:
+- v13 hook timing: socketlib.ready fires before init → defensive namespace creation
+- v13 controls API: changed to object, use controls.tokens (plural)
+- v13 tools API: changed to object, use property assignment not push
+- Journal content: match Foundry's exact HTML structure for compatibility
+- Layout: 3-column Foundry-style (page TOC + content + speakers) preferred
+- Dialog API: use DialogV2 for v13 (avoids jQuery issues)
+- Flexbox overflow: requires min-height: 0 on all flex containers
+- TextEditor: use foundry.applications.ux.TextEditor.implementation.enrichHTML
+- Drag-drop: support images from content + actors from sidebar
+
 ### Pending Todos
 
 None yet.
@@ -75,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29 15:13 UTC
-Stopped at: Completed 02-01-PLAN.md (template and CSS ready for ApplicationV2 class)
+Last session: 2026-01-29
+Stopped at: Phase 2 complete, ready for Phase 3 planning
 Resume file: None

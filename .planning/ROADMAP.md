@@ -13,7 +13,7 @@ StoryFrame delivers a unified journal reading and speaker broadcasting interface
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Module scaffold, data layer, socket security
-- [ ] **Phase 2: GM Interface** - Control window, journal picker, speaker management
+- [x] **Phase 2: GM Interface** - Control window, journal picker, speaker management
 - [ ] **Phase 3: Player Viewer** - Synchronized read-only display with speaker portraits
 - [ ] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
 
@@ -50,8 +50,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Template and CSS for GM window
-- [ ] 02-02-PLAN.md — GMInterfaceApp class and UI trigger
+- [x] 02-01-PLAN.md — Template and CSS for GM window
+- [x] 02-02-PLAN.md — GMInterfaceApp class and UI trigger
 
 ### Phase 3: Player Viewer
 **Goal**: Players see current speaker portrait and name in real-time
@@ -91,6 +91,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
-| 2. GM Interface | 0/2 | Ready | - |
-| 3. Player Viewer | 0/TBD | Not started | - |
+| 2. GM Interface | 2/2 | Complete | 2026-01-29 |
+| 3. Player Viewer | 0/TBD | Ready | - |
 | 4. Polish | 0/TBD | Not started | - |
