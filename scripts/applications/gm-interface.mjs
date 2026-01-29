@@ -240,10 +240,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         try {
           const imageData = JSON.parse(plainData);
           if (imageData.type === 'StoryFrameImage') {
-            const label = await Dialog.prompt({
-              title: 'Speaker Name',
+            const label = await foundry.applications.api.DialogV2.prompt({
+              window: { title: 'Speaker Name' },
               content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
-              callback: (html) => html.find('[name="label"]').val(),
+              ok: {
+                label: 'Add',
+                callback: (event, button, dialog) => button.form.elements.label.value
+              },
               rejectClose: false
             });
 
@@ -306,10 +309,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     new FilePicker({
       type: 'image',
       callback: async (path) => {
-        const label = await Dialog.prompt({
-          title: 'Speaker Name',
+        const label = await foundry.applications.api.DialogV2.prompt({
+          window: { title: 'Speaker Name' },
           content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
-          callback: (html) => html.find('[name="label"]').val(),
+          ok: {
+            label: 'Add',
+            callback: (event, button, dialog) => button.form.elements.label.value
+          },
           rejectClose: false
         });
 
@@ -336,10 +342,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
     if (!speakerId) return;
 
-    const confirmed = await Dialog.confirm({
-      title: 'Remove Speaker',
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Remove Speaker' },
       content: '<p>Remove this speaker from the gallery?</p>',
-      defaultYes: false
+      yes: { label: 'Remove' },
+      no: { label: 'Cancel', default: true },
+      rejectClose: false
     });
 
     if (confirmed) {
