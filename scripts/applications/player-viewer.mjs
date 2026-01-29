@@ -1,5 +1,15 @@
 const MODULE_ID = 'storyframe';
 
+// Inline validatePosition
+function validatePosition(saved) {
+  return {
+    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
+    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
+    width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
+    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight))
+  };
+}
+
 /**
  * Player Viewer for StoryFrame
  * Gallery view showing ALL speakers with active highlight
@@ -40,11 +50,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
   constructor(options = {}) {
     super(options);
+    this._stateRestored = false;
 
-    // Load saved position
+    // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'playerViewerPosition');
     if (savedPosition && Object.keys(savedPosition).length > 0) {
-      this.position = { ...this.position, ...savedPosition };
+      this.position = { ...this.position, ...validatePosition(savedPosition) };
     }
   }
 
@@ -66,6 +77,19 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       layout,
       empty: false
     };
+  }
+
+  _onRender(context, options) {
+    super._onRender(context, options);
+
+    // Restore state on first render only
+    if (!this._stateRestored) {
+      const wasMinimized = game.settings.get(MODULE_ID, 'playerViewerMinimized');
+      if (wasMinimized) {
+        this.minimize();
+      }
+      this._stateRestored = true;
+    }
   }
 
   async _resolveSpeakers(speakers) {
@@ -117,6 +141,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       width: this.position.width,
       height: this.position.height
     });
+
+    // Save minimized state
+    await game.settings.set(MODULE_ID, 'playerViewerMinimized', this.minimized);
 
     return super._onClose(options);
   }
