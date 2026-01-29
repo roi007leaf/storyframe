@@ -5,7 +5,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
+  /* No animation - prevents obtrusive fade on every re-render */
 }
 
 /* Header with Journal Selector */
@@ -193,6 +193,7 @@
 .sidebar-header h3 {
   margin: 0;
   font-size: var(--sf-font-lg);
+  color: var(--color-text-light-primary); /* Light text for dark sidebar */
 }
 
 .sidebar-actions {
