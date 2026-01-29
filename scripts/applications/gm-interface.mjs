@@ -259,9 +259,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachDragDropHandlers();
 
     // Apply system classes to root ApplicationV2 element (not template)
-    // PF2e CSS expects .pf2e-bb on root window, not child
+    // PF2e CSS expects .pf2e-bb.sheet.window-app.journal-sheet on root
     if (context.containerClasses) {
-      const rootClasses = ['journal-sheet', 'journal-entry', 'themed', 'theme-light'];
+      const rootClasses = ['sheet', 'window-app', 'journal-sheet', 'journal-entry', 'themed', 'theme-light'];
       const systemClasses = context.containerClasses.split(' ');
       rootClasses.push(...systemClasses);
 
