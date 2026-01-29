@@ -47,10 +47,11 @@ Plans:
   5. GM can click thumbnail to set active speaker
   6. GM can clear active speaker (narration mode)
   7. Active speaker highlights in gallery immediately
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 02-01-PLAN.md — Template and CSS for GM window
+- [ ] 02-02-PLAN.md — GMInterfaceApp class and UI trigger
 
 ### Phase 3: Player Viewer
 **Goal**: Players see current speaker portrait and name in real-time
@@ -89,7 +90,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 2/2 | ✓ Complete | 2026-01-29 |
-| 2. GM Interface | 0/TBD | Ready to plan | - |
+| 1. Foundation | 2/2 | Complete | 2026-01-29 |
+| 2. GM Interface | 0/2 | Ready | - |
 | 3. Player Viewer | 0/TBD | Not started | - |
 | 4. Polish | 0/TBD | Not started | - |
