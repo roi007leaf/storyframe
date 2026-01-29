@@ -84,9 +84,10 @@ Hooks.on('getSceneControlButtons', (controls) => {
 
   if (controls.tokens) {
     console.log(`${MODULE_ID} | Inside if block, about to add button`);
-    if (!controls.tokens.tools) controls.tokens.tools = [];
-    controls.tokens.tools.push(storyframeControl);
-    console.log(`${MODULE_ID} | Added StoryFrame button, tools array length:`, controls.tokens.tools.length);
+    // v13: tools is an object, not array - use property assignment
+    if (!controls.tokens.tools) controls.tokens.tools = {};
+    controls.tokens.tools.storyframe = storyframeControl;
+    console.log(`${MODULE_ID} | Added StoryFrame button to tokens.tools.storyframe`);
   } else {
     console.warn(`${MODULE_ID} | tokens controls not found`);
   }
