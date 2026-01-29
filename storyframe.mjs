@@ -9,12 +9,14 @@ const MODULE_ID = 'storyframe';
 Hooks.once('init', () => {
   console.log(`${MODULE_ID} | Initializing`);
 
-  // Create namespace (Foundry v13 clears module-level game properties)
-  game.storyframe = {
-    stateManager: null,
-    socketManager: null,
-    gmApp: null
-  };
+  // Create namespace if it doesn't exist (socketlib.ready may fire first)
+  if (!game.storyframe) {
+    game.storyframe = {
+      stateManager: null,
+      socketManager: null,
+      gmApp: null
+    };
+  }
 
   // Register settings (must be in init hook)
   game.settings.register(MODULE_ID, 'debug', {
