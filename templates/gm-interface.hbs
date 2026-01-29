@@ -1,4 +1,4 @@
-<div class="storyframe-container">
+<div class="storyframe-container {{systemId}}-bb">
   <div class="storyframe-header">
     <div class="journal-selector">
       <label>Journal:</label>
@@ -49,7 +49,7 @@
     {{#if currentPageContent}}
       <div class="journal-entry-pages single-page">
         <div class="scrollable">
-          <article class="journal-entry-page text" data-page-type="text">
+          <article class="journal-entry-page {{pageType}} {{#if pageLevel}}level{{pageLevel}}{{/if}}" data-page-type="{{pageType}}">
             <header class="journal-page-header">
               <h2>{{currentPageName}}</h2>
             </header>

@@ -76,12 +76,15 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const state = game.storyframe.stateManager.getState();
     if (!state) {
       return {
+        systemId: game.system.id,
         journals: [],
         selectedJournal: null,
         pages: [],
         currentPageIndex: 0,
         currentPageContent: null,
         currentPageName: null,
+        pageType: 'text',
+        pageLevel: null,
         speakers: [],
         activeSpeaker: null,
         hasSpeakers: false
@@ -97,6 +100,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     let pages = [];
     let currentPageContent = null;
     let currentPageName = null;
+    let pageType = 'text'; // Default to text
+    let pageLevel = null;
 
     // Load pages from active journal
     if (state.activeJournal) {
@@ -124,6 +129,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           const page = pages[this.currentPageIndex]._page;
           currentPageName = page.name;
+          pageType = page.type || 'text';
+
+          // Get page level from title data (used by some systems)
+          if (page.title?.level) {
+            pageLevel = page.title.level;
+          }
 
           // Render content based on page type
           switch (page.type) {
@@ -191,12 +202,15 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     );
 
     return {
+      systemId: game.system.id,
       journals,
       selectedJournal: state.activeJournal,
       pages,
       currentPageIndex: this.currentPageIndex,
       currentPageContent,
       currentPageName,
+      pageType,
+      pageLevel,
       speakers,
       activeSpeaker: state.activeSpeaker,
       hasSpeakers: speakers.length > 0
