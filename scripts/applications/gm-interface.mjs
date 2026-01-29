@@ -38,6 +38,16 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   };
 
+  static HEADER_ACTIONS = {
+    editJournal: {
+      icon: 'fas fa-edit',
+      label: 'Edit Journal',
+      onclick: function() {
+        this._onEditJournal();
+      }
+    }
+  };
+
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-interface.hbs',
@@ -409,5 +419,22 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
   static async _onClearSpeaker(event, target) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(null);
+  }
+
+  async _onEditJournal() {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.activeJournal) {
+      ui.notifications.warn('No journal selected');
+      return;
+    }
+
+    const journal = await fromUuid(state.activeJournal);
+    if (!journal) {
+      ui.notifications.error('Journal not found');
+      return;
+    }
+
+    // Open native journal editor
+    journal.sheet.render(true);
   }
 }
