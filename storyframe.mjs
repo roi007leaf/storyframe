@@ -42,7 +42,12 @@ Hooks.once('init', () => {
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
   console.log(`${MODULE_ID} | Setup`);
-  game.storyframe.stateManager = new StateManager();
+  try {
+    game.storyframe.stateManager = new StateManager();
+    console.log(`${MODULE_ID} | StateManager created:`, !!game.storyframe.stateManager);
+  } catch (err) {
+    console.error(`${MODULE_ID} | Error creating StateManager:`, err);
+  }
 });
 
 // Hook: socketlib.ready (register socket functions)
