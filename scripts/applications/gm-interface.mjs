@@ -141,11 +141,14 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           console.log('StoryFrame | Built container classes:', containerClasses);
         }
         // Support all page types (text, image, pdf, video)
-        let allPages = journal.pages.map(p => ({
-          name: p.name,
-          type: p.type,
-          _page: p
-        }));
+        // Sort by page.sort property to match native journal order
+        let allPages = journal.pages.contents
+          .sort((a, b) => (a.sort || 0) - (b.sort || 0))
+          .map(p => ({
+            name: p.name,
+            type: p.type,
+            _page: p
+          }));
 
         // Apply page search filter
         if (this.pageSearchFilter) {
