@@ -19,17 +19,59 @@
 .journal-selector {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.5rem;
+  height: 300px;
 }
 
-.journal-selector label {
-  font-weight: bold;
-  font-size: 0.9rem;
-}
-
-.journal-selector select {
+.journal-selector input[type="text"] {
   width: 100%;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 3px;
+  background: var(--color-bg-input);
+  color: var(--color-text-dark-primary);
+}
+
+.journal-list {
+  flex: 1;
+  overflow-y: auto;
+  border: 1px solid var(--color-border-dark);
+  border-radius: 3px;
+  background: var(--color-bg);
+}
+
+.journal-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  cursor: pointer;
+  border-bottom: 1px solid var(--color-border-light);
+  transition: all 0.2s;
+}
+
+.journal-item:hover {
+  background: var(--color-bg-btn-hover);
+}
+
+.journal-item.selected {
+  background: var(--color-bg-option);
+  color: var(--color-text-hyperlink);
+  font-weight: bold;
+  border-left: 3px solid var(--color-text-hyperlink);
+}
+
+.journal-item i {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+}
+
+.journal-item span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .journal-content {

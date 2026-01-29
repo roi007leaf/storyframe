@@ -1,11 +1,26 @@
 <div class="split-container">
   <div class="journal-pane">
     <div class="journal-selector">
-      <label>Journal Entry</label>
-      <select name="journal" data-action="selectJournal">
-        <option value="">-- Select Journal --</option>
-        {{selectOptions journals selected=selectedJournal}}
-      </select>
+      <input type="text"
+             name="journal-search"
+             placeholder="Search Journals"
+             data-action="searchJournals"
+             autocomplete="off">
+      <div class="journal-list">
+        {{#if journals.length}}
+          {{#each journals}}
+            <div class="journal-item {{#if (eq this.id ../selectedJournal)}}selected{{/if}}"
+                 data-action="selectJournal"
+                 data-journal-id="{{this.id}}"
+                 title="{{this.name}}">
+              <i class="fas fa-book"></i>
+              <span>{{this.name}}</span>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state">No journals found</div>
+        {{/if}}
+      </div>
     </div>
 
     {{#if hasMultiplePages}}

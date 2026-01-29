@@ -20,6 +20,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     },
     actions: {
       selectJournal: GMInterfaceApp._onSelectJournal,
+      searchJournals: GMInterfaceApp._onSearchJournals,
       addSpeakerFromImage: GMInterfaceApp._onAddSpeakerFromImage,
       setSpeaker: GMInterfaceApp._onSetSpeaker,
       removeSpeaker: GMInterfaceApp._onRemoveSpeaker,
@@ -39,6 +40,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   constructor(options = {}) {
     super(options);
     this.currentPageIndex = 0;
+    this.searchFilter = '';
 
     // Load saved position
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -65,11 +67,17 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       };
     }
 
-    // Build journals object
-    const journals = {};
-    game.journal.forEach(journal => {
-      journals[journal.uuid] = journal.name;
-    });
+    // Build journals array with search filter
+    let journals = game.journal.map(journal => ({
+      id: journal.uuid,
+      name: journal.name
+    }));
+
+    // Apply search filter
+    if (this.searchFilter) {
+      const filter = this.searchFilter.toLowerCase();
+      journals = journals.filter(j => j.name.toLowerCase().includes(filter));
+    }
 
     let journalContent = null;
     let pages = [];
@@ -234,9 +242,14 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   // --- Action Handlers ---
 
   static async _onSelectJournal(event, target) {
-    const value = target.value;
+    const journalId = target.dataset.journalId;
     this.currentPageIndex = 0;
-    await game.storyframe.socketManager.requestSetActiveJournal(value || null);
+    await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
+  }
+
+  static async _onSearchJournals(event, target) {
+    this.searchFilter = target.value;
+    this.render();
   }
 
   static async _onAddSpeakerFromImage(event, target) {
