@@ -1,0 +1,72 @@
+<div class="split-container">
+  <div class="journal-pane">
+    <div class="journal-selector">
+      <label>Journal Entry</label>
+      <select name="journal" data-action="selectJournal">
+        <option value="">-- Select Journal --</option>
+        {{selectOptions journals selected=selectedJournal}}
+      </select>
+    </div>
+
+    {{#if hasMultiplePages}}
+    <div class="page-nav">
+      <button type="button" data-action="prevPage" {{#unless hasPrevPage}}disabled{{/unless}}>
+        <i class="fas fa-chevron-left"></i>
+      </button>
+      <span class="page-indicator">Page {{currentPage}} of {{totalPages}}</span>
+      <button type="button" data-action="nextPage" {{#unless hasNextPage}}disabled{{/unless}}>
+        <i class="fas fa-chevron-right"></i>
+      </button>
+    </div>
+    {{/if}}
+
+    <div class="journal-content">
+      {{#if journalContent}}
+        {{{journalContent}}}
+      {{else}}
+        <div class="empty-state">
+          <p>No journal selected</p>
+          <p>Select a journal from the dropdown above</p>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="resize-handle"></div>
+
+  <div class="gallery-pane">
+    <div class="gallery-header">
+      <h3>Speakers</h3>
+      <div class="gallery-actions">
+        <button type="button" data-action="addSpeakerFromImage" title="Add speaker from image">
+          <i class="fas fa-plus"></i>
+        </button>
+        <button type="button" data-action="clearSpeaker" title="Clear active speaker">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="speaker-gallery">
+      {{#if hasSpeakers}}
+        {{#each speakers}}
+          <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
+               data-action="setSpeaker"
+               data-speaker-id="{{this.id}}"
+               title="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}">
+            <img src="{{this.img}}" alt="{{this.name}}">
+            <div class="speaker-name">{{this.name}}</div>
+            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" title="Remove">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        {{/each}}
+      {{else}}
+        <div class="empty-state">
+          <p>No speakers added yet</p>
+          <p>Drag actors here or use the + button</p>
+        </div>
+      {{/if}}
+    </div>
+  </div>
+</div>
