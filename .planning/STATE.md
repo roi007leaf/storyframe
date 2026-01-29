@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** GM can read journal dialogue without interruption while players see who's speaking
-**Current focus:** Phase 2 - GM Interface
+**Current focus:** Phase 3 - Player Viewer
 
 ## Current Position
 
-Phase: 2 of 4 (GM Interface)
-Plan: 2 of 2 in current phase
+Phase: 3 of 4 (Player Viewer)
+Plan: 1 of 1 in current phase
 Status: Complete
-Last activity: 2026-01-29 — Completed Phase 2 (GM Interface)
+Last activity: 2026-01-29 — Completed Phase 3 (Player Viewer)
 
-Progress: [█████░░░░░] 50%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 4
-- Average duration: 15min
-- Total execution time: 1.0 hours
+- Total plans completed: 5
+- Average duration: 24min
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -29,10 +29,11 @@ Progress: [█████░░░░░] 50%
 |-------|-------|-------|----------|
 | 1. Foundation | 2/2 | 3min | 1.5min |
 | 2. GM Interface | 2/2 | 57min | 28.5min |
+| 3. Player Viewer | 1/1 | 68min | 68min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (1min), 01-02 (2min), 02-01 (1min), 02-02 (56min)
-- Trend: Complex v13 integration required significant debugging
+- Last 5 plans: 01-02 (2min), 02-01 (1min), 02-02 (56min), 03-01 (68min)
+- Trend: UI layer work takes longer (template + CSS + hooks)
 
 *Updated after each plan completion*
 
@@ -76,6 +77,13 @@ From 02-02:
 - TextEditor: use foundry.applications.ux.TextEditor.implementation.enrichHTML
 - Drag-drop: support images from content + actors from sidebar
 
+From 03-01:
+- updateScene hook auto-broadcasts flag changes to all clients
+- Filter updateScene to current scene only (scene.id check)
+- Auto-open/close viewer based on activeSpeaker state
+- Player button in token controls for manual open
+- Client-scoped settings for window position persistence
+
 ### Pending Todos
 
 None yet.
@@ -87,5 +95,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-01-29
-Stopped at: Phase 2 complete, ready for Phase 3 planning
+Stopped at: Phase 3 complete, ready for Phase 4 planning
 Resume file: None
