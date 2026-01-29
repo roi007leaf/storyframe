@@ -6,11 +6,13 @@ import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
 const MODULE_ID = 'storyframe';
 
 // Create namespace immediately at module level (before any hooks fire)
+console.log('storyframe | Module loading, game exists:', !!game);
 game.storyframe = {
   stateManager: null,
   socketManager: null,
   gmApp: null
 };
+console.log('storyframe | Namespace created at module level:', !!game.storyframe);
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
