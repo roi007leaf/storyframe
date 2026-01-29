@@ -1,16 +1,16 @@
 ---
 phase: 03-player-viewer
-verified: 2026-01-29T16:37:59Z
+verified: 2026-01-29T16:57:35Z
 status: passed
-score: 6/6 must-haves verified
+score: 9/9 must-haves verified
 ---
 
 # Phase 3: Player Viewer Verification Report
 
-**Phase Goal:** Players see current speaker portrait and name in real-time
-**Verified:** 2026-01-29T16:37:59Z
+**Phase Goal:** Players see speaker gallery with all conversation participants, highlighted active speaker, and layout options
+**Verified:** 2026-01-29T16:57:35Z
 **Status:** passed
-**Re-verification:** No - initial verification
+**Re-verification:** No — initial verification
 
 ## Goal Achievement
 
@@ -18,100 +18,115 @@ score: 6/6 must-haves verified
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | Player can open viewer window | ✓ VERIFIED | Player button in token controls (storyframe.mjs:106-121), PlayerViewerApp instantiated and rendered |
-| 2 | Viewer shows current speaker portrait and name | ✓ VERIFIED | Template shows `{{speaker.img}}` and `{{speaker.name}}` (player-viewer.hbs:9,12), _prepareContext resolves via _resolveSpeaker |
-| 3 | Viewer updates automatically when GM changes speaker | ✓ VERIFIED | updateScene hook (storyframe.mjs:146-175) reloads state and calls viewer.render() on flag changes |
-| 4 | Viewer closes when GM clears speaker (narration) | ✓ VERIFIED | updateScene hook auto-closes viewer when `!state?.activeSpeaker` (storyframe.mjs:169-170) |
-| 5 | Viewer is read-only (no edit controls) | ✓ VERIFIED | Template contains only display elements (img, h2), no input/button/form elements found |
-| 6 | Deleted actors show fallback icon | ✓ VERIFIED | _resolveSpeaker handles null actor case with fallback to imagePath or mystery-man.svg (player-viewer.mjs:63-67) |
+| 1 | Player can open viewer window | ✓ VERIFIED | Player button in getSceneControlButtons (storyframe.mjs:114-127), onClick creates PlayerViewerApp |
+| 2 | Viewer shows ALL speakers in gallery (not just active) | ✓ VERIFIED | Template has `{{#each speakers}}` loop (player-viewer.hbs:8), _prepareContext resolves all speakers from state.speakers array |
+| 3 | Active speaker is visually highlighted in gallery | ✓ VERIFIED | Template applies `.active` class via `{{#if (eq this.id ../activeSpeakerId)}}` (line 9), CSS has `.speaker-item.active` with border-color and box-shadow (player-viewer.css:75-78) |
+| 4 | Viewer updates in real-time when GM changes speaker | ✓ VERIFIED | updateScene hook (storyframe.mjs:154-185) listens for flag changes, re-renders viewer when state changes |
+| 5 | Gallery remains visible during narration (no active highlight) | ✓ VERIFIED | Viewer only closes when `speakers.length === 0` (storyframe.mjs:179-180), not when activeSpeaker is null |
+| 6 | Player can toggle between grid/list/horizontal layouts | ✓ VERIFIED | HEADER_ACTIONS.toggleLayout button (player-viewer.mjs:31-39), _onToggleLayout cycles through 3 layouts (lines 102-110) |
+| 7 | Layout preference persists per player | ✓ VERIFIED | playerViewerLayout client setting registered (storyframe.mjs:47-57), saved in _onToggleLayout, loaded in _prepareContext |
+| 8 | Viewer is read-only (no edit controls) | ✓ VERIFIED | Template contains only display elements (img, span), no form inputs or edit buttons |
+| 9 | Deleted actors show fallback icon | ✓ VERIFIED | _resolveSpeaker checks if actor exists, falls back to mystery-man.svg (player-viewer.mjs:84-91) |
 
-**Score:** 6/6 truths verified
+**Score:** 9/9 truths verified
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| `scripts/applications/player-viewer.mjs` | PlayerViewerApp ApplicationV2 class | ✓ VERIFIED | 77 lines, extends HandlebarsApplicationMixin(ApplicationV2), exports PlayerViewerApp class, _prepareContext + _resolveSpeaker methods present |
-| `templates/player-viewer.hbs` | Player viewer template | ✓ VERIFIED | 16 lines, contains speaker-display container, noSpeaker conditional, portrait + info sections |
-| `styles/player-viewer.css` | Player viewer styling | ✓ VERIFIED | 50 lines, .player-viewer selectors, flex layout, portrait styling, no-speaker state styles |
+| `scripts/applications/player-viewer.mjs` | PlayerViewerApp with gallery display and layout toggle | ✓ VERIFIED | 123 lines, extends HandlebarsApplicationMixin(ApplicationV2), has _prepareContext, _resolveSpeakers, _onToggleLayout, HEADER_ACTIONS |
+| `templates/player-viewer.hbs` | Gallery template with all speakers | ✓ VERIFIED | 15 lines, has `{{#each speakers}}` loop, shows img and name for each speaker, applies active class conditionally |
+| `styles/player-viewer.css` | 3 layout modes (grid/list/horizontal) | ✓ VERIFIED | 90 lines, has `.layout-grid`, `.layout-list`, `.layout-horizontal` selectors with distinct display modes |
 
-**Artifact Status:** All 3 artifacts present, substantive, and wired
+**All artifacts:** Exist, substantive, and wired
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
-|------|----|----|--------|---------|
-| storyframe.mjs | PlayerViewerApp | import | ✓ WIRED | Line 4: `import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs'` |
-| storyframe.mjs | updateScene hook | Hooks.on | ✓ WIRED | Line 146: `Hooks.on('updateScene', async (scene, changed, options, userId) =>` with full handler implementation |
-| player-viewer.mjs | StateManager | _prepareContext | ✓ WIRED | Line 31: `game.storyframe.stateManager.getState()` used to fetch current state |
-| storyframe.mjs | playerViewer usage | initialization + updates | ✓ WIRED | Lines 135, 140, 167-172: instantiation, auto-open logic, hook-driven updates |
-| module.json | player-viewer.css | styles array | ✓ WIRED | Line 22: `styles/player-viewer.css` included in styles array |
+|------|-----|-----|--------|---------|
+| storyframe.mjs | PlayerViewerApp | import and initialization | ✓ WIRED | Import at line 4, instantiation at line 143, player button at line 122 |
+| storyframe.mjs | updateScene hook | Hooks.on('updateScene') | ✓ WIRED | Hook registered at line 154, filters for current scene and storyframe flags, re-renders viewer |
+| player-viewer.mjs | StateManager | _prepareContext uses getState() | ✓ WIRED | Line 52 calls `game.storyframe.stateManager.getState()`, uses speakers array |
+| player-viewer.mjs | layout setting | game.settings.get/set | ✓ WIRED | get at line 53, set at line 108, registered at storyframe.mjs:47 |
+| module.json | player-viewer.css | styles array | ✓ WIRED | CSS file registered in styles array (verified via grep) |
 
-**Wiring Status:** All 5 key links verified and functional
+**All key links:** Wired and functional
 
 ### Requirements Coverage
 
+**Note:** Requirements PLAY-02 and PLAY-06 describe single-speaker display, but Phase 3 goal evolved to gallery with ALL speakers. Implementation matches ROADMAP goal (more recent), not original requirements.
+
 | Requirement | Status | Evidence |
 |-------------|--------|----------|
-| PLAY-01: Players can open viewer window | ✓ SATISFIED | Player button in token controls + PlayerViewerApp instantiation |
-| PLAY-02: Viewer shows current speaker portrait | ✓ SATISFIED | Template displays `{{speaker.img}}` resolved from actor or imagePath |
-| PLAY-03: Viewer shows current speaker name/label | ✓ SATISFIED | Template displays `{{speaker.name}}` resolved from actor or label |
-| PLAY-04: Viewer updates in real-time when GM changes speaker | ✓ SATISFIED | updateScene hook triggers viewer.render() on flag changes |
-| PLAY-05: Viewer is read-only (no editing controls) | ✓ SATISFIED | Template contains only display elements, no forms/inputs |
-| PLAY-06: Viewer hides/shows based on active speaker state | ✓ SATISFIED | Auto-open on activeSpeaker set, auto-close on null |
-| PLAY-07: Viewer works with deleted actors (graceful fallback) | ✓ SATISFIED | _resolveSpeaker handles null actor with mystery-man.svg fallback |
+| PLAY-01: Players can open viewer window | ✓ SATISFIED | Player button in token controls (Truth #1) |
+| PLAY-02: Viewer shows current speaker portrait | ✓ SATISFIED (evolved) | Shows ALL speakers with active highlighted (Truth #2, #3) |
+| PLAY-03: Viewer shows current speaker name | ✓ SATISFIED | Template shows speaker name via `.speaker-name` span (Truth #2) |
+| PLAY-04: Viewer updates in real-time | ✓ SATISFIED | updateScene hook triggers re-render (Truth #4) |
+| PLAY-05: Viewer is read-only | ✓ SATISFIED | No edit controls in template (Truth #8) |
+| PLAY-06: Viewer hides/shows based on state | ✓ SATISFIED (evolved) | Visibility based on speakers.length, not just activeSpeaker (Truth #5) |
+| PLAY-07: Deleted actors fallback | ✓ SATISFIED | mystery-man.svg fallback implemented (Truth #9) |
 
-**Requirements Coverage:** 7/7 Phase 3 requirements satisfied
+**Coverage:** 7/7 Phase 3 requirements satisfied (2 evolved beyond original spec)
 
 ### Anti-Patterns Found
 
-No anti-patterns detected. Clean implementation with:
-- No TODO/FIXME comments
-- No placeholder content
-- No stub patterns
-- No empty return statements
-- No orphaned code
-- Proper error handling (deleted actor fallback)
+No blocker anti-patterns found.
+
+**Scan results:**
+- ✓ No TODO/FIXME comments in player-viewer files
+- ✓ No stub patterns (return null, placeholder text)
+- ✓ No empty implementations
+- ✓ All functions have substantive bodies
+- ℹ️ INFO: "placeholder" found in gm-interface.mjs input elements (legitimate use)
 
 ### Human Verification Required
 
-#### 1. Player viewer auto-opens on speaker activation
+While all automated checks pass, the following require human testing to confirm the experience works as intended:
 
-**Test:** As GM, open GM interface and set active speaker. As player (separate browser/incognito), observe viewer behavior.
-**Expected:** Player viewer window opens automatically showing speaker portrait and name.
-**Why human:** Requires multi-user testing, visual confirmation, timing verification.
+#### 1. Gallery Auto-Open Behavior
+**Test:** As GM, add first speaker while player has viewer closed
+**Expected:** Player viewer automatically opens showing the speaker
+**Why human:** Timing of auto-open across clients needs visual confirmation
 
-#### 2. Real-time updates across clients
+#### 2. Layout Visual Appearance
+**Test:** Toggle through grid → list → horizontal layouts
+**Expected:** Gallery rearranges appropriately, all speakers remain visible and well-formatted
+**Why human:** Visual layout quality and spacing needs human judgment
 
-**Test:** As GM, change active speaker while player viewer is open. As player, observe update.
-**Expected:** Viewer updates immediately without manual refresh, showing new speaker portrait/name.
-**Why human:** Tests socket/hook propagation timing, cross-client synchronization.
+#### 3. Real-Time Update Responsiveness
+**Test:** As GM, rapidly change active speaker (click different thumbnails)
+**Expected:** Player viewer highlight moves smoothly, no lag or flickering
+**Why human:** Performance feel and visual smoothness can't be verified programmatically
 
-#### 3. Auto-close on narration mode
+#### 4. Narration Mode Display
+**Test:** As GM, clear active speaker (narration mode)
+**Expected:** Player viewer stays open, gallery visible, no speaker highlighted
+**Why human:** Visual confirmation that gallery remains present without highlight
 
-**Test:** As GM, clear active speaker (narration mode). As player, observe viewer behavior.
-**Expected:** Player viewer window closes automatically.
-**Why human:** Tests negative case, window lifecycle management.
+#### 5. Deleted Actor Fallback Display
+**Test:** Add speaker from actor, then delete that actor, check player viewer
+**Expected:** Deleted speaker shows mystery-man.svg icon with label still visible
+**Why human:** Visual quality of fallback display needs human review
 
-#### 4. Deleted actor fallback
-
-**Test:** As GM, set actor as active speaker, then delete that actor from actors sidebar. As player, observe viewer.
-**Expected:** Viewer shows mystery-man.svg icon instead of crashing or showing broken image.
-**Why human:** Tests edge case, requires actor deletion and visual confirmation.
-
-#### 5. Manual open via button
-
-**Test:** As player, click StoryFrame Viewer button in token controls (when no active speaker or after auto-close).
-**Expected:** Viewer opens manually showing "No speaker active" state or current speaker if set.
-**Why human:** Tests player-initiated open, button visibility and functionality.
-
-#### 6. Read-only verification
-
-**Test:** As player, open viewer and inspect UI.
-**Expected:** No edit controls visible, no way to modify speaker data, purely display interface.
-**Why human:** Visual inspection of UI elements, interaction testing.
+#### 6. Layout Persistence Across Sessions
+**Test:** Set layout to "list", close Foundry, reopen, open player viewer
+**Expected:** Layout still set to "list"
+**Why human:** Client setting persistence across full reload needs verification
 
 ---
 
-_Verified: 2026-01-29T16:37:59Z_
+## Verification Summary
+
+**All automated verification passed:**
+- ✓ 9/9 observable truths verified
+- ✓ 3/3 required artifacts exist, substantive, and wired
+- ✓ 5/5 key links verified
+- ✓ 7/7 requirements satisfied
+- ✓ No blocker anti-patterns
+
+**Phase goal achieved** based on structural verification. Human verification recommended for UX quality confirmation.
+
+---
+
+_Verified: 2026-01-29T16:57:35Z_
 _Verifier: Claude (gsd-verifier)_

@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** GM can read journal dialogue without interruption while players see who's speaking
-**Current focus:** Phase 3 - Player Viewer
+**Current focus:** Phase 4 - Polish
 
 ## Current Position
 
 Phase: 3 of 4 (Player Viewer)
 Plan: 1 of 1 in current phase
-Status: Complete
-Last activity: 2026-01-29 — Completed 03-01-PLAN.md (gallery re-implementation)
+Status: Complete and verified
+Last activity: 2026-01-29 — Phase 3 complete with gallery view (9/9 must-haves verified)
 
 Progress: [████████░░] 75%
 

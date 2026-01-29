@@ -70,7 +70,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 03-01-PLAN.md — PlayerViewerApp with gallery display, layout toggle, and hook integration
+- [x] 03-01-PLAN.md — PlayerViewerApp with gallery display, layout toggle, and hook integration
 
 ### Phase 4: Polish
 **Goal**: Refined UX with persistence and power-user features
@@ -95,5 +95,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
-| 3. Player Viewer | 0/1 | Re-planned | - |
+| 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
 | 4. Polish | 0/TBD | Not started | - |
