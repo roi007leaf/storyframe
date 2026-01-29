@@ -243,7 +243,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
             const label = await Dialog.prompt({
               title: 'Speaker Name',
               content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
-              callback: (html) => html.querySelector('[name="label"]').value,
+              callback: (html) => html.find('[name="label"]').val(),
               rejectClose: false
             });
 
@@ -309,7 +309,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         const label = await Dialog.prompt({
           title: 'Speaker Name',
           content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
-          callback: (html) => html.querySelector('[name="label"]').value,
+          callback: (html) => html.find('[name="label"]').val(),
           rejectClose: false
         });
 
