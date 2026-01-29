@@ -89,6 +89,41 @@ Hooks.once('init', () => {
     type: Boolean,
     default: false
   });
+
+  // Register keybindings
+  game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
+    name: 'Toggle StoryFrame',
+    hint: 'Show or hide the StoryFrame window',
+    editable: [
+      { key: 'KeyS', modifiers: ['Control', 'Shift'] }
+    ],
+    onDown: () => {
+      if (game.user.isGM) {
+        // Toggle GM interface
+        if (!game.storyframe?.gmApp) {
+          game.storyframe.gmApp = new GMInterfaceApp();
+        }
+        if (game.storyframe.gmApp.rendered) {
+          game.storyframe.gmApp.close();
+        } else {
+          game.storyframe.gmApp.render(true);
+        }
+      } else {
+        // Toggle player viewer
+        if (!game.storyframe?.playerViewer) {
+          game.storyframe.playerViewer = new PlayerViewerApp();
+        }
+        if (game.storyframe.playerViewer.rendered) {
+          game.storyframe.playerViewer.close();
+        } else {
+          game.storyframe.playerViewer.render(true);
+        }
+      }
+      return true; // Consume the event
+    },
+    restricted: false, // Available to all users
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+  });
 });
 
 // Hook: setup (Documents available, settings readable)
