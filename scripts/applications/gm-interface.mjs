@@ -122,6 +122,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         if (containerClasses === 'journal-sheet-container') {
           // Add system ID
           containerClasses += ` ${game.system.id}`;
+
+          // Add module-specific classes
+          if (game.modules.get('pf2e-beginner-box')?.active) {
+            containerClasses += '-bb';
+          }
+
           console.log('StoryFrame | Built container classes:', containerClasses);
         }
         // Support all page types (text, image, pdf, video)
