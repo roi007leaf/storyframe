@@ -17,6 +17,9 @@
   "esmodules": [
     "storyframe.mjs"
   ],
+  "styles": [
+    "styles/gm-interface.css"
+  ],
   "socket": true,
   "relationships": {
     "requires": [
