@@ -1,3 +1,6 @@
+import { StateManager } from './scripts/state-manager.mjs';
+import { SocketManager } from './scripts/socket-manager.mjs';
+
 // Module constants
 const MODULE_ID = 'storyframe';
 
@@ -25,17 +28,18 @@ Hooks.once('init', () => {
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
   console.log(`${MODULE_ID} | Setup`);
-  // StateManager initialized here in Plan 02
+  game.storyframe.stateManager = new StateManager();
 });
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
   console.log(`${MODULE_ID} | Registering sockets`);
-  // SocketManager initialized here in Plan 02
+  game.storyframe.socketManager = new SocketManager();
 });
 
 // Hook: ready (UI operations, everything loaded)
-Hooks.once('ready', () => {
+Hooks.once('ready', async () => {
   console.log(`${MODULE_ID} | Ready`);
+  await game.storyframe.stateManager.load();
   // GM control button added in Phase 2
 });
