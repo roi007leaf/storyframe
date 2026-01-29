@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 4 of 4 (Polish)
-Plan: 1 of 3 in current phase
-Status: In progress
-Last activity: 2026-01-29 — Completed 04-01-PLAN.md (window state persistence)
+Plan: 2 of 2 in current phase
+Status: Complete and verified
+Last activity: 2026-01-29 — Phase 4 complete with persistence + keyboard shortcuts (4/4 must-haves verified)
 
-Progress: [████████░░] 78%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
+- Total plans completed: 8
 - Average duration: 10min
-- Total execution time: 1.4 hours
+- Total execution time: 1.5 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [████████░░] 78%
 | 1. Foundation | 2/2 | 3min | 1.5min |
 | 2. GM Interface | 2/2 | 57min | 28.5min |
 | 3. Player Viewer | 1/1 | 3min | 3min |
-| 4. Polish | 1/3 | 2min | 2min |
+| 4. Polish | 2/2 | 3min | 1.5min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (68min initial), 03-01 (3min re-impl), 04-01 (2min)
-- Trend: Polish tasks executing very quickly
+- Last 5 plans: 03-01 (3min re-impl), 04-01 (2min), 04-02 (1min)
+- Trend: Polish tasks executing very quickly due to solid foundation
 
 *Updated after each plan completion*
 
@@ -95,6 +95,12 @@ From 04-01:
 - _stateRestored flag pattern prevents duplicate initialization
 - Minimized state saved on close, restored on first render only
 - Journal selection restores from StateManager flags automatically
+
+From 04-02:
+- Keybindings registered in init hook (v13 timing-safe)
+- Single keybinding toggles appropriate window via isGM check
+- App instances cached in game.storyframe namespace for toggle logic
+- Precedence NORMAL, unrestricted (available to all users)
 
 ### Pending Todos
 

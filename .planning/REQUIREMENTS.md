@@ -67,14 +67,14 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **JOUR-02**: Journal content renders as Foundry would render it
 - [ ] **JOUR-03**: Journal text scrollable independently from gallery
 - [ ] **JOUR-04**: Page navigation updates displayed content
-- [ ] **JOUR-05**: Journal selection persists with speaker data
+- [x] **JOUR-05**: Journal selection persists with speaker data
 
 ### Conversation Persistence
 
-- [ ] **CONV-01**: Speaker list saves to document flags automatically
-- [ ] **CONV-02**: Speaker list restores when reopening module
-- [ ] **CONV-03**: Active speaker state persists across GM reconnect
-- [ ] **CONV-04**: Conversation data survives Foundry restart
+- [x] **CONV-01**: Speaker list saves to document flags automatically
+- [x] **CONV-02**: Speaker list restores when reopening module
+- [x] **CONV-03**: Active speaker state persists across GM reconnect
+- [x] **CONV-04**: Conversation data survives Foundry restart
 
 ## v2 Requirements
 

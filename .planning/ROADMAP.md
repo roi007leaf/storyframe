@@ -84,8 +84,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Window state persistence (position validation, minimized state, auto-reopen)
-- [ ] 04-02-PLAN.md — Keyboard shortcuts (configurable keybindings)
+- [x] 04-01-PLAN.md — Window state persistence (position validation, minimized state, auto-reopen)
+- [x] 04-02-PLAN.md — Keyboard shortcuts (configurable keybindings)
 
 ## Progress
 
@@ -97,4 +97,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
 | 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
-| 4. Polish | 0/2 | Not started | - |
+| 4. Polish | 2/2 | Complete | 2026-01-29 |
