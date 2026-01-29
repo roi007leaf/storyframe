@@ -76,7 +76,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const state = game.storyframe.stateManager.getState();
     if (!state) {
       return {
-        systemId: game.system.id,
+        containerClasses: 'journal-sheet-container',
         journals: [],
         selectedJournal: null,
         pages: [],
@@ -102,11 +102,19 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     let currentPageName = null;
     let pageType = 'text'; // Default to text
     let pageLevel = null;
+    let containerClasses = 'journal-sheet-container'; // Base class
 
     // Load pages from active journal
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
+        // Extract container classes from journal sheet
+        if (journal.sheet?.element) {
+          const sheetContainer = journal.sheet.element.find('.journal-sheet-container');
+          if (sheetContainer.length) {
+            containerClasses = sheetContainer.attr('class');
+          }
+        }
         // Support all page types (text, image, pdf, video)
         let allPages = journal.pages.map(p => ({
           name: p.name,
@@ -202,7 +210,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     );
 
     return {
-      systemId: game.system.id,
+      containerClasses,
       journals,
       selectedJournal: state.activeJournal,
       pages,
