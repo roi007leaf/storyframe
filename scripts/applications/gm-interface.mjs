@@ -1,5 +1,15 @@
 const MODULE_ID = 'storyframe';
 
+// Inline validatePosition (avoids import issues with ESModule side-effect pattern)
+function validatePosition(saved) {
+  return {
+    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
+    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
+    width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
+    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight))
+  };
+}
+
 /**
  * GM Interface for StoryFrame
  * Provides journal reading and speaker management controls
@@ -39,11 +49,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     super(options);
     this.currentPageIndex = 0;
     this.pageSearchFilter = '';
+    this._stateRestored = false;
 
-    // Load saved position
+    // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
     if (savedPosition && Object.keys(savedPosition).length > 0) {
-      this.position = { ...this.position, ...savedPosition };
+      this.position = { ...this.position, ...validatePosition(savedPosition) };
     }
   }
 
@@ -178,11 +189,34 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     };
   }
 
-  _onRender(context, options) {
+  async _onRender(context, options) {
     super._onRender(context, options);
     this._attachJournalSelectorHandler();
     this._attachContentImageDrag();
     this._attachDragDropHandlers();
+
+    // Restore state on first render only
+    if (!this._stateRestored) {
+      // Mark window as open (for reconnect auto-open)
+      await game.settings.set(MODULE_ID, 'gmWindowWasOpen', true);
+
+      // Restore minimized state
+      const wasMinimized = game.settings.get(MODULE_ID, 'gmWindowMinimized');
+      if (wasMinimized) {
+        this.minimize();
+      }
+
+      // Restore journal selection from StateManager flags
+      const state = game.storyframe.stateManager.getState();
+      if (state?.activeJournal) {
+        const select = this.element.querySelector('#journal-selector');
+        if (select) {
+          select.value = state.activeJournal;
+        }
+      }
+
+      this._stateRestored = true;
+    }
 
     // Debug: log content area structure
     const contentArea = this.element.querySelector('.journal-page-content');
@@ -297,6 +331,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       width: this.position.width,
       height: this.position.height
     });
+
+    // Save minimized state
+    await game.settings.set(MODULE_ID, 'gmWindowMinimized', this.minimized);
+
+    // Mark window as closed (no auto-open on reconnect)
+    await game.settings.set(MODULE_ID, 'gmWindowWasOpen', false);
 
     return super._onClose(options);
   }
