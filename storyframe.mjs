@@ -43,6 +43,18 @@ Hooks.once('init', () => {
     type: Object,
     default: {}
   });
+
+  game.settings.register(MODULE_ID, 'playerViewerLayout', {
+    scope: 'client',
+    config: false,
+    type: String,
+    default: 'grid',
+    choices: {
+      grid: 'Grid',
+      list: 'List',
+      horizontal: 'Horizontal'
+    }
+  });
 });
 
 // Hook: setup (Documents available, settings readable)
@@ -67,48 +79,43 @@ Hooks.once('socketlib.ready', () => {
   game.storyframe.socketManager = new SocketManager();
 });
 
-// Hook: getSceneControlButtons (register GM button)
+// Hook: getSceneControlButtons (register buttons)
 Hooks.on('getSceneControlButtons', (controls) => {
   console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
   console.log(`${MODULE_ID} | Available controls:`, Object.keys(controls));
 
-  if (!game.user?.isGM) return;
-
-  const storyframeControl = {
-    name: 'storyframe',
-    title: 'StoryFrame',
-    icon: 'fas fa-book-open',
-    visible: game.user.isGM,
-    onClick: () => {
-      if (!game.storyframe?.gmApp) {
-        game.storyframe.gmApp = new GMInterfaceApp();
-      }
-      game.storyframe.gmApp.render(true);
-    },
-    button: true
-  };
-
-  // v13 uses object structure with "tokens" (plural)
-  console.log(`${MODULE_ID} | controls.tokens exists:`, !!controls.tokens);
-  console.log(`${MODULE_ID} | controls.tokens value:`, controls.tokens);
-
-  if (controls.tokens) {
-    console.log(`${MODULE_ID} | Inside if block, about to add button`);
-    // v13: tools is an object, not array - use property assignment
-    if (!controls.tokens.tools) controls.tokens.tools = {};
-    controls.tokens.tools.storyframe = storyframeControl;
-    console.log(`${MODULE_ID} | Added StoryFrame button to tokens.tools.storyframe`);
-  } else {
+  if (!controls.tokens) {
     console.warn(`${MODULE_ID} | tokens controls not found`);
+    return;
+  }
+
+  // v13: tools is an object, not array - use property assignment
+  if (!controls.tokens.tools) controls.tokens.tools = {};
+
+  // GM button (GM only)
+  if (game.user?.isGM) {
+    controls.tokens.tools.storyframe = {
+      name: 'storyframe',
+      title: 'StoryFrame',
+      icon: 'fas fa-book-open',
+      visible: true,
+      onClick: () => {
+        if (!game.storyframe?.gmApp) {
+          game.storyframe.gmApp = new GMInterfaceApp();
+        }
+        game.storyframe.gmApp.render(true);
+      },
+      button: true
+    };
+    console.log(`${MODULE_ID} | Added GM button`);
   }
 
   // Player button (non-GM only)
-  if (!game.user?.isGM && controls.tokens) {
-    if (!controls.tokens.tools) controls.tokens.tools = {};
-    controls.tokens.tools.storyframePlayer = {
-      name: 'storyframe-player',
+  if (!game.user?.isGM) {
+    controls.tokens.tools.storyframe = {
+      name: 'storyframe',
       title: 'StoryFrame Viewer',
-      icon: 'fas fa-user',
+      icon: 'fas fa-book-open',
       visible: true,
       onClick: () => {
         if (!game.storyframe?.playerViewer) {
@@ -118,6 +125,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
       },
       button: true
     };
+    console.log(`${MODULE_ID} | Added Player button`);
   }
 });
 
@@ -134,9 +142,9 @@ Hooks.once('ready', async () => {
   if (!game.user.isGM) {
     game.storyframe.playerViewer = new PlayerViewerApp();
 
-    // Auto-open if activeSpeaker already set
+    // Auto-open if there are speakers (gallery shows all, not just active)
     const state = game.storyframe.stateManager.getState();
-    if (state?.activeSpeaker) {
+    if (state?.speakers?.length > 0) {
       game.storyframe.playerViewer.render(true);
     }
   }
@@ -164,10 +172,12 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
   // Update player viewer
   if (!game.user.isGM) {
     const viewer = game.storyframe.playerViewer;
-    if (state?.activeSpeaker && !viewer.rendered) {
-      viewer.render(true);  // Auto-open
-    } else if (!state?.activeSpeaker && viewer.rendered) {
-      viewer.close();  // Auto-close
+    const hasSpeakers = state?.speakers?.length > 0;
+
+    if (hasSpeakers && !viewer.rendered) {
+      viewer.render(true);  // Auto-open when first speaker added
+    } else if (!hasSpeakers && viewer.rendered) {
+      viewer.close();  // Close only if NO speakers (not just no active speaker)
     } else if (viewer.rendered) {
       viewer.render();  // Update display
     }
