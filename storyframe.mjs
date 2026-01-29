@@ -59,6 +59,8 @@ Hooks.once('socketlib.ready', () => {
 
 // Hook: getSceneControlButtons (register GM button)
 Hooks.on('getSceneControlButtons', (controls) => {
+  console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
+
   if (!game.user?.isGM) return;
   if (!Array.isArray(controls)) return;
 
@@ -77,8 +79,10 @@ Hooks.on('getSceneControlButtons', (controls) => {
   };
 
   const tokens = controls.find(c => c.name === 'token');
+  console.log(`${MODULE_ID} | Found token controls:`, !!tokens);
   if (tokens) {
     tokens.tools.push(storyframeControl);
+    console.log(`${MODULE_ID} | Added StoryFrame button to token controls`);
   }
 });
 
