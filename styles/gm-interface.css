@@ -117,7 +117,7 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  background: var(--color-bg-content);
+  background: #fff; /* Light background for readability */
   overflow: hidden;
   min-height: 0;
 }
@@ -155,6 +155,10 @@
 }
 
 /* Minimal content styles - let system CSS handle typography/layout */
+.storyframe-container .journal-page-content {
+  padding: 1rem 2rem; /* Basic spacing only */
+}
+
 .storyframe-container .journal-page-content img {
   cursor: grab;
 }
