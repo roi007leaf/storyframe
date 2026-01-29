@@ -19,7 +19,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       height: 600
     },
     actions: {
-      selectJournal: GMInterfaceApp._onSelectJournal,
       selectPage: GMInterfaceApp._onSelectPage,
       searchPages: GMInterfaceApp._onSearchPages,
       addSpeakerFromImage: GMInterfaceApp._onAddSpeakerFromImage,
@@ -145,44 +144,20 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
   _onRender(context, options) {
     super._onRender(context, options);
-    this._attachResizeHandler();
+    this._attachJournalSelectorHandler();
     this._attachDragDropHandlers();
   }
 
-  _attachResizeHandler() {
-    const resizer = this.element.querySelector('.resize-handle');
-    const journalPane = this.element.querySelector('.journal-pane');
-    const container = this.element.querySelector('.split-container');
-
-    if (!resizer || !journalPane || !container) return;
-
-    let isResizing = false;
-
-    resizer.addEventListener('mousedown', (e) => {
-      isResizing = true;
-      document.body.style.cursor = 'col-resize';
-      e.preventDefault();
-    });
-
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-
-      const containerRect = container.getBoundingClientRect();
-      const newWidth = e.clientX - containerRect.left;
-      const minWidth = 250;
-      const maxWidth = containerRect.width - 250;
-
-      if (newWidth >= minWidth && newWidth <= maxWidth) {
-        journalPane.style.width = `${newWidth}px`;
-      }
-    });
-
-    document.addEventListener('mouseup', () => {
-      if (isResizing) {
-        isResizing = false;
-        document.body.style.cursor = 'default';
-      }
-    });
+  _attachJournalSelectorHandler() {
+    const select = this.element.querySelector('#journal-selector');
+    if (select) {
+      select.addEventListener('change', async (e) => {
+        const journalId = e.target.value;
+        this.currentPageIndex = 0;
+        this.pageSearchFilter = '';
+        await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
+      });
+    }
   }
 
   _attachDragDropHandlers() {
@@ -232,13 +207,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   // --- Action Handlers ---
-
-  static async _onSelectJournal(event, target) {
-    const journalId = target.value;
-    this.currentPageIndex = 0;
-    this.pageSearchFilter = '';
-    await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
-  }
 
   static async _onSelectPage(event, target) {
     const pageIndex = parseInt(target.dataset.pageIndex);

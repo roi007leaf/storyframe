@@ -2,7 +2,7 @@
   <div class="storyframe-header">
     <div class="journal-selector">
       <label>Journal:</label>
-      <select name="journal" data-action="selectJournal">
+      <select name="journal" id="journal-selector">
         <option value="">-- Select Journal --</option>
         {{#each journals}}
           <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
