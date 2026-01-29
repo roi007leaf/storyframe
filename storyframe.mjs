@@ -5,16 +5,16 @@ import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
 // Module constants
 const MODULE_ID = 'storyframe';
 
+// Create namespace immediately at module level (before any hooks fire)
+game.storyframe = {
+  stateManager: null,
+  socketManager: null,
+  gmApp: null
+};
+
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
-  // Create namespace for module (MUST be first - other hooks depend on this)
-  game.storyframe = {
-    stateManager: null,
-    socketManager: null,
-    gmApp: null
-  };
   console.log(`${MODULE_ID} | Initializing`);
-  console.log(`${MODULE_ID} | Namespace created:`, !!game.storyframe);
 
   // Register settings (must be in init hook)
   try {
@@ -48,10 +48,6 @@ Hooks.once('setup', () => {
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
   console.log(`${MODULE_ID} | Registering sockets`);
-  if (!game.storyframe) {
-    console.error(`${MODULE_ID} | game.storyframe namespace not initialized`);
-    return;
-  }
   game.storyframe.socketManager = new SocketManager();
 });
 
