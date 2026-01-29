@@ -1,16 +1,17 @@
-<div class="storyframe-header">
-  <div class="journal-selector">
-    <label>Journal:</label>
-    <select name="journal" data-action="selectJournal">
-      <option value="">-- Select Journal --</option>
-      {{#each journals}}
-        <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
-      {{/each}}
-    </select>
+<div class="storyframe-container">
+  <div class="storyframe-header">
+    <div class="journal-selector">
+      <label>Journal:</label>
+      <select name="journal" data-action="selectJournal">
+        <option value="">-- Select Journal --</option>
+        {{#each journals}}
+          <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
+        {{/each}}
+      </select>
+    </div>
   </div>
-</div>
 
-<div class="three-column-layout">
+  <div class="three-column-layout">
   <!-- Left: Page TOC -->
   <div class="page-toc">
     <div class="toc-header">
@@ -96,4 +97,5 @@
       {{/if}}
     </div>
   </div>
+</div>
 </div>

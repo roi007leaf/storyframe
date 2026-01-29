@@ -1,5 +1,12 @@
 /* StoryFrame GM Interface Styles */
 
+/* Container */
+.storyframe-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 /* Header with Journal Selector */
 .storyframe-header {
   padding: 0.75rem 1rem;
@@ -31,7 +38,7 @@
 /* Three Column Layout */
 .three-column-layout {
   display: flex;
-  height: calc(100% - 56px); /* Account for header */
+  flex: 1;
 }
 
 /* Left: Page TOC */
