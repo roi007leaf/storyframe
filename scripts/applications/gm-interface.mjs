@@ -105,11 +105,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
             case 'text':
               console.log('StoryFrame | Page object:', page);
               console.log('StoryFrame | Raw content:', page.text.content);
-              currentPageContent = await TextEditor.enrichHTML(page.text.content, {
+              currentPageContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(page.text.content, {
                 async: true,
                 secrets: game.user.isGM,
                 documents: true,
-                rolls: true
+                rolls: true,
+                relativeTo: page
               });
               console.log('StoryFrame | Enriched HTML:', currentPageContent);
               break;

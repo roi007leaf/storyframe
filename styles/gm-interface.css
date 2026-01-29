@@ -136,12 +136,15 @@
 }
 
 /* Journal entry styling - inherit Foundry's journal CSS */
-.page-content.journal-entry-page {
-  padding: 1rem;
+.storyframe .page-content.journal-entry-page {
+  padding: 0;
+  background: var(--color-parchment, #f8f4e8);
+  color: var(--color-text-dark-primary);
 }
 
-.journal-entry-content {
-  /* Let Foundry's journal CSS handle styling */
+.storyframe .journal-entry-content {
+  padding: 1.5rem;
+  /* Ensure journal content has proper context for CSS selectors */
 }
 
 /* Ensure images work properly */
