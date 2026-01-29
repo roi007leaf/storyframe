@@ -109,11 +109,20 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
         // Extract container classes from journal sheet
-        if (journal.sheet?.element) {
+        // Try to get from rendered sheet first
+        if (journal.sheet?.element?.[0]) {
           const sheetContainer = journal.sheet.element.find('.journal-sheet-container');
           if (sheetContainer.length) {
             containerClasses = sheetContainer.attr('class');
+            console.log('StoryFrame | Extracted container classes from sheet:', containerClasses);
           }
+        }
+
+        // Fallback: build classes manually
+        if (containerClasses === 'journal-sheet-container') {
+          // Add system ID
+          containerClasses += ` ${game.system.id}`;
+          console.log('StoryFrame | Built container classes:', containerClasses);
         }
         // Support all page types (text, image, pdf, video)
         let allPages = journal.pages.map(p => ({
