@@ -108,12 +108,18 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
-        // Extract container classes from journal sheet
-        // Try to get from rendered sheet first
+        // Extract system-specific classes from journal sheet root element
+        // (pf2e-bb, dnd5e, etc. are on the root .app element, not inner container)
         if (journal.sheet?.element?.[0]) {
-          const sheetContainer = journal.sheet.element.find('.journal-sheet-container');
-          if (sheetContainer.length) {
-            containerClasses = sheetContainer.attr('class');
+          const rootClasses = journal.sheet.element.attr('class');
+          // Extract only system/module classes (pf2e-bb, etc.)
+          // Filter out Foundry framework classes
+          const systemClass = rootClasses.split(' ').find(cls =>
+            cls.startsWith('pf2e') || cls.startsWith('dnd5e') || cls.startsWith('swade') ||
+            (cls.includes('-') && !cls.startsWith('window') && !cls.startsWith('journal') && !cls.startsWith('app'))
+          );
+          if (systemClass) {
+            containerClasses = systemClass;
             console.log('StoryFrame | Extracted container classes from sheet:', containerClasses);
           }
         }
