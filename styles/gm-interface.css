@@ -116,12 +116,6 @@
   transform: translateX(0); /* Stable anchor - no transform on selected */
 }
 
-.page-number {
-  flex-shrink: 0;
-  color: var(--color-text-light-secondary); /* Light muted text */
-  font-size: var(--sf-font-sm);
-}
-
 .page-name {
   flex: 1;
   overflow: hidden;
