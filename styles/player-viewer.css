@@ -1,8 +1,12 @@
 /* Player Viewer - Gallery Styling */
 
 /* Base gallery container */
+.storyframe.player-viewer {
+  animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
+}
+
 .storyframe.player-viewer .speaker-gallery {
-  padding: 0.75rem;
+  padding: var(--sf-space-md);
   height: 100%;
   overflow: auto;
 }
@@ -11,7 +15,7 @@
 .storyframe.player-viewer .speaker-gallery.layout-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-  gap: 0.5rem;
+  gap: var(--sf-space-md);
   align-content: start;
 }
 
@@ -19,25 +23,25 @@
 .storyframe.player-viewer .speaker-gallery.layout-list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--sf-space-md);
 }
 
 .storyframe.player-viewer .speaker-gallery.layout-list .speaker-item {
   flex-direction: row;
-  padding: 0.5rem;
+  padding: var(--sf-space-sm);
 }
 
 .storyframe.player-viewer .speaker-gallery.layout-list .speaker-item img {
   width: 50px;
   height: 50px;
-  margin-right: 0.75rem;
+  margin-right: var(--sf-space-md);
 }
 
 /* Horizontal row layout */
 .storyframe.player-viewer .speaker-gallery.layout-horizontal {
   display: flex;
   flex-direction: row;
-  gap: 0.5rem;
+  gap: var(--sf-space-md);
   overflow-x: auto;
   overflow-y: hidden;
   align-items: flex-start;
@@ -48,22 +52,29 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 0.25rem;
+  padding: var(--sf-space-xs);
   border: 2px solid transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
+  border-radius: var(--sf-radius-md);
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+  will-change: transform;
+}
+
+.storyframe.player-viewer .speaker-item:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: var(--sf-shadow-lg);
 }
 
 .storyframe.player-viewer .speaker-item img {
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--sf-radius-md);
 }
 
 .storyframe.player-viewer .speaker-name {
-  font-size: 0.75rem;
-  margin-top: 0.25rem;
+  font-size: var(--sf-font-sm);
+  letter-spacing: 0.01em;
+  margin-top: var(--sf-space-xs);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -74,17 +85,18 @@
 /* Active speaker highlight - border + shadow (matches GM interface) */
 .storyframe.player-viewer .speaker-item.active {
   border-color: var(--color-text-hyperlink);
-  box-shadow: 0 0 8px var(--color-shadow-highlight);
+  box-shadow: var(--sf-shadow-focus);
+  transform: scale(1.05);
 }
 
 /* Empty state */
 .storyframe.player-viewer .empty-state {
   text-align: center;
-  color: var(--color-text-dark-secondary);
-  padding: 2rem 1rem;
+  color: var(--sf-text-muted);
+  padding: var(--sf-space-2xl) var(--sf-space-lg);
 }
 
 .storyframe.player-viewer .empty-state .hint {
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  font-size: var(--sf-font-sm);
+  margin-top: var(--sf-space-sm);
 }

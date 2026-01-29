@@ -5,6 +5,7 @@
   display: flex;
   flex-direction: column;
   height: 100%;
+  animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
 }
 
 /* Header with Journal Selector */
@@ -95,6 +96,7 @@
   background: var(--color-bg-option);
   border-left: 3px solid var(--color-text-hyperlink);
   font-weight: 600;
+  transform: translateX(0); /* Stable anchor - no transform on selected */
 }
 
 .page-number {
@@ -271,19 +273,22 @@
   position: relative;
   cursor: pointer;
   border: 2px solid transparent;
-  border-radius: 4px;
-  transition: all 0.2s;
-  padding: 0.25rem;
+  border-radius: var(--sf-radius-md);
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+  padding: var(--sf-space-xs);
+  will-change: transform;
 }
 
 .speaker-thumbnail:hover {
   border-color: var(--color-border-highlight);
-  transform: scale(1.05);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: var(--sf-shadow-lg);
 }
 
 .speaker-thumbnail.active {
   border-color: var(--color-text-hyperlink);
-  box-shadow: 0 0 8px var(--color-shadow-highlight);
+  box-shadow: var(--sf-shadow-focus);
+  transform: scale(1.05);
 }
 
 .speaker-thumbnail.deleted {
@@ -294,7 +299,7 @@
   width: 100%;
   aspect-ratio: 1;
   object-fit: cover;
-  border-radius: 4px;
+  border-radius: var(--sf-radius-md);
 }
 
 .speaker-name {
@@ -313,14 +318,15 @@
   top: 4px;
   right: 4px;
   background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
   border: none;
   color: white;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
+  border-radius: var(--sf-radius-full);
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: all var(--sf-transition-fast) var(--sf-ease-out);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -333,6 +339,11 @@
 
 .remove-speaker:hover {
   background: rgba(0, 0, 0, 0.9);
+  transform: scale(1.1);
+}
+
+.remove-speaker:active {
+  transform: scale(0.95);
 }
 
 /* Empty State */
