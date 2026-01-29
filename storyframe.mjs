@@ -60,7 +60,7 @@ Hooks.once('socketlib.ready', () => {
 // Hook: getSceneControlButtons (register GM button)
 Hooks.on('getSceneControlButtons', (controls) => {
   console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
-  console.log(`${MODULE_ID} | controls.token:`, controls.token);
+  console.log(`${MODULE_ID} | Available controls:`, Object.keys(controls));
 
   if (!game.user?.isGM) return;
 
