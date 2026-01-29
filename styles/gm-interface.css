@@ -39,6 +39,7 @@
 .three-column-layout {
   display: flex;
   flex: 1;
+  min-height: 0;
 }
 
 /* Left: Page TOC */
@@ -110,6 +111,7 @@
   padding: 1.5rem;
   background: var(--color-bg-content);
   overflow: hidden;
+  min-height: 0;
 }
 
 .page-header {
@@ -130,6 +132,7 @@
   overflow-y: auto;
   overflow-x: hidden;
   line-height: 1.6;
+  min-height: 0;
 }
 
 /* Content images */
