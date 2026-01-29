@@ -1,0 +1,39 @@
+{
+  "id": "storyframe",
+  "title": "Storyframe",
+  "description": "GM journal reader with synchronized speaker portraits for players",
+  "version": "1.0.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "authors": [
+    {
+      "name": "RoiLeaf",
+      "discord": "RoiLeaf",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "storyframe.mjs"
+  ],
+  "socket": true,
+  "relationships": {
+    "requires": [
+      {
+        "id": "socketlib",
+        "type": "module"
+      }
+    ]
+  },
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "flags": {
+    "canUpload": true
+  }
+}
