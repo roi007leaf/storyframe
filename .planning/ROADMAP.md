@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Module scaffold, data layer, socket security
 - [x] **Phase 2: GM Interface** - Control window, journal picker, speaker management
-- [x] **Phase 3: Player Viewer** - Synchronized read-only display with speaker portraits
+- [ ] **Phase 3: Player Viewer** - Gallery view with all speakers, layout options, real-time updates
 - [ ] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
 
 ## Phase Details
@@ -25,9 +25,9 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Requirements**: FOUN-01, FOUN-02, FOUN-03, DATA-01, DATA-02, DATA-03, DATA-04, DATA-05, DATA-06, DATA-07
 **Success Criteria** (what must be TRUE):
   1. Module loads in Foundry without manifest errors
-  2. Module initializes in correct hook sequence (init→setup→ready)
+  2. Module initializes in correct hook sequence (init->setup->ready)
   3. StateManager persists speaker data to document flags and restores on reload
-  4. SocketManager handles GM→player broadcasts with permission validation
+  4. SocketManager handles GM->player broadcasts with permission validation
   5. Flag schema includes version number for future migrations
 **Plans**: 2 plans
 
@@ -54,20 +54,23 @@ Plans:
 - [x] 02-02-PLAN.md — GMInterfaceApp class and UI trigger
 
 ### Phase 3: Player Viewer
-**Goal**: Players see current speaker portrait and name in real-time
+**Goal**: Players see speaker gallery with all conversation participants, highlighted active speaker, and layout options
 **Depends on**: Phase 2
 **Requirements**: PLAY-01, PLAY-02, PLAY-03, PLAY-04, PLAY-05, PLAY-06, PLAY-07
 **Success Criteria** (what must be TRUE):
   1. Player can open viewer window
-  2. Viewer shows current speaker portrait + name
-  3. Viewer updates automatically when GM changes speaker
-  4. Viewer hides when GM clears speaker (narration)
-  5. Viewer is read-only (no edit controls visible)
-  6. Viewer works with deleted actors (graceful fallback to placeholder)
+  2. Viewer shows ALL speakers in gallery (not just active)
+  3. Active speaker highlighted in gallery
+  4. Viewer updates automatically when GM changes speaker
+  5. Gallery stays visible during narration (no active highlight)
+  6. Player can toggle layout (grid/list/horizontal)
+  7. Layout preference persists per player
+  8. Viewer is read-only (no edit controls visible)
+  9. Viewer works with deleted actors (graceful fallback to placeholder)
 **Plans**: 1 plan
 
 Plans:
-- [x] 03-01-PLAN.md — PlayerViewerApp class, template, CSS, and hook integration
+- [ ] 03-01-PLAN.md — PlayerViewerApp with gallery display, layout toggle, and hook integration
 
 ### Phase 4: Polish
 **Goal**: Refined UX with persistence and power-user features
@@ -86,11 +89,11 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
-| 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
-| 4. Polish | 0/TBD | Ready | - |
+| 3. Player Viewer | 0/1 | Re-planned | - |
+| 4. Polish | 0/TBD | Not started | - |
