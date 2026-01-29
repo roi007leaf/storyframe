@@ -15,7 +15,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Module scaffold, data layer, socket security
 - [x] **Phase 2: GM Interface** - Control window, journal picker, speaker management
 - [x] **Phase 3: Player Viewer** - Gallery view with all speakers, layout options, real-time updates
-- [ ] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
+- [x] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
+- [ ] **Phase 5: Journal Integration & UI Polish** - CSS scraper, edit button, drag-drop fix, design improvements
 
 ## Phase Details
 
@@ -87,10 +88,27 @@ Plans:
 - [x] 04-01-PLAN.md — Window state persistence (position validation, minimized state, auto-reopen)
 - [x] 04-02-PLAN.md — Keyboard shortcuts (configurable keybindings)
 
+### Phase 5: Journal Integration & UI Polish
+**Goal**: Professional journal rendering with GM editing workflow and restored drag-drop
+**Depends on**: Phase 4
+**Success Criteria** (what must be TRUE):
+  1. Journal custom styles render correctly in StoryFrame content
+  2. Styles update when GM edits journal while StoryFrame open
+  3. GM can click edit button to open journal's native editor
+  4. Images from journal content can be dragged to add speakers
+  5. UI feels polished with proper typography, spacing, transitions
+  6. Active speaker highlight is visually prominent
+**Plans**: 3 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — CSS scraper and journal style integration
+- [ ] 05-02-PLAN.md — Edit button, drag-drop verification, design tokens
+- [ ] 05-03-PLAN.md — Comprehensive UI polish (visual checkpoint)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -98,3 +116,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
 | 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
 | 4. Polish | 2/2 | Complete | 2026-01-29 |
+| 5. Journal Integration & UI Polish | 0/3 | Ready | - |
