@@ -7,14 +7,14 @@ const MODULE_ID = 'storyframe';
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
-  console.log(`${MODULE_ID} | Initializing`);
-
-  // Create namespace for module
+  // Create namespace for module (MUST be first - other hooks depend on this)
   game.storyframe = {
     stateManager: null,
     socketManager: null,
     gmApp: null
   };
+  console.log(`${MODULE_ID} | Initializing`);
+  console.log(`${MODULE_ID} | Namespace created:`, !!game.storyframe);
 
   // Register settings (must be in init hook)
   try {
