@@ -9,18 +9,18 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 3 of 4 (Player Viewer)
-Plan: 1 of 1 in current phase
-Status: Complete and verified
-Last activity: 2026-01-29 — Phase 3 complete with gallery view (9/9 must-haves verified)
+Phase: 4 of 4 (Polish)
+Plan: 2 of 3 in current phase
+Status: In progress
+Last activity: 2026-01-29 — Completed 04-02-PLAN.md (keyboard shortcuts)
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 13min
+- Total plans completed: 7
+- Average duration: 11min
 - Total execution time: 1.4 hours
 
 **By Phase:**
@@ -30,10 +30,11 @@ Progress: [████████░░] 75%
 | 1. Foundation | 2/2 | 3min | 1.5min |
 | 2. GM Interface | 2/2 | 57min | 28.5min |
 | 3. Player Viewer | 1/1 | 3min | 3min |
+| 4. Polish | 2/3 | 4min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (1min), 02-02 (56min), 03-01 (68min initial), 03-01 (3min re-impl)
-- Trend: Re-implementations faster than initial builds
+- Last 5 plans: 02-02 (56min), 03-01 (68min initial), 03-01 (3min re-impl), 04-01 (3min), 04-02 (1min)
+- Trend: Polish tasks executing very quickly
 
 *Updated after each plan completion*
 
@@ -87,6 +88,11 @@ From 03-01 (gallery re-implementation):
 - 3 layout modes: grid/list/horizontal with client setting persistence
 - Same icon (fas fa-book-open) for GM and player buttons
 
+From 04-02:
+- Single keybinding for both user types (toggleStoryFrame)
+- Ctrl+Shift+S default, configurable via Foundry Controls settings
+- onDown handler toggles window visibility based on isGM check
+
 ### Pending Todos
 
 None yet.
@@ -97,6 +103,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T16:54:54Z
-Stopped at: Completed 03-01-PLAN.md (gallery re-implementation)
+Last session: 2026-01-29T17:17:23Z
+Stopped at: Completed 04-02-PLAN.md (keyboard shortcuts)
 Resume file: None
