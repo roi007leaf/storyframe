@@ -29,10 +29,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. StateManager persists speaker data to document flags and restores on reload
   4. SocketManager handles GM→player broadcasts with permission validation
   5. Flag schema includes version number for future migrations
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 01-01-PLAN.md — Module scaffold (manifest, hooks, entry point)
+- [ ] 01-02-PLAN.md — Data layer (StateManager, SocketManager)
 
 ### Phase 2: GM Interface
 **Goal**: GM can select journal, manage speakers, and broadcast active speaker
@@ -88,7 +89,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/TBD | Not started | - |
+| 1. Foundation | 0/2 | Ready to execute | - |
 | 2. GM Interface | 0/TBD | Not started | - |
 | 3. Player Viewer | 0/TBD | Not started | - |
 | 4. Polish | 0/TBD | Not started | - |
