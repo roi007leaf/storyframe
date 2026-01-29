@@ -137,11 +137,8 @@
   min-height: 0;
 }
 
-/* Journal page article */
+/* Journal page article - minimal overrides */
 .journal-entry-page {
-  background: var(--color-bg-content);
-  color: var(--color-text-light-primary);
-  padding: 0;
   min-height: 100%;
 }
 
@@ -157,56 +154,13 @@
   color: var(--color-text-dark-primary);
 }
 
-/* Scope all journal-page-content styles to StoryFrame only */
-.storyframe-container .journal-page-content {
-  max-width: var(--sf-content-width);
-  margin: 0 auto;
-  padding: var(--sf-space-xl);
-  line-height: var(--sf-leading-relaxed);
-}
-
-.storyframe-container .journal-page-content p {
-  margin-bottom: var(--sf-space-md);
-}
-
-.storyframe-container .journal-page-content h1,
-.storyframe-container .journal-page-content h2,
-.storyframe-container .journal-page-content h3 {
-  margin-top: var(--sf-space-lg);
-  margin-bottom: var(--sf-space-sm);
-  line-height: var(--sf-leading-tight);
-}
-
-.storyframe-container .journal-page-content h1 {
-  font-size: var(--sf-font-xl);
-}
-
-.storyframe-container .journal-page-content h2 {
-  font-size: var(--sf-font-lg);
-}
-
-.storyframe-container .journal-page-content h3 {
-  font-size: var(--sf-font-base);
-  font-weight: 600;
-}
-
-/* Ensure images work properly */
+/* Minimal content styles - let system CSS handle typography/layout */
 .storyframe-container .journal-page-content img {
-  max-width: 100%;
-  height: auto;
   cursor: grab;
 }
 
 .storyframe-container .journal-page-content img:active {
   cursor: grabbing;
-}
-
-.storyframe-container .journal-page-content figure {
-  margin: 1rem 0;
-}
-
-.storyframe-container .journal-page-content figure img {
-  margin: 0;
 }
 
 /* Right: Speakers Sidebar */
