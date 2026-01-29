@@ -18,6 +18,7 @@
     "storyframe.mjs"
   ],
   "styles": [
+    "styles/design-tokens.css",
     "styles/gm-interface.css",
     "styles/player-viewer.css"
   ],
