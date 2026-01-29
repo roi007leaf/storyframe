@@ -1,15 +1,15 @@
-<div class="speaker-display">
-  {{#if noSpeaker}}
-    <div class="no-speaker">
-      <p>No speaker active</p>
-      <p class="hint">Waiting for GM...</p>
+<div class="speaker-gallery layout-{{layout}}">
+  {{#if empty}}
+    <div class="empty-state">
+      <p>No speakers yet</p>
+      <p class="hint">Waiting for GM to add speakers...</p>
     </div>
   {{else}}
-    <div class="speaker-portrait">
-      <img src="{{speaker.img}}" alt="{{speaker.name}}">
-    </div>
-    <div class="speaker-info">
-      <h2>{{speaker.name}}</h2>
-    </div>
+    {{#each speakers}}
+      <div class="speaker-item {{#if (eq this.id ../activeSpeakerId)}}active{{/if}}">
+        <img src="{{this.img}}" alt="{{this.name}}">
+        <span class="speaker-name">{{this.name}}</span>
+      </div>
+    {{/each}}
   {{/if}}
 </div>

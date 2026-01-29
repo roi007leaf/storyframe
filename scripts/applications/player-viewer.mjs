@@ -2,7 +2,7 @@ const MODULE_ID = 'storyframe';
 
 /**
  * Player Viewer for StoryFrame
- * Read-only window showing current speaker portrait and name
+ * Gallery view showing ALL speakers with active highlight
  */
 export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
 
@@ -10,15 +10,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     id: 'storyframe-player-viewer',
     classes: ['storyframe', 'player-viewer'],
     window: {
-      title: 'StoryFrame - Current Speaker',
+      title: 'StoryFrame',
       resizable: true,
       minimizable: true,
-      icon: 'fas fa-user'
+      icon: 'fas fa-book-open'
     },
     position: {
-      width: 300,
-      height: 400
-    }
+      width: 400,
+      height: 300
+    },
+    actions: {}
   };
 
   static PARTS = {
@@ -27,28 +28,48 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     }
   };
 
+  static HEADER_ACTIONS = {
+    toggleLayout: {
+      icon: 'fas fa-th',
+      label: 'Toggle Layout',
+      onclick: function() {
+        this._onToggleLayout();
+      }
+    }
+  };
+
+  constructor(options = {}) {
+    super(options);
+
+    // Load saved position
+    const savedPosition = game.settings.get(MODULE_ID, 'playerViewerPosition');
+    if (savedPosition && Object.keys(savedPosition).length > 0) {
+      this.position = { ...this.position, ...savedPosition };
+    }
+  }
+
   async _prepareContext(options) {
     const state = game.storyframe.stateManager.getState();
+    const layout = game.settings.get(MODULE_ID, 'playerViewerLayout') || 'grid';
 
-    // No active speaker - show empty state
-    if (!state?.activeSpeaker) {
-      return { noSpeaker: true };
+    // No speakers - show empty state
+    if (!state?.speakers || state.speakers.length === 0) {
+      return { empty: true, layout };
     }
 
-    // Find speaker in list
-    const speaker = state.speakers.find(s => s.id === state.activeSpeaker);
-    if (!speaker) {
-      console.warn(`${MODULE_ID} | Active speaker ID not found in speaker list`);
-      return { noSpeaker: true };
-    }
-
-    // Resolve actor with deleted handling
-    const speakerData = await this._resolveSpeaker(speaker);
+    // Resolve ALL speakers
+    const speakers = await this._resolveSpeakers(state.speakers);
 
     return {
-      speaker: speakerData,
-      noSpeaker: false
+      speakers,
+      activeSpeakerId: state.activeSpeaker,
+      layout,
+      empty: false
     };
+  }
+
+  async _resolveSpeakers(speakers) {
+    return Promise.all(speakers.map(s => this._resolveSpeaker(s)));
   }
 
   async _resolveSpeaker(speaker) {
@@ -56,22 +77,47 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       const actor = await fromUuid(speaker.actorUuid);
       if (actor) {
         return {
+          id: speaker.id,
           img: actor.img,
           name: actor.name
         };
       } else {
         // Actor deleted - use fallback
         return {
-          img: speaker.imagePath || 'icons/svg/mystery-man.svg',
+          id: speaker.id,
+          img: 'icons/svg/mystery-man.svg',
           name: speaker.label || 'Unknown'
         };
       }
     } else {
       // Custom image path
       return {
+        id: speaker.id,
         img: speaker.imagePath || 'icons/svg/mystery-man.svg',
         name: speaker.label
       };
     }
+  }
+
+  async _onToggleLayout() {
+    const current = game.settings.get(MODULE_ID, 'playerViewerLayout') || 'grid';
+    const layouts = ['grid', 'list', 'horizontal'];
+    const currentIndex = layouts.indexOf(current);
+    const nextLayout = layouts[(currentIndex + 1) % layouts.length];
+
+    await game.settings.set(MODULE_ID, 'playerViewerLayout', nextLayout);
+    this.render();
+  }
+
+  async _onClose(options) {
+    // Save window position
+    await game.settings.set(MODULE_ID, 'playerViewerPosition', {
+      top: this.position.top,
+      left: this.position.left,
+      width: this.position.width,
+      height: this.position.height
+    });
+
+    return super._onClose(options);
   }
 }
