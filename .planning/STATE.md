@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-01-29)
 
 **Core value:** GM can read journal dialogue without interruption while players see who's speaking
-**Current focus:** Phase 4 - Polish
+**Current focus:** Phase 5 - Journal Integration & UI Polish
 
 ## Current Position
 
-Phase: 4 of 4 (Polish)
-Plan: 2 of 2 in current phase
-Status: Complete and verified
-Last activity: 2026-01-29 — Phase 4 complete with persistence + keyboard shortcuts (4/4 must-haves verified)
+Phase: 5 of 5 (Journal Integration & UI Polish)
+Plan: 2 of 2
+Status: Phase complete
+Last activity: 2026-01-29 — Completed 05-02-PLAN.md (GM edit workflow & design foundation)
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 8
-- Average duration: 10min
-- Total execution time: 1.5 hours
+- Total plans completed: 10
+- Average duration: 7min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [██████████] 100%
 | 2. GM Interface | 2/2 | 57min | 28.5min |
 | 3. Player Viewer | 1/1 | 3min | 3min |
 | 4. Polish | 2/2 | 3min | 1.5min |
+| 5. Integration/Polish | 2/2 | 4min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min re-impl), 04-01 (2min), 04-02 (1min)
-- Trend: Polish tasks executing very quickly due to solid foundation
+- Last 5 plans: 04-01 (2min), 04-02 (1min), 05-01 (2min), 05-02 (2min)
+- Trend: Consistently fast execution, solid foundation enables rapid feature additions
 
 *Updated after each plan completion*
 
@@ -102,6 +103,12 @@ From 04-02:
 - App instances cached in game.storyframe namespace for toggle logic
 - Precedence NORMAL, unrestricted (available to all users)
 
+From 05-02:
+- HEADER_ACTIONS for edit button (v13 ApplicationV2 pattern)
+- Fixed selector .page-content → .journal-page-content for drag-drop
+- Design tokens CSS with --sf- prefix, 1.25 typography scale, 8px spacing base
+- Comprehensive shadow system for layered depth
+
 ### Pending Todos
 
 None yet.
@@ -110,8 +117,16 @@ None yet.
 
 None yet.
 
+### Roadmap Evolution
+
+- Phase 5 added: Journal Integration & UI Polish
+  - CSS scraper for journal styling
+  - Edit button for GM journal access
+  - Drag-drop fix for images→speakers
+  - Design quality improvements
+
 ## Session Continuity
 
-Last session: 2026-01-29T17:18:09Z
-Stopped at: Completed 04-01-PLAN.md (window state persistence)
+Last session: 2026-01-29T17:54:46Z
+Stopped at: Completed 05-02-PLAN.md (GM edit workflow & design foundation)
 Resume file: None
