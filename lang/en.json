@@ -1,0 +1,9 @@
+{
+  "STORYFRAME": {
+    "Title": "StoryFrame",
+    "Settings": {
+      "Debug": "Debug Mode",
+      "DebugHint": "Enable debug logging to console"
+    }
+  }
+}
