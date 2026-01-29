@@ -64,10 +64,10 @@ Plans:
   4. Viewer hides when GM clears speaker (narration)
   5. Viewer is read-only (no edit controls visible)
   6. Viewer works with deleted actors (graceful fallback to placeholder)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] TBD (planned during phase planning)
+- [ ] 03-01-PLAN.md — PlayerViewerApp class, template, CSS, and hook integration
 
 ### Phase 4: Polish
 **Goal**: Refined UX with persistence and power-user features
@@ -92,5 +92,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 2/2 | Complete | 2026-01-29 |
 | 2. GM Interface | 2/2 | Complete | 2026-01-29 |
-| 3. Player Viewer | 0/TBD | Ready | - |
+| 3. Player Viewer | 0/1 | Ready | - |
 | 4. Polish | 0/TBD | Not started | - |
