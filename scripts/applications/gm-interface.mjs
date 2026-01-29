@@ -147,6 +147,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           .map(p => ({
             name: p.name,
             type: p.type,
+            level: p.title?.level || 1, // Get page level for indentation
             _page: p
           }));
 

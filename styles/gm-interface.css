@@ -90,6 +90,20 @@
   transition: all var(--sf-transition-base) var(--sf-ease-out);
 }
 
+/* Hierarchical indentation based on page level */
+.page-item.level1 {
+  padding-left: var(--sf-space-md);
+  font-weight: 600;
+}
+
+.page-item.level2 {
+  padding-left: calc(var(--sf-space-md) + 1.5rem);
+}
+
+.page-item.level3 {
+  padding-left: calc(var(--sf-space-md) + 3rem);
+}
+
 .page-item:hover {
   background: var(--sf-bg-hover);
   transform: translateX(2px);

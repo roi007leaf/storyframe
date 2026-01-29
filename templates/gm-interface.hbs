@@ -24,7 +24,7 @@
     <div class="page-list">
       {{#if pages.length}}
         {{#each pages}}
-          <div class="page-item {{#if (eq @index ../currentPageIndex)}}selected{{/if}}"
+          <div class="page-item level{{this.level}} {{#if (eq @index ../currentPageIndex)}}selected{{/if}}"
                data-action="selectPage"
                data-page-index="{{@index}}"
                title="{{this.name}}">
