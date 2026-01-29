@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 4 of 4 (Polish)
-Plan: 2 of 3 in current phase
+Plan: 1 of 3 in current phase
 Status: In progress
-Last activity: 2026-01-29 — Completed 04-02-PLAN.md (keyboard shortcuts)
+Last activity: 2026-01-29 — Completed 04-01-PLAN.md (window state persistence)
 
 Progress: [████████░░] 78%
 
@@ -20,7 +20,7 @@ Progress: [████████░░] 78%
 
 **Velocity:**
 - Total plans completed: 7
-- Average duration: 11min
+- Average duration: 10min
 - Total execution time: 1.4 hours
 
 **By Phase:**
@@ -30,10 +30,10 @@ Progress: [████████░░] 78%
 | 1. Foundation | 2/2 | 3min | 1.5min |
 | 2. GM Interface | 2/2 | 57min | 28.5min |
 | 3. Player Viewer | 1/1 | 3min | 3min |
-| 4. Polish | 2/3 | 4min | 2min |
+| 4. Polish | 1/3 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 02-02 (56min), 03-01 (68min initial), 03-01 (3min re-impl), 04-01 (3min), 04-02 (1min)
+- Last 5 plans: 03-01 (68min initial), 03-01 (3min re-impl), 04-01 (2min)
 - Trend: Polish tasks executing very quickly
 
 *Updated after each plan completion*
@@ -88,10 +88,13 @@ From 03-01 (gallery re-implementation):
 - 3 layout modes: grid/list/horizontal with client setting persistence
 - Same icon (fas fa-book-open) for GM and player buttons
 
-From 04-02:
-- Single keybinding for both user types (toggleStoryFrame)
-- Ctrl+Shift+S default, configurable via Foundry Controls settings
-- onDown handler toggles window visibility based on isGM check
+From 04-01:
+- validatePosition helper clamps window positions to screen bounds
+- Inline validatePosition in each app (avoids ESModule import issues)
+- gmWindowWasOpen setting tracks auto-open intent separate from position
+- _stateRestored flag pattern prevents duplicate initialization
+- Minimized state saved on close, restored on first render only
+- Journal selection restores from StateManager flags automatically
 
 ### Pending Todos
 
@@ -103,6 +106,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-29T17:17:23Z
-Stopped at: Completed 04-02-PLAN.md (keyboard shortcuts)
+Last session: 2026-01-29T17:18:09Z
+Stopped at: Completed 04-01-PLAN.md (window state persistence)
 Resume file: None
