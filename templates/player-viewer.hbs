@@ -1,3 +1,22 @@
+{{#if pendingRolls.length}}
+<div class="roll-prompts">
+  {{#each pendingRolls}}
+    <div class="roll-prompt" data-request-id="{{this.id}}">
+      <div class="prompt-content">
+        <span class="skill-name">{{this.skillName}}</span>
+        <span class="prompt-text">Check Requested</span>
+      </div>
+      <button type="button"
+              class="roll-btn"
+              data-action="executeRoll"
+              data-request-id="{{this.id}}">
+        <i class="fas fa-dice-d20"></i> Roll
+      </button>
+    </div>
+  {{/each}}
+</div>
+{{/if}}
+
 <div class="speaker-gallery layout-{{layout}}">
   {{#if empty}}
     <div class="empty-state">
