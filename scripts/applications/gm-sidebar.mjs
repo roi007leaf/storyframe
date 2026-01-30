@@ -1,31 +1,22 @@
 const MODULE_ID = 'storyframe';
 
-function validatePosition(saved) {
-  return {
-    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
-    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
-    width: Math.max(200, Math.min(saved.width || 300, window.innerWidth)),
-    height: Math.max(150, Math.min(saved.height || 500, window.innerHeight))
-  };
-}
-
 /**
  * GM Sidebar for StoryFrame
- * Separate window for NPCs and PCs management
+ * Drawer-style window that attaches to the right side of the main GM Interface
  */
 export class GMSidebarApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
 
   static DEFAULT_OPTIONS = {
     id: 'storyframe-gm-sidebar',
-    classes: ['storyframe', 'gm-sidebar'],
+    classes: ['storyframe', 'gm-sidebar', 'drawer'],
     window: {
-      title: 'StoryFrame - Characters',
+      title: 'Characters',
       icon: 'fas fa-users',
-      resizable: true,
-      minimizable: true
+      resizable: false,
+      minimizable: false
     },
     position: {
-      width: 300,
+      width: 280,
       height: 500
     },
     actions: {
@@ -52,6 +43,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   };
 
+  /** @type {GMInterfaceApp|null} Reference to the parent interface */
+  parentInterface = null;
+
+  /** @type {Function|null} Bound handler for parent position changes */
+  _parentPositionHandler = null;
+
   constructor(options = {}) {
     super(options);
     this._stateRestored = false;
@@ -61,10 +58,119 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.selectedParticipants = new Set();
     this.currentDC = null;
 
-    // Load saved position
-    const savedPosition = game.settings.get(MODULE_ID, 'gmSidebarPosition');
-    if (savedPosition && Object.keys(savedPosition).length > 0) {
-      this.position = { ...this.position, ...validatePosition(savedPosition) };
+    // Store reference to parent interface (stored as gmApp in game.storyframe)
+    this.parentInterface = game.storyframe?.gmApp || null;
+  }
+
+  /**
+   * Position the drawer adjacent to the parent interface
+   * @param {number} retryCount - Number of retry attempts remaining
+   */
+  _positionAsDrawer(retryCount = 3) {
+    if (!this.parentInterface?.rendered || !this.parentInterface.element) {
+      console.warn('StoryFrame | Drawer: Parent interface not ready, parentInterface:', this.parentInterface);
+      // Retry if we have attempts left
+      if (retryCount > 0) {
+        console.log(`StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`);
+        setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
+      }
+      return;
+    }
+
+    // Get parent position from the actual DOM element for accuracy
+    const parentEl = this.parentInterface.element;
+    const parentRect = parentEl.getBoundingClientRect();
+
+    console.log('StoryFrame | Drawer positioning - parent rect:', {
+      left: parentRect.left,
+      right: parentRect.right,
+      top: parentRect.top,
+      width: parentRect.width,
+      height: parentRect.height
+    });
+
+    // Check if parent has valid dimensions (not at 0,0 with no size)
+    if (parentRect.width === 0 || parentRect.height === 0) {
+      console.warn('StoryFrame | Drawer: Parent has no dimensions yet');
+      if (retryCount > 0) {
+        console.log(`StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`);
+        setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
+      }
+      return;
+    }
+
+    // Position to the right of the parent window
+    const newLeft = parentRect.right;
+    const newTop = parentRect.top;
+    const newHeight = parentRect.height;
+
+    // Check if it would go off-screen, if so position to the left instead
+    const maxLeft = window.innerWidth - this.position.width;
+    let adjustedLeft = newLeft;
+
+    if (newLeft > maxLeft) {
+      // Position to the left of parent instead
+      adjustedLeft = Math.max(0, parentRect.left - this.position.width);
+    }
+
+    console.log('StoryFrame | Drawer final position:', { left: adjustedLeft, top: newTop, height: newHeight });
+
+    // Use setPosition for ApplicationV2
+    this.setPosition({
+      left: adjustedLeft,
+      top: newTop,
+      height: newHeight
+    });
+
+    // Also set directly on the element as a fallback (some ApplicationV2 implementations need this)
+    if (this.element) {
+      this.element.style.left = `${adjustedLeft}px`;
+      this.element.style.top = `${newTop}px`;
+      this.element.style.height = `${newHeight}px`;
+    }
+  }
+
+  /**
+   * Start tracking parent window movements
+   */
+  _startTrackingParent() {
+    if (!this.parentInterface) {
+      console.warn('StoryFrame | Drawer: Cannot track parent - no parent interface');
+      return;
+    }
+
+    if (!this.parentInterface.element) {
+      console.warn('StoryFrame | Drawer: Cannot track parent - no parent element');
+      return;
+    }
+
+    // Create a MutationObserver to watch for style changes on parent element
+    this._parentObserver = new MutationObserver((mutations) => {
+      if (this.rendered && this.parentInterface?.rendered) {
+        // Only reposition if style actually changed
+        for (const mutation of mutations) {
+          if (mutation.attributeName === 'style') {
+            this._positionAsDrawer(0); // No retries during tracking updates
+            break;
+          }
+        }
+      }
+    });
+
+    console.log('StoryFrame | Drawer: Starting to track parent element');
+    this._parentObserver.observe(this.parentInterface.element, {
+      attributes: true,
+      attributeFilter: ['style']
+    });
+  }
+
+  /**
+   * Stop tracking parent window movements
+   */
+  _stopTrackingParent() {
+    if (this._parentObserver) {
+      this._parentObserver.disconnect();
+      this._parentObserver = null;
     }
   }
 
@@ -164,13 +270,46 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   async _onRender(context, options) {
     super._onRender(context, options);
     this._attachDragDropHandlers();
+    this._disableWindowDrag();
 
+    // Position as drawer on first render
     if (!this._stateRestored) {
-      const wasMinimized = game.settings.get(MODULE_ID, 'gmSidebarMinimized');
-      if (wasMinimized) {
-        this.minimize();
-      }
+      // Get fresh reference to parent
+      this.parentInterface = game.storyframe?.gmApp || null;
+      console.log('StoryFrame | Drawer: Got parent reference:', this.parentInterface);
+      console.log('StoryFrame | Drawer: Parent rendered:', this.parentInterface?.rendered);
+      console.log('StoryFrame | Drawer: Parent element:', this.parentInterface?.element);
+
+      // Use setTimeout to ensure parent element is fully in DOM and positioned
+      setTimeout(() => {
+        // Position adjacent to parent (with retry logic)
+        this._positionAsDrawer(5); // Allow up to 5 retries
+
+        // Start tracking parent movements after positioning
+        setTimeout(() => {
+          this._startTrackingParent();
+        }, 100);
+      }, 100); // Increased delay to give parent more time
+
       this._stateRestored = true;
+    } else {
+      // On subsequent renders, re-position as drawer
+      this._positionAsDrawer(0);
+    }
+  }
+
+  /**
+   * Disable window dragging for drawer mode
+   */
+  _disableWindowDrag() {
+    const header = this.element.querySelector('.window-header');
+    if (header) {
+      // Prevent mousedown from initiating drag
+      header.addEventListener('mousedown', (e) => {
+        // Allow clicks on buttons
+        if (e.target.closest('button, a')) return;
+        e.stopPropagation();
+      }, true);
     }
   }
 
@@ -296,13 +435,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   async _onClose(options) {
-    await game.settings.set(MODULE_ID, 'gmSidebarPosition', {
-      top: this.position.top,
-      left: this.position.left,
-      width: this.position.width,
-      height: this.position.height
-    });
-    await game.settings.set(MODULE_ID, 'gmSidebarMinimized', this.minimized);
+    // Stop tracking parent movements
+    this._stopTrackingParent();
 
     return super._onClose(options);
   }
@@ -566,38 +700,42 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     const rect = target.getBoundingClientRect();
     menu.style.cssText = `
       position: fixed;
-      top: ${rect.top - 10}px;
-      left: ${rect.right + 5}px;
+      top: ${rect.top}px;
+      left: ${rect.right + 8}px;
       z-index: 10000;
-      background: var(--color-bg-option);
-      border: 1px solid var(--color-border-dark);
-      border-radius: 4px;
-      padding: 4px;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 8px;
+      padding: 6px;
       display: flex;
       flex-direction: column;
       gap: 2px;
-      max-height: 300px;
+      max-height: 320px;
       overflow-y: auto;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     `;
 
     // Add click handlers
     menu.querySelectorAll('.skill-option').forEach(btn => {
       btn.style.cssText = `
-        padding: 6px 12px;
+        padding: 8px 14px;
         background: transparent;
         border: none;
-        color: var(--color-text-dark-primary);
+        color: #e0e0e0;
         cursor: pointer;
         text-align: left;
-        border-radius: 3px;
-        font-size: 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.15s ease;
       `;
       btn.addEventListener('mouseenter', () => {
-        btn.style.background = 'var(--color-bg-btn-hover)';
+        btn.style.background = 'rgba(94, 129, 172, 0.3)';
+        btn.style.color = '#ffffff';
       });
       btn.addEventListener('mouseleave', () => {
         btn.style.background = 'transparent';
+        btn.style.color = '#e0e0e0';
       });
       btn.addEventListener('click', async () => {
         const skillSlug = btn.dataset.skill;

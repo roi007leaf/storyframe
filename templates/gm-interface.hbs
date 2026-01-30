@@ -10,6 +10,11 @@
       </select>
     </div>
     <div class="header-actions">
+      {{#if selectedJournal}}
+      <button type="button" data-action="editJournal" title="Edit Journal" aria-label="Edit journal in native editor">
+        <i class="fas fa-edit" aria-hidden="true"></i>
+      </button>
+      {{/if}}
       <button type="button" data-action="toggleSidebar" title="Toggle Characters Sidebar" aria-label="Toggle characters sidebar">
         <i class="fas fa-users" aria-hidden="true"></i>
       </button>
@@ -23,7 +28,6 @@
       <input type="search"
              name="page-search"
              placeholder="Search pages..."
-             data-action="searchPages"
              autocomplete="off"
              aria-label="Search pages">
     </div>

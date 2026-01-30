@@ -85,23 +85,25 @@
 
       {{#if hasParticipants}}
       <div class="check-request-bar" role="toolbar" aria-label="Skill check controls">
-        <div class="selection-info">
-          <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
-          <button type="button" data-action="toggleSelectAll" class="link-btn" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
-            {{#if allSelected}}None{{else}}All{{/if}}
-          </button>
-        </div>
+        <div class="bar-top">
+          <div class="selection-info">
+            <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
+            <button type="button" data-action="toggleSelectAll" class="link-btn" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
+              {{#if allSelected}}None{{else}}All{{/if}}
+            </button>
+          </div>
 
-        <div class="dc-selector">
-          <label class="label" for="dc-select">DC</label>
-          <select id="dc-select" data-action="setDCSelect" aria-label="Difficulty class">
-            <option value="" {{#unless currentDC}}selected{{/unless}}>--</option>
-            <option value="10" {{#if (eq currentDC 10)}}selected{{/if}}>10</option>
-            <option value="15" {{#if (eq currentDC 15)}}selected{{/if}}>15</option>
-            <option value="20" {{#if (eq currentDC 20)}}selected{{/if}}>20</option>
-            <option value="25" {{#if (eq currentDC 25)}}selected{{/if}}>25</option>
-            <option value="30" {{#if (eq currentDC 30)}}selected{{/if}}>30</option>
-          </select>
+          <div class="dc-selector">
+            <label class="label" for="dc-select">DC</label>
+            <select id="dc-select" data-action="setDCSelect" aria-label="Difficulty class">
+              <option value="" {{#unless currentDC}}selected{{/unless}}>--</option>
+              <option value="10" {{#if (eq currentDC 10)}}selected{{/if}}>10</option>
+              <option value="15" {{#if (eq currentDC 15)}}selected{{/if}}>15</option>
+              <option value="20" {{#if (eq currentDC 20)}}selected{{/if}}>20</option>
+              <option value="25" {{#if (eq currentDC 25)}}selected{{/if}}>25</option>
+              <option value="30" {{#if (eq currentDC 30)}}selected{{/if}}>30</option>
+            </select>
+          </div>
         </div>
 
         <div class="skill-actions" role="group" aria-label="Quick skill buttons">

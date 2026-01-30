@@ -8,7 +8,7 @@ export class CSSScraper {
   }
 
   /**
-   * Extract all CSS rules from document stylesheets
+   * Extract journal-relevant CSS rules from document stylesheets
    * @param {JournalEntry} journal - Journal document to extract CSS for
    * @returns {string} Concatenated CSS text
    */
@@ -22,6 +22,16 @@ export class CSSScraper {
 
     const styles = [];
 
+    // Keywords that indicate journal/premium module CSS
+    const journalKeywords = [
+      'journal', 'pf2e', 'dnd5e', 'swade',
+      'outlaws', 'bloodlords', 'gatewalkers', 'stolenfate',
+      'skyking', 'seasonofghosts', 'wardensofwildwood',
+      'curtaincall', 'triumphofthetusk', 'sporewar',
+      'beginner-box', 'abomination-vaults', 'kingmaker',
+      'page-content', 'entry-page', 'text-content'
+    ];
+
     // Iterate all stylesheets
     for (let i = 0; i < document.styleSheets.length; i++) {
       const sheet = document.styleSheets[i];
@@ -33,9 +43,14 @@ export class CSSScraper {
         for (let j = 0; j < rules.length; j++) {
           const rule = rules[j];
 
-          // Include all rules (will be namespaced)
           if (rule.cssText) {
-            styles.push(rule.cssText);
+            // Only include rules that look journal-related
+            const ruleText = rule.cssText.toLowerCase();
+            const isJournalRelated = journalKeywords.some(kw => ruleText.includes(kw));
+
+            if (isJournalRelated) {
+              styles.push(rule.cssText);
+            }
           }
         }
       } catch (e) {
@@ -48,6 +63,7 @@ export class CSSScraper {
       }
     }
 
+    console.log(`CSSScraper | Extracted ${styles.length} journal-related CSS rules`);
     const cssText = styles.join('\n');
     this.cache.set(journal.uuid, cssText);
     return cssText;

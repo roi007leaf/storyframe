@@ -33,7 +33,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     actions: {
       selectPage: GMInterfaceApp._onSelectPage,
       searchPages: GMInterfaceApp._onSearchPages,
-      toggleSidebar: GMInterfaceApp._onToggleSidebar
+      toggleSidebar: GMInterfaceApp._onToggleSidebar,
+      editJournal: GMInterfaceApp._onEditJournal
     }
   };
 
@@ -230,6 +231,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   async _onRender(context, options) {
     super._onRender(context, options);
     this._attachJournalSelectorHandler();
+    this._attachSearchHandler();
     this._attachContentImageDrag();
 
     // Add system/module classes to root for journal CSS compatibility
@@ -243,6 +245,14 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           this.element.classList.add(cls);
         }
       });
+    }
+
+    // Update journal styles when journal is selected
+    const state = game.storyframe.stateManager.getState();
+    if (state?.activeJournal) {
+      await this._updateJournalStyles(state.activeJournal);
+    } else {
+      this._clearJournalStyles();
     }
 
     // Restore state on first render only
@@ -315,12 +325,33 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         const journalId = e.target.value;
         this.currentPageIndex = 0;
         this.pageSearchFilter = '';
+        // Clear CSS cache when switching journals
+        this.cssScraper.clearAllCache();
         await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
       });
     }
   }
 
+  _attachSearchHandler() {
+    const searchInput = this.element.querySelector('input[name="page-search"]');
+    if (searchInput) {
+      // Set initial value from state
+      searchInput.value = this.pageSearchFilter || '';
+
+      searchInput.addEventListener('input', (e) => {
+        this.pageSearchFilter = e.target.value;
+        this.currentPageIndex = 0; // Reset to first page when searching
+        this.render();
+      });
+    }
+  }
+
   async _onClose(options) {
+    // Close the sidebar drawer if open
+    if (game.storyframe.gmSidebar?.rendered) {
+      game.storyframe.gmSidebar.close();
+    }
+
     // Clean up injected journal styles
     if (this.styleElement) {
       this.styleElement.remove();
@@ -360,7 +391,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  async _onEditJournal() {
+  static async _onEditJournal(event, target) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.activeJournal) {
       ui.notifications.warn('No journal selected');
@@ -378,11 +409,16 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   static async _onToggleSidebar(event, target) {
+    // Get reference to the main interface (stored as gmApp)
+    const mainInterface = game.storyframe.gmApp;
+
     // Create sidebar if it doesn't exist
     if (!game.storyframe.gmSidebar) {
       // Dynamic import to avoid circular dependency
       const { GMSidebarApp } = await import('./gm-sidebar.mjs');
       game.storyframe.gmSidebar = new GMSidebarApp();
+      // Store reference to the main interface
+      game.storyframe.gmSidebar.parentInterface = mainInterface;
       game.storyframe.gmSidebar.render(true);
       return;
     }
@@ -391,6 +427,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (sidebar.rendered) {
       sidebar.close();
     } else {
+      // Update parent reference in case it changed
+      sidebar.parentInterface = mainInterface;
+      sidebar._stateRestored = false; // Reset to re-position
       sidebar.render(true);
     }
   }
@@ -402,8 +441,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     // Extract CSS
     const cssText = this.cssScraper.extractJournalCSS(journal);
 
-    // Namespace rules
-    const scopedCSS = this.cssScraper.namespaceCSSRules(cssText);
+    // Namespace rules to target our journal content area
+    // Use a class selector to avoid ID specificity issues that would override premium module styles
+    const scopedCSS = this.cssScraper.namespaceCSSRules(cssText, '.storyframe.gm-interface');
 
     // Inject into document
     if (!this.styleElement) {

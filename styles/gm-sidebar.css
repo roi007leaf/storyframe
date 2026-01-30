@@ -1,13 +1,69 @@
-/* StoryFrame GM Sidebar Styles */
+/* StoryFrame GM Sidebar Styles - Drawer Mode */
+
+/* Drawer window styling */
+.storyframe.gm-sidebar.drawer {
+  border-top-left-radius: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-left: none !important;
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3), -2px 0 10px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Hide resize handle for drawer */
+.storyframe.gm-sidebar.drawer .window-resize-handle {
+  display: none;
+}
+
+/* Disable dragging on drawer header */
+.storyframe.gm-sidebar.drawer .window-header {
+  cursor: default !important;
+  -webkit-app-region: no-drag;
+}
+
+.storyframe.gm-sidebar.drawer .window-header .window-title {
+  cursor: default !important;
+}
+
+/* Slide animations removed - were causing positioning issues */
+
+/* Compact header for drawer */
+.storyframe.gm-sidebar.drawer .window-header {
+  padding: var(--sf-space-xs) var(--sf-space-sm);
+  min-height: unset;
+}
+
+.storyframe.gm-sidebar.drawer .window-title {
+  font-size: var(--sf-font-sm);
+}
+
+/* Prevent flash/animation on re-render */
+.storyframe.gm-sidebar,
+.storyframe.gm-sidebar *,
+.storyframe.gm-sidebar .window-content,
+.storyframe.gm-sidebar .gm-sidebar-container {
+  animation: none !important;
+  animation-duration: 0s !important;
+}
+
+/* Ensure content is always visible */
+.storyframe.gm-sidebar .window-content,
+.storyframe.gm-sidebar .window-content > *,
+.storyframe.gm-sidebar .gm-sidebar-container,
+.storyframe.gm-sidebar .gm-sidebar-container > * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
 
 .gm-sidebar-container {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: var(--sf-space-md);
-  gap: var(--sf-space-lg);
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  gap: var(--sf-space-md);
   background: var(--color-bg-sidebar);
   color: var(--color-text-light-primary);
+  /* Prevent content flash */
+  animation: none !important;
 }
 
 /* Section Header */
@@ -97,6 +153,8 @@
 .gm-sidebar-container .speaker-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+  grid-auto-rows: min-content;
+  align-content: start;
   gap: var(--sf-space-sm);
   overflow-y: auto;
   flex: 1;
@@ -131,38 +189,29 @@
   cursor: pointer;
   border: 2px solid transparent;
   border-radius: var(--sf-radius-lg);
-  transition: all var(--sf-transition-base) var(--sf-ease-out);
   padding: var(--sf-space-xs);
   background: rgba(0, 0, 0, 0.1);
 }
 
 .gm-sidebar-container .speaker-thumbnail:hover {
   border-color: var(--sf-border-medium);
-  transform: scale(1.05);
   background: rgba(0, 0, 0, 0.15);
 }
 
 .gm-sidebar-container .speaker-thumbnail.active {
   border-color: var(--sf-accent-primary);
-  box-shadow: 0 0 12px rgba(94, 129, 172, 0.5), inset 0 0 20px rgba(94, 129, 172, 0.1);
-  background: rgba(94, 129, 172, 0.1);
+  box-shadow: 0 0 8px rgba(94, 129, 172, 0.4);
+  background: rgba(94, 129, 172, 0.15);
 }
 
-.gm-sidebar-container .speaker-thumbnail.active::after {
-  content: '';
-  position: absolute;
-  inset: -4px;
-  border-radius: calc(var(--sf-radius-lg) + 2px);
-  border: 2px solid var(--sf-accent-primary);
-  opacity: 0.3;
-  pointer-events: none;
-  animation: pulse-ring 2s ease-out infinite;
+.gm-sidebar-container .speaker-thumbnail.active img {
+  box-shadow: inset 0 0 15px rgba(94, 129, 172, 0.3);
+  filter: brightness(1.1);
 }
 
-@keyframes pulse-ring {
-  0% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.1; transform: scale(1.02); }
-  100% { opacity: 0.3; transform: scale(1); }
+.gm-sidebar-container .speaker-thumbnail.active .speaker-name {
+  color: var(--sf-accent-primary);
+  font-weight: 600;
 }
 
 .gm-sidebar-container .speaker-thumbnail.deleted {
@@ -175,11 +224,6 @@
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: var(--sf-radius-md);
-  transition: filter var(--sf-transition-base);
-}
-
-.gm-sidebar-container .speaker-thumbnail:hover img {
-  filter: brightness(1.05);
 }
 
 .gm-sidebar-container .speaker-name {
@@ -277,7 +321,6 @@
   height: 44px;
   border-radius: var(--sf-radius-md);
   cursor: pointer;
-  transition: all var(--sf-transition-base) var(--sf-ease-out);
   border: 2px solid transparent;
   background: rgba(0, 0, 0, 0.2);
 }
@@ -287,17 +330,11 @@
   height: 100%;
   object-fit: cover;
   border-radius: calc(var(--sf-radius-md) - 2px);
-  transition: filter var(--sf-transition-base);
 }
 
 .gm-sidebar-container .participant-token:hover {
-  transform: scale(1.1) translateY(-2px);
   z-index: 1;
   box-shadow: var(--sf-shadow-md);
-}
-
-.gm-sidebar-container .participant-token:hover img {
-  filter: brightness(1.1);
 }
 
 .gm-sidebar-container .participant-token.selected {
@@ -389,15 +426,20 @@
 
 /* Check Request Bar */
 .gm-sidebar-container .check-request-bar {
-  display: grid;
-  grid-template-columns: auto auto 1fr;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
   gap: var(--sf-space-sm);
   padding: var(--sf-space-sm) var(--sf-space-md);
   margin-top: var(--sf-space-sm);
   background: linear-gradient(135deg, rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.1));
   border-radius: var(--sf-radius-lg);
   border: 1px solid var(--sf-border-subtle);
+}
+
+.gm-sidebar-container .check-request-bar .bar-top {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
 }
 
 .gm-sidebar-container .selection-info {
@@ -448,38 +490,50 @@
 }
 
 .gm-sidebar-container .dc-selector select {
-  padding: 4px 8px;
+  padding: 4px 20px 4px 8px;
   border: 1px solid var(--sf-border-subtle);
   border-radius: var(--sf-radius-md);
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
   color: var(--color-text-light-primary);
   font-size: var(--sf-font-sm);
   font-weight: 600;
   cursor: pointer;
   transition: all var(--sf-transition-base);
-  min-width: 50px;
+  min-width: 55px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L2 4h8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 5px center;
+  text-align: center;
+  text-align-last: center;
 }
 
 .gm-sidebar-container .dc-selector select:hover {
   border-color: var(--sf-border-medium);
-  background: rgba(0, 0, 0, 0.25);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .gm-sidebar-container .dc-selector select:focus {
   outline: none;
   border-color: var(--sf-accent-primary);
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.2);
+}
+
+.gm-sidebar-container .dc-selector select option {
+  background: #1a1a2e;
+  color: #e0e0e0;
+  padding: 4px 8px;
 }
 
 /* Skill Action Buttons */
 .gm-sidebar-container .skill-actions {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
   gap: 4px;
-  justify-content: flex-end;
-  flex-wrap: wrap;
 }
 
 .gm-sidebar-container .skill-btn {
-  padding: 6px 10px;
+  padding: 6px 8px;
   background: var(--sf-accent-primary);
   border: none;
   border-radius: var(--sf-radius-md);
@@ -490,6 +544,8 @@
   transition: all var(--sf-transition-base) var(--sf-ease-out);
   text-transform: uppercase;
   letter-spacing: 0.03em;
+  text-align: center;
+  min-width: 0;
 }
 
 .gm-sidebar-container .skill-btn:hover {
@@ -506,6 +562,7 @@
   background: transparent;
   border: 1px dashed var(--sf-border-medium);
   color: var(--sf-text-muted);
+  padding: 6px;
 }
 
 .gm-sidebar-container .skill-btn.more:hover {
