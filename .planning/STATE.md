@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 5 of 5 (Journal Integration & UI Polish)
-Plan: 1 of 2
+Phase: 6 of 6 (PC Participants & PF2e Check Rolls)
+Plan: 1 of 4
 Status: In progress
-Last activity: 2026-01-29 — Completed 05-01-PLAN.md (journal CSS integration)
+Last activity: 2026-01-30 — Completed 06-01-PLAN.md (state foundation for participants)
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 9
-- Average duration: 8min
-- Total execution time: 1.1 hours
+- Total plans completed: 10
+- Average duration: 7min
+- Total execution time: 1.2 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [█████████░] 90%
 | 3. Player Viewer | 1/1 | 3min | 3min |
 | 4. Polish | 2/2 | 3min | 1.5min |
 | 5. Integration/Polish | 1/2 | 2min | 2min |
+| 6. Participants/Rolls | 1/4 | 2min | 2min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (3min), 04-01 (2min), 04-02 (1min), 05-01 (2min)
+- Last 5 plans: 04-01 (2min), 04-02 (1min), 05-01 (2min), 06-01 (2min)
 - Trend: Consistently fast execution, solid foundation enables rapid feature additions
 
 *Updated after each plan completion*
@@ -110,6 +111,13 @@ From 05-01:
 - 200ms delay after closeJournalSheet ensures stylesheets detached
 - Cache invalidation on updateJournalEntry and closeJournalSheet
 
+From 06-01:
+- SCHEMA_VERSION 2 with v1->v2 migration for backward compatibility
+- 50-item FIFO limit on rollHistory to prevent unbounded growth
+- Scene change clears pendingRolls but preserves rollHistory
+- executeAsUser pattern for player-specific socket calls
+- _handlePromptSkillCheck calls playerApp.showRollPrompt() for UI trigger
+
 ### Pending Todos
 
 None yet.
@@ -126,10 +134,15 @@ None yet.
   - Drag-drop fix for images→speakers
   - Design quality improvements
 
+- Phase 6 added: PC Participants & PF2e Check Rolls
+  - GM can define PC conversation participants
+  - Request PF2e system check rolls from participants
+  - Player check roll prompts and result visibility
+
 ## Session Continuity
 
-Last session: 2026-01-29T17:53:13Z
-Stopped at: Completed 05-01-PLAN.md (journal CSS integration)
+Last session: 2026-01-30T11:56:33Z
+Stopped at: Completed 06-01-PLAN.md (state foundation for participants)
 Resume file: None
 
 Config (if exists):
