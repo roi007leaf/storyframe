@@ -210,6 +210,57 @@
         </div>
       </div>
     </div>
+
+    <!-- Roll History Panel -->
+    <div class="roll-history-panel {{#if rollHistoryCollapsed}}collapsed{{/if}}">
+      <div class="panel-header" data-action="toggleRollHistoryPanel">
+        <h3>Roll History</h3>
+        <span class="history-count">{{rollHistory.length}}</span>
+        <i class="fas {{#if rollHistoryCollapsed}}fa-chevron-down{{else}}fa-chevron-up{{/if}}"></i>
+      </div>
+
+      <div class="panel-content">
+        {{#if rollHistory.length}}
+          <div class="history-list">
+            {{#each rollHistory}}
+              <div class="history-item degree-{{this.degreeClass}}">
+                <div class="roll-info">
+                  <span class="participant-name">{{this.participantName}}</span>
+                  <span class="skill-name">{{this.skillName}}</span>
+                </div>
+                <div class="roll-result">
+                  <span class="roll-total">{{this.total}}</span>
+                  <span class="degree-badge">{{this.degreeText}}</span>
+                </div>
+              </div>
+            {{/each}}
+          </div>
+          <button type="button" data-action="clearRollHistory" class="clear-history-btn">
+            <i class="fas fa-trash"></i> Clear History
+          </button>
+        {{else}}
+          <div class="empty-state">
+            <p>No rolls yet</p>
+          </div>
+        {{/if}}
+      </div>
+    </div>
+
+    <!-- Pending Rolls with Cancel -->
+    {{#if pendingRolls.length}}
+    <div class="pending-rolls-panel">
+      <h4>Pending Requests</h4>
+      {{#each pendingRolls}}
+        <div class="pending-item">
+          <span class="participant-name">{{this.participantName}}</span>
+          <span class="skill-name">{{this.skillName}}</span>
+          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" title="Cancel">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      {{/each}}
+    </div>
+    {{/if}}
   </div>
 </div>
 </div>

@@ -47,7 +47,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       setCustomDC: GMInterfaceApp._onSetCustomDC,
       setDCVisibility: GMInterfaceApp._onSetDCVisibility,
       requestSelectedCheck: GMInterfaceApp._onRequestSelectedCheck,
-      requestAllCheck: GMInterfaceApp._onRequestAllCheck
+      requestAllCheck: GMInterfaceApp._onRequestAllCheck,
+      toggleRollHistoryPanel: GMInterfaceApp._onToggleRollHistoryPanel,
+      clearRollHistory: GMInterfaceApp._onClearRollHistory,
+      cancelRoll: GMInterfaceApp._onCancelRoll
     }
   };
 
@@ -81,6 +84,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.selectedParticipants = new Set();
     this.currentDC = 20;
     this.dcVisibility = 'gm'; // 'gm' (hidden) or 'all' (visible to players)
+
+    // Roll history panel state
+    this.rollHistoryCollapsed = false;
 
     // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -270,6 +276,34 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       })
     );
 
+    // Roll history with resolved names and degree formatting
+    const rollHistory = await Promise.all(
+      (state.rollHistory || []).map(async r => {
+        const participant = state.participants?.find(p => p.id === r.participantId);
+        return {
+          ...r,
+          participantName: participant ? await this._resolveParticipantName(participant) : 'Unknown',
+          skillName: this._getSkillName(r.skillSlug),
+          degreeClass: this._getDegreeClass(r.degreeOfSuccess),
+          degreeText: this._getDegreeText(r.degreeOfSuccess)
+        };
+      })
+    );
+    // Reverse to show most recent first
+    rollHistory.reverse();
+
+    // Pending rolls with names
+    const pendingRolls = await Promise.all(
+      (state.pendingRolls || []).map(async r => {
+        const participant = state.participants?.find(p => p.id === r.participantId);
+        return {
+          ...r,
+          participantName: participant ? await this._resolveParticipantName(participant) : 'Unknown',
+          skillName: this._getSkillName(r.skillSlug)
+        };
+      })
+    );
+
     console.log('StoryFrame | Final containerClasses for template:', containerClasses);
 
     return {
@@ -289,7 +323,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       participants,
       hasParticipants: participants.length > 0,
       currentDC: this.currentDC,
-      dcVisibility: this.dcVisibility
+      dcVisibility: this.dcVisibility,
+      rollHistoryCollapsed: this.rollHistoryCollapsed,
+      rollHistory,
+      pendingRolls
     };
   }
 
@@ -710,6 +747,40 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   /**
+   * Get CSS class for degree of success.
+   */
+  _getDegreeClass(degree) {
+    switch(degree) {
+      case 2: return 'critical-success';
+      case 1: return 'success';
+      case 0: return 'failure';
+      case -1: return 'critical-failure';
+      default: return 'unknown';
+    }
+  }
+
+  /**
+   * Get display text for degree of success.
+   */
+  _getDegreeText(degree) {
+    switch(degree) {
+      case 2: return 'Crit Success';
+      case 1: return 'Success';
+      case 0: return 'Failure';
+      case -1: return 'Crit Fail';
+      default: return '?';
+    }
+  }
+
+  /**
+   * Resolve participant name from actorUuid.
+   */
+  async _resolveParticipantName(participant) {
+    const actor = await fromUuid(participant.actorUuid);
+    return actor?.name || 'Unknown';
+  }
+
+  /**
    * Request skill check for specified participants.
    */
   async _requestSkillCheck(skillSlug, participantIds) {
@@ -909,5 +980,35 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
     // Prompt for skill selection
     ui.notifications.info('Select a skill button, then click this to request from all');
+  }
+
+  // --- Roll History Action Handlers ---
+
+  static async _onToggleRollHistoryPanel(event, target) {
+    this.rollHistoryCollapsed = !this.rollHistoryCollapsed;
+    this.render();
+  }
+
+  static async _onClearRollHistory(event, target) {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Clear Roll History' },
+      content: '<p>Clear all roll history for this scene?</p>',
+      yes: { label: 'Clear' },
+      no: { label: 'Cancel', default: true },
+      rejectClose: false
+    });
+
+    if (confirmed) {
+      await game.storyframe.stateManager.clearRollHistory();
+      ui.notifications.info('Roll history cleared');
+    }
+  }
+
+  static async _onCancelRoll(event, target) {
+    const requestId = target.closest('[data-request-id]')?.dataset.requestId;
+    if (!requestId) return;
+
+    await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+    ui.notifications.info('Roll request cancelled');
   }
 }
