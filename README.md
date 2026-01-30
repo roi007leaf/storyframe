@@ -52,10 +52,7 @@ A Foundry VTT module that enhances narrative gameplay by providing GMs with a de
 ## Installation
 
 1. In Foundry VTT, go to **Add-on Modules** > **Install Module**
-2. Search for "StoryFrame" or paste this manifest URL:
-   ```
-   https://github.com/[author]/storyframe/releases/latest/download/module.json
-   ```
+2. Search for "StoryFrame" 
 3. Enable the module in your world
 
 ## Usage
