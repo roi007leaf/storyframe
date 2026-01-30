@@ -20,6 +20,7 @@
   "styles": [
     "styles/design-tokens.css",
     "styles/gm-interface.css",
+    "styles/gm-sidebar.css",
     "styles/player-viewer.css"
   ],
   "socket": true,

@@ -1,4 +1,4 @@
-<div class="storyframe-container journal-sheet journal-entry themed theme-light {{containerClasses}}">
+<div class="storyframe-container">
   <div class="storyframe-header">
     <div class="journal-selector">
       <label>Journal:</label>
@@ -9,9 +9,14 @@
         {{/each}}
       </select>
     </div>
+    <div class="header-actions">
+      <button type="button" data-action="toggleSidebar" title="Toggle Characters Sidebar">
+        <i class="fas fa-users"></i>
+      </button>
+    </div>
   </div>
 
-  <div class="three-column-layout">
+  <div class="two-column-layout">
   <!-- Left: Page TOC -->
   <div class="page-toc">
     <div class="toc-header">
@@ -46,7 +51,8 @@
   <!-- Middle: Content Area -->
   <section class="content-area journal-entry-content flexcol">
     {{#if currentPageContent}}
-      <div class="journal-entry-pages single-page">
+      <!-- Module classes only on the journal content wrapper -->
+      <div class="journal-entry-pages single-page journal-sheet journal-entry themed theme-light {{containerClasses}}">
         <div class="scrollable">
           <article class="journal-entry-page {{pageType}} {{#if pageLevel}}level{{pageLevel}}{{/if}}" data-page-type="{{pageType}}">
             <header class="journal-page-header">
@@ -69,189 +75,5 @@
       </div>
     {{/if}}
   </section>
-
-  <!-- Right: Speakers Gallery -->
-  <div class="speakers-sidebar">
-    <div class="sidebar-header">
-      <h3>Speakers</h3>
-      <div class="sidebar-actions">
-        <button type="button" data-action="addSpeakerFromImage" title="Add speaker from image">
-          <i class="fas fa-plus"></i>
-        </button>
-        <button type="button" data-action="clearSpeaker" title="Clear active speaker">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    </div>
-
-    <div class="speaker-gallery">
-      {{#if hasSpeakers}}
-        {{#each speakers}}
-          <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
-               data-action="setSpeaker"
-               data-speaker-id="{{this.id}}"
-               title="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}">
-            <img src="{{this.img}}" alt="{{this.name}}">
-            <div class="speaker-name">{{this.name}}</div>
-            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" title="Remove">
-              <i class="fas fa-times"></i>
-            </button>
-          </div>
-        {{/each}}
-      {{else}}
-        <div class="empty-state">
-          <p>No speakers</p>
-          <p>Drag actors here or use +</p>
-        </div>
-      {{/if}}
-    </div>
-
-    <!-- Participants Panel (collapsible, separate from speakers) -->
-    <div class="participants-panel {{#if participantsPanelCollapsed}}collapsed{{/if}}">
-      <div class="panel-header" data-action="toggleParticipantsPanel">
-        <h3>Participants</h3>
-        <i class="fas {{#if participantsPanelCollapsed}}fa-chevron-down{{else}}fa-chevron-up{{/if}}"></i>
-      </div>
-
-      <div class="panel-content">
-        <div class="participant-actions">
-          <button type="button" data-action="addAllPCs" title="Add all player characters">
-            <i class="fas fa-users"></i> Add All PCs
-          </button>
-        </div>
-
-        <div class="participant-list" data-drop-zone="participant">
-          {{#if hasParticipants}}
-            {{#each participants}}
-              <div class="participant-item {{#if this.selected}}selected{{/if}}"
-                   data-action="toggleParticipantSelection"
-                   data-participant-id="{{this.id}}">
-                <img src="{{this.img}}" alt="{{this.name}}">
-                <span class="participant-name">{{this.name}}</span>
-                <button type="button" class="remove-participant"
-                        data-action="removeParticipant"
-                        data-participant-id="{{this.id}}"
-                        title="Remove">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-            {{/each}}
-          {{else}}
-            <div class="empty-state">
-              <p>No participants</p>
-              <p>Drag PC actors here or Add All PCs</p>
-            </div>
-          {{/if}}
-        </div>
-
-        <!-- Skill Check Request Section -->
-        <div class="skill-request-section">
-          <div class="quick-skills">
-            {{#each quickButtonSkills}}
-              <button type="button" data-action="requestSkill" data-skill="{{this.slug}}" title="{{this.name}}">
-                {{#if (eq this.slug 'per')}}<i class="fas fa-eye"></i>{{/if}}
-                {{this.shortName}}
-              </button>
-            {{/each}}
-            <button type="button" data-action="openSkillMenu" title="More skills...">
-              <i class="fas fa-ellipsis-h"></i>
-            </button>
-          </div>
-
-          <div class="dc-input">
-            <label>DC:</label>
-            <div class="dc-presets">
-              <button type="button" data-action="setDC" data-dc="10">10</button>
-              <button type="button" data-action="setDC" data-dc="15">15</button>
-              <button type="button" data-action="setDC" data-dc="20" class="{{#unless currentDC}}selected{{/unless}}{{#if (eq currentDC 20)}}selected{{/if}}">20</button>
-              <button type="button" data-action="setDC" data-dc="25">25</button>
-              <button type="button" data-action="setDC" data-dc="30">30</button>
-            </div>
-            <input type="number" name="custom-dc" value="{{currentDC}}" min="1" max="60"
-                   data-action="setCustomDC" placeholder="DC">
-          </div>
-
-          <!-- DC Visibility Control -->
-          <div class="dc-visibility">
-            <label>DC Visibility:</label>
-            <div class="visibility-options">
-              <label class="radio-option">
-                <input type="radio" name="dc-visibility" value="gm"
-                       {{#if (eq dcVisibility 'gm')}}checked{{/if}}
-                       data-action="setDCVisibility">
-                <span>Hidden (GM only)</span>
-              </label>
-              <label class="radio-option">
-                <input type="radio" name="dc-visibility" value="all"
-                       {{#if (eq dcVisibility 'all')}}checked{{/if}}
-                       data-action="setDCVisibility">
-                <span>Visible to players</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="request-actions">
-            <button type="button" data-action="requestSelectedCheck" class="request-btn">
-              Request Check
-            </button>
-            <button type="button" data-action="requestAllCheck" class="request-all-btn" title="Request from all participants">
-              <i class="fas fa-users"></i> All
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Roll History Panel -->
-    <div class="roll-history-panel {{#if rollHistoryCollapsed}}collapsed{{/if}}">
-      <div class="panel-header" data-action="toggleRollHistoryPanel">
-        <h3>Roll History</h3>
-        <span class="history-count">{{rollHistory.length}}</span>
-        <i class="fas {{#if rollHistoryCollapsed}}fa-chevron-down{{else}}fa-chevron-up{{/if}}"></i>
-      </div>
-
-      <div class="panel-content">
-        {{#if rollHistory.length}}
-          <div class="history-list">
-            {{#each rollHistory}}
-              <div class="history-item degree-{{this.degreeClass}}">
-                <div class="roll-info">
-                  <span class="participant-name">{{this.participantName}}</span>
-                  <span class="skill-name">{{this.skillName}}</span>
-                </div>
-                <div class="roll-result">
-                  <span class="roll-total">{{this.total}}</span>
-                  <span class="degree-badge">{{this.degreeText}}</span>
-                </div>
-              </div>
-            {{/each}}
-          </div>
-          <button type="button" data-action="clearRollHistory" class="clear-history-btn">
-            <i class="fas fa-trash"></i> Clear History
-          </button>
-        {{else}}
-          <div class="empty-state">
-            <p>No rolls yet</p>
-          </div>
-        {{/if}}
-      </div>
-    </div>
-
-    <!-- Pending Rolls with Cancel -->
-    {{#if pendingRolls.length}}
-    <div class="pending-rolls-panel">
-      <h4>Pending Requests</h4>
-      {{#each pendingRolls}}
-        <div class="pending-item">
-          <span class="participant-name">{{this.participantName}}</span>
-          <span class="skill-name">{{this.skillName}}</span>
-          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" title="Cancel">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-      {{/each}}
-    </div>
-    {{/if}}
-  </div>
 </div>
 </div>

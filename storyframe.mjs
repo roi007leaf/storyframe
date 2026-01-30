@@ -1,6 +1,7 @@
 import { StateManager } from './scripts/state-manager.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
+import { GMSidebarApp } from './scripts/applications/gm-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 
 // Module constants
@@ -28,7 +29,8 @@ Hooks.once('init', () => {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null
+      gmApp: null,
+      gmSidebar: null
     };
   }
 
@@ -76,6 +78,20 @@ Hooks.once('init', () => {
     default: false
   });
 
+  game.settings.register(MODULE_ID, 'gmSidebarPosition', {
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {}
+  });
+
+  game.settings.register(MODULE_ID, 'gmSidebarMinimized', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
@@ -98,8 +114,8 @@ Hooks.once('init', () => {
     type: String,
     default: 'per,dec,dip,itm,prf',
     onChange: () => {
-      // Re-render GM interface if open
-      game.storyframe.gmApp?.render();
+      // Re-render GM sidebar if open
+      game.storyframe.gmSidebar?.render();
     }
   });
 
@@ -112,14 +128,19 @@ Hooks.once('init', () => {
     ],
     onDown: () => {
       if (game.user.isGM) {
-        // Toggle GM interface
+        // Toggle GM interface and sidebar together
         if (!game.storyframe?.gmApp) {
           game.storyframe.gmApp = new GMInterfaceApp();
         }
+        if (!game.storyframe?.gmSidebar) {
+          game.storyframe.gmSidebar = new GMSidebarApp();
+        }
         if (game.storyframe.gmApp.rendered) {
           game.storyframe.gmApp.close();
+          game.storyframe.gmSidebar.close();
         } else {
           game.storyframe.gmApp.render(true);
+          game.storyframe.gmSidebar.render(true);
         }
       } else {
         // Toggle player viewer
@@ -154,7 +175,8 @@ Hooks.once('socketlib.ready', () => {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null
+      gmApp: null,
+      gmSidebar: null
     };
   }
 
@@ -185,7 +207,11 @@ Hooks.on('getSceneControlButtons', (controls) => {
         if (!game.storyframe?.gmApp) {
           game.storyframe.gmApp = new GMInterfaceApp();
         }
+        if (!game.storyframe?.gmSidebar) {
+          game.storyframe.gmSidebar = new GMSidebarApp();
+        }
         game.storyframe.gmApp.render(true);
+        game.storyframe.gmSidebar.render(true);
       },
       button: true
     };
@@ -223,7 +249,9 @@ Hooks.once('ready', async () => {
   // GM auto-open logic (after stateManager.load)
   if (game.user.isGM && game.settings.get(MODULE_ID, 'gmWindowWasOpen')) {
     game.storyframe.gmApp = new GMInterfaceApp();
+    game.storyframe.gmSidebar = new GMSidebarApp();
     game.storyframe.gmApp.render(true);
+    game.storyframe.gmSidebar.render(true);
   }
 
   // Initialize player viewer for non-GM users
@@ -260,9 +288,14 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
   await game.storyframe.stateManager.load();
   const state = game.storyframe.stateManager.getState();
 
-  // Update GM interface if open
-  if (game.user.isGM && game.storyframe.gmApp?.rendered) {
-    game.storyframe.gmApp.render();
+  // Update GM interface and sidebar if open
+  if (game.user.isGM) {
+    if (game.storyframe.gmApp?.rendered) {
+      game.storyframe.gmApp.render();
+    }
+    if (game.storyframe.gmSidebar?.rendered) {
+      game.storyframe.gmSidebar.render();
+    }
   }
 
   // Update player viewer

@@ -1,5 +1,26 @@
 const MODULE_ID = 'storyframe';
 
+// Map short skill slugs to full PF2e skill slugs
+const SKILL_SLUG_MAP = {
+  'per': 'perception', // Special case - uses actor.perception not actor.skills
+  'acr': 'acrobatics',
+  'arc': 'arcana',
+  'ath': 'athletics',
+  'cra': 'crafting',
+  'dec': 'deception',
+  'dip': 'diplomacy',
+  'itm': 'intimidation',
+  'med': 'medicine',
+  'nat': 'nature',
+  'occ': 'occultism',
+  'prf': 'performance',
+  'rel': 'religion',
+  'soc': 'society',
+  'ste': 'stealth',
+  'sur': 'survival',
+  'thi': 'thievery'
+};
+
 // Inline validatePosition
 function validatePosition(saved) {
   return {
@@ -239,12 +260,25 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     // Execute PF2e roll
     try {
       let roll;
+      const fullSlug = SKILL_SLUG_MAP[request.skillSlug] || request.skillSlug;
+
+      // Build roll options - only include DC if set
+      const rollOptions = { skipDialog: false };
+      if (request.dc !== null && request.dc !== undefined) {
+        rollOptions.dc = { value: request.dc };
+      }
+
       if (request.skillSlug === 'per') {
         // Perception uses actor.perception.roll()
-        roll = await actor.perception.roll({ dc: { value: request.dc }, skipDialog: false });
+        roll = await actor.perception.roll(rollOptions);
       } else {
-        // Skills use actor.skills[slug].roll()
-        roll = await actor.skills[request.skillSlug].roll({ dc: { value: request.dc }, skipDialog: false });
+        // Skills use actor.skills[fullSlug].roll()
+        const skill = actor.skills?.[fullSlug];
+        if (!skill) {
+          ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
+          return;
+        }
+        roll = await skill.roll(rollOptions);
       }
 
       // Extract result data

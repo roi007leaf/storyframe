@@ -196,10 +196,16 @@ export class StateManager {
   /**
    * Add a participant to the list.
    * @param {Object} data - { actorUuid, userId }
-   * @returns {Object} Created participant with ID
+   * @returns {Object} Created participant with ID, or existing participant if duplicate
    */
   async addParticipant({ actorUuid, userId }) {
     if (!this.state) return null;
+
+    // Check for duplicate by actorUuid
+    const existing = this.state.participants.find(p => p.actorUuid === actorUuid);
+    if (existing) {
+      return existing; // Return existing instead of adding duplicate
+    }
 
     const participant = {
       id: foundry.utils.randomID(),
