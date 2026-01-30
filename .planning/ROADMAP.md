@@ -17,6 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: Player Viewer** - Gallery view with all speakers, layout options, real-time updates
 - [x] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
 - [ ] **Phase 5: Journal Integration & UI Polish** - CSS scraper, edit button, drag-drop fix, design improvements
+- [ ] **Phase 6: PC Participants & PF2e Check Rolls** - GM defines PC participants, request check rolls from PCs
 
 ## Phase Details
 
@@ -105,10 +106,28 @@ Plans:
 - [ ] 05-02-PLAN.md — Edit button, drag-drop verification, design tokens
 - [ ] 05-03-PLAN.md — Comprehensive UI polish (visual checkpoint)
 
+### Phase 6: PC Participants & PF2e Check Rolls
+**Goal**: GM can define which PC characters are participating in the conversation and request PF2e system check rolls from them
+**Depends on**: Phase 5
+**Success Criteria** (what must be TRUE):
+  1. GM can add/remove PC actors as conversation participants
+  2. GM can request check rolls from individual participants or all participants
+  3. Check roll requests integrate with PF2e system roll mechanics
+  4. Players receive check roll prompts when their PC is a participant
+  5. Check roll results are visible to GM and relevant players
+  6. Participant list persists with conversation state
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — State schema extension for participants and roll tracking
+- [ ] 06-02-PLAN.md — GM participant panel and skill request UI
+- [ ] 06-03-PLAN.md — Player roll prompts and PF2e roll execution
+- [ ] 06-04-PLAN.md — Roll history panel and quick button settings
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -117,3 +136,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5
 | 3. Player Viewer | 1/1 | Complete | 2026-01-29 |
 | 4. Polish | 2/2 | Complete | 2026-01-29 |
 | 5. Journal Integration & UI Polish | 0/3 | Ready | - |
+| 6. PC Participants & PF2e Check Rolls | 0/4 | Ready | - |
