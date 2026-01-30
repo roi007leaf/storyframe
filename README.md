@@ -142,10 +142,6 @@ Enable debug logging in module settings for troubleshooting.
   - **None**: DCs hidden from chat (players still see in roll request UI)
 - **Simple Skill Rolls**: Direct skill checks without action complexity
 
-## License
-
-MIT License
-
 ## Author
 
 RoiLeaf
