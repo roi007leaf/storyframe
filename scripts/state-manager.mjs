@@ -1,12 +1,12 @@
 const MODULE_ID = 'storyframe';
 const FLAG_KEY = 'data';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /**
  * Manages speaker state persistence in Scene flags.
  * State structure:
  * {
- *   version: 1,
+ *   version: 2,
  *   activeJournal: string|null,  // JournalEntry UUID
  *   activeSpeaker: string|null,  // Speaker ID
  *   speakers: [{
@@ -14,6 +14,30 @@ const SCHEMA_VERSION = 1;
  *     actorUuid: string|null,   // Actor UUID for actor-based speakers
  *     imagePath: string|null,   // Direct image path for custom speakers
  *     label: string        // Display name
+ *   }],
+ *   participants: [{      // PC conversation participants
+ *     id: string,          // Unique ID (foundry.utils.randomID)
+ *     actorUuid: string,   // Actor UUID
+ *     userId: string       // User ID
+ *   }],
+ *   pendingRolls: [{      // Requested rolls awaiting completion
+ *     id: string,          // Request ID
+ *     participantId: string,
+ *     skillSlug: string,   // PF2e skill slug (e.g., 'diplomacy')
+ *     dc: {
+ *       value: number,
+ *       visibility: string // 'all', 'owner', 'gm'
+ *     },
+ *     timestamp: number
+ *   }],
+ *   rollHistory: [{       // Completed roll results
+ *     requestId: string,
+ *     participantId: string,
+ *     skillSlug: string,
+ *     total: number,
+ *     degreeOfSuccess: string, // 'criticalSuccess', 'success', 'failure', 'criticalFailure'
+ *     timestamp: number,
+ *     chatMessageId: string|null
  *   }]
  * }
  */
@@ -167,6 +191,144 @@ export class StateManager {
     return { img, name };
   }
 
+  // --- Participant Management ---
+
+  /**
+   * Add a participant to the list.
+   * @param {Object} data - { actorUuid, userId }
+   * @returns {Object} Created participant with ID
+   */
+  async addParticipant({ actorUuid, userId }) {
+    if (!this.state) return null;
+
+    const participant = {
+      id: foundry.utils.randomID(),
+      actorUuid,
+      userId
+    };
+
+    this.state.participants.push(participant);
+    await this._persistState();
+    this._broadcast();
+    return participant;
+  }
+
+  /**
+   * Remove a participant from the list.
+   * @param {string} participantId
+   */
+  async removeParticipant(participantId) {
+    if (!this.state) return;
+
+    this.state.participants = this.state.participants.filter(p => p.id !== participantId);
+
+    // Clear pending rolls for this participant
+    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.participantId !== participantId);
+
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Clear all participants.
+   */
+  async clearAllParticipants() {
+    if (!this.state) return;
+
+    this.state.participants = [];
+    await this._persistState();
+    this._broadcast();
+  }
+
+  // --- Roll Tracking ---
+
+  /**
+   * Add a pending roll request.
+   * @param {Object} rollRequest - { id, participantId, skillSlug, dc, timestamp }
+   */
+  async addPendingRoll(rollRequest) {
+    if (!this.state) return;
+
+    this.state.pendingRolls.push(rollRequest);
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Remove a pending roll by request ID.
+   * @param {string} requestId
+   */
+  async removePendingRoll(requestId) {
+    if (!this.state) return;
+
+    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.id !== requestId);
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Clear all pending rolls for a specific participant.
+   * @param {string} participantId
+   */
+  async clearPendingRollsForParticipant(participantId) {
+    if (!this.state) return;
+
+    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.participantId !== participantId);
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Add a roll result to history.
+   * Enforces 50-item limit (FIFO).
+   * @param {Object} result - { requestId, participantId, skillSlug, total, degreeOfSuccess, timestamp, chatMessageId }
+   */
+  async addRollResult(result) {
+    if (!this.state) return;
+
+    this.state.rollHistory.push(result);
+
+    // Enforce 50-item limit (FIFO)
+    if (this.state.rollHistory.length > 50) {
+      this.state.rollHistory.shift();
+    }
+
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Clear roll history (for scene change).
+   */
+  async clearRollHistory() {
+    if (!this.state) return;
+
+    this.state.rollHistory = [];
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Clear all pending rolls (for scene change).
+   */
+  async clearPendingRolls() {
+    if (!this.state) return;
+
+    this.state.pendingRolls = [];
+    await this._persistState();
+    this._broadcast();
+  }
+
+  /**
+   * Persist state to scene flags.
+   */
+  async _persistState() {
+    const scene = game.scenes.current;
+    if (scene) {
+      await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    }
+  }
+
   /**
    * Create default empty state.
    */
@@ -175,7 +337,10 @@ export class StateManager {
       version: SCHEMA_VERSION,
       activeJournal: null,
       activeSpeaker: null,
-      speakers: []
+      speakers: [],
+      participants: [],
+      pendingRolls: [],
+      rollHistory: []
     };
   }
 
@@ -187,8 +352,13 @@ export class StateManager {
   async _migrate(oldData) {
     console.log(`${MODULE_ID} | Migrating state from v${oldData.version} to v${SCHEMA_VERSION}`);
 
-    // Add migration logic here when schema changes
-    // For now, just update version
+    // Migration: v1 -> v2 (add participants, pendingRolls, rollHistory)
+    if (oldData.version === 1) {
+      oldData.participants = [];
+      oldData.pendingRolls = [];
+      oldData.rollHistory = [];
+    }
+
     oldData.version = SCHEMA_VERSION;
 
     const scene = game.scenes.current;
