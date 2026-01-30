@@ -71,7 +71,6 @@ export class StateManager {
     }
 
     this.state = data;
-    console.log(`${MODULE_ID} | State loaded`, this.state);
   }
 
   /**

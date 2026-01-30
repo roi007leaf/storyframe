@@ -374,7 +374,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * Triggers re-render to display new roll prompt.
    */
   showRollPrompt(requestData) {
-    console.log(`${MODULE_ID} | PlayerViewerApp: showRollPrompt called`, requestData);
     this.render();
   }
 
@@ -442,9 +441,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         if (request.actionSlug && game.pf2e?.actions) {
           actionExecuted = true;
           roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
-          if (!roll) {
-            console.log(`${MODULE_ID} | Action executed but returned no roll result`);
-          }
         }
 
         // PF2e: Basic skill roll if no action
@@ -569,14 +565,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
       if (!pf2eActionSlug) {
-        console.log(`${MODULE_ID} | No PF2e action mapping for: ${actionSlug}`);
         return null;
       }
 
       // Check if the action exists in game.pf2e.actions
       const actionFn = game.pf2e.actions[pf2eActionSlug];
       if (typeof actionFn !== 'function') {
-        console.log(`${MODULE_ID} | PF2e action not found: ${pf2eActionSlug}`);
         return null;
       }
 
@@ -590,8 +584,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       if (rollOptions.dc) {
         actionOptions.difficultyClass = rollOptions.dc;
       }
-
-      console.log(`${MODULE_ID} | Executing PF2e action: ${pf2eActionSlug}`, actionOptions);
 
       // Execute the action - returns an array of results
       const results = await actionFn(actionOptions);

@@ -77,7 +77,6 @@ export class CSSScraper {
       }
     }
 
-    console.log(`CSSScraper | Extracted ${styles.length} journal-related CSS rules`);
     const cssText = styles.join('\n');
     this.cache.set(journal.uuid, cssText);
     return cssText;

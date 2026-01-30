@@ -113,11 +113,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         // (pf2e-bb, dnd5e, etc. are on the root .app element, not inner container)
         if (journal.sheet?.element?.[0]) {
           const rootClasses = journal.sheet.element.attr('class');
-          console.log('StoryFrame | Root element classes:', rootClasses);
           // Extract only system/module classes (pf2e-bb, etc.)
           // Filter out Foundry framework classes
           const allClasses = rootClasses.split(' ');
-          console.log('StoryFrame | All classes array:', allClasses);
           const systemClass = allClasses.find(
             (cls) =>
               cls.startsWith('pf2e') ||
@@ -141,10 +139,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
                 !cls.startsWith('journal') &&
                 !cls.startsWith('app')),
           );
-          console.log('StoryFrame | Found system class:', systemClass);
           if (systemClass) {
             containerClasses = systemClass;
-            console.log('StoryFrame | Extracted container classes from sheet:', containerClasses);
           }
         }
 
@@ -161,8 +157,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           } else if (game.modules.get('pf2e-kingmaker')?.active) {
             containerClasses = 'pf2e-km';
           }
-
-          console.log('StoryFrame | Built container classes:', containerClasses);
         }
         // Support all page types (text, image, pdf, video)
         // Sort by page.sort property to match native journal order
@@ -200,8 +194,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           // Render content based on page type
           switch (page.type) {
             case 'text':
-              console.log('StoryFrame | Page object:', page);
-              console.log('StoryFrame | Raw content:', page.text.content);
               currentPageContent =
                 await foundry.applications.ux.TextEditor.implementation.enrichHTML(
                   page.text.content,
@@ -213,7 +205,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
                     relativeTo: page,
                   },
                 );
-              console.log('StoryFrame | Enriched HTML:', currentPageContent);
               break;
 
             case 'image':
@@ -272,8 +263,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         }
       }
     }
-
-    console.log('StoryFrame | Final containerClasses for template:', containerClasses);
 
     // Get selected journal name for display
     let selectedJournalName = null;
@@ -453,19 +442,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       this._stateRestored = true;
     }
 
-    // Debug: log rendered structure
-    const rootContainer = this.element.querySelector('.storyframe-container');
-    if (rootContainer) {
-      console.log('StoryFrame | Root container classes:', rootContainer.className);
-    }
-
-    const contentArea = this.element.querySelector('.journal-page-content');
-    if (contentArea) {
-      console.log('StoryFrame | Content area classes:', contentArea.className);
-      console.log('StoryFrame | Content area HTML:', contentArea.innerHTML.substring(0, 500));
-      console.log('StoryFrame | Article classes:', contentArea.closest('article')?.className);
-    }
-
     // Initialize Quill editor if in edit mode
     if (this.editMode && context.canEdit) {
       await this._initializeEditor();
@@ -572,8 +548,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           }
         });
       }, 0);
-
-      console.log('StoryFrame | Quill editor initialized');
     } catch (error) {
       console.error('StoryFrame | Failed to initialize Quill editor:', error);
       ui.notifications.error('Failed to initialize editor');
@@ -701,7 +675,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         }
 
         if (!journalUuid) {
-          console.warn(`${MODULE_ID} | Could not parse journal UUID from: ${uuid}`);
           return;
         }
 

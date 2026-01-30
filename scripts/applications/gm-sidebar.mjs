@@ -78,15 +78,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    */
   _positionAsDrawer(retryCount = 3) {
     if (!this.parentInterface?.rendered || !this.parentInterface.element) {
-      console.warn(
-        'StoryFrame | Drawer: Parent interface not ready, parentInterface:',
-        this.parentInterface,
-      );
       // Retry if we have attempts left
       if (retryCount > 0) {
-        console.log(
-          `StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`,
-        );
         setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
       }
       return;
@@ -96,21 +89,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     const parentEl = this.parentInterface.element;
     const parentRect = parentEl.getBoundingClientRect();
 
-    console.log('StoryFrame | Drawer positioning - parent rect:', {
-      left: parentRect.left,
-      right: parentRect.right,
-      top: parentRect.top,
-      width: parentRect.width,
-      height: parentRect.height,
-    });
-
     // Check if parent has valid dimensions (not at 0,0 with no size)
     if (parentRect.width === 0 || parentRect.height === 0) {
-      console.warn('StoryFrame | Drawer: Parent has no dimensions yet');
       if (retryCount > 0) {
-        console.log(
-          `StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`,
-        );
         setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
       }
       return;
@@ -129,12 +110,6 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       // Position to the left of parent instead
       adjustedLeft = Math.max(0, parentRect.left - this.position.width);
     }
-
-    console.log('StoryFrame | Drawer final position:', {
-      left: adjustedLeft,
-      top: newTop,
-      height: newHeight,
-    });
 
     // Use setPosition for ApplicationV2
     this.setPosition({
@@ -156,12 +131,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    */
   _startTrackingParent() {
     if (!this.parentInterface) {
-      console.warn('StoryFrame | Drawer: Cannot track parent - no parent interface');
       return;
     }
 
     if (!this.parentInterface.element) {
-      console.warn('StoryFrame | Drawer: Cannot track parent - no parent element');
       return;
     }
 
@@ -178,7 +151,6 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       }
     });
 
-    console.log('StoryFrame | Drawer: Starting to track parent element');
     this._parentObserver.observe(this.parentInterface.element, {
       attributes: true,
       attributeFilter: ['style'],
@@ -352,9 +324,6 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     if (!this._stateRestored) {
       // Get fresh reference to parent
       this.parentInterface = game.storyframe?.gmApp || null;
-      console.log('StoryFrame | Drawer: Got parent reference:', this.parentInterface);
-      console.log('StoryFrame | Drawer: Parent rendered:', this.parentInterface?.rendered);
-      console.log('StoryFrame | Drawer: Parent element:', this.parentInterface?.element);
 
       // Use setTimeout to ensure parent element is fully in DOM and positioned
       setTimeout(() => {

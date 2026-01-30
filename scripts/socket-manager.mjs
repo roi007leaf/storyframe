@@ -26,8 +26,6 @@ export class SocketManager {
     this.socket.register('promptSkillCheck', this._handlePromptSkillCheck);
     this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
     this.socket.register('openPlayerViewer', this._handleOpenPlayerViewer);
-
-    console.log(`${MODULE_ID} | SocketManager initialized`);
   }
 
   // --- Public API (call from any client) ---
@@ -166,7 +164,6 @@ export class SocketManager {
    * Runs on GM client only (socketlib enforces this).
    */
   async _handleUpdateSpeakers(speakers) {
-    console.log(`${MODULE_ID} | Socket: updateSpeakers`);
     await game.storyframe.stateManager?.updateSpeakers(speakers);
   }
 
@@ -174,7 +171,6 @@ export class SocketManager {
    * Handler: Set active speaker.
    */
   async _handleSetActiveSpeaker(speakerId) {
-    console.log(`${MODULE_ID} | Socket: setActiveSpeaker`, speakerId);
     await game.storyframe.stateManager?.setActiveSpeaker(speakerId);
   }
 
@@ -182,7 +178,6 @@ export class SocketManager {
    * Handler: Set active journal.
    */
   async _handleSetActiveJournal(journalUuid) {
-    console.log(`${MODULE_ID} | Socket: setActiveJournal`, journalUuid);
     await game.storyframe.stateManager?.setActiveJournal(journalUuid);
   }
 
@@ -190,7 +185,6 @@ export class SocketManager {
    * Handler: Add speaker.
    */
   async _handleAddSpeaker(speakerData) {
-    console.log(`${MODULE_ID} | Socket: addSpeaker`, speakerData);
     return await game.storyframe.stateManager?.addSpeaker(speakerData);
   }
 
@@ -198,7 +192,6 @@ export class SocketManager {
    * Handler: Remove speaker.
    */
   async _handleRemoveSpeaker(speakerId) {
-    console.log(`${MODULE_ID} | Socket: removeSpeaker`, speakerId);
     await game.storyframe.stateManager?.removeSpeaker(speakerId);
   }
 
@@ -207,7 +200,6 @@ export class SocketManager {
    * Runs on all clients to sync state.
    */
   _handleStateUpdate(state) {
-    console.log(`${MODULE_ID} | Socket: stateUpdate received`);
     if (game.storyframe.stateManager) {
       game.storyframe.stateManager.state = state;
       // Trigger UI re-render
@@ -223,7 +215,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleAddParticipant(data) {
-    console.log(`${MODULE_ID} | Socket: addParticipant`, data);
     return await game.storyframe.stateManager?.addParticipant(data);
   }
 
@@ -232,7 +223,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleRemoveParticipant(participantId) {
-    console.log(`${MODULE_ID} | Socket: removeParticipant`, participantId);
     await game.storyframe.stateManager?.removeParticipant(participantId);
   }
 
@@ -241,7 +231,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleClearAllParticipants() {
-    console.log(`${MODULE_ID} | Socket: clearAllParticipants`);
     await game.storyframe.stateManager?.clearAllParticipants();
   }
 
@@ -252,7 +241,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleAddPendingRoll(request) {
-    console.log(`${MODULE_ID} | Socket: addPendingRoll`, request);
     await game.storyframe.stateManager?.addPendingRoll(request);
   }
 
@@ -261,7 +249,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleRemovePendingRoll(requestId) {
-    console.log(`${MODULE_ID} | Socket: removePendingRoll`, requestId);
     await game.storyframe.stateManager?.removePendingRoll(requestId);
   }
 
@@ -270,7 +257,6 @@ export class SocketManager {
    * Runs on GM client.
    */
   async _handleSubmitRollResult(result) {
-    console.log(`${MODULE_ID} | Socket: submitRollResult`, result);
     await game.storyframe.stateManager?.addRollResult(result);
     await game.storyframe.stateManager?.removePendingRoll(result.requestId);
   }
@@ -281,8 +267,6 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(requestData) {
-    console.log(`${MODULE_ID} | Socket: promptSkillCheck on player client`, requestData);
-
     // Trigger UI update on player viewer
     if (game.storyframe.playerApp) {
       game.storyframe.playerApp.showRollPrompt(requestData);
@@ -296,8 +280,6 @@ export class SocketManager {
    * Runs on all clients to sync roll history display.
    */
   _handleRollHistoryUpdate(historyData) {
-    console.log(`${MODULE_ID} | Socket: rollHistoryUpdate`, historyData);
-
     // Update local UI displays
     game.storyframe.gmApp?.render();
     game.storyframe.playerApp?.render();
@@ -308,7 +290,6 @@ export class SocketManager {
    * Runs on all clients - opens the player viewer for non-GM users.
    */
   _handleOpenPlayerViewer() {
-    console.log(`${MODULE_ID} | Socket: openPlayerViewer`);
 
     // Only open for non-GM users
     if (game.user.isGM) return;
