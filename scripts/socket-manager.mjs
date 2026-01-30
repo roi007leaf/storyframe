@@ -16,6 +16,16 @@ export class SocketManager {
     this.socket.register('removeSpeaker', this._handleRemoveSpeaker);
     this.socket.register('stateUpdate', this._handleStateUpdate);
 
+    // Register participant and roll handlers
+    this.socket.register('addParticipant', this._handleAddParticipant);
+    this.socket.register('removeParticipant', this._handleRemoveParticipant);
+    this.socket.register('clearAllParticipants', this._handleClearAllParticipants);
+    this.socket.register('addPendingRoll', this._handleAddPendingRoll);
+    this.socket.register('removePendingRoll', this._handleRemovePendingRoll);
+    this.socket.register('submitRollResult', this._handleSubmitRollResult);
+    this.socket.register('promptSkillCheck', this._handlePromptSkillCheck);
+    this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
+
     console.log(`${MODULE_ID} | SocketManager initialized`);
   }
 
@@ -70,6 +80,74 @@ export class SocketManager {
     if (state) {
       this.socket.executeForEveryone('stateUpdate', state);
     }
+  }
+
+  // --- Participant API ---
+
+  /**
+   * Request GM to add a participant.
+   * @param {Object} participantData - { actorUuid, userId }
+   */
+  async requestAddParticipant(participantData) {
+    return await this.socket.executeAsGM('addParticipant', participantData);
+  }
+
+  /**
+   * Request GM to remove a participant.
+   * @param {string} participantId
+   */
+  async requestRemoveParticipant(participantId) {
+    return await this.socket.executeAsGM('removeParticipant', participantId);
+  }
+
+  /**
+   * Request GM to clear all participants.
+   */
+  async requestClearAllParticipants() {
+    return await this.socket.executeAsGM('clearAllParticipants');
+  }
+
+  // --- Roll Tracking API ---
+
+  /**
+   * Request GM to add a pending roll.
+   * @param {Object} rollRequest - { id, participantId, skillSlug, dc, timestamp }
+   */
+  async requestAddPendingRoll(rollRequest) {
+    return await this.socket.executeAsGM('addPendingRoll', rollRequest);
+  }
+
+  /**
+   * Request GM to remove a pending roll.
+   * @param {string} requestId
+   */
+  async requestRemovePendingRoll(requestId) {
+    return await this.socket.executeAsGM('removePendingRoll', requestId);
+  }
+
+  /**
+   * Request GM to submit a roll result.
+   * @param {Object} result - { requestId, participantId, skillSlug, total, degreeOfSuccess, timestamp, chatMessageId }
+   */
+  async requestSubmitRollResult(result) {
+    return await this.socket.executeAsGM('submitRollResult', result);
+  }
+
+  /**
+   * Trigger skill check prompt on a specific player's client.
+   * @param {string} userId - Target user ID
+   * @param {Object} requestData - Roll request data
+   */
+  async triggerSkillCheckOnPlayer(userId, requestData) {
+    return await this.socket.executeAsUser('promptSkillCheck', userId, requestData);
+  }
+
+  /**
+   * Broadcast roll history update to all clients.
+   * @param {Object} historyData - Roll history data
+   */
+  broadcastRollHistoryUpdate(historyData) {
+    this.socket.executeForEveryone('rollHistoryUpdate', historyData);
   }
 
   // --- Handlers (execute on GM client) ---
@@ -127,5 +205,92 @@ export class SocketManager {
       game.storyframe.gmApp?.render();
       game.storyframe.playerApp?.render();
     }
+  }
+
+  // --- Participant Handlers ---
+
+  /**
+   * Handler: Add participant.
+   * Runs on GM client.
+   */
+  async _handleAddParticipant(data) {
+    console.log(`${MODULE_ID} | Socket: addParticipant`, data);
+    return await game.storyframe.stateManager?.addParticipant(data);
+  }
+
+  /**
+   * Handler: Remove participant.
+   * Runs on GM client.
+   */
+  async _handleRemoveParticipant(participantId) {
+    console.log(`${MODULE_ID} | Socket: removeParticipant`, participantId);
+    await game.storyframe.stateManager?.removeParticipant(participantId);
+  }
+
+  /**
+   * Handler: Clear all participants.
+   * Runs on GM client.
+   */
+  async _handleClearAllParticipants() {
+    console.log(`${MODULE_ID} | Socket: clearAllParticipants`);
+    await game.storyframe.stateManager?.clearAllParticipants();
+  }
+
+  // --- Roll Tracking Handlers ---
+
+  /**
+   * Handler: Add pending roll.
+   * Runs on GM client.
+   */
+  async _handleAddPendingRoll(request) {
+    console.log(`${MODULE_ID} | Socket: addPendingRoll`, request);
+    await game.storyframe.stateManager?.addPendingRoll(request);
+  }
+
+  /**
+   * Handler: Remove pending roll.
+   * Runs on GM client.
+   */
+  async _handleRemovePendingRoll(requestId) {
+    console.log(`${MODULE_ID} | Socket: removePendingRoll`, requestId);
+    await game.storyframe.stateManager?.removePendingRoll(requestId);
+  }
+
+  /**
+   * Handler: Submit roll result.
+   * Runs on GM client.
+   */
+  async _handleSubmitRollResult(result) {
+    console.log(`${MODULE_ID} | Socket: submitRollResult`, result);
+    await game.storyframe.stateManager?.addRollResult(result);
+    await game.storyframe.stateManager?.removePendingRoll(result.requestId);
+  }
+
+  /**
+   * Handler: Prompt skill check on player client.
+   * CRITICAL: This runs on the PLAYER's client.
+   * Must call playerApp.showRollPrompt() to display UI.
+   */
+  _handlePromptSkillCheck(requestData) {
+    console.log(`${MODULE_ID} | Socket: promptSkillCheck on player client`, requestData);
+
+    // Trigger UI update on player viewer
+    if (game.storyframe.playerApp) {
+      game.storyframe.playerApp.showRollPrompt(requestData);
+    } else {
+      console.warn(`${MODULE_ID} | playerApp not initialized for roll prompt`);
+    }
+  }
+
+  /**
+   * Handler: Roll history update.
+   * Runs on all clients to sync roll history display.
+   */
+  _handleRollHistoryUpdate(historyData) {
+    console.log(`${MODULE_ID} | Socket: rollHistoryUpdate`, historyData);
+
+    // Update local UI displays
+    game.storyframe.gmApp?.render();
+    game.storyframe.playerApp?.render();
   }
 }
