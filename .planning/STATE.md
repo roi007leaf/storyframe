@@ -10,17 +10,17 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 6 of 6 (PC Participants & PF2e Check Rolls)
-Plan: 2 of 4
+Plan: 3 of 4
 Status: In progress
-Last activity: 2026-01-30 — Completed 06-02-PLAN.md (participants panel & skill request UI)
+Last activity: 2026-01-30 — Completed 06-03-PLAN.md (player roll prompts & execution)
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 7min
+- Total plans completed: 11
+- Average duration: 6.5min
 - Total execution time: 1.2 hours
 
 **By Phase:**
@@ -32,10 +32,10 @@ Progress: [█████████░] 92%
 | 3. Player Viewer | 1/1 | 3min | 3min |
 | 4. Polish | 2/2 | 3min | 1.5min |
 | 5. Integration/Polish | 1/2 | 2min | 2min |
-| 6. Participants/Rolls | 2/4 | 6min | 3min |
+| 6. Participants/Rolls | 3/4 | 8min | 2.7min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (1min), 05-01 (2min), 06-01 (2min), 06-02 (4min)
+- Last 5 plans: 05-01 (2min), 06-01 (2min), 06-02 (4min), 06-03 (2min)
 - Trend: Consistently fast execution, solid foundation enables rapid feature additions
 
 *Updated after each plan completion*
@@ -125,6 +125,13 @@ From 06-02:
 - PC-only validation on participant drop (type='character' check)
 - Participant selection uses Set for efficient toggle operations
 
+From 06-03:
+- Static action handler pattern: ApplicationV2 requires static methods for actions
+- Roll prompts placed above speaker gallery for visibility without blocking
+- Socket-triggered UI updates: showRollPrompt() called by _handlePromptSkillCheck
+- PF2e roll API: actor.perception.roll() for perception, actor.skills[slug].roll() for skills
+- Roll extraction: { total, degreeOfSuccess, chatMessageId } from PF2e result
+
 ### Pending Todos
 
 None yet.
@@ -148,8 +155,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30T12:43:27Z
-Stopped at: Completed 06-02-PLAN.md (participants panel & skill request UI)
+Last session: 2026-01-30T07:01:34Z
+Stopped at: Completed 06-03-PLAN.md (player roll prompts & execution)
 Resume file: None
 
 Config (if exists):
