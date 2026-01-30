@@ -304,6 +304,17 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       })
     );
 
+    // Quick button skills from settings
+    const quickSkillsSetting = game.settings.get(MODULE_ID, 'quickButtonSkills');
+    const quickSkills = quickSkillsSetting.split(',').map(s => s.trim()).filter(Boolean);
+
+    // Map to display data
+    const quickButtonSkills = quickSkills.map(slug => ({
+      slug,
+      name: this._getSkillName(slug),
+      shortName: this._getSkillShortName(slug)
+    }));
+
     console.log('StoryFrame | Final containerClasses for template:', containerClasses);
 
     return {
@@ -326,7 +337,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       dcVisibility: this.dcVisibility,
       rollHistoryCollapsed: this.rollHistoryCollapsed,
       rollHistory,
-      pendingRolls
+      pendingRolls,
+      quickButtonSkills
     };
   }
 
@@ -744,6 +756,19 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       'thi': 'Thievery'
     };
     return skillMap[slug] || slug.toUpperCase();
+  }
+
+  /**
+   * Get short skill name for button labels.
+   */
+  _getSkillShortName(slug) {
+    const shortNames = {
+      per: 'Per', acr: 'Acr', arc: 'Arc', ath: 'Ath', cra: 'Cra',
+      dec: 'Dec', dip: 'Dip', itm: 'Itm', med: 'Med', nat: 'Nat',
+      occ: 'Occ', prf: 'Prf', rel: 'Rel', soc: 'Soc', ste: 'Ste',
+      sur: 'Sur', thi: 'Thi'
+    };
+    return shortNames[slug] || slug.substring(0, 3);
   }
 
   /**

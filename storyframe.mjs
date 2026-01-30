@@ -90,6 +90,19 @@ Hooks.once('init', () => {
     default: false
   });
 
+  game.settings.register(MODULE_ID, 'quickButtonSkills', {
+    name: 'Quick Button Skills',
+    hint: 'Comma-separated skill slugs for quick buttons (e.g., per,dec,dip,itm,prf)',
+    scope: 'world',
+    config: true,
+    type: String,
+    default: 'per,dec,dip,itm,prf',
+    onChange: () => {
+      // Re-render GM interface if open
+      game.storyframe.gmApp?.render();
+    }
+  });
+
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
     name: 'Toggle StoryFrame',

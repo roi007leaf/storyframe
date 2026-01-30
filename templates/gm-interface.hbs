@@ -147,21 +147,12 @@
         <!-- Skill Check Request Section -->
         <div class="skill-request-section">
           <div class="quick-skills">
-            <button type="button" data-action="requestSkill" data-skill="per" title="Perception">
-              <i class="fas fa-eye"></i> Per
-            </button>
-            <button type="button" data-action="requestSkill" data-skill="dec" title="Deception">
-              Dec
-            </button>
-            <button type="button" data-action="requestSkill" data-skill="dip" title="Diplomacy">
-              Dip
-            </button>
-            <button type="button" data-action="requestSkill" data-skill="itm" title="Intimidation">
-              Itm
-            </button>
-            <button type="button" data-action="requestSkill" data-skill="prf" title="Performance">
-              Prf
-            </button>
+            {{#each quickButtonSkills}}
+              <button type="button" data-action="requestSkill" data-skill="{{this.slug}}" title="{{this.name}}">
+                {{#if (eq this.slug 'per')}}<i class="fas fa-eye"></i>{{/if}}
+                {{this.shortName}}
+              </button>
+            {{/each}}
             <button type="button" data-action="openSkillMenu" title="More skills...">
               <i class="fas fa-ellipsis-h"></i>
             </button>
