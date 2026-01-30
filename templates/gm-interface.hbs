@@ -1,8 +1,8 @@
 <div class="storyframe-container">
-  <div class="storyframe-header">
+  <header class="storyframe-header">
     <div class="journal-selector">
-      <label>Journal:</label>
-      <select name="journal" id="journal-selector">
+      <label for="journal-selector">Journal</label>
+      <select name="journal" id="journal-selector" aria-label="Select journal">
         <option value="">-- Select Journal --</option>
         {{#each journals}}
           <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
@@ -10,46 +10,50 @@
       </select>
     </div>
     <div class="header-actions">
-      <button type="button" data-action="toggleSidebar" title="Toggle Characters Sidebar">
-        <i class="fas fa-users"></i>
+      <button type="button" data-action="toggleSidebar" title="Toggle Characters Sidebar" aria-label="Toggle characters sidebar">
+        <i class="fas fa-users" aria-hidden="true"></i>
       </button>
     </div>
-  </div>
+  </header>
 
   <div class="two-column-layout">
   <!-- Left: Page TOC -->
-  <div class="page-toc">
+  <nav class="page-toc" aria-label="Page navigation">
     <div class="toc-header">
-      <input type="text"
+      <input type="search"
              name="page-search"
-             placeholder="Search Pages"
+             placeholder="Search pages..."
              data-action="searchPages"
-             autocomplete="off">
+             autocomplete="off"
+             aria-label="Search pages">
     </div>
-    <div class="page-list">
+    <div class="page-list" role="listbox" aria-label="Journal pages">
       {{#if pages.length}}
         {{#each pages}}
           <div class="page-item level{{this.level}} {{#if (eq @index ../currentPageIndex)}}selected{{/if}}"
                data-action="selectPage"
                data-page-index="{{@index}}"
-               title="{{this.name}}">
+               title="{{this.name}}"
+               role="option"
+               tabindex="0"
+               aria-selected="{{#if (eq @index ../currentPageIndex)}}true{{else}}false{{/if}}">
             <span class="page-name">{{this.name}}</span>
           </div>
         {{/each}}
       {{else}}
-        <div class="empty-state">
+        <div class="empty-state" role="status">
           {{#if selectedJournal}}
-            No pages found
+            <p>No pages found</p>
           {{else}}
-            Select a journal above
+            <p>Select a journal above</p>
           {{/if}}
         </div>
       {{/if}}
     </div>
-  </div>
+  </nav>
 
   <!-- Middle: Content Area -->
-  <section class="content-area journal-entry-content flexcol">
+  <main class="content-area journal-entry-content flexcol" aria-label="Journal content">
     {{#if currentPageContent}}
       <!-- Module classes only on the journal content wrapper -->
       <div class="journal-entry-pages single-page journal-sheet journal-entry themed theme-light {{containerClasses}}">
@@ -69,11 +73,11 @@
         </div>
       </div>
     {{else}}
-      <div class="empty-state">
+      <div class="empty-state" role="status">
         <p>No page selected</p>
         <p>Select a journal and page to view content</p>
       </div>
     {{/if}}
-  </section>
+  </main>
 </div>
 </div>

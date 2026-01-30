@@ -8,6 +8,7 @@
   --sf-font-xs: 0.75rem;     /* 12px - labels, hints */
   --sf-font-sm: 0.875rem;    /* 14px - secondary text */
   --sf-font-base: 1rem;      /* 16px - body text */
+  --sf-font-md: 1rem;        /* alias for base */
   --sf-font-lg: 1.25rem;     /* 20px - section titles */
   --sf-font-xl: 1.563rem;    /* 25px - page headers */
   --sf-font-2xl: 1.953rem;   /* 31px - main titles */
@@ -33,6 +34,7 @@
   --sf-radius-sm: 4px;       /* Small elements */
   --sf-radius-md: 6px;       /* Buttons, inputs */
   --sf-radius-lg: 8px;       /* Cards, panels */
+  --sf-radius-xl: 12px;      /* Large cards */
   --sf-radius-full: 9999px;  /* Pills, circles */
 
   /* === Transitions === */
@@ -47,13 +49,39 @@
   --sf-shadow-md: 0 2px 8px rgba(0, 0, 0, 0.15);
   --sf-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.2);
   --sf-shadow-xl: 0 8px 32px rgba(0, 0, 0, 0.25);
-  --sf-shadow-focus: 0 0 0 3px var(--color-text-hyperlink);
+  --sf-shadow-focus: 0 0 0 3px rgba(94, 129, 172, 0.4);
+  --sf-shadow-glow: 0 0 20px rgba(94, 129, 172, 0.3);
 
   /* === Color Adjustments (enhance Foundry's palette) === */
   --sf-bg-elevated: rgba(255, 255, 255, 0.03);
   --sf-bg-hover: rgba(255, 255, 255, 0.06);
+  --sf-bg-active: rgba(255, 255, 255, 0.1);
   --sf-border-subtle: rgba(255, 255, 255, 0.08);
+  --sf-border-medium: rgba(255, 255, 255, 0.15);
   --sf-text-muted: rgba(255, 255, 255, 0.6);
+
+  /* === Surface Colors (for cards, prompts) === */
+  --sf-surface-primary: rgba(30, 35, 45, 0.95);
+  --sf-surface-secondary: rgba(40, 45, 55, 0.9);
+  --sf-surface-elevated: rgba(50, 55, 65, 0.95);
+
+  /* === Text Colors === */
+  --sf-text-primary: rgba(255, 255, 255, 0.95);
+  --sf-text-secondary: rgba(255, 255, 255, 0.7);
+
+  /* === Accent Colors === */
+  --sf-accent-primary: #5e81ac;
+  --sf-accent-primary-hover: #81a1c1;
+  --sf-accent-success: #a3be8c;
+  --sf-accent-warning: #ebcb8b;
+  --sf-accent-danger: #bf616a;
+
+  /* === Z-Index Scale === */
+  --sf-z-base: 0;
+  --sf-z-dropdown: 100;
+  --sf-z-overlay: 200;
+  --sf-z-modal: 300;
+  --sf-z-toast: 400;
 }
 
 /* === Utility Classes === */
@@ -71,4 +99,74 @@
 
 .sf-fade-in {
   animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
+}
+
+/* Scale in animation */
+@keyframes sf-scale-in {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.sf-scale-in {
+  animation: sf-scale-in var(--sf-transition-slow) var(--sf-ease-spring);
+}
+
+/* Slide in from left */
+@keyframes sf-slide-in-left {
+  from { opacity: 0; transform: translateX(-8px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+/* Shimmer effect for loading states */
+@keyframes sf-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.sf-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--sf-bg-elevated) 25%,
+    var(--sf-bg-hover) 50%,
+    var(--sf-bg-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: sf-shimmer 1.5s ease-in-out infinite;
+}
+
+/* Focus visible for keyboard navigation */
+.sf-focusable:focus-visible {
+  outline: none;
+  box-shadow: var(--sf-shadow-focus);
+}
+
+/* Truncate text with ellipsis */
+.sf-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Scrollbar styling */
+.sf-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: var(--sf-border-medium) transparent;
+}
+
+.sf-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sf-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sf-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--sf-border-medium);
+  border-radius: var(--sf-radius-full);
+}
+
+.sf-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--sf-border-subtle);
 }

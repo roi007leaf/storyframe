@@ -1,88 +1,100 @@
 <div class="gm-sidebar-container">
   <!-- NPCs Section -->
-  <div class="npcs-section">
+  <section class="npcs-section" aria-labelledby="npcs-heading">
     <div class="section-header">
-      <h3>NPCs</h3>
+      <h3 id="npcs-heading">NPCs</h3>
       <div class="section-actions">
-        <button type="button" data-action="addSpeakerFromImage" title="Add NPC from image">
-          <i class="fas fa-plus"></i>
+        <button type="button" data-action="addSpeakerFromImage" title="Add NPC from image" aria-label="Add NPC from image">
+          <i class="fas fa-plus" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="clearSpeaker" title="Clear active NPC">
-          <i class="fas fa-times"></i>
+        <button type="button" data-action="clearSpeaker" title="Clear active NPC" aria-label="Clear active NPC">
+          <i class="fas fa-times" aria-hidden="true"></i>
         </button>
       </div>
     </div>
 
-    <div class="speaker-gallery">
+    <div class="speaker-gallery" role="list" aria-label="NPC speakers">
       {{#if hasSpeakers}}
         {{#each speakers}}
           <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
                data-action="setSpeaker"
                data-speaker-id="{{this.id}}"
-               title="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}">
-            <img src="{{this.img}}" alt="{{this.name}}">
+               title="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
+               role="listitem"
+               tabindex="0"
+               aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
+            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
             <div class="speaker-name">{{this.name}}</div>
-            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" title="Remove">
-              <i class="fas fa-times"></i>
+            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" title="Remove {{this.name}}" aria-label="Remove {{this.name}}">
+              <i class="fas fa-times" aria-hidden="true"></i>
             </button>
           </div>
         {{/each}}
       {{else}}
-        <div class="empty-state">
+        <div class="empty-state" role="status">
           <p>No NPCs</p>
           <p>Drag actors here or use +</p>
         </div>
       {{/if}}
     </div>
-  </div>
+  </section>
 
   <!-- PCs Section -->
-  <div class="pcs-section {{#if pcsPanelCollapsed}}collapsed{{/if}}">
-    <div class="section-header collapsible" data-action="togglePCsPanel">
-      <h3>PCs</h3>
-      <i class="fas {{#if pcsPanelCollapsed}}fa-chevron-down{{else}}fa-chevron-up{{/if}}"></i>
+  <section class="pcs-section {{#if pcsPanelCollapsed}}collapsed{{/if}}" aria-labelledby="pcs-heading">
+    <div class="section-header collapsible"
+         data-action="togglePCsPanel"
+         role="button"
+         tabindex="0"
+         aria-expanded="{{#unless pcsPanelCollapsed}}true{{else}}false{{/unless}}"
+         aria-controls="pcs-panel-content">
+      <h3 id="pcs-heading">PCs</h3>
+      <i class="fas fa-chevron-up" aria-hidden="true"></i>
     </div>
 
-    <div class="panel-content">
-      <div class="participant-portraits" data-drop-zone="participant">
+    <div class="panel-content" id="pcs-panel-content">
+      <div class="participant-portraits" data-drop-zone="participant" role="list" aria-label="Player characters">
         {{#if hasParticipants}}
           {{#each participants}}
             <div class="participant-token {{#if this.selected}}selected{{/if}}"
                  data-action="toggleParticipantSelection"
                  data-participant-id="{{this.id}}"
-                 data-tooltip="{{this.name}}">
-              <img src="{{this.img}}" alt="{{this.name}}">
+                 data-tooltip="{{this.name}}"
+                 role="listitem"
+                 tabindex="0"
+                 aria-selected="{{#if this.selected}}true{{else}}false{{/if}}">
+              <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
               <button type="button" class="remove-btn"
                       data-action="removeParticipant"
                       data-participant-id="{{this.id}}"
-                      data-tooltip="Remove">
-                <i class="fas fa-times"></i>
+                      data-tooltip="Remove"
+                      aria-label="Remove {{this.name}}">
+                <i class="fas fa-times" aria-hidden="true"></i>
               </button>
             </div>
           {{/each}}
-          <button type="button" class="add-btn" data-action="addAllPCs" data-tooltip="Add All PCs">
-            <i class="fas fa-plus"></i>
+          <button type="button" class="add-btn" data-action="addAllPCs" data-tooltip="Add All PCs" aria-label="Add all player characters">
+            <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
         {{else}}
-          <button type="button" class="add-btn large" data-action="addAllPCs" data-tooltip="Add All PCs">
-            <i class="fas fa-users"></i>
+          <button type="button" class="add-btn large" data-action="addAllPCs" data-tooltip="Add All PCs" aria-label="Add all player characters">
+            <i class="fas fa-users" aria-hidden="true"></i>
           </button>
           <span class="hint">Add PCs for skill checks</span>
         {{/if}}
       </div>
 
       {{#if hasParticipants}}
-      <div class="check-request-bar">
+      <div class="check-request-bar" role="toolbar" aria-label="Skill check controls">
         <div class="selection-info">
-          <span class="count">{{selectedCount}}/{{participants.length}}</span>
-          <button type="button" data-action="toggleSelectAll" class="link-btn">
+          <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
+          <button type="button" data-action="toggleSelectAll" class="link-btn" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
             {{#if allSelected}}None{{else}}All{{/if}}
           </button>
         </div>
 
         <div class="dc-selector">
-          <span class="label">DC</span>
-          <select data-action="setDCSelect">
+          <label class="label" for="dc-select">DC</label>
+          <select id="dc-select" data-action="setDCSelect" aria-label="Difficulty class">
             <option value="" {{#unless currentDC}}selected{{/unless}}>--</option>
             <option value="10" {{#if (eq currentDC 10)}}selected{{/if}}>10</option>
             <option value="15" {{#if (eq currentDC 15)}}selected{{/if}}>15</option>
@@ -92,38 +104,41 @@
           </select>
         </div>
 
-        <div class="skill-actions">
+        <div class="skill-actions" role="group" aria-label="Quick skill buttons">
           {{#each quickButtonSkills}}
             <button type="button"
                     class="skill-btn"
                     data-action="requestSkill"
                     data-skill="{{this.slug}}"
-                    data-tooltip="{{this.name}}">
+                    data-tooltip="{{this.name}}"
+                    aria-label="Request {{this.name}} check">
               {{this.shortName}}
             </button>
           {{/each}}
-          <button type="button" class="skill-btn more" data-action="openSkillMenu" data-tooltip="All Skills">
-            <i class="fas fa-ellipsis-h"></i>
+          <button type="button" class="skill-btn more" data-action="openSkillMenu" data-tooltip="All Skills" aria-label="Show all skills menu">
+            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
           </button>
         </div>
       </div>
       {{/if}}
     </div>
-  </div>
+  </section>
 
   <!-- Pending Rolls -->
   {{#if pendingRolls.length}}
-  <div class="pending-rolls-section">
-    <h4>Pending Requests</h4>
-    {{#each pendingRolls}}
-      <div class="pending-item">
-        <span class="participant-name">{{this.participantName}}</span>
-        <span class="skill-name">{{this.skillName}}</span>
-        <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" title="Cancel">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    {{/each}}
-  </div>
+  <section class="pending-rolls-section" aria-labelledby="pending-heading">
+    <h4 id="pending-heading">Pending Requests</h4>
+    <div role="list" aria-label="Pending roll requests">
+      {{#each pendingRolls}}
+        <div class="pending-item" role="listitem">
+          <span class="participant-name">{{this.participantName}}</span>
+          <span class="skill-name">{{this.skillName}}</span>
+          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" title="Cancel request" aria-label="Cancel {{this.participantName}}'s {{this.skillName}} request">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+      {{/each}}
+    </div>
+  </section>
   {{/if}}
 </div>

@@ -5,13 +5,14 @@
   animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
   display: flex;
   flex-direction: column;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, transparent 100%);
 }
 
 /* Roll Prompts Section */
 .storyframe.player-viewer .roll-prompts {
   flex-shrink: 0;
-  background: rgba(255, 193, 7, 0.15);
-  border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.15), rgba(235, 203, 139, 0.08));
+  border-bottom: 1px solid rgba(235, 203, 139, 0.25);
   padding: var(--sf-space-md);
   display: flex;
   flex-direction: column;
@@ -23,58 +24,76 @@
   align-items: center;
   justify-content: space-between;
   background: var(--sf-surface-primary);
-  border-radius: var(--sf-radius-md);
-  padding: var(--sf-space-sm) var(--sf-space-md);
+  border-radius: var(--sf-radius-lg);
+  padding: var(--sf-space-md) var(--sf-space-lg);
   box-shadow: var(--sf-shadow-md);
-  animation: roll-prompt-pulse 2s ease-in-out infinite;
+  border: 1px solid rgba(235, 203, 139, 0.2);
+  animation: roll-prompt-enter 0.4s var(--sf-ease-spring), roll-prompt-glow 2.5s ease-in-out infinite 0.4s;
 }
 
-@keyframes roll-prompt-pulse {
+@keyframes roll-prompt-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes roll-prompt-glow {
   0%, 100% {
-    box-shadow: var(--sf-shadow-md);
+    box-shadow: var(--sf-shadow-md), 0 0 0 0 rgba(235, 203, 139, 0);
   }
   50% {
-    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.4), var(--sf-shadow-lg);
+    box-shadow: var(--sf-shadow-lg), 0 0 20px rgba(235, 203, 139, 0.15);
   }
 }
 
 .storyframe.player-viewer .roll-prompt .prompt-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 }
 
 .storyframe.player-viewer .roll-prompt .skill-name {
-  font-weight: bold;
-  font-size: var(--sf-font-base);
+  font-weight: 700;
+  font-size: var(--sf-font-lg);
   color: var(--sf-text-primary);
+  letter-spacing: -0.01em;
 }
 
 .storyframe.player-viewer .roll-prompt .prompt-text {
   font-size: var(--sf-font-sm);
   color: var(--sf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
 }
 
 .storyframe.player-viewer .roll-prompt .roll-btn {
   display: flex;
   align-items: center;
-  gap: var(--sf-space-xs);
-  padding: var(--sf-space-sm) var(--sf-space-lg);
-  background: var(--color-text-hyperlink);
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-sm) var(--sf-space-xl);
+  background: linear-gradient(135deg, var(--sf-accent-primary), #4a6fa5);
   color: white;
   border: none;
-  border-radius: var(--sf-radius-md);
-  font-weight: bold;
+  border-radius: var(--sf-radius-lg);
+  font-weight: 700;
   font-size: var(--sf-font-base);
   cursor: pointer;
   transition: all var(--sf-transition-base) var(--sf-ease-out);
-  box-shadow: var(--sf-shadow-sm);
+  box-shadow: var(--sf-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .storyframe.player-viewer .roll-prompt .roll-btn:hover {
-  background: var(--color-text-hyperlink-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--sf-shadow-md);
+  background: linear-gradient(135deg, var(--sf-accent-primary-hover), #5a7fb5);
+  transform: translateY(-2px);
+  box-shadow: var(--sf-shadow-md), 0 4px 12px rgba(94, 129, 172, 0.3);
 }
 
 .storyframe.player-viewer .roll-prompt .roll-btn:active {
@@ -83,7 +102,14 @@
 }
 
 .storyframe.player-viewer .roll-prompt .roll-btn i {
-  font-size: 1.2em;
+  font-size: 1.25em;
+  animation: dice-wobble 0.6s ease-in-out infinite;
+}
+
+@keyframes dice-wobble {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-8deg); }
+  75% { transform: rotate(8deg); }
 }
 
 .storyframe.player-viewer .speaker-gallery {
@@ -133,16 +159,18 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: var(--sf-space-xs);
+  padding: var(--sf-space-sm);
   border: 2px solid transparent;
-  border-radius: var(--sf-radius-md);
+  border-radius: var(--sf-radius-lg);
   transition: all var(--sf-transition-base) var(--sf-ease-out);
   will-change: transform;
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .storyframe.player-viewer .speaker-item:hover {
-  transform: translateY(-2px) scale(1.03);
+  transform: translateY(-4px) scale(1.02);
   box-shadow: var(--sf-shadow-lg);
+  background: rgba(0, 0, 0, 0.08);
 }
 
 .storyframe.player-viewer .speaker-item img {
@@ -150,34 +178,74 @@
   aspect-ratio: 1;
   object-fit: cover;
   border-radius: var(--sf-radius-md);
+  transition: all var(--sf-transition-base);
+  box-shadow: var(--sf-shadow-sm);
+}
+
+.storyframe.player-viewer .speaker-item:hover img {
+  filter: brightness(1.05);
 }
 
 .storyframe.player-viewer .speaker-name {
   font-size: var(--sf-font-sm);
+  font-weight: 500;
   letter-spacing: 0.01em;
-  margin-top: var(--sf-space-xs);
+  margin-top: var(--sf-space-sm);
   text-align: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
+  opacity: 0.9;
 }
 
-/* Active speaker highlight - border + shadow (matches GM interface) */
+/* Active speaker highlight */
 .storyframe.player-viewer .speaker-item.active {
-  border-color: var(--color-text-hyperlink);
-  box-shadow: var(--sf-shadow-focus);
-  transform: scale(1.05);
+  border-color: var(--sf-accent-primary);
+  box-shadow: var(--sf-shadow-glow), 0 0 30px rgba(94, 129, 172, 0.2);
+  transform: scale(1.08);
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.05));
+}
+
+.storyframe.player-viewer .speaker-item.active img {
+  box-shadow: var(--sf-shadow-md), 0 0 15px rgba(94, 129, 172, 0.3);
+}
+
+.storyframe.player-viewer .speaker-item.active .speaker-name {
+  color: var(--sf-accent-primary-hover);
+  font-weight: 600;
+  opacity: 1;
 }
 
 /* Empty state */
 .storyframe.player-viewer .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   color: var(--sf-text-muted);
   padding: var(--sf-space-2xl) var(--sf-space-lg);
+  min-height: 200px;
+}
+
+.storyframe.player-viewer .empty-state::before {
+  content: '\f500';
+  font-family: 'Font Awesome 6 Free';
+  font-weight: 400;
+  font-size: 3rem;
+  opacity: 0.3;
+  margin-bottom: var(--sf-space-md);
+}
+
+.storyframe.player-viewer .empty-state p {
+  margin: 0;
+  font-size: var(--sf-font-base);
+  font-weight: 500;
 }
 
 .storyframe.player-viewer .empty-state .hint {
   font-size: var(--sf-font-sm);
-  margin-top: var(--sf-space-sm);
+  margin-top: var(--sf-space-xs);
+  opacity: 0.7;
 }
