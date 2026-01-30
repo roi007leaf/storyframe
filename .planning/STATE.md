@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 6 of 6 (PC Participants & PF2e Check Rolls)
-Plan: 1 of 4
+Plan: 2 of 4
 Status: In progress
-Last activity: 2026-01-30 — Completed 06-01-PLAN.md (state foundation for participants)
+Last activity: 2026-01-30 — Completed 06-02-PLAN.md (participants panel & skill request UI)
 
-Progress: [█████████░] 91%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 91%
 | 3. Player Viewer | 1/1 | 3min | 3min |
 | 4. Polish | 2/2 | 3min | 1.5min |
 | 5. Integration/Polish | 1/2 | 2min | 2min |
-| 6. Participants/Rolls | 1/4 | 2min | 2min |
+| 6. Participants/Rolls | 2/4 | 6min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (2min), 04-02 (1min), 05-01 (2min), 06-01 (2min)
+- Last 5 plans: 04-02 (1min), 05-01 (2min), 06-01 (2min), 06-02 (4min)
 - Trend: Consistently fast execution, solid foundation enables rapid feature additions
 
 *Updated after each plan completion*
@@ -118,6 +118,13 @@ From 06-01:
 - executeAsUser pattern for player-specific socket calls
 - _handlePromptSkillCheck calls playerApp.showRollPrompt() for UI trigger
 
+From 06-02:
+- DC visibility control: 'gm' (hidden) or 'all' (visible to players)
+- Skill quick buttons: social skills (Dec/Dip/Itm/Prf) plus Perception
+- Participants panel collapsible, placed at bottom of speakers sidebar
+- PC-only validation on participant drop (type='character' check)
+- Participant selection uses Set for efficient toggle operations
+
 ### Pending Todos
 
 None yet.
@@ -141,8 +148,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-30T11:56:33Z
-Stopped at: Completed 06-01-PLAN.md (state foundation for participants)
+Last session: 2026-01-30T12:43:27Z
+Stopped at: Completed 06-02-PLAN.md (participants panel & skill request UI)
 Resume file: None
 
 Config (if exists):
