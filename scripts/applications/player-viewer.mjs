@@ -29,7 +29,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       width: 400,
       height: 300
     },
-    actions: {}
+    actions: {
+      executeRoll: PlayerViewerApp._onExecuteRoll
+    }
   };
 
   static PARTS = {
@@ -65,17 +67,32 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // No speakers - show empty state
     if (!state?.speakers || state.speakers.length === 0) {
-      return { empty: true, layout };
+      return { empty: true, layout, pendingRolls: [] };
     }
 
     // Resolve ALL speakers
     const speakers = await this._resolveSpeakers(state.speakers);
 
+    // Find this player's participant
+    const myParticipant = state.participants?.find(p => p.userId === game.user.id);
+
+    // Filter pending rolls for this player
+    let pendingRolls = [];
+    if (myParticipant && state.pendingRolls) {
+      pendingRolls = state.pendingRolls
+        .filter(roll => roll.participantId === myParticipant.id)
+        .map(roll => ({
+          ...roll,
+          skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug)
+        }));
+    }
+
     return {
       speakers,
       activeSpeakerId: state.activeSpeaker,
       layout,
-      empty: false
+      empty: false,
+      pendingRolls
     };
   }
 
@@ -146,5 +163,109 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     await game.settings.set(MODULE_ID, 'playerViewerMinimized', this.minimized);
 
     return super._onClose(options);
+  }
+
+  /**
+   * Method called by socket handler when GM sends a roll request.
+   * Triggers re-render to display new roll prompt.
+   */
+  showRollPrompt(requestData) {
+    console.log(`${MODULE_ID} | PlayerViewerApp: showRollPrompt called`, requestData);
+    this.render();
+  }
+
+  /**
+   * Get display name for a skill slug.
+   * Static method for use in static action handlers.
+   * @param {string} slug - Skill slug (e.g., 'dip', 'per')
+   * @returns {string} Display name (e.g., 'Diplomacy', 'Perception')
+   */
+  static _getSkillDisplayName(slug) {
+    const skillMap = {
+      'per': 'Perception',
+      'acr': 'Acrobatics',
+      'arc': 'Arcana',
+      'ath': 'Athletics',
+      'cra': 'Crafting',
+      'dec': 'Deception',
+      'dip': 'Diplomacy',
+      'itm': 'Intimidation',
+      'med': 'Medicine',
+      'nat': 'Nature',
+      'occ': 'Occultism',
+      'prf': 'Performance',
+      'rel': 'Religion',
+      'soc': 'Society',
+      'ste': 'Stealth',
+      'sur': 'Survival',
+      'thi': 'Thievery'
+    };
+    return skillMap[slug] || slug;
+  }
+
+  /**
+   * Execute PF2e skill roll when player clicks Roll button.
+   * Static method for ApplicationV2 action handler pattern.
+   * @param {Event} event - Click event
+   * @param {HTMLElement} target - Button element
+   */
+  static async _onExecuteRoll(event, target) {
+    const requestId = target.dataset.requestId;
+    if (!requestId) {
+      console.error(`${MODULE_ID} | No requestId on roll button`);
+      return;
+    }
+
+    const state = game.storyframe.stateManager.getState();
+    const request = state.pendingRolls?.find(r => r.id === requestId);
+    if (!request) {
+      ui.notifications.warn('Roll request not found');
+      return;
+    }
+
+    // Find participant and get actor
+    const participant = state.participants?.find(p => p.id === request.participantId);
+    if (!participant) {
+      ui.notifications.error('Participant not found');
+      return;
+    }
+
+    const actor = await fromUuid(participant.actorUuid);
+    if (!actor) {
+      ui.notifications.error('Actor not found');
+      return;
+    }
+
+    // Execute PF2e roll
+    try {
+      let roll;
+      if (request.skillSlug === 'per') {
+        // Perception uses actor.perception.roll()
+        roll = await actor.perception.roll({ dc: { value: request.dc }, skipDialog: false });
+      } else {
+        // Skills use actor.skills[slug].roll()
+        roll = await actor.skills[request.skillSlug].roll({ dc: { value: request.dc }, skipDialog: false });
+      }
+
+      // Extract result data
+      const result = {
+        requestId: request.id,
+        participantId: request.participantId,
+        skillSlug: request.skillSlug,
+        total: roll.total,
+        degreeOfSuccess: roll.degreeOfSuccess?.value || null,
+        timestamp: Date.now(),
+        chatMessageId: roll.message?.id || null
+      };
+
+      // Submit result to GM via socket
+      await game.storyframe.socketManager.requestSubmitRollResult(result);
+
+      const skillName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
+      ui.notifications.info(`${skillName} check submitted (${roll.total})`);
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error executing roll:`, error);
+      ui.notifications.error('Failed to execute roll');
+    }
   }
 }
