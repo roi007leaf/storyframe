@@ -104,8 +104,8 @@
         <div class="bar-top">
           <div class="selection-info">
             <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
-            <button type="button" data-action="toggleSelectAll" class="link-btn" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
-              {{#if allSelected}}None{{else}}All{{/if}}
+            <button type="button" data-action="toggleSelectAll" class="link-btn" data-tooltip="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
+              <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
             </button>
           </div>
 
