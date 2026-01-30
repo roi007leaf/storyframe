@@ -318,7 +318,7 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
   }
 
   // Update player viewer
-  if (!game.user.isGM) {
+  if (!game.user.isGM && game.storyframe.playerViewer) {
     const viewer = game.storyframe.playerViewer;
     const hasSpeakers = state?.speakers?.length > 0;
 

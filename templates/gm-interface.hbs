@@ -99,9 +99,14 @@
       <button type="button" data-action="goForward" data-tooltip="Go Forward" aria-label="Go forward to next journal" {{#unless canGoForward}}disabled{{/unless}}>
         <i class="fas fa-arrow-right" aria-hidden="true"></i>
       </button>
-      {{#if selectedJournal}}
-      <button type="button" data-action="editJournal" data-tooltip="Edit Journal" aria-label="Edit journal in native editor">
+      {{#if canEdit}}
+      <button type="button" data-action="toggleEditMode" data-tooltip="{{#if editMode}}Exit Edit Mode{{else}}Edit Page{{/if}}" aria-label="{{#if editMode}}Exit edit mode{{else}}Edit page{{/if}}" class="{{#if editMode}}active{{/if}}">
         <i class="fas fa-edit" aria-hidden="true"></i>
+      </button>
+      {{/if}}
+      {{#if selectedJournal}}
+      <button type="button" data-action="editJournal" data-tooltip="Open in Foundry Editor" aria-label="Edit journal in native editor">
+        <i class="fas fa-external-link-alt" aria-hidden="true"></i>
       </button>
       {{/if}}
       <button type="button" data-action="toggleSidebar" data-tooltip="Toggle Characters Sidebar" aria-label="Toggle characters sidebar">
@@ -158,8 +163,29 @@
 
   <!-- Middle: Content Area -->
   <main class="content-area journal-entry-content flexcol" aria-label="Journal content">
-    {{#if currentPageContent}}
-      <!-- Module classes only on the journal content wrapper -->
+    {{#if editMode}}
+      <!-- Edit Mode: Quill.js Editor -->
+      <div class="editor-toolbar">
+        <div class="editor-title">
+          <span class="dirty-indicator {{#if editorDirty}}visible{{/if}}" data-tooltip="Unsaved changes">*</span>
+          <span>Editing: {{currentPageName}}</span>
+        </div>
+        <div class="editor-actions">
+          <button type="button" class="editor-btn save" data-action="savePageContent" data-tooltip="Save (Ctrl+S)">
+            <i class="fas fa-save" aria-hidden="true"></i>
+            <span>Save</span>
+          </button>
+          <button type="button" class="editor-btn cancel" data-action="cancelEdit" data-tooltip="Cancel editing">
+            <i class="fas fa-times" aria-hidden="true"></i>
+            <span>Cancel</span>
+          </button>
+        </div>
+      </div>
+      <div class="editor-wrapper">
+        <div id="quill-editor"></div>
+      </div>
+    {{else if currentPageContent}}
+      <!-- View Mode: Rendered Content -->
       <div class="journal-entry-pages single-page journal-sheet journal-entry themed theme-light {{containerClasses}}">
         <div class="scrollable">
           <article class="journal-entry-page {{pageType}} {{#if pageLevel}}level{{pageLevel}}{{/if}}" data-page-type="{{pageType}}">

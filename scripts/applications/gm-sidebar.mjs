@@ -1,5 +1,7 @@
 const MODULE_ID = 'storyframe';
 
+import SystemAdapter from '../system-adapter.mjs';
+
 /**
  * GM Sidebar for StoryFrame
  * Drawer-style window that attaches to the right side of the main GM Interface
@@ -39,6 +41,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       setDifficulty: GMSidebarApp._onSetDifficulty,
       cancelRoll: GMSidebarApp._onCancelRoll,
       openPlayerWindows: GMSidebarApp._onOpenPlayerWindows,
+      showPendingRolls: GMSidebarApp._onShowPendingRolls,
     },
   };
 
@@ -54,148 +57,6 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
   /** @type {Function|null} Bound handler for parent position changes */
   _parentPositionHandler = null;
-
-  // Skill actions mapping (PF2e)
-  static SKILL_ACTIONS = {
-    per: [
-      { slug: 'seek', name: 'Seek' },
-      { slug: 'sense-direction', name: 'Sense Direction' },
-    ],
-    acr: [
-      { slug: 'balance', name: 'Balance' },
-      { slug: 'tumble-through', name: 'Tumble Through' },
-      { slug: 'maneuver-in-flight', name: 'Maneuver in Flight' },
-      { slug: 'squeeze', name: 'Squeeze' },
-    ],
-    arc: [
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'decipher-writing', name: 'Decipher Writing' },
-      { slug: 'identify-magic', name: 'Identify Magic' },
-      { slug: 'learn-spell', name: 'Learn a Spell' },
-    ],
-    ath: [
-      { slug: 'climb', name: 'Climb' },
-      { slug: 'force-open', name: 'Force Open' },
-      { slug: 'grapple', name: 'Grapple' },
-      { slug: 'high-jump', name: 'High Jump' },
-      { slug: 'long-jump', name: 'Long Jump' },
-      { slug: 'shove', name: 'Shove' },
-      { slug: 'swim', name: 'Swim' },
-      { slug: 'trip', name: 'Trip' },
-      { slug: 'disarm', name: 'Disarm' },
-    ],
-    cra: [
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'repair', name: 'Repair' },
-      { slug: 'craft', name: 'Craft' },
-      { slug: 'identify-alchemy', name: 'Identify Alchemy' },
-    ],
-    dec: [
-      { slug: 'create-a-diversion', name: 'Create a Diversion' },
-      { slug: 'impersonate', name: 'Impersonate' },
-      { slug: 'lie', name: 'Lie' },
-      { slug: 'feint', name: 'Feint' },
-    ],
-    dip: [
-      { slug: 'gather-information', name: 'Gather Information' },
-      { slug: 'make-an-impression', name: 'Make an Impression' },
-      { slug: 'request', name: 'Request' },
-    ],
-    itm: [
-      { slug: 'coerce', name: 'Coerce' },
-      { slug: 'demoralize', name: 'Demoralize' },
-    ],
-    med: [
-      { slug: 'administer-first-aid', name: 'Administer First Aid' },
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'treat-disease', name: 'Treat Disease' },
-      { slug: 'treat-poison', name: 'Treat Poison' },
-      { slug: 'treat-wounds', name: 'Treat Wounds' },
-    ],
-    nat: [
-      { slug: 'command-an-animal', name: 'Command an Animal' },
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'identify-magic', name: 'Identify Magic' },
-      { slug: 'learn-spell', name: 'Learn a Spell' },
-    ],
-    occ: [
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'decipher-writing', name: 'Decipher Writing' },
-      { slug: 'identify-magic', name: 'Identify Magic' },
-      { slug: 'learn-spell', name: 'Learn a Spell' },
-    ],
-    prf: [{ slug: 'perform', name: 'Perform' }],
-    rel: [
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'decipher-writing', name: 'Decipher Writing' },
-      { slug: 'identify-magic', name: 'Identify Magic' },
-      { slug: 'learn-spell', name: 'Learn a Spell' },
-    ],
-    soc: [
-      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
-      { slug: 'create-forgery', name: 'Create Forgery' },
-      { slug: 'decipher-writing', name: 'Decipher Writing' },
-      { slug: 'subsist', name: 'Subsist' },
-    ],
-    ste: [
-      { slug: 'conceal-an-object', name: 'Conceal an Object' },
-      { slug: 'hide', name: 'Hide' },
-      { slug: 'sneak', name: 'Sneak' },
-    ],
-    sur: [
-      { slug: 'sense-direction', name: 'Sense Direction' },
-      { slug: 'subsist', name: 'Subsist' },
-      { slug: 'track', name: 'Track' },
-      { slug: 'cover-tracks', name: 'Cover Tracks' },
-    ],
-    thi: [
-      { slug: 'palm-an-object', name: 'Palm an Object' },
-      { slug: 'steal', name: 'Steal' },
-      { slug: 'pick-a-lock', name: 'Pick a Lock' },
-      { slug: 'disable-device', name: 'Disable Device' },
-    ],
-  };
-
-  // DC by Level table (PF2e standard)
-  static DC_BY_LEVEL = {
-    0: 14,
-    1: 15,
-    2: 16,
-    3: 18,
-    4: 19,
-    5: 20,
-    6: 22,
-    7: 23,
-    8: 24,
-    9: 26,
-    10: 27,
-    11: 28,
-    12: 30,
-    13: 31,
-    14: 32,
-    15: 34,
-    16: 35,
-    17: 36,
-    18: 38,
-    19: 39,
-    20: 40,
-    21: 42,
-    22: 44,
-    23: 46,
-    24: 48,
-    25: 50,
-  };
-
-  // Difficulty adjustments
-  static DIFFICULTY_ADJUSTMENTS = [
-    { id: 'trivial', label: 'Trivial', adjustment: -10 },
-    { id: 'low', label: 'Low', adjustment: -5 },
-    { id: 'low-med', label: 'Low-Med', adjustment: -2 },
-    { id: 'standard', label: 'Standard', adjustment: 0 },
-    { id: 'med-high', label: 'Med-High', adjustment: 2 },
-    { id: 'high', label: 'High', adjustment: 5 },
-    { id: 'extreme', label: 'Extreme', adjustment: 10 },
-  ];
 
   constructor(options = {}) {
     super(options);
@@ -335,8 +196,13 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   async _prepareContext(options) {
+    // Detect system info (needed throughout the method)
+    const currentSystem = SystemAdapter.detectSystem();
+
     const state = game.storyframe.stateManager.getState();
+
     if (!state) {
+      const dcOptions = SystemAdapter.getDCOptions();
       return {
         speakers: [],
         activeSpeaker: null,
@@ -349,6 +215,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         pendingRolls: [],
         quickButtonSkills: [],
         pcsPanelCollapsed: this.pcsPanelCollapsed,
+        currentSystem,
+        dcOptions,
+        isPF2e: currentSystem === 'pf2e',
+        isDND5e: currentSystem === 'dnd5e',
       };
     }
 
@@ -419,21 +289,33 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
 
-    // Get party level and calculate DC by level
-    const partyLevel = await this._getPartyLevel();
-    const calculatedDC =
-      partyLevel !== null ? this._calculateDCByLevel(partyLevel, this.currentDifficulty) : null;
+    // Get system-specific DC options and difficulty adjustments
+    const dcOptions = SystemAdapter.getDCOptions();
+    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
-    // If using difficulty-based DC, update currentDC
-    if (this.currentDC === null && calculatedDC !== null) {
-      this.currentDC = calculatedDC;
+    // For PF2e: Get party level and calculate DC by level
+    // For D&D 5e: Use difficulty-based DCs
+    let partyLevel = null;
+    let calculatedDC = null;
+
+    if (currentSystem === 'pf2e') {
+      partyLevel = await this._getPartyLevel();
+      calculatedDC =
+        partyLevel !== null ? this._calculateDCByLevel(partyLevel, this.currentDifficulty) : null;
+
+      // If using difficulty-based DC, update currentDC
+      if (this.currentDC === null && calculatedDC !== null) {
+        this.currentDC = calculatedDC;
+      }
     }
 
-    // Build difficulty options with current selection
-    const difficultyOptions = GMSidebarApp.DIFFICULTY_ADJUSTMENTS.map((d) => ({
-      ...d,
-      selected: d.id === this.currentDifficulty,
-    }));
+    // Build difficulty options with current selection (PF2e only)
+    const difficultyOptions = difficultyAdjustments
+      ? difficultyAdjustments.map((d) => ({
+          ...d,
+          selected: d.id === this.currentDifficulty,
+        }))
+      : null;
 
     return {
       speakers,
@@ -451,6 +333,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       pendingRolls,
       quickButtonSkills,
       pcsPanelCollapsed: this.pcsPanelCollapsed,
+      currentSystem,
+      dcOptions,
+      isPF2e: currentSystem === 'pf2e',
+      isDND5e: currentSystem === 'dnd5e',
     };
   }
 
@@ -524,7 +410,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       });
     }
 
-    // Difficulty selector
+    // PF2e: Difficulty selector
     const difficultySelect = this.element.querySelector('#difficulty-select');
     if (difficultySelect) {
       difficultySelect.addEventListener('change', async (e) => {
@@ -535,6 +421,22 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         const partyLevel = await this._getPartyLevel();
         if (partyLevel !== null) {
           this.currentDC = this._calculateDCByLevel(partyLevel, difficulty);
+          // Update the DC input field
+          const dcInput = this.element.querySelector('#dc-input');
+          if (dcInput) {
+            dcInput.value = this.currentDC;
+          }
+        }
+      });
+    }
+
+    // D&D 5e: DC difficulty selector
+    const dnd5eDCSelect = this.element.querySelector('#dc-select-dnd5e');
+    if (dnd5eDCSelect) {
+      dnd5eDCSelect.addEventListener('change', (e) => {
+        const dc = parseInt(e.target.value);
+        if (!isNaN(dc)) {
+          this.currentDC = dc;
           // Update the DC input field
           const dcInput = this.element.querySelector('#dc-input');
           if (dcInput) {
@@ -616,7 +518,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    * Show skill actions popup menu
    */
   _showSkillActionsMenu(event, skillSlug) {
-    const actions = GMSidebarApp.SKILL_ACTIONS[skillSlug];
+    const skills = SystemAdapter.getSkills();
+    const skill = skills[skillSlug];
+    const actions = skill?.actions;
+
     if (!actions || actions.length === 0) {
       ui.notifications.info(`No specific actions for ${this._getSkillName(skillSlug)}`);
       return;
@@ -875,26 +780,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   _getSkillName(slug) {
-    const skillMap = {
-      per: 'Perception',
-      acr: 'Acrobatics',
-      arc: 'Arcana',
-      ath: 'Athletics',
-      cra: 'Crafting',
-      dec: 'Deception',
-      dip: 'Diplomacy',
-      itm: 'Intimidation',
-      med: 'Medicine',
-      nat: 'Nature',
-      occ: 'Occultism',
-      prf: 'Performance',
-      rel: 'Religion',
-      soc: 'Society',
-      ste: 'Stealth',
-      sur: 'Survival',
-      thi: 'Thievery',
-    };
-    return skillMap[slug] || slug.toUpperCase();
+    const skills = SystemAdapter.getSkills();
+    const skill = skills[slug];
+    return skill?.name || slug.toUpperCase();
   }
 
   _getSkillShortName(slug) {
@@ -955,10 +843,24 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    * @param {string} difficultyId - The difficulty ID
    * @returns {number} The calculated DC
    */
+  /**
+   * Calculate DC by level (PF2e only)
+   * @param {number} level - The party level
+   * @param {string} difficultyId - The difficulty adjustment ID
+   * @returns {number} The calculated DC
+   */
   _calculateDCByLevel(level, difficultyId) {
-    const baseDC = GMSidebarApp.DC_BY_LEVEL[Math.min(Math.max(level, 0), 25)] || 14;
-    const difficulty = GMSidebarApp.DIFFICULTY_ADJUSTMENTS.find((d) => d.id === difficultyId);
+    const dcOptions = SystemAdapter.getDCOptions();
+    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
+
+    // Find the base DC for the level
+    const levelOption = dcOptions.find((opt) => opt.value === level);
+    const baseDC = levelOption?.dc || 14;
+
+    // Apply difficulty adjustment
+    const difficulty = difficultyAdjustments?.find((d) => d.id === difficultyId);
     const adjustment = difficulty?.adjustment || 0;
+
     return baseDC + adjustment;
   }
 
@@ -1015,7 +917,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    * @returns {string|null} The action name or null
    */
   _getActionName(skillSlug, actionSlug) {
-    const actions = GMSidebarApp.SKILL_ACTIONS[skillSlug];
+    const skills = SystemAdapter.getSkills();
+    const skill = skills[skillSlug];
+    const actions = skill?.actions;
     if (!actions) return null;
     const action = actions.find((a) => a.slug === actionSlug);
     return action?.name || null;
@@ -1576,5 +1480,281 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   static async _onOpenPlayerWindows(event, target) {
     game.storyframe.socketManager.openAllPlayerViewers();
     ui.notifications.info('Opening StoryFrame on all player clients');
+  }
+
+  static async _onShowPendingRolls(event, target) {
+    const state = game.storyframe.stateManager.getState();
+    const pendingRolls = state?.pendingRolls || [];
+
+    if (pendingRolls.length === 0) {
+      ui.notifications.info('No pending rolls');
+      return;
+    }
+
+    // Build pending rolls data with names
+    const rollsData = await Promise.all(
+      pendingRolls.map(async (r) => {
+        const participant = state.participants?.find((p) => p.id === r.participantId);
+        const actor = participant ? await fromUuid(participant.actorUuid) : null;
+        return {
+          ...r,
+          participantName: actor?.name || 'Unknown',
+          skillName: this._getSkillName(r.skillSlug),
+          actionName: r.actionSlug ? this._getActionName(r.skillSlug, r.actionSlug) : null,
+        };
+      }),
+    );
+
+    // Remove existing popup if any
+    document.querySelector('.storyframe-pending-rolls-popup')?.remove();
+
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'storyframe-pending-rolls-popup';
+
+    const rollsHtml = rollsData
+      .map(
+        (roll) => `
+      <div class="pending-roll-item" data-request-id="${roll.id}">
+        <div class="roll-info">
+          <span class="participant-name">${roll.participantName}</span>
+          <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
+          ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+        </div>
+        <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}" data-tooltip="Cancel request">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `,
+      )
+      .join('');
+
+    popup.innerHTML = `
+      <div class="popup-header">
+        <span class="popup-title">Pending Rolls (${rollsData.length})</span>
+        <button type="button" class="popup-close" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="popup-body">
+        ${rollsHtml}
+      </div>
+      <div class="popup-footer">
+        <button type="button" class="cancel-all-btn">Cancel All</button>
+      </div>
+    `;
+
+    // Style the popup
+    popup.style.cssText = `
+      position: fixed;
+      z-index: 10001;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 320px;
+      max-height: 400px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `;
+
+    // Position near the indicator
+    const rect = target.getBoundingClientRect();
+    popup.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+    popup.style.right = `${window.innerWidth - rect.right}px`;
+
+    // Style header
+    const header = popup.querySelector('.popup-header');
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    const title = popup.querySelector('.popup-title');
+    title.style.cssText = `
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    `;
+
+    const closeBtn = popup.querySelector('.popup-close');
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    `;
+
+    // Style body
+    const body = popup.querySelector('.popup-body');
+    body.style.cssText = `
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    `;
+
+    // Style roll items
+    popup.querySelectorAll('.pending-roll-item').forEach((item) => {
+      item.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 12px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 8px;
+        margin-bottom: 6px;
+      `;
+
+      const info = item.querySelector('.roll-info');
+      info.style.cssText = `
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      `;
+
+      const name = item.querySelector('.participant-name');
+      name.style.cssText = `
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+      `;
+
+      const skill = item.querySelector('.skill-name');
+      skill.style.cssText = `
+        font-size: 11px;
+        color: #aaa;
+      `;
+
+      const dcBadge = item.querySelector('.dc-badge');
+      if (dcBadge) {
+        dcBadge.style.cssText = `
+          font-size: 10px;
+          color: #5e81ac;
+          font-weight: 600;
+        `;
+      }
+
+      const cancelBtn = item.querySelector('.cancel-roll-btn');
+      cancelBtn.style.cssText = `
+        background: transparent;
+        border: none;
+        color: #888;
+        cursor: pointer;
+        padding: 6px 8px;
+        border-radius: 4px;
+        transition: all 0.15s;
+      `;
+      cancelBtn.addEventListener('mouseenter', () => {
+        cancelBtn.style.background = 'rgba(255,100,100,0.2)';
+        cancelBtn.style.color = '#ff6b6b';
+      });
+      cancelBtn.addEventListener('mouseleave', () => {
+        cancelBtn.style.background = 'transparent';
+        cancelBtn.style.color = '#888';
+      });
+    });
+
+    // Style footer
+    const footer = popup.querySelector('.popup-footer');
+    footer.style.cssText = `
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: flex-end;
+    `;
+
+    const cancelAllBtn = popup.querySelector('.cancel-all-btn');
+    cancelAllBtn.style.cssText = `
+      background: rgba(255,100,100,0.2);
+      border: 1px solid rgba(255,100,100,0.3);
+      color: #ff6b6b;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    `;
+    cancelAllBtn.addEventListener('mouseenter', () => {
+      cancelAllBtn.style.background = 'rgba(255,100,100,0.3)';
+    });
+    cancelAllBtn.addEventListener('mouseleave', () => {
+      cancelAllBtn.style.background = 'rgba(255,100,100,0.2)';
+    });
+
+    // Event handlers
+    closeBtn.addEventListener('click', () => popup.remove());
+
+    // Cancel individual roll
+    popup.querySelectorAll('.cancel-roll-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const requestId = btn.dataset.requestId;
+        await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+
+        // Remove item from popup
+        const item = btn.closest('.pending-roll-item');
+        item.remove();
+
+        // Update count in header
+        const remaining = popup.querySelectorAll('.pending-roll-item').length;
+        title.textContent = `Pending Rolls (${remaining})`;
+
+        // Close popup if no more rolls
+        if (remaining === 0) {
+          popup.remove();
+        }
+
+        ui.notifications.info('Roll request cancelled');
+      });
+    });
+
+    // Cancel all rolls
+    cancelAllBtn.addEventListener('click', async () => {
+      for (const roll of rollsData) {
+        await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
+      }
+      popup.remove();
+      ui.notifications.info('All roll requests cancelled');
+    });
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!popup.contains(e.target) && !target.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+    // Close on escape
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        popup.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(popup);
+
+    // Adjust position if off-screen
+    const popupRect = popup.getBoundingClientRect();
+    if (popupRect.left < 10) {
+      popup.style.right = 'auto';
+      popup.style.left = '10px';
+    }
+    if (popupRect.top < 10) {
+      popup.style.bottom = 'auto';
+      popup.style.top = '10px';
+    }
   }
 }

@@ -540,6 +540,68 @@
   cursor: grabbing;
 }
 
+/* Map page styles */
+.map-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  align-items: center;
+}
+
+.map-page-content img {
+  border: 2px solid var(--sf-border-subtle);
+  border-radius: var(--sf-radius-md);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  cursor: pointer !important;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+}
+
+.map-page-content img:hover {
+  transform: scale(1.02);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.map-info {
+  text-align: center;
+  width: 100%;
+}
+
+.map-info h3 {
+  margin: 0 0 0.5rem 0;
+  color: var(--color-text-dark-primary);
+}
+
+.map-info p {
+  margin: 0.25rem 0;
+  font-size: var(--sf-font-sm);
+  color: var(--sf-text-muted);
+}
+
+.map-caption {
+  font-style: italic;
+  color: var(--sf-text-muted);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.view-scene-btn {
+  margin-top: 0.5rem;
+  padding: var(--sf-space-xs) var(--sf-space-md);
+  background: var(--sf-accent-primary);
+  color: #ffffff;
+  border: none;
+  border-radius: var(--sf-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+}
+
+.view-scene-btn:hover {
+  background: var(--sf-accent-hover);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 /* Empty State - GM Interface specific */
 .storyframe-container .empty-state {
   display: flex;
@@ -670,4 +732,181 @@
 
 .gm-interface.journal-sheet .page-nav-bar .page-indicator {
   color: var(--sf-text-muted) !important;
+}
+
+/* Active edit button state */
+.storyframe-header .header-actions button.active {
+  background: var(--sf-accent-primary);
+  color: #ffffff;
+}
+
+.storyframe-header .header-actions button.active:hover {
+  background: var(--sf-accent-hover);
+}
+
+/*
+ * ==========================================================================
+ * Editor Mode Styles
+ * ==========================================================================
+ */
+
+/* Editor toolbar */
+.editor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  background: var(--color-bg-header);
+  border-bottom: 1px solid var(--sf-border-subtle);
+  color: var(--color-text-light-primary);
+}
+
+.editor-toolbar .editor-title {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-xs);
+  font-weight: 600;
+  font-size: var(--sf-font-sm);
+}
+
+.editor-toolbar .dirty-indicator {
+  color: var(--sf-accent-warning);
+  font-size: var(--sf-font-lg);
+  font-weight: bold;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.editor-toolbar .dirty-indicator.visible {
+  opacity: 1;
+}
+
+.editor-toolbar .editor-actions {
+  display: flex;
+  gap: var(--sf-space-sm);
+}
+
+.editor-toolbar .editor-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-xs);
+  padding: var(--sf-space-xs) var(--sf-space-md);
+  border: 1px solid transparent;
+  border-radius: var(--sf-radius-md);
+  font-size: var(--sf-font-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+}
+
+.editor-toolbar .editor-btn.save {
+  background: var(--sf-accent-success);
+  color: #ffffff;
+}
+
+.editor-toolbar .editor-btn.save:hover {
+  background: #3da06a;
+  transform: translateY(-1px);
+}
+
+.editor-toolbar .editor-btn.cancel {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-light-primary);
+}
+
+.editor-toolbar .editor-btn.cancel:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Editor wrapper - contains the Quill editor */
+.editor-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+/* Quill editor container */
+.editor-wrapper #quill-editor {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Quill toolbar */
+.editor-wrapper .ql-toolbar {
+  flex-shrink: 0;
+  border: none !important;
+  border-bottom: 1px solid var(--sf-border-subtle) !important;
+  background: var(--color-bg-option);
+}
+
+/* Quill editor content container */
+.editor-wrapper .ql-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: none !important;
+  font-family: var(--font-primary);
+  font-size: 14px;
+}
+
+/* Quill editor content area - scrollable */
+.editor-wrapper .ql-editor {
+  flex: 1;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  min-height: 0;
+  padding: 16px 24px;
+  background: #ffffff;
+}
+
+/* Constrain images in editor */
+.editor-wrapper .ql-editor img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Ensure proper scrollbar */
+.editor-wrapper .ql-editor::-webkit-scrollbar {
+  width: 8px;
+}
+
+.editor-wrapper .ql-editor::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.editor-wrapper .ql-editor::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.editor-wrapper .ql-editor::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Protect editor from module CSS overrides */
+.gm-interface .editor-toolbar,
+.gm-interface .editor-wrapper {
+  background-image: none !important;
+  border-image: none !important;
+}
+
+.gm-interface .editor-toolbar {
+  background: var(--color-bg-header) !important;
+  color: var(--color-text-light-primary) !important;
+}
+
+.gm-interface .editor-wrapper {
+  background: #ffffff !important;
+}
+
+.gm-interface .editor-wrapper .ql-editor {
+  background: #ffffff !important;
 }

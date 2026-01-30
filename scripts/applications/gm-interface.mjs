@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 const MODULE_ID = 'storyframe';
 
 import { CSSScraper } from '../css-scraper.mjs';
@@ -43,6 +44,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       goForward: GMInterfaceApp._onGoForward,
       previousPage: GMInterfaceApp._onPreviousPage,
       nextPage: GMInterfaceApp._onNextPage,
+      toggleEditMode: GMInterfaceApp._onToggleEditMode,
+      savePageContent: GMInterfaceApp._onSavePageContent,
+      cancelEdit: GMInterfaceApp._onCancelEdit,
     },
   };
 
@@ -233,6 +237,35 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
               }
               break;
 
+            case 'map':
+              // Map pages display a scene
+              if (page.image?.caption) {
+                currentPageContent = `<p class="map-caption">${page.image.caption}</p>`;
+              } else {
+                currentPageContent = '';
+              }
+
+              // Show scene thumbnail and info if scene exists
+              if (page.src) {
+                const scene = await fromUuid(page.src);
+                if (scene) {
+                  const thumbUrl = scene.thumb || scene.background?.src || 'icons/svg/village.svg';
+                  currentPageContent += `
+                    <div class="map-page-content">
+                      <img src="${thumbUrl}" alt="${scene.name}" style="max-width: 100%; height: auto; cursor: pointer;" data-scene-id="${scene.id}">
+                      <div class="map-info">
+                        <h3>${scene.name}</h3>
+                        ${scene.background?.src ? `<p><strong>Dimensions:</strong> ${scene.dimensions?.width || '?'} x ${scene.dimensions?.height || '?'}</p>` : ''}
+                        ${game.user.isGM ? `<button type="button" class="view-scene-btn" data-scene-id="${scene.id}">View Scene</button>` : ''}
+                      </div>
+                    </div>
+                  `;
+                } else {
+                  currentPageContent += `<p>Scene not found</p>`;
+                }
+              }
+              break;
+
             default:
               currentPageContent = `<p>Unsupported page type: ${page.type}</p>`;
           }
@@ -266,6 +299,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       canGoNextPage: pages.length > 0 && this.currentPageIndex < pages.length - 1,
       currentPageNumber: this.currentPageIndex + 1,
       totalPages: pages.length,
+      editMode: this.editMode,
+      editorDirty: this.editorDirty,
+      canEdit: pageType === 'text' && !!currentPageContent,
     };
   }
 
@@ -367,6 +403,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._attachSearchHandler();
     this._attachContentImageDrag();
     this._attachJournalLinkHandler();
+    this._attachMapPageHandlers();
 
     // Add system/module classes to root for journal CSS compatibility
     if (context.containerClasses) {
@@ -428,6 +465,178 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       console.log('StoryFrame | Content area HTML:', contentArea.innerHTML.substring(0, 500));
       console.log('StoryFrame | Article classes:', contentArea.closest('article')?.className);
     }
+
+    // Initialize Quill editor if in edit mode
+    if (this.editMode && context.canEdit) {
+      await this._initializeEditor();
+    }
+  }
+
+  /**
+   * Load Quill.js library from CDN
+   */
+  async _loadQuill() {
+    // Check if Quill is already loaded
+    if (window.Quill) return true;
+
+    return new Promise((resolve, reject) => {
+      // Load CSS
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = 'https://cdn.quilljs.com/1.3.7/quill.snow.css';
+      document.head.appendChild(link);
+
+      // Load JS
+      const script = document.createElement('script');
+      script.src = 'https://cdn.quilljs.com/1.3.7/quill.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error('Failed to load Quill.js'));
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Initialize the Quill.js editor for the current page
+   */
+  async _initializeEditor() {
+    // Load Quill if not already loaded
+    try {
+      await this._loadQuill();
+    } catch (error) {
+      console.error('StoryFrame | Failed to load Quill.js:', error);
+      ui.notifications.error('Failed to load editor library');
+      return;
+    }
+
+    const editorContainer = this.element.querySelector('#quill-editor');
+    if (!editorContainer) {
+      console.error('StoryFrame | Editor container not found');
+      return;
+    }
+
+    // Get the current page
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.activeJournal) return;
+
+    const journal = await fromUuid(state.activeJournal);
+    if (!journal) return;
+
+    const pages = journal.pages.contents.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    const page = pages[this.currentPageIndex];
+    if (!page || page.type !== 'text') return;
+
+    // Get the raw content (not enriched)
+    const rawContent = page.text.content || '';
+
+    // Clean up existing editor if any
+    if (this.editor) {
+      this.editor = null;
+    }
+
+    // Clear the container to ensure clean state
+    editorContainer.innerHTML = '';
+
+    try {
+      // Initialize Quill
+      this.editor = new Quill(editorContainer, {
+        theme: 'snow',
+        modules: {
+          toolbar: [
+            [{ header: [1, 2, 3, 4, 5, 6, false] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ list: 'ordered' }, { list: 'bullet' }],
+            [{ indent: '-1' }, { indent: '+1' }],
+            [{ align: [] }],
+            ['link', 'image'],
+            ['clean'],
+          ],
+        },
+      });
+
+      // Track dirty state BEFORE setting content to avoid false dirty flag
+      this.editorDirty = false;
+
+      // Set initial content using clipboard API (safer than direct innerHTML)
+      // Wait a tick for Quill to fully initialize
+      setTimeout(() => {
+        if (rawContent) {
+          const delta = this.editor.clipboard.convert(rawContent);
+          this.editor.setContents(delta, 'silent');
+        }
+
+        // Listen for changes AFTER initial content is set
+        this.editor.on('text-change', (delta, oldDelta, source) => {
+          if (source === 'user') {
+            this.editorDirty = true;
+            this._updateDirtyIndicator();
+          }
+        });
+      }, 0);
+
+      console.log('StoryFrame | Quill editor initialized');
+    } catch (error) {
+      console.error('StoryFrame | Failed to initialize Quill editor:', error);
+      ui.notifications.error('Failed to initialize editor');
+      this.editMode = false;
+      this.render();
+    }
+  }
+
+  /**
+   * Update the dirty indicator in the UI
+   */
+  _updateDirtyIndicator() {
+    const indicator = this.element.querySelector('.dirty-indicator');
+    if (indicator) {
+      indicator.classList.toggle('visible', this.editorDirty);
+    }
+  }
+
+  /**
+   * Save the editor content to the journal page
+   */
+  async _saveEditorContent() {
+    if (!this.editor) return false;
+
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.activeJournal) return false;
+
+    const journal = await fromUuid(state.activeJournal);
+    if (!journal) return false;
+
+    const pages = journal.pages.contents.sort((a, b) => (a.sort || 0) - (b.sort || 0));
+    const page = pages[this.currentPageIndex];
+    if (!page) return false;
+
+    try {
+      // Get HTML content from Quill editor
+      const content = this.editor.root.innerHTML;
+
+      // Update the page
+      await page.update({ 'text.content': content });
+
+      this.editorDirty = false;
+      this._updateDirtyIndicator();
+
+      ui.notifications.info('Page saved');
+      return true;
+    } catch (error) {
+      console.error('StoryFrame | Failed to save page:', error);
+      ui.notifications.error('Failed to save page');
+      return false;
+    }
+  }
+
+  /**
+   * Clean up editor when closing or switching modes
+   */
+  _destroyEditor() {
+    if (this.editor) {
+      // Quill doesn't have a destroy method, just clear the reference
+      // The editor container will be removed when the parent is re-rendered
+      this.editor = null;
+    }
+    this.editorDirty = false;
   }
 
   /**
@@ -547,6 +756,35 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       this.currentPageIndex = pageIndex;
       this.render();
     }
+  }
+
+  /**
+   * Attach click handlers for map page elements
+   */
+  _attachMapPageHandlers() {
+    // Handle scene image clicks
+    const sceneImages = this.element.querySelectorAll('.map-page-content img[data-scene-id]');
+    sceneImages.forEach((img) => {
+      img.addEventListener('click', async (e) => {
+        const sceneId = e.currentTarget.dataset.sceneId;
+        const scene = game.scenes.get(sceneId);
+        if (scene && game.user.isGM) {
+          await scene.view();
+        }
+      });
+    });
+
+    // Handle "View Scene" button clicks
+    const viewButtons = this.element.querySelectorAll('.view-scene-btn');
+    viewButtons.forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const sceneId = e.currentTarget.dataset.sceneId;
+        const scene = game.scenes.get(sceneId);
+        if (scene) {
+          await scene.view();
+        }
+      });
+    });
   }
 
   _attachDropdownHandler() {
@@ -683,6 +921,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       game.storyframe.gmSidebar.close();
     }
 
+    // Clean up editor
+    this._destroyEditor();
+    this.editMode = false;
+
     // Clean up dropdown event listener
     if (this._dropdownCloseHandler) {
       document.removeEventListener('click', this._dropdownCloseHandler);
@@ -709,14 +951,40 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     return super._onClose(options);
   }
 
+  /**
+   * Check for unsaved editor changes and prompt user if needed
+   * @returns {Promise<boolean>} True if safe to proceed, false if cancelled
+   */
+  async _checkUnsavedChanges() {
+    if (!this.editMode || !this.editorDirty) return true;
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Unsaved Changes' },
+      content: '<p>You have unsaved changes. Discard them?</p>',
+      yes: { label: 'Discard' },
+      no: { label: 'Cancel', default: true },
+      rejectClose: false,
+    });
+
+    if (confirmed) {
+      this._destroyEditor();
+      this.editMode = false;
+    }
+
+    return confirmed;
+  }
+
   // --- Action Handlers ---
 
   static async _onSelectPage(event, target) {
     const pageIndex = parseInt(target.dataset.pageIndex);
-    if (!isNaN(pageIndex)) {
-      this.currentPageIndex = pageIndex;
-      this.render();
-    }
+    if (isNaN(pageIndex) || pageIndex === this.currentPageIndex) return;
+
+    // Check for unsaved changes before switching pages
+    if (!(await this._checkUnsavedChanges())) return;
+
+    this.currentPageIndex = pageIndex;
+    this.render();
   }
 
   static async _onSearchPages(event, target) {
@@ -805,6 +1073,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     // Close the dropdown
     dropdown?.classList.remove('open');
 
+    // Check for unsaved changes before switching journals
+    if (!(await this._checkUnsavedChanges())) return;
+
     // Update selection
     this.currentPageIndex = 0;
     this.pageSearchFilter = '';
@@ -887,6 +1158,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   static async _onGoBack(event, target) {
     if (this.navigationHistory.length === 0) return;
 
+    // Check for unsaved changes before navigating
+    if (!(await this._checkUnsavedChanges())) return;
+
     // Save current state to forward history before going back
     const state = game.storyframe.stateManager.getState();
     const currentJournalUuid = state?.activeJournal;
@@ -922,6 +1196,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   static async _onGoForward(event, target) {
     if (this.forwardHistory.length === 0) return;
 
+    // Check for unsaved changes before navigating
+    if (!(await this._checkUnsavedChanges())) return;
+
     // Save current state to back history before going forward
     const state = game.storyframe.stateManager.getState();
     const currentJournalUuid = state?.activeJournal;
@@ -955,10 +1232,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   static async _onPreviousPage(event, target) {
-    if (this.currentPageIndex > 0) {
-      this.currentPageIndex--;
-      this.render();
-    }
+    if (this.currentPageIndex <= 0) return;
+
+    // Check for unsaved changes before switching pages
+    if (!(await this._checkUnsavedChanges())) return;
+
+    this.currentPageIndex--;
+    this.render();
   }
 
   static async _onNextPage(event, target) {
@@ -969,9 +1249,64 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (!journal) return;
 
     const pageCount = journal.pages.contents.length;
-    if (this.currentPageIndex < pageCount - 1) {
-      this.currentPageIndex++;
-      this.render();
+    if (this.currentPageIndex >= pageCount - 1) return;
+
+    // Check for unsaved changes before switching pages
+    if (!(await this._checkUnsavedChanges())) return;
+
+    this.currentPageIndex++;
+    this.render();
+  }
+
+  static async _onToggleEditMode(event, target) {
+    // Check for unsaved changes before leaving edit mode
+    if (this.editMode && this.editorDirty) {
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: 'Unsaved Changes' },
+        content: '<p>You have unsaved changes. Discard them?</p>',
+        yes: { label: 'Discard' },
+        no: { label: 'Cancel', default: true },
+        rejectClose: false,
+      });
+
+      if (!confirmed) return;
     }
+
+    // Toggle edit mode
+    this.editMode = !this.editMode;
+
+    // Clean up editor when leaving edit mode
+    if (!this.editMode) {
+      this._destroyEditor();
+    }
+
+    this.render();
+  }
+
+  static async _onSavePageContent(event, target) {
+    const success = await this._saveEditorContent();
+    if (success) {
+      // Stay in edit mode after saving
+    }
+  }
+
+  static async _onCancelEdit(event, target) {
+    // Check for unsaved changes
+    if (this.editorDirty) {
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: 'Unsaved Changes' },
+        content: '<p>You have unsaved changes. Discard them?</p>',
+        yes: { label: 'Discard' },
+        no: { label: 'Cancel', default: true },
+        rejectClose: false,
+      });
+
+      if (!confirmed) return;
+    }
+
+    // Exit edit mode
+    this.editMode = false;
+    this._destroyEditor();
+    this.render();
   }
 }

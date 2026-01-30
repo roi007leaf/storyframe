@@ -109,28 +109,63 @@
             </button>
           </div>
 
-          {{#if partyLevel}}
-          <div class="difficulty-selector">
-            <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
-            <select id="difficulty-select" aria-label="Difficulty by level">
-              {{#each difficultyOptions}}
-                <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-              {{/each}}
-            </select>
-          </div>
-          {{/if}}
+          {{#if isPF2e}}
+            {{#if partyLevel}}
+            <div class="difficulty-selector">
+              <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
+              <select id="difficulty-select" aria-label="Difficulty by level">
+                {{#each difficultyOptions}}
+                  <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+            {{/if}}
 
-          <div class="dc-selector">
-            <label class="label" for="dc-input">DC</label>
-            <input type="number"
-                   id="dc-input"
-                   class="dc-input"
-                   value="{{currentDC}}"
-                   min="1"
-                   max="60"
-                   placeholder="--"
-                   aria-label="Difficulty class">
-          </div>
+            <div class="dc-selector">
+              <label class="label" for="dc-input">DC</label>
+              <input type="number"
+                     id="dc-input"
+                     class="dc-input"
+                     value="{{currentDC}}"
+                     min="1"
+                     max="60"
+                     placeholder="--"
+                     aria-label="Difficulty class">
+            </div>
+          {{else if isDND5e}}
+            <div class="difficulty-selector dnd5e">
+              <label class="label" for="dc-select-dnd5e">Difficulty</label>
+              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+                {{#each dcOptions}}
+                  <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+
+            <div class="dc-selector">
+              <label class="label" for="dc-input">DC</label>
+              <input type="number"
+                     id="dc-input"
+                     class="dc-input"
+                     value="{{currentDC}}"
+                     min="1"
+                     max="60"
+                     placeholder="--"
+                     aria-label="Difficulty class">
+            </div>
+          {{else}}
+            <div class="dc-selector">
+              <label class="label" for="dc-input">DC</label>
+              <input type="number"
+                     id="dc-input"
+                     class="dc-input"
+                     value="{{currentDC}}"
+                     min="1"
+                     max="60"
+                     placeholder="--"
+                     aria-label="Difficulty class">
+            </div>
+          {{/if}}
         </div>
 
         <div class="skill-actions" role="group" aria-label="Quick skill buttons">
@@ -156,22 +191,11 @@
     </div>
   </section>
 
-  <!-- Pending Rolls -->
+  <!-- Pending Rolls Indicator -->
   {{#if pendingRolls.length}}
-  <section class="pending-rolls-section" aria-labelledby="pending-heading">
-    <h4 id="pending-heading">Pending Requests</h4>
-    <div class="pending-list" role="list" aria-label="Pending roll requests">
-      {{#each pendingRolls}}
-        <div class="pending-item" role="listitem">
-          <span class="participant-name">{{this.participantName}}</span>
-          <span class="skill-name">{{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}}</span>
-          {{#if this.dc}}<span class="dc-badge">DC {{this.dc}}</span>{{/if}}
-          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" data-tooltip="Cancel request" aria-label="Cancel {{this.participantName}}'s {{this.skillName}} request">
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-      {{/each}}
-    </div>
-  </section>
+  <div class="pending-rolls-indicator" data-action="showPendingRolls" data-tooltip="{{pendingRolls.length}} pending roll(s) - click to manage" role="button" tabindex="0" aria-label="{{pendingRolls.length}} pending rolls, click to view">
+    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+    <span class="pending-count">{{pendingRolls.length}}</span>
+  </div>
   {{/if}}
 </div>

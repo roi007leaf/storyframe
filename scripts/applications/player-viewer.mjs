@@ -1,7 +1,9 @@
 const MODULE_ID = 'storyframe';
 
+import SystemAdapter from '../system-adapter.mjs';
+
 // Map short skill slugs to full PF2e skill slugs
-const SKILL_SLUG_MAP = {
+const PF2E_SKILL_SLUG_MAP = {
   per: 'perception', // Special case - uses actor.perception not actor.skills
   acr: 'acrobatics',
   arc: 'arcana',
@@ -20,6 +22,34 @@ const SKILL_SLUG_MAP = {
   sur: 'survival',
   thi: 'thievery',
 };
+
+// Map short skill slugs to D&D 5e skill slugs
+const DND5E_SKILL_SLUG_MAP = {
+  acr: 'acr', // Acrobatics
+  ani: 'ani', // Animal Handling
+  arc: 'arc', // Arcana
+  ath: 'ath', // Athletics
+  dec: 'dec', // Deception
+  his: 'his', // History
+  ins: 'ins', // Insight
+  itm: 'itm', // Intimidation
+  inv: 'inv', // Investigation
+  med: 'med', // Medicine
+  nat: 'nat', // Nature
+  prc: 'prc', // Perception
+  prf: 'prf', // Performance
+  per: 'per', // Persuasion
+  rel: 'rel', // Religion
+  slt: 'slt', // Sleight of Hand
+  ste: 'ste', // Stealth
+  sur: 'sur', // Survival
+};
+
+// Get the appropriate skill slug map for the current system
+function getSkillSlugMap() {
+  const system = SystemAdapter.detectSystem();
+  return system === 'dnd5e' ? DND5E_SKILL_SLUG_MAP : PF2E_SKILL_SLUG_MAP;
+}
 
 // Map action slugs to PF2e action identifiers
 const ACTION_DISPLAY_NAMES = {
@@ -143,8 +173,19 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const myParticipant = state?.participants?.find((p) => p.userId === game.user.id);
     let pendingRolls = [];
 
-    // Check if DCs should be shown to players (PF2e metagame setting)
-    const showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
+    // Check if DCs should be shown to players based on system settings
+    const currentSystem = SystemAdapter.detectSystem();
+    let showDCs = true;
+
+    if (currentSystem === 'pf2e') {
+      // PF2e: Check metagame setting
+      showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
+    } else if (currentSystem === 'dnd5e') {
+      // D&D 5e: Check challenge visibility setting
+      const challengeVisibility = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
+      // Show DC if: 'all' OR ('gm' AND user is GM)
+      showDCs = challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM);
+    }
 
     if (myParticipant && state?.pendingRolls) {
       pendingRolls = state.pendingRolls
@@ -153,7 +194,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ...roll,
           skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
           actionName: roll.actionSlug ? ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
-          // Only include DC if the metagame setting allows it
+          // Only include DC if the system setting allows it
           dc: showDCs ? roll.dc : null,
         }));
     }
@@ -344,26 +385,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * @returns {string} Display name (e.g., 'Diplomacy', 'Perception')
    */
   static _getSkillDisplayName(slug) {
-    const skillMap = {
-      per: 'Perception',
-      acr: 'Acrobatics',
-      arc: 'Arcana',
-      ath: 'Athletics',
-      cra: 'Crafting',
-      dec: 'Deception',
-      dip: 'Diplomacy',
-      itm: 'Intimidation',
-      med: 'Medicine',
-      nat: 'Nature',
-      occ: 'Occultism',
-      prf: 'Performance',
-      rel: 'Religion',
-      soc: 'Society',
-      ste: 'Stealth',
-      sur: 'Survival',
-      thi: 'Thievery',
-    };
-    return skillMap[slug] || slug;
+    const skills = SystemAdapter.getSkills();
+    const skill = skills[slug];
+    return skill?.name || slug.toUpperCase();
   }
 
   /**
@@ -399,11 +423,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Execute PF2e roll
+    // Execute roll based on system
     try {
       let roll;
       let actionExecuted = false;
-      const fullSlug = SKILL_SLUG_MAP[request.skillSlug] || request.skillSlug;
+      const currentSystem = SystemAdapter.detectSystem();
+      const skillSlugMap = getSkillSlugMap();
+      const fullSlug = skillSlugMap[request.skillSlug] || request.skillSlug;
 
       // Build roll options - only include DC if set
       const rollOptions = { skipDialog: false };
@@ -411,39 +437,69 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         rollOptions.dc = { value: request.dc };
       }
 
-      // If an actionSlug is provided, use the PF2e action system exclusively
-      if (request.actionSlug && game.pf2e?.actions) {
-        actionExecuted = true;
-        roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
-        // If action failed to execute, don't fall back - the action dialog was shown
-        if (!roll) {
-          console.log(`${MODULE_ID} | Action executed but returned no roll result`);
-        }
-      }
-
-      // Only use basic skill roll if NO actionSlug was requested
-      if (!actionExecuted) {
-        if (request.skillSlug === 'per') {
-          // Perception uses actor.perception.roll()
-          roll = await actor.perception.roll(rollOptions);
-        } else {
-          // Skills use actor.skills[fullSlug].roll()
-          const skill = actor.skills?.[fullSlug];
-          if (!skill) {
-            ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
-            return;
+      if (currentSystem === 'pf2e') {
+        // PF2e: Use action system if actionSlug provided
+        if (request.actionSlug && game.pf2e?.actions) {
+          actionExecuted = true;
+          roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
+          if (!roll) {
+            console.log(`${MODULE_ID} | Action executed but returned no roll result`);
           }
-          roll = await skill.roll(rollOptions);
         }
+
+        // PF2e: Basic skill roll if no action
+        if (!actionExecuted) {
+          if (request.skillSlug === 'per') {
+            // Perception uses actor.perception.roll()
+            roll = await actor.perception.roll(rollOptions);
+          } else {
+            // Skills use actor.skills[fullSlug].roll()
+            const skill = actor.skills?.[fullSlug];
+            if (!skill) {
+              ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
+              return;
+            }
+            roll = await skill.roll(rollOptions);
+          }
+        }
+      } else if (currentSystem === 'dnd5e') {
+        // D&D 5e: Use actor.rollSkill method
+        // D&D 5e doesn't use actions, so ignore actionSlug
+
+        // D&D 5e v4 API: rollSkill(config={}, dialog={}, message={})
+        const config = { skill: fullSlug };
+        const dialogConfig = {};
+        const messageConfig = {};
+
+        // Add DC to message flavor if provided and challenge visibility allows it
+        if (request.dc !== null && request.dc !== undefined) {
+          // Check D&D 5e challenge visibility setting
+          const challengeVisibility = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
+
+          // Show DC in message flavor only if visibility setting allows
+          // 'all' = everyone sees DCs, 'gm' = only GM sees, 'none' = no one sees in chat
+          if (challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM)) {
+            const skillName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
+            messageConfig.flavor = `${skillName} Check (DC ${request.dc})`;
+          }
+        }
+
+        const rollResult = await actor.rollSkill(config, dialogConfig, messageConfig);
+        // D&D 5e rollSkill may return an array or single roll
+        roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else {
+        ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        return;
       }
 
-      // Extract result data
+      // Extract result data (handle both PF2e and D&D 5e formats)
       const result = {
         requestId: request.id,
         participantId: request.participantId,
         skillSlug: request.skillSlug,
         actionSlug: request.actionSlug,
         total: roll?.total ?? 0,
+        // PF2e has degreeOfSuccess, D&D 5e doesn't
         degreeOfSuccess: roll?.degreeOfSuccess?.value || null,
         timestamp: Date.now(),
         chatMessageId: roll?.message?.id || null,
