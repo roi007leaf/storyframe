@@ -93,11 +93,12 @@
       </div>
     </div>
     <div class="header-actions">
-      {{#if canGoBack}}
-      <button type="button" data-action="goBack" data-tooltip="Go Back" aria-label="Go back to previous journal">
+      <button type="button" data-action="goBack" data-tooltip="Go Back" aria-label="Go back to previous journal" {{#unless canGoBack}}disabled{{/unless}}>
         <i class="fas fa-arrow-left" aria-hidden="true"></i>
       </button>
-      {{/if}}
+      <button type="button" data-action="goForward" data-tooltip="Go Forward" aria-label="Go forward to next journal" {{#unless canGoForward}}disabled{{/unless}}>
+        <i class="fas fa-arrow-right" aria-hidden="true"></i>
+      </button>
       {{#if selectedJournal}}
       <button type="button" data-action="editJournal" data-tooltip="Edit Journal" aria-label="Edit journal in native editor">
         <i class="fas fa-edit" aria-hidden="true"></i>
@@ -119,6 +120,17 @@
              autocomplete="off"
              aria-label="Search pages">
     </div>
+    {{#if selectedJournal}}
+    <div class="page-nav-bar">
+      <button type="button" data-action="previousPage" data-tooltip="Previous Page" aria-label="Go to previous page" {{#unless canGoPreviousPage}}disabled{{/unless}}>
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+      </button>
+      <span class="page-indicator" data-tooltip="Current page">{{currentPageNumber}}/{{totalPages}}</span>
+      <button type="button" data-action="nextPage" data-tooltip="Next Page" aria-label="Go to next page" {{#unless canGoNextPage}}disabled{{/unless}}>
+        <i class="fas fa-chevron-down" aria-hidden="true"></i>
+      </button>
+    </div>
+    {{/if}}
     <div class="page-list" role="listbox" aria-label="Journal pages">
       {{#if pages.length}}
         {{#each pages}}

@@ -40,6 +40,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       selectJournal: GMInterfaceApp._onSelectJournal,
       toggleFavorite: GMInterfaceApp._onToggleFavorite,
       goBack: GMInterfaceApp._onGoBack,
+      goForward: GMInterfaceApp._onGoForward,
+      previousPage: GMInterfaceApp._onPreviousPage,
+      nextPage: GMInterfaceApp._onNextPage,
     },
   };
 
@@ -58,8 +61,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.cssScraper = new CSSScraper();
     this.styleElement = null;
 
-    // Navigation history for back button
+    // Navigation history for back/forward buttons
     this.navigationHistory = [];
+    this.forwardHistory = [];
 
     // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -257,6 +261,11 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       pageType,
       pageLevel,
       canGoBack: this.navigationHistory.length > 0,
+      canGoForward: this.forwardHistory.length > 0,
+      canGoPreviousPage: this.currentPageIndex > 0,
+      canGoNextPage: pages.length > 0 && this.currentPageIndex < pages.length - 1,
+      currentPageNumber: this.currentPageIndex + 1,
+      totalPages: pages.length,
     };
   }
 
@@ -492,6 +501,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         const currentJournalUuid = state?.activeJournal;
 
         // Save current state to navigation history before navigating
+        // Clear forward history when navigating to new location (like browser behavior)
+        this.forwardHistory = [];
         if (currentJournalUuid) {
           this.navigationHistory.push({
             journalUuid: currentJournalUuid,
@@ -876,13 +887,20 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   static async _onGoBack(event, target) {
     if (this.navigationHistory.length === 0) return;
 
+    // Save current state to forward history before going back
+    const state = game.storyframe.stateManager.getState();
+    const currentJournalUuid = state?.activeJournal;
+    if (currentJournalUuid) {
+      this.forwardHistory.push({
+        journalUuid: currentJournalUuid,
+        pageIndex: this.currentPageIndex,
+      });
+    }
+
     // Pop the last state from history
     const previousState = this.navigationHistory.pop();
 
     // Navigate back to the previous journal and page
-    const state = game.storyframe.stateManager.getState();
-    const currentJournalUuid = state?.activeJournal;
-
     if (previousState.journalUuid !== currentJournalUuid) {
       // Different journal, switch to it
       this.pageSearchFilter = '';
@@ -897,6 +915,62 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     } else {
       // Same journal, just restore page index
       this.currentPageIndex = previousState.pageIndex;
+      this.render();
+    }
+  }
+
+  static async _onGoForward(event, target) {
+    if (this.forwardHistory.length === 0) return;
+
+    // Save current state to back history before going forward
+    const state = game.storyframe.stateManager.getState();
+    const currentJournalUuid = state?.activeJournal;
+    if (currentJournalUuid) {
+      this.navigationHistory.push({
+        journalUuid: currentJournalUuid,
+        pageIndex: this.currentPageIndex,
+      });
+    }
+
+    // Pop the last state from forward history
+    const nextState = this.forwardHistory.pop();
+
+    // Navigate forward to the next journal and page
+    if (nextState.journalUuid !== currentJournalUuid) {
+      // Different journal, switch to it
+      this.pageSearchFilter = '';
+      this.cssScraper.clearAllCache();
+      await game.storyframe.socketManager.requestSetActiveJournal(nextState.journalUuid);
+
+      // Restore page index after journal loads
+      setTimeout(() => {
+        this.currentPageIndex = nextState.pageIndex;
+        this.render();
+      }, 100);
+    } else {
+      // Same journal, just restore page index
+      this.currentPageIndex = nextState.pageIndex;
+      this.render();
+    }
+  }
+
+  static async _onPreviousPage(event, target) {
+    if (this.currentPageIndex > 0) {
+      this.currentPageIndex--;
+      this.render();
+    }
+  }
+
+  static async _onNextPage(event, target) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.activeJournal) return;
+
+    const journal = await fromUuid(state.activeJournal);
+    if (!journal) return;
+
+    const pageCount = journal.pages.contents.length;
+    if (this.currentPageIndex < pageCount - 1) {
+      this.currentPageIndex++;
       this.render();
     }
   }

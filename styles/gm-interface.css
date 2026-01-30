@@ -601,3 +601,73 @@
   text-shadow: none !important;
   background: transparent !important;
 }
+
+/* Disabled header buttons */
+.storyframe-header .header-actions button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Page Navigation Bar */
+.page-nav-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  border-bottom: 1px solid var(--sf-border-subtle);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.page-nav-bar button {
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid transparent;
+  border-radius: var(--sf-radius-md);
+  color: var(--color-text-light-primary);
+  cursor: pointer;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+}
+
+.page-nav-bar button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: var(--sf-border-medium);
+}
+
+.page-nav-bar button:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.page-nav-bar button:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.page-nav-bar .page-indicator {
+  font-size: var(--sf-font-xs);
+  color: var(--sf-text-muted);
+  font-weight: 600;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Protect page nav bar from module CSS overrides */
+.gm-interface.journal-sheet .page-nav-bar {
+  background: rgba(0, 0, 0, 0.15) !important;
+  color: var(--color-text-light-primary) !important;
+}
+
+.gm-interface.journal-sheet .page-nav-bar button {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-text-light-primary) !important;
+}
+
+.gm-interface.journal-sheet .page-nav-bar .page-indicator {
+  color: var(--sf-text-muted) !important;
+}
