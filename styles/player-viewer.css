@@ -3,11 +3,92 @@
 /* Base gallery container */
 .storyframe.player-viewer {
   animation: sf-fade-in var(--sf-transition-slow) var(--sf-ease-out);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Roll Prompts Section */
+.storyframe.player-viewer .roll-prompts {
+  flex-shrink: 0;
+  background: rgba(255, 193, 7, 0.15);
+  border-bottom: 2px solid rgba(255, 193, 7, 0.3);
+  padding: var(--sf-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-sm);
+}
+
+.storyframe.player-viewer .roll-prompt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--sf-surface-primary);
+  border-radius: var(--sf-radius-md);
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  box-shadow: var(--sf-shadow-md);
+  animation: roll-prompt-pulse 2s ease-in-out infinite;
+}
+
+@keyframes roll-prompt-pulse {
+  0%, 100% {
+    box-shadow: var(--sf-shadow-md);
+  }
+  50% {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.4), var(--sf-shadow-lg);
+  }
+}
+
+.storyframe.player-viewer .roll-prompt .prompt-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.storyframe.player-viewer .roll-prompt .skill-name {
+  font-weight: bold;
+  font-size: var(--sf-font-base);
+  color: var(--sf-text-primary);
+}
+
+.storyframe.player-viewer .roll-prompt .prompt-text {
+  font-size: var(--sf-font-sm);
+  color: var(--sf-text-muted);
+}
+
+.storyframe.player-viewer .roll-prompt .roll-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-xs);
+  padding: var(--sf-space-sm) var(--sf-space-lg);
+  background: var(--color-text-hyperlink);
+  color: white;
+  border: none;
+  border-radius: var(--sf-radius-md);
+  font-weight: bold;
+  font-size: var(--sf-font-base);
+  cursor: pointer;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+  box-shadow: var(--sf-shadow-sm);
+}
+
+.storyframe.player-viewer .roll-prompt .roll-btn:hover {
+  background: var(--color-text-hyperlink-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--sf-shadow-md);
+}
+
+.storyframe.player-viewer .roll-prompt .roll-btn:active {
+  transform: translateY(0);
+  box-shadow: var(--sf-shadow-sm);
+}
+
+.storyframe.player-viewer .roll-prompt .roll-btn i {
+  font-size: 1.2em;
 }
 
 .storyframe.player-viewer .speaker-gallery {
+  flex: 1;
   padding: var(--sf-space-md);
-  height: 100%;
   overflow: auto;
 }
 
