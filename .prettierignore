@@ -1,0 +1,14 @@
+# Generated files
+node_modules/
+*.log
+*.lock
+
+# FoundryVTT specific
+packs/
+module.json
+
+# Templates (Handlebars not well supported by Prettier)
+*.hbs
+
+# Planning docs
+.planning/

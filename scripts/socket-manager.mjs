@@ -25,6 +25,7 @@ export class SocketManager {
     this.socket.register('submitRollResult', this._handleSubmitRollResult);
     this.socket.register('promptSkillCheck', this._handlePromptSkillCheck);
     this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
+    this.socket.register('openPlayerViewer', this._handleOpenPlayerViewer);
 
     console.log(`${MODULE_ID} | SocketManager initialized`);
   }
@@ -148,6 +149,14 @@ export class SocketManager {
    */
   broadcastRollHistoryUpdate(historyData) {
     this.socket.executeForEveryone('rollHistoryUpdate', historyData);
+  }
+
+  /**
+   * Open player viewer on all player clients.
+   * Called by GM to ensure all players have the viewer open.
+   */
+  openAllPlayerViewers() {
+    this.socket.executeForEveryone('openPlayerViewer');
   }
 
   // --- Handlers (execute on GM client) ---
@@ -292,5 +301,26 @@ export class SocketManager {
     // Update local UI displays
     game.storyframe.gmApp?.render();
     game.storyframe.playerApp?.render();
+  }
+
+  /**
+   * Handler: Open player viewer.
+   * Runs on all clients - opens the player viewer for non-GM users.
+   */
+  _handleOpenPlayerViewer() {
+    console.log(`${MODULE_ID} | Socket: openPlayerViewer`);
+
+    // Only open for non-GM users
+    if (game.user.isGM) return;
+
+    // Import and create viewer if needed
+    if (!game.storyframe.playerViewer) {
+      import('./applications/player-viewer.mjs').then(({ PlayerViewerApp }) => {
+        game.storyframe.playerViewer = new PlayerViewerApp();
+        game.storyframe.playerViewer.render(true);
+      });
+    } else if (!game.storyframe.playerViewer.rendered) {
+      game.storyframe.playerViewer.render(true);
+    }
   }
 }

@@ -16,7 +16,7 @@ export function validatePosition(saved) {
     top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
     left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
     width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
-    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight))
+    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight)),
   };
 }
 
@@ -30,7 +30,7 @@ Hooks.once('init', () => {
       stateManager: null,
       socketManager: null,
       gmApp: null,
-      gmSidebar: null
+      gmSidebar: null,
     };
   }
 
@@ -41,7 +41,7 @@ Hooks.once('init', () => {
     scope: 'world',
     config: true,
     type: Boolean,
-    default: false
+    default: false,
   });
 
   game.settings.register(MODULE_ID, 'gmWindowPosition', {
@@ -49,14 +49,14 @@ Hooks.once('init', () => {
     scope: 'client',
     config: false,
     type: Object,
-    default: {}
+    default: {},
   });
 
   game.settings.register(MODULE_ID, 'playerViewerPosition', {
     scope: 'client',
     config: false,
     type: Object,
-    default: {}
+    default: {},
   });
 
   game.settings.register(MODULE_ID, 'playerViewerLayout', {
@@ -67,65 +67,70 @@ Hooks.once('init', () => {
     choices: {
       grid: 'Grid',
       list: 'List',
-      horizontal: 'Horizontal'
-    }
+      horizontal: 'Horizontal',
+    },
   });
 
   game.settings.register(MODULE_ID, 'gmWindowMinimized', {
     scope: 'client',
     config: false,
     type: Boolean,
-    default: false
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'favoriteJournals', {
+    scope: 'client',
+    config: false,
+    type: Array,
+    default: [],
   });
 
   game.settings.register(MODULE_ID, 'gmSidebarPosition', {
     scope: 'client',
     config: false,
     type: Object,
-    default: {}
+    default: {},
   });
 
   game.settings.register(MODULE_ID, 'gmSidebarMinimized', {
     scope: 'client',
     config: false,
     type: Boolean,
-    default: false
+    default: false,
   });
 
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
     type: Boolean,
-    default: false
+    default: false,
   });
 
   game.settings.register(MODULE_ID, 'gmWindowWasOpen', {
     scope: 'client',
     config: false,
     type: Boolean,
-    default: false
+    default: false,
   });
 
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'Quick Button Skills',
-    hint: 'Comma-separated skill slugs for quick buttons (e.g., per,dec,dip,itm,prf)',
+    hint: 'Configure via the gear icon in the GM Sidebar skill buttons area',
     scope: 'world',
-    config: true,
+    config: false, // Configured via UI in GM Sidebar
     type: String,
-    default: 'per,dec,dip,itm,prf',
+    default: 'per,dec,dip,itm,ste,prf',
     onChange: () => {
       // Re-render GM sidebar if open
       game.storyframe.gmSidebar?.render();
-    }
+    },
   });
 
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
     name: 'Toggle StoryFrame',
     hint: 'Show or hide the StoryFrame window',
-    editable: [
-      { key: 'KeyS', modifiers: ['Control', 'Shift'] }
-    ],
+    editable: [{ key: 'KeyS', modifiers: ['Control', 'Shift'] }],
     onDown: () => {
       if (game.user.isGM) {
         // Toggle GM interface and sidebar together
@@ -156,7 +161,7 @@ Hooks.once('init', () => {
       return true; // Consume the event
     },
     restricted: false, // Available to all users
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL
+    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
   });
 });
 
@@ -176,7 +181,7 @@ Hooks.once('socketlib.ready', () => {
       stateManager: null,
       socketManager: null,
       gmApp: null,
-      gmSidebar: null
+      gmSidebar: null,
     };
   }
 
@@ -213,7 +218,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         game.storyframe.gmApp.render(true);
         game.storyframe.gmSidebar.render(true);
       },
-      button: true
+      button: true,
     };
     console.log(`${MODULE_ID} | Added GM button`);
   }
@@ -231,7 +236,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         }
         game.storyframe.playerViewer.render(true);
       },
-      button: true
+      button: true,
     };
     console.log(`${MODULE_ID} | Added Player button`);
   }
@@ -246,13 +251,27 @@ Hooks.once('ready', async () => {
   }
   await game.storyframe.stateManager.load();
 
-  // GM auto-open logic (after stateManager.load)
-  if (game.user.isGM && game.settings.get(MODULE_ID, 'gmWindowWasOpen')) {
-    game.storyframe.gmApp = new GMInterfaceApp();
-    game.storyframe.gmSidebar = new GMSidebarApp();
-    game.storyframe.gmApp.render(true);
-    game.storyframe.gmSidebar.render(true);
+  // Migration: Add stealth to quick skills if missing (added in later update)
+  if (game.user.isGM) {
+    const quickSkills = game.settings.get(MODULE_ID, 'quickButtonSkills');
+    if (quickSkills && !quickSkills.includes('ste')) {
+      const skills = quickSkills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+      // Insert stealth after intimidation if present, otherwise at end
+      const itmIndex = skills.indexOf('itm');
+      if (itmIndex !== -1) {
+        skills.splice(itmIndex + 1, 0, 'ste');
+      } else {
+        skills.push('ste');
+      }
+      await game.settings.set(MODULE_ID, 'quickButtonSkills', skills.join(','));
+      console.log(`${MODULE_ID} | Added stealth to quick skills`);
+    }
   }
+
+  // GM window only opens when button is pressed (no auto-open)
 
   // Initialize player viewer for non-GM users
   if (!game.user.isGM) {
@@ -304,11 +323,11 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
     const hasSpeakers = state?.speakers?.length > 0;
 
     if (hasSpeakers && !viewer.rendered) {
-      viewer.render(true);  // Auto-open when first speaker added
+      viewer.render(true); // Auto-open when first speaker added
     } else if (!hasSpeakers && viewer.rendered) {
-      viewer.close();  // Close only if NO speakers (not just no active speaker)
+      viewer.close(); // Close only if NO speakers (not just no active speaker)
     } else if (viewer.rendered) {
-      viewer.render();  // Update display
+      viewer.render(); // Update display
     }
   }
 });

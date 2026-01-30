@@ -4,8 +4,9 @@ const MODULE_ID = 'storyframe';
  * GM Sidebar for StoryFrame
  * Drawer-style window that attaches to the right side of the main GM Interface
  */
-export class GMSidebarApp extends foundry.applications.api.HandlebarsApplicationMixin(foundry.applications.api.ApplicationV2) {
-
+export class GMSidebarApp extends foundry.applications.api.HandlebarsApplicationMixin(
+  foundry.applications.api.ApplicationV2,
+) {
   static DEFAULT_OPTIONS = {
     id: 'storyframe-gm-sidebar',
     classes: ['storyframe', 'gm-sidebar', 'drawer'],
@@ -13,17 +14,19 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       title: 'Characters',
       icon: 'fas fa-users',
       resizable: false,
-      minimizable: false
+      minimizable: false,
     },
     position: {
-      width: 280,
-      height: 500
+      width: 330,
+      height: 500,
     },
     actions: {
       addSpeakerFromImage: GMSidebarApp._onAddSpeakerFromImage,
       setSpeaker: GMSidebarApp._onSetSpeaker,
       removeSpeaker: GMSidebarApp._onRemoveSpeaker,
       clearSpeaker: GMSidebarApp._onClearSpeaker,
+      clearAllSpeakers: GMSidebarApp._onClearAllSpeakers,
+      clearAllParticipants: GMSidebarApp._onClearAllParticipants,
       togglePCsPanel: GMSidebarApp._onTogglePCsPanel,
       addAllPCs: GMSidebarApp._onAddAllPCs,
       toggleParticipantSelection: GMSidebarApp._onToggleParticipantSelection,
@@ -31,16 +34,19 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       toggleSelectAll: GMSidebarApp._onToggleSelectAll,
       requestSkill: GMSidebarApp._onRequestSkill,
       openSkillMenu: GMSidebarApp._onOpenSkillMenu,
+      openSkillConfig: GMSidebarApp._onOpenSkillConfig,
       setDCSelect: GMSidebarApp._onSetDCSelect,
-      cancelRoll: GMSidebarApp._onCancelRoll
-    }
+      setDifficulty: GMSidebarApp._onSetDifficulty,
+      cancelRoll: GMSidebarApp._onCancelRoll,
+      openPlayerWindows: GMSidebarApp._onOpenPlayerWindows,
+    },
   };
 
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-sidebar.hbs',
-      scrollable: ['.speaker-gallery', '.panel-content']
-    }
+      scrollable: ['.speaker-gallery', '.panel-content'],
+    },
   };
 
   /** @type {GMInterfaceApp|null} Reference to the parent interface */
@@ -48,6 +54,148 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
   /** @type {Function|null} Bound handler for parent position changes */
   _parentPositionHandler = null;
+
+  // Skill actions mapping (PF2e)
+  static SKILL_ACTIONS = {
+    per: [
+      { slug: 'seek', name: 'Seek' },
+      { slug: 'sense-direction', name: 'Sense Direction' },
+    ],
+    acr: [
+      { slug: 'balance', name: 'Balance' },
+      { slug: 'tumble-through', name: 'Tumble Through' },
+      { slug: 'maneuver-in-flight', name: 'Maneuver in Flight' },
+      { slug: 'squeeze', name: 'Squeeze' },
+    ],
+    arc: [
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'decipher-writing', name: 'Decipher Writing' },
+      { slug: 'identify-magic', name: 'Identify Magic' },
+      { slug: 'learn-spell', name: 'Learn a Spell' },
+    ],
+    ath: [
+      { slug: 'climb', name: 'Climb' },
+      { slug: 'force-open', name: 'Force Open' },
+      { slug: 'grapple', name: 'Grapple' },
+      { slug: 'high-jump', name: 'High Jump' },
+      { slug: 'long-jump', name: 'Long Jump' },
+      { slug: 'shove', name: 'Shove' },
+      { slug: 'swim', name: 'Swim' },
+      { slug: 'trip', name: 'Trip' },
+      { slug: 'disarm', name: 'Disarm' },
+    ],
+    cra: [
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'repair', name: 'Repair' },
+      { slug: 'craft', name: 'Craft' },
+      { slug: 'identify-alchemy', name: 'Identify Alchemy' },
+    ],
+    dec: [
+      { slug: 'create-a-diversion', name: 'Create a Diversion' },
+      { slug: 'impersonate', name: 'Impersonate' },
+      { slug: 'lie', name: 'Lie' },
+      { slug: 'feint', name: 'Feint' },
+    ],
+    dip: [
+      { slug: 'gather-information', name: 'Gather Information' },
+      { slug: 'make-an-impression', name: 'Make an Impression' },
+      { slug: 'request', name: 'Request' },
+    ],
+    itm: [
+      { slug: 'coerce', name: 'Coerce' },
+      { slug: 'demoralize', name: 'Demoralize' },
+    ],
+    med: [
+      { slug: 'administer-first-aid', name: 'Administer First Aid' },
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'treat-disease', name: 'Treat Disease' },
+      { slug: 'treat-poison', name: 'Treat Poison' },
+      { slug: 'treat-wounds', name: 'Treat Wounds' },
+    ],
+    nat: [
+      { slug: 'command-an-animal', name: 'Command an Animal' },
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'identify-magic', name: 'Identify Magic' },
+      { slug: 'learn-spell', name: 'Learn a Spell' },
+    ],
+    occ: [
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'decipher-writing', name: 'Decipher Writing' },
+      { slug: 'identify-magic', name: 'Identify Magic' },
+      { slug: 'learn-spell', name: 'Learn a Spell' },
+    ],
+    prf: [{ slug: 'perform', name: 'Perform' }],
+    rel: [
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'decipher-writing', name: 'Decipher Writing' },
+      { slug: 'identify-magic', name: 'Identify Magic' },
+      { slug: 'learn-spell', name: 'Learn a Spell' },
+    ],
+    soc: [
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'create-forgery', name: 'Create Forgery' },
+      { slug: 'decipher-writing', name: 'Decipher Writing' },
+      { slug: 'subsist', name: 'Subsist' },
+    ],
+    ste: [
+      { slug: 'conceal-an-object', name: 'Conceal an Object' },
+      { slug: 'hide', name: 'Hide' },
+      { slug: 'sneak', name: 'Sneak' },
+    ],
+    sur: [
+      { slug: 'sense-direction', name: 'Sense Direction' },
+      { slug: 'subsist', name: 'Subsist' },
+      { slug: 'track', name: 'Track' },
+      { slug: 'cover-tracks', name: 'Cover Tracks' },
+    ],
+    thi: [
+      { slug: 'palm-an-object', name: 'Palm an Object' },
+      { slug: 'steal', name: 'Steal' },
+      { slug: 'pick-a-lock', name: 'Pick a Lock' },
+      { slug: 'disable-device', name: 'Disable Device' },
+    ],
+  };
+
+  // DC by Level table (PF2e standard)
+  static DC_BY_LEVEL = {
+    0: 14,
+    1: 15,
+    2: 16,
+    3: 18,
+    4: 19,
+    5: 20,
+    6: 22,
+    7: 23,
+    8: 24,
+    9: 26,
+    10: 27,
+    11: 28,
+    12: 30,
+    13: 31,
+    14: 32,
+    15: 34,
+    16: 35,
+    17: 36,
+    18: 38,
+    19: 39,
+    20: 40,
+    21: 42,
+    22: 44,
+    23: 46,
+    24: 48,
+    25: 50,
+  };
+
+  // Difficulty adjustments
+  static DIFFICULTY_ADJUSTMENTS = [
+    { id: 'trivial', label: 'Trivial', adjustment: -10 },
+    { id: 'low', label: 'Low', adjustment: -5 },
+    { id: 'low-med', label: 'Low-Med', adjustment: -2 },
+    { id: 'standard', label: 'Standard', adjustment: 0 },
+    { id: 'med-high', label: 'Med-High', adjustment: 2 },
+    { id: 'high', label: 'High', adjustment: 5 },
+    { id: 'extreme', label: 'Extreme', adjustment: 10 },
+  ];
 
   constructor(options = {}) {
     super(options);
@@ -57,6 +205,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.pcsPanelCollapsed = false;
     this.selectedParticipants = new Set();
     this.currentDC = null;
+    this.currentDifficulty = 'standard'; // Default difficulty
 
     // Store reference to parent interface (stored as gmApp in game.storyframe)
     this.parentInterface = game.storyframe?.gmApp || null;
@@ -68,10 +217,15 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    */
   _positionAsDrawer(retryCount = 3) {
     if (!this.parentInterface?.rendered || !this.parentInterface.element) {
-      console.warn('StoryFrame | Drawer: Parent interface not ready, parentInterface:', this.parentInterface);
+      console.warn(
+        'StoryFrame | Drawer: Parent interface not ready, parentInterface:',
+        this.parentInterface,
+      );
       // Retry if we have attempts left
       if (retryCount > 0) {
-        console.log(`StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`);
+        console.log(
+          `StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`,
+        );
         setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
       }
       return;
@@ -86,14 +240,16 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       right: parentRect.right,
       top: parentRect.top,
       width: parentRect.width,
-      height: parentRect.height
+      height: parentRect.height,
     });
 
     // Check if parent has valid dimensions (not at 0,0 with no size)
     if (parentRect.width === 0 || parentRect.height === 0) {
       console.warn('StoryFrame | Drawer: Parent has no dimensions yet');
       if (retryCount > 0) {
-        console.log(`StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`);
+        console.log(
+          `StoryFrame | Drawer: Retrying position in 100ms (${retryCount} attempts left)`,
+        );
         setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
       }
       return;
@@ -113,13 +269,17 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       adjustedLeft = Math.max(0, parentRect.left - this.position.width);
     }
 
-    console.log('StoryFrame | Drawer final position:', { left: adjustedLeft, top: newTop, height: newHeight });
+    console.log('StoryFrame | Drawer final position:', {
+      left: adjustedLeft,
+      top: newTop,
+      height: newHeight,
+    });
 
     // Use setPosition for ApplicationV2
     this.setPosition({
       left: adjustedLeft,
       top: newTop,
-      height: newHeight
+      height: newHeight,
     });
 
     // Also set directly on the element as a fallback (some ApplicationV2 implementations need this)
@@ -160,7 +320,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     console.log('StoryFrame | Drawer: Starting to track parent element');
     this._parentObserver.observe(this.parentInterface.element, {
       attributes: true,
-      attributeFilter: ['style']
+      attributeFilter: ['style'],
     });
   }
 
@@ -188,18 +348,18 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         currentDC: null,
         pendingRolls: [],
         quickButtonSkills: [],
-        pcsPanelCollapsed: this.pcsPanelCollapsed
+        pcsPanelCollapsed: this.pcsPanelCollapsed,
       };
     }
 
     // Resolve speakers (NPCs)
     const speakers = await Promise.all(
-      state.speakers.map(async speaker => {
+      state.speakers.map(async (speaker) => {
         const resolved = await game.storyframe.stateManager.resolveSpeaker(speaker);
         const result = {
           id: speaker.id,
           img: resolved.img,
-          name: resolved.name
+          name: resolved.name,
         };
 
         if (speaker.actorUuid) {
@@ -210,12 +370,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         }
 
         return result;
-      })
+      }),
     );
 
     // Resolve participants (PCs)
     const participants = await Promise.all(
-      (state.participants || []).map(async p => {
+      (state.participants || []).map(async (p) => {
         const actor = await fromUuid(p.actorUuid);
         return {
           id: p.id,
@@ -223,34 +383,57 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
           userId: p.userId,
           img: actor?.img || 'icons/svg/mystery-man.svg',
           name: actor?.name || 'Unknown',
-          selected: this.selectedParticipants.has(p.id)
+          selected: this.selectedParticipants.has(p.id),
         };
-      })
+      }),
     );
 
     // Pending rolls with names
     const pendingRolls = await Promise.all(
-      (state.pendingRolls || []).map(async r => {
-        const participant = state.participants?.find(p => p.id === r.participantId);
+      (state.pendingRolls || []).map(async (r) => {
+        const participant = state.participants?.find((p) => p.id === r.participantId);
+        const actionName = r.actionSlug ? this._getActionName(r.skillSlug, r.actionSlug) : null;
         return {
           ...r,
-          participantName: participant ? await this._resolveParticipantName(participant) : 'Unknown',
-          skillName: this._getSkillName(r.skillSlug)
+          participantName: participant
+            ? await this._resolveParticipantName(participant)
+            : 'Unknown',
+          skillName: this._getSkillName(r.skillSlug),
+          actionName,
         };
-      })
+      }),
     );
 
     // Quick button skills from settings
     const quickSkillsSetting = game.settings.get(MODULE_ID, 'quickButtonSkills');
-    const quickSkills = quickSkillsSetting.split(',').map(s => s.trim()).filter(Boolean);
-    const quickButtonSkills = quickSkills.map(slug => ({
+    const quickSkills = quickSkillsSetting
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const quickButtonSkills = quickSkills.map((slug) => ({
       slug,
       name: this._getSkillName(slug),
-      shortName: this._getSkillShortName(slug)
+      shortName: this._getSkillShortName(slug),
     }));
 
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
+
+    // Get party level and calculate DC by level
+    const partyLevel = await this._getPartyLevel();
+    const calculatedDC =
+      partyLevel !== null ? this._calculateDCByLevel(partyLevel, this.currentDifficulty) : null;
+
+    // If using difficulty-based DC, update currentDC
+    if (this.currentDC === null && calculatedDC !== null) {
+      this.currentDC = calculatedDC;
+    }
+
+    // Build difficulty options with current selection
+    const difficultyOptions = GMSidebarApp.DIFFICULTY_ADJUSTMENTS.map((d) => ({
+      ...d,
+      selected: d.id === this.currentDifficulty,
+    }));
 
     return {
       speakers,
@@ -261,9 +444,13 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       selectedCount,
       allSelected,
       currentDC: this.currentDC,
+      partyLevel,
+      calculatedDC,
+      currentDifficulty: this.currentDifficulty,
+      difficultyOptions,
       pendingRolls,
       quickButtonSkills,
-      pcsPanelCollapsed: this.pcsPanelCollapsed
+      pcsPanelCollapsed: this.pcsPanelCollapsed,
     };
   }
 
@@ -271,6 +458,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     super._onRender(context, options);
     this._attachDragDropHandlers();
     this._disableWindowDrag();
+    this._attachDCHandlers();
+    this._attachImageContextMenu();
+    this._attachSkillActionContextMenu();
 
     // Position as drawer on first render
     if (!this._stateRestored) {
@@ -305,11 +495,245 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     const header = this.element.querySelector('.window-header');
     if (header) {
       // Prevent mousedown from initiating drag
-      header.addEventListener('mousedown', (e) => {
-        // Allow clicks on buttons
-        if (e.target.closest('button, a')) return;
+      header.addEventListener(
+        'mousedown',
+        (e) => {
+          // Allow clicks on buttons
+          if (e.target.closest('button, a')) return;
+          e.stopPropagation();
+        },
+        true,
+      );
+    }
+  }
+
+  _attachDCHandlers() {
+    // DC input field
+    const dcInput = this.element.querySelector('#dc-input');
+    if (dcInput) {
+      dcInput.addEventListener('change', (e) => {
+        const value = e.target.value;
+        if (value === '') {
+          this.currentDC = null;
+        } else {
+          const dc = parseInt(value);
+          if (!isNaN(dc)) {
+            this.currentDC = dc;
+          }
+        }
+      });
+    }
+
+    // Difficulty selector
+    const difficultySelect = this.element.querySelector('#difficulty-select');
+    if (difficultySelect) {
+      difficultySelect.addEventListener('change', async (e) => {
+        const difficulty = e.target.value;
+        this.currentDifficulty = difficulty;
+
+        // Recalculate DC based on party level and new difficulty
+        const partyLevel = await this._getPartyLevel();
+        if (partyLevel !== null) {
+          this.currentDC = this._calculateDCByLevel(partyLevel, difficulty);
+          // Update the DC input field
+          const dcInput = this.element.querySelector('#dc-input');
+          if (dcInput) {
+            dcInput.value = this.currentDC;
+          }
+        }
+      });
+    }
+  }
+
+  /**
+   * Attach right-click context menu for NPC image enlargement
+   */
+  _attachImageContextMenu() {
+    const images = this.element.querySelectorAll('.speaker-thumbnail img');
+    images.forEach((img) => {
+      img.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
         e.stopPropagation();
-      }, true);
+        const name =
+          img.alt ||
+          img.closest('.speaker-thumbnail')?.querySelector('.speaker-name')?.textContent ||
+          'NPC';
+        this._showEnlargedImage(img.src, name);
+      });
+    });
+  }
+
+  /**
+   * Show enlarged image in a popup
+   */
+  _showEnlargedImage(src, name) {
+    // Remove existing popup if any
+    document.querySelector('.storyframe-image-popup')?.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'storyframe-image-popup';
+    popup.innerHTML = `
+      <div class="popup-backdrop"></div>
+      <div class="popup-content">
+        <img src="${src}" alt="${name}">
+        <div class="popup-name">${name}</div>
+      </div>
+    `;
+
+    // Close on click anywhere
+    popup.addEventListener('click', () => popup.remove());
+
+    // Close on escape key
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        popup.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(popup);
+  }
+
+  /**
+   * Attach right-click context menu for skill action selection
+   */
+  _attachSkillActionContextMenu() {
+    const skillButtons = this.element.querySelectorAll('.skill-btn[data-skill]');
+    skillButtons.forEach((btn) => {
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const skillSlug = btn.dataset.skill;
+        if (skillSlug) {
+          this._showSkillActionsMenu(e, skillSlug);
+        }
+      });
+    });
+  }
+
+  /**
+   * Show skill actions popup menu
+   */
+  _showSkillActionsMenu(event, skillSlug) {
+    const actions = GMSidebarApp.SKILL_ACTIONS[skillSlug];
+    if (!actions || actions.length === 0) {
+      ui.notifications.info(`No specific actions for ${this._getSkillName(skillSlug)}`);
+      return;
+    }
+
+    const skillName = this._getSkillName(skillSlug);
+    const appInstance = this;
+
+    // Remove any existing menu
+    document.querySelector('.storyframe-skill-actions-menu')?.remove();
+
+    // Create popup menu
+    const menu = document.createElement('div');
+    menu.className = 'storyframe-skill-actions-menu';
+    menu.innerHTML = `
+      <div class="menu-header">${skillName} Actions</div>
+      <div class="menu-actions">
+        ${actions.map((a) => `<button type="button" class="action-option" data-action-slug="${a.slug}" data-skill="${skillSlug}">${a.name}</button>`).join('')}
+      </div>
+    `;
+
+    // Position near the click
+    const rect = event.target.getBoundingClientRect();
+    menu.style.cssText = `
+      position: fixed;
+      top: ${rect.bottom + 4}px;
+      left: ${rect.left}px;
+      z-index: 10000;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 8px;
+      padding: 0;
+      min-width: 160px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      overflow: hidden;
+    `;
+
+    // Style header
+    const header = menu.querySelector('.menu-header');
+    header.style.cssText = `
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    // Style actions container
+    const actionsContainer = menu.querySelector('.menu-actions');
+    actionsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      padding: 4px;
+    `;
+
+    // Add click handlers
+    menu.querySelectorAll('.action-option').forEach((btn) => {
+      btn.style.cssText = `
+        padding: 8px 12px;
+        background: transparent;
+        border: none;
+        color: #e0e0e0;
+        cursor: pointer;
+        text-align: left;
+        border-radius: 4px;
+        font-size: 13px;
+        font-weight: 500;
+        transition: background 0.15s ease;
+      `;
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'rgba(94, 129, 172, 0.3)';
+        btn.style.color = '#ffffff';
+      });
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'transparent';
+        btn.style.color = '#e0e0e0';
+      });
+      btn.addEventListener('click', async () => {
+        const actionSlug = btn.dataset.actionSlug;
+        const actionSkill = btn.dataset.skill;
+        menu.remove();
+
+        if (appInstance.selectedParticipants.size === 0) {
+          ui.notifications.warn('No PCs selected');
+          return;
+        }
+
+        // Request skill check with action context
+        await appInstance._requestSkillCheck(
+          actionSkill,
+          Array.from(appInstance.selectedParticipants),
+          actionSlug,
+        );
+      });
+    });
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+    document.body.appendChild(menu);
+
+    // Adjust position if off-screen
+    const menuRect = menu.getBoundingClientRect();
+    if (menuRect.right > window.innerWidth) {
+      menu.style.left = `${window.innerWidth - menuRect.width - 10}px`;
+    }
+    if (menuRect.bottom > window.innerHeight) {
+      menu.style.top = `${rect.top - menuRect.height - 4}px`;
     }
   }
 
@@ -344,15 +768,15 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
                 content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
                 ok: {
                   label: 'Add',
-                  callback: (event, button, dialog) => button.form.elements.label.value
+                  callback: (event, button, dialog) => button.form.elements.label.value,
                 },
-                rejectClose: false
+                rejectClose: false,
               });
 
               if (label) {
                 await game.storyframe.socketManager.requestAddSpeaker({
                   imagePath: imageData.src,
-                  label
+                  label,
                 });
               }
               return;
@@ -370,8 +794,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
           // Reject player characters
           if (actor.type === 'character') {
-            const isPlayerOwned = game.users.some(user =>
-              !user.isGM && actor.testUserPermission(user, 'OWNER')
+            const isPlayerOwned = game.users.some(
+              (user) => !user.isGM && actor.testUserPermission(user, 'OWNER'),
             );
             if (isPlayerOwned) {
               ui.notifications.warn('Player characters should be added to the PCs section');
@@ -381,7 +805,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
           await game.storyframe.socketManager.requestAddSpeaker({
             actorUuid: data.uuid,
-            label: actor.name
+            label: actor.name,
           });
         }
       });
@@ -416,8 +840,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
             return;
           }
 
-          const owningUser = game.users.find(user =>
-            !user.isGM && actor.testUserPermission(user, 'OWNER')
+          const owningUser = game.users.find(
+            (user) => !user.isGM && actor.testUserPermission(user, 'OWNER'),
           );
 
           if (!owningUser) {
@@ -427,7 +851,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
           await game.storyframe.socketManager.requestAddParticipant({
             actorUuid: data.uuid,
-            userId: owningUser.id
+            userId: owningUser.id,
           });
         }
       });
@@ -444,43 +868,54 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   // --- Helper Methods ---
 
   _getPlayerCharacters() {
-    return game.actors.filter(actor => {
+    return game.actors.filter((actor) => {
       if (actor.type !== 'character') return false;
-      return game.users.some(user =>
-        !user.isGM && actor.testUserPermission(user, 'OWNER')
-      );
+      return game.users.some((user) => !user.isGM && actor.testUserPermission(user, 'OWNER'));
     });
   }
 
   _getSkillName(slug) {
     const skillMap = {
-      'per': 'Perception',
-      'acr': 'Acrobatics',
-      'arc': 'Arcana',
-      'ath': 'Athletics',
-      'cra': 'Crafting',
-      'dec': 'Deception',
-      'dip': 'Diplomacy',
-      'itm': 'Intimidation',
-      'med': 'Medicine',
-      'nat': 'Nature',
-      'occ': 'Occultism',
-      'prf': 'Performance',
-      'rel': 'Religion',
-      'soc': 'Society',
-      'ste': 'Stealth',
-      'sur': 'Survival',
-      'thi': 'Thievery'
+      per: 'Perception',
+      acr: 'Acrobatics',
+      arc: 'Arcana',
+      ath: 'Athletics',
+      cra: 'Crafting',
+      dec: 'Deception',
+      dip: 'Diplomacy',
+      itm: 'Intimidation',
+      med: 'Medicine',
+      nat: 'Nature',
+      occ: 'Occultism',
+      prf: 'Performance',
+      rel: 'Religion',
+      soc: 'Society',
+      ste: 'Stealth',
+      sur: 'Survival',
+      thi: 'Thievery',
     };
     return skillMap[slug] || slug.toUpperCase();
   }
 
   _getSkillShortName(slug) {
     const shortNames = {
-      per: 'Per', acr: 'Acr', arc: 'Arc', ath: 'Ath', cra: 'Cra',
-      dec: 'Dec', dip: 'Dip', itm: 'Itm', med: 'Med', nat: 'Nat',
-      occ: 'Occ', prf: 'Prf', rel: 'Rel', soc: 'Soc', ste: 'Ste',
-      sur: 'Sur', thi: 'Thi'
+      per: 'Per',
+      acr: 'Acr',
+      arc: 'Arc',
+      ath: 'Ath',
+      cra: 'Cra',
+      dec: 'Dec',
+      dip: 'Dip',
+      itm: 'Itm',
+      med: 'Med',
+      nat: 'Nat',
+      occ: 'Occ',
+      prf: 'Prf',
+      rel: 'Rel',
+      soc: 'Soc',
+      ste: 'Ste',
+      sur: 'Sur',
+      thi: 'Thi',
     };
     return shortNames[slug] || slug.substring(0, 3);
   }
@@ -490,7 +925,44 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     return actor?.name || 'Unknown';
   }
 
-  async _requestSkillCheck(skillSlug, participantIds) {
+  /**
+   * Get the party level (average or highest of selected participants)
+   * @returns {Promise<number|null>} The party level or null if no participants
+   */
+  async _getPartyLevel() {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants?.length) return null;
+
+    // Get levels from all participants
+    const levels = await Promise.all(
+      state.participants.map(async (p) => {
+        const actor = await fromUuid(p.actorUuid);
+        // PF2e stores level in system.details.level.value
+        return actor?.system?.details?.level?.value ?? actor?.system?.level ?? null;
+      }),
+    );
+
+    const validLevels = levels.filter((l) => l !== null);
+    if (validLevels.length === 0) return null;
+
+    // Use the average level (rounded)
+    return Math.round(validLevels.reduce((a, b) => a + b, 0) / validLevels.length);
+  }
+
+  /**
+   * Calculate DC from level and difficulty
+   * @param {number} level - The party level
+   * @param {string} difficultyId - The difficulty ID
+   * @returns {number} The calculated DC
+   */
+  _calculateDCByLevel(level, difficultyId) {
+    const baseDC = GMSidebarApp.DC_BY_LEVEL[Math.min(Math.max(level, 0), 25)] || 14;
+    const difficulty = GMSidebarApp.DIFFICULTY_ADJUSTMENTS.find((d) => d.id === difficultyId);
+    const adjustment = difficulty?.adjustment || 0;
+    return baseDC + adjustment;
+  }
+
+  async _requestSkillCheck(skillSlug, participantIds, actionSlug = null) {
     const state = game.storyframe.stateManager.getState();
     if (!state) return;
 
@@ -498,7 +970,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     let offlineCount = 0;
 
     for (const participantId of participantIds) {
-      const participant = state.participants.find(p => p.id === participantId);
+      const participant = state.participants.find((p) => p.id === participantId);
       if (!participant) continue;
 
       const user = game.users.get(participant.userId);
@@ -514,8 +986,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         actorUuid: participant.actorUuid,
         userId: participant.userId,
         skillSlug,
+        actionSlug,
         dc: this.currentDC,
-        timestamp: Date.now()
+        timestamp: Date.now(),
       };
 
       await game.storyframe.socketManager.requestAddPendingRoll(request);
@@ -524,12 +997,28 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
 
     const skillName = this._getSkillName(skillSlug);
+    const actionName = actionSlug ? this._getActionName(skillSlug, actionSlug) : null;
+    const checkName = actionName ? `${skillName} (${actionName})` : skillName;
+
     if (sentCount > 0) {
-      ui.notifications.info(`Requested ${skillName} check from ${sentCount} PC(s)`);
+      ui.notifications.info(`Requested ${checkName} check from ${sentCount} PC(s)`);
     }
     if (offlineCount > 0) {
       ui.notifications.warn(`${offlineCount} PC(s) offline - skipped`);
     }
+  }
+
+  /**
+   * Get the display name for a skill action
+   * @param {string} skillSlug - The skill slug
+   * @param {string} actionSlug - The action slug
+   * @returns {string|null} The action name or null
+   */
+  _getActionName(skillSlug, actionSlug) {
+    const actions = GMSidebarApp.SKILL_ACTIONS[skillSlug];
+    if (!actions) return null;
+    const action = actions.find((a) => a.slug === actionSlug);
+    return action?.name || null;
   }
 
   // --- Action Handlers ---
@@ -543,18 +1032,18 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
           content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
           ok: {
             label: 'Add',
-            callback: (event, button, dialog) => button.form.elements.label.value
+            callback: (event, button, dialog) => button.form.elements.label.value,
           },
-          rejectClose: false
+          rejectClose: false,
         });
 
         if (label) {
           await game.storyframe.socketManager.requestAddSpeaker({
             imagePath: path,
-            label
+            label,
           });
         }
-      }
+      },
     }).render(true);
   }
 
@@ -575,7 +1064,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       content: '<p>Remove this NPC from the list?</p>',
       yes: { label: 'Remove' },
       no: { label: 'Cancel', default: true },
-      rejectClose: false
+      rejectClose: false,
     });
 
     if (confirmed) {
@@ -585,6 +1074,41 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
   static async _onClearSpeaker(event, target) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(null);
+  }
+
+  static async _onClearAllSpeakers(event, target) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.speakers?.length) return;
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Clear All NPCs' },
+      content: '<p>Remove all NPCs from the list?</p>',
+      yes: { label: 'Clear All' },
+      no: { label: 'Cancel', default: true },
+      rejectClose: false,
+    });
+
+    if (confirmed) {
+      await game.storyframe.socketManager.requestUpdateSpeakers([]);
+    }
+  }
+
+  static async _onClearAllParticipants(event, target) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants?.length) return;
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Clear All PCs' },
+      content: '<p>Remove all PCs from the list?</p>',
+      yes: { label: 'Clear All' },
+      no: { label: 'Cancel', default: true },
+      rejectClose: false,
+    });
+
+    if (confirmed) {
+      await game.storyframe.socketManager.requestClearAllParticipants();
+      this.selectedParticipants.clear();
+    }
   }
 
   static async _onTogglePCsPanel(event, target) {
@@ -601,14 +1125,14 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
 
     for (const actor of pcs) {
-      const owningUser = game.users.find(user =>
-        !user.isGM && actor.testUserPermission(user, 'OWNER')
+      const owningUser = game.users.find(
+        (user) => !user.isGM && actor.testUserPermission(user, 'OWNER'),
       );
 
       if (owningUser) {
         await game.storyframe.socketManager.requestAddParticipant({
           actorUuid: actor.uuid,
-          userId: owningUser.id
+          userId: owningUser.id,
         });
       }
     }
@@ -640,7 +1164,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
   static async _onToggleSelectAll(event, target) {
     const state = game.storyframe.stateManager.getState();
-    const allParticipantIds = (state.participants || []).map(p => p.id);
+    const allParticipantIds = (state.participants || []).map((p) => p.id);
 
     if (this.selectedParticipants.size === allParticipantIds.length) {
       this.selectedParticipants.clear();
@@ -681,7 +1205,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       { slug: 'soc', name: 'Society' },
       { slug: 'ste', name: 'Stealth' },
       { slug: 'sur', name: 'Survival' },
-      { slug: 'thi', name: 'Thievery' }
+      { slug: 'thi', name: 'Thievery' },
     ];
 
     const appInstance = this;
@@ -692,9 +1216,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     // Create popup menu
     const menu = document.createElement('div');
     menu.className = 'storyframe-skill-menu';
-    menu.innerHTML = allSkills.map(s =>
-      `<button type="button" class="skill-option" data-skill="${s.slug}">${s.name}</button>`
-    ).join('');
+    menu.innerHTML = allSkills
+      .map(
+        (s) =>
+          `<button type="button" class="skill-option" data-skill="${s.slug}">${s.name}</button>`,
+      )
+      .join('');
 
     // Position near the button
     const rect = target.getBoundingClientRect();
@@ -716,7 +1243,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     `;
 
     // Add click handlers
-    menu.querySelectorAll('.skill-option').forEach(btn => {
+    menu.querySelectorAll('.skill-option').forEach((btn) => {
       btn.style.cssText = `
         padding: 8px 14px;
         background: transparent;
@@ -745,7 +1272,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
           ui.notifications.warn('No PCs selected');
           return;
         }
-        await appInstance._requestSkillCheck(skillSlug, Array.from(appInstance.selectedParticipants));
+        await appInstance._requestSkillCheck(
+          skillSlug,
+          Array.from(appInstance.selectedParticipants),
+        );
       });
     });
 
@@ -770,6 +1300,245 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
+  static async _onOpenSkillConfig(event, target) {
+    const allSkills = [
+      { slug: 'per', name: 'Perception' },
+      { slug: 'acr', name: 'Acrobatics' },
+      { slug: 'arc', name: 'Arcana' },
+      { slug: 'ath', name: 'Athletics' },
+      { slug: 'cra', name: 'Crafting' },
+      { slug: 'dec', name: 'Deception' },
+      { slug: 'dip', name: 'Diplomacy' },
+      { slug: 'itm', name: 'Intimidation' },
+      { slug: 'med', name: 'Medicine' },
+      { slug: 'nat', name: 'Nature' },
+      { slug: 'occ', name: 'Occultism' },
+      { slug: 'prf', name: 'Performance' },
+      { slug: 'rel', name: 'Religion' },
+      { slug: 'soc', name: 'Society' },
+      { slug: 'ste', name: 'Stealth' },
+      { slug: 'sur', name: 'Survival' },
+      { slug: 'thi', name: 'Thievery' },
+    ];
+
+    // Get current selected skills
+    const currentSetting = game.settings.get(MODULE_ID, 'quickButtonSkills');
+    const selectedSlugs = new Set(
+      currentSetting
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean),
+    );
+
+    // Remove any existing config panel
+    document.querySelector('.storyframe-skill-config')?.remove();
+
+    // Create config panel
+    const panel = document.createElement('div');
+    panel.className = 'storyframe-skill-config';
+
+    const checkboxesHtml = allSkills
+      .map(
+        (s) => `
+      <label class="skill-checkbox-item" data-slug="${s.slug}">
+        <input type="checkbox" value="${s.slug}" ${selectedSlugs.has(s.slug) ? 'checked' : ''}>
+        <span class="skill-label">${s.name}</span>
+      </label>
+    `,
+      )
+      .join('');
+
+    panel.innerHTML = `
+      <div class="config-header">
+        <span class="config-title">Quick Skill Buttons</span>
+        <button type="button" class="config-close" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="config-body">
+        <p class="config-hint">Select skills to show as quick buttons</p>
+        <div class="skill-checkboxes">${checkboxesHtml}</div>
+      </div>
+    `;
+
+    // Style the panel
+    panel.style.cssText = `
+      position: fixed;
+      z-index: 10001;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 280px;
+      max-height: 420px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `;
+
+    // Position near the button
+    const rect = target.getBoundingClientRect();
+    panel.style.top = `${rect.top}px`;
+    panel.style.left = `${rect.right + 8}px`;
+
+    // Style header
+    const header = panel.querySelector('.config-header');
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    const title = panel.querySelector('.config-title');
+    title.style.cssText = `
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    `;
+
+    const closeBtn = panel.querySelector('.config-close');
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    `;
+    closeBtn.addEventListener('mouseenter', () => {
+      closeBtn.style.background = 'rgba(255,255,255,0.1)';
+      closeBtn.style.color = '#fff';
+    });
+    closeBtn.addEventListener('mouseleave', () => {
+      closeBtn.style.background = 'transparent';
+      closeBtn.style.color = '#888';
+    });
+
+    // Style body
+    const body = panel.querySelector('.config-body');
+    body.style.cssText = `
+      flex: 1;
+      padding: 12px 16px;
+      overflow-y: auto;
+    `;
+
+    const hint = panel.querySelector('.config-hint');
+    hint.style.cssText = `
+      font-size: 11px;
+      color: #888;
+      margin: 0 0 12px 0;
+    `;
+
+    // Style checkboxes container
+    const checkboxes = panel.querySelector('.skill-checkboxes');
+    checkboxes.style.cssText = `
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    `;
+
+    // Style checkbox items
+    panel.querySelectorAll('.skill-checkbox-item').forEach((item) => {
+      item.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(0,0,0,0.2);
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.15s;
+        border: 1px solid transparent;
+      `;
+
+      const checkbox = item.querySelector('input');
+      checkbox.style.cssText = `
+        width: 16px;
+        height: 16px;
+        accent-color: #5e81ac;
+        cursor: pointer;
+        margin: 0;
+      `;
+
+      const label = item.querySelector('.skill-label');
+      label.style.cssText = `
+        font-size: 12px;
+        color: #e0e0e0;
+        font-weight: 500;
+      `;
+
+      // Update styling based on checked state
+      const updateItemStyle = () => {
+        if (checkbox.checked) {
+          item.style.background = 'rgba(94, 129, 172, 0.2)';
+          item.style.borderColor = 'rgba(94, 129, 172, 0.4)';
+          label.style.color = '#ffffff';
+        } else {
+          item.style.background = 'rgba(0,0,0,0.2)';
+          item.style.borderColor = 'transparent';
+          label.style.color = '#e0e0e0';
+        }
+      };
+      updateItemStyle();
+
+      item.addEventListener('mouseenter', () => {
+        if (!checkbox.checked) {
+          item.style.background = 'rgba(255,255,255,0.05)';
+        }
+      });
+      item.addEventListener('mouseleave', () => {
+        updateItemStyle();
+      });
+
+      // Handle checkbox change
+      checkbox.addEventListener('change', async () => {
+        updateItemStyle();
+
+        // Update setting
+        const selected = [];
+        panel.querySelectorAll('.skill-checkbox-item input:checked').forEach((cb) => {
+          selected.push(cb.value);
+        });
+
+        // Maintain order from allSkills
+        const orderedSelected = allSkills
+          .filter((s) => selected.includes(s.slug))
+          .map((s) => s.slug);
+
+        await game.settings.set(MODULE_ID, 'quickButtonSkills', orderedSelected.join(','));
+      });
+    });
+
+    // Close button handler
+    closeBtn.addEventListener('click', () => panel.remove());
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!panel.contains(e.target) && e.target !== target) {
+        panel.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+    document.body.appendChild(panel);
+
+    // Adjust position if off-screen
+    const panelRect = panel.getBoundingClientRect();
+    if (panelRect.right > window.innerWidth) {
+      panel.style.left = `${rect.left - panelRect.width - 8}px`;
+    }
+    if (panelRect.bottom > window.innerHeight) {
+      panel.style.top = `${window.innerHeight - panelRect.height - 10}px`;
+    }
+  }
+
   static async _onSetDCSelect(event, target) {
     const value = target.value;
     if (value === '') {
@@ -780,6 +1549,20 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         this.currentDC = dc;
       }
     }
+    this.render();
+  }
+
+  static async _onSetDifficulty(event, target) {
+    const difficulty = target.value;
+    this.currentDifficulty = difficulty;
+
+    // Recalculate DC based on party level and new difficulty
+    const partyLevel = await this._getPartyLevel();
+    if (partyLevel !== null) {
+      this.currentDC = this._calculateDCByLevel(partyLevel, difficulty);
+    }
+
+    this.render();
   }
 
   static async _onCancelRoll(event, target) {
@@ -788,5 +1571,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
     await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
     ui.notifications.info('Roll request cancelled');
+  }
+
+  static async _onOpenPlayerWindows(event, target) {
+    game.storyframe.socketManager.openAllPlayerViewers();
+    ui.notifications.info('Opening StoryFrame on all player clients');
   }
 }

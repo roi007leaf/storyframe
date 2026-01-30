@@ -24,12 +24,26 @@ export class CSSScraper {
 
     // Keywords that indicate journal/premium module CSS
     const journalKeywords = [
-      'journal', 'pf2e', 'dnd5e', 'swade',
-      'outlaws', 'bloodlords', 'gatewalkers', 'stolenfate',
-      'skyking', 'seasonofghosts', 'wardensofwildwood',
-      'curtaincall', 'triumphofthetusk', 'sporewar',
-      'beginner-box', 'abomination-vaults', 'kingmaker',
-      'page-content', 'entry-page', 'text-content'
+      'journal',
+      'pf2e',
+      'dnd5e',
+      'swade',
+      'outlaws',
+      'bloodlords',
+      'gatewalkers',
+      'stolenfate',
+      'skyking',
+      'seasonofghosts',
+      'wardensofwildwood',
+      'curtaincall',
+      'triumphofthetusk',
+      'sporewar',
+      'beginner-box',
+      'abomination-vaults',
+      'kingmaker',
+      'page-content',
+      'entry-page',
+      'text-content',
     ];
 
     // Iterate all stylesheets
@@ -46,7 +60,7 @@ export class CSSScraper {
           if (rule.cssText) {
             // Only include rules that look journal-related
             const ruleText = rule.cssText.toLowerCase();
-            const isJournalRelated = journalKeywords.some(kw => ruleText.includes(kw));
+            const isJournalRelated = journalKeywords.some((kw) => ruleText.includes(kw));
 
             if (isJournalRelated) {
               styles.push(rule.cssText);
@@ -96,32 +110,36 @@ export class CSSScraper {
     }
 
     // Process each rule
-    return rules.map(rule => {
-      // Skip @-rules (they scope themselves)
-      if (rule.startsWith('@')) {
-        return rule;
-      }
+    return rules
+      .map((rule) => {
+        // Skip @-rules (they scope themselves)
+        if (rule.startsWith('@')) {
+          return rule;
+        }
 
-      // Split selector from declaration
-      const openBrace = rule.indexOf('{');
-      if (openBrace === -1) return rule;
+        // Split selector from declaration
+        const openBrace = rule.indexOf('{');
+        if (openBrace === -1) return rule;
 
-      const selector = rule.substring(0, openBrace).trim();
-      const declaration = rule.substring(openBrace);
+        const selector = rule.substring(0, openBrace).trim();
+        const declaration = rule.substring(openBrace);
 
-      // Split multiple selectors
-      const selectors = selector.split(',').map(s => s.trim());
+        // Split multiple selectors
+        const selectors = selector.split(',').map((s) => s.trim());
 
-      // Prefix each selector
-      const namespaced = selectors.map(sel => {
-        // Already namespaced
-        if (sel.startsWith(namespace)) return sel;
+        // Prefix each selector
+        const namespaced = selectors
+          .map((sel) => {
+            // Already namespaced
+            if (sel.startsWith(namespace)) return sel;
 
-        return `${namespace} ${sel}`;
-      }).join(', ');
+            return `${namespace} ${sel}`;
+          })
+          .join(', ');
 
-      return `${namespaced} ${declaration}`;
-    }).join('\n');
+        return `${namespaced} ${declaration}`;
+      })
+      .join('\n');
   }
 
   /**

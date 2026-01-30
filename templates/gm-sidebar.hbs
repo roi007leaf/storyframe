@@ -4,12 +4,17 @@
     <div class="section-header">
       <h3 id="npcs-heading">NPCs</h3>
       <div class="section-actions">
-        <button type="button" data-action="addSpeakerFromImage" title="Add NPC from image" aria-label="Add NPC from image">
+        <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
           <i class="fas fa-plus" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="clearSpeaker" title="Clear active NPC" aria-label="Clear active NPC">
-          <i class="fas fa-times" aria-hidden="true"></i>
+        {{#if hasSpeakers}}
+        <button type="button" data-action="clearSpeaker" data-tooltip="Clear active NPC" aria-label="Deselect active NPC">
+          <i class="fas fa-user-slash" aria-hidden="true"></i>
         </button>
+        <button type="button" data-action="clearAllSpeakers" data-tooltip="Clear all NPCs" aria-label="Remove all NPCs">
+          <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+        {{/if}}
       </div>
     </div>
 
@@ -19,21 +24,21 @@
           <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
                data-action="setSpeaker"
                data-speaker-id="{{this.id}}"
-               title="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
+               data-tooltip="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
                role="listitem"
                tabindex="0"
                aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
             <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
             <div class="speaker-name">{{this.name}}</div>
-            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" title="Remove {{this.name}}" aria-label="Remove {{this.name}}">
+            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="Remove {{this.name}}" aria-label="Remove {{this.name}}">
               <i class="fas fa-times" aria-hidden="true"></i>
             </button>
           </div>
         {{/each}}
       {{else}}
-        <div class="empty-state" role="status">
-          <p>No NPCs</p>
-          <p>Drag actors here or use +</p>
+        <div class="empty-state compact" role="status">
+          <i class="fas fa-user-plus" aria-hidden="true"></i>
+          <span>Drag actors here</span>
         </div>
       {{/if}}
     </div>
@@ -41,14 +46,26 @@
 
   <!-- PCs Section -->
   <section class="pcs-section {{#if pcsPanelCollapsed}}collapsed{{/if}}" aria-labelledby="pcs-heading">
-    <div class="section-header collapsible"
-         data-action="togglePCsPanel"
-         role="button"
-         tabindex="0"
-         aria-expanded="{{#unless pcsPanelCollapsed}}true{{else}}false{{/unless}}"
-         aria-controls="pcs-panel-content">
-      <h3 id="pcs-heading">PCs</h3>
-      <i class="fas fa-chevron-up" aria-hidden="true"></i>
+    <div class="section-header">
+      <div class="section-header-left collapsible"
+           data-action="togglePCsPanel"
+           role="button"
+           tabindex="0"
+           aria-expanded="{{#unless pcsPanelCollapsed}}true{{else}}false{{/unless}}"
+           aria-controls="pcs-panel-content">
+        <h3 id="pcs-heading">PCs</h3>
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+      </div>
+      <div class="section-actions">
+        <button type="button" data-action="openPlayerWindows" data-tooltip="Open on players" aria-label="Open StoryFrame viewer on all player clients">
+          <i class="fas fa-tv" aria-hidden="true"></i>
+        </button>
+        {{#if hasParticipants}}
+        <button type="button" data-action="clearAllParticipants" data-tooltip="Clear all PCs" aria-label="Remove all PCs">
+          <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
     </div>
 
     <div class="panel-content" id="pcs-panel-content">
@@ -72,14 +89,13 @@
               </button>
             </div>
           {{/each}}
-          <button type="button" class="add-btn" data-action="addAllPCs" data-tooltip="Add All PCs" aria-label="Add all player characters">
+          <button type="button" class="add-btn" data-action="addAllPCs" data-tooltip="Add more" aria-label="Add all player characters">
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
         {{else}}
           <button type="button" class="add-btn large" data-action="addAllPCs" data-tooltip="Add All PCs" aria-label="Add all player characters">
             <i class="fas fa-users" aria-hidden="true"></i>
           </button>
-          <span class="hint">Add PCs for skill checks</span>
         {{/if}}
       </div>
 
@@ -93,16 +109,27 @@
             </button>
           </div>
 
-          <div class="dc-selector">
-            <label class="label" for="dc-select">DC</label>
-            <select id="dc-select" data-action="setDCSelect" aria-label="Difficulty class">
-              <option value="" {{#unless currentDC}}selected{{/unless}}>--</option>
-              <option value="10" {{#if (eq currentDC 10)}}selected{{/if}}>10</option>
-              <option value="15" {{#if (eq currentDC 15)}}selected{{/if}}>15</option>
-              <option value="20" {{#if (eq currentDC 20)}}selected{{/if}}>20</option>
-              <option value="25" {{#if (eq currentDC 25)}}selected{{/if}}>25</option>
-              <option value="30" {{#if (eq currentDC 30)}}selected{{/if}}>30</option>
+          {{#if partyLevel}}
+          <div class="difficulty-selector">
+            <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
+            <select id="difficulty-select" aria-label="Difficulty by level">
+              {{#each difficultyOptions}}
+                <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+              {{/each}}
             </select>
+          </div>
+          {{/if}}
+
+          <div class="dc-selector">
+            <label class="label" for="dc-input">DC</label>
+            <input type="number"
+                   id="dc-input"
+                   class="dc-input"
+                   value="{{currentDC}}"
+                   min="1"
+                   max="60"
+                   placeholder="--"
+                   aria-label="Difficulty class">
           </div>
         </div>
 
@@ -120,6 +147,9 @@
           <button type="button" class="skill-btn more" data-action="openSkillMenu" data-tooltip="All Skills" aria-label="Show all skills menu">
             <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
           </button>
+          <button type="button" class="skill-btn config" data-action="openSkillConfig" data-tooltip="Configure Quick Skills" aria-label="Configure quick skill buttons">
+            <i class="fas fa-cog" aria-hidden="true"></i>
+          </button>
         </div>
       </div>
       {{/if}}
@@ -130,12 +160,13 @@
   {{#if pendingRolls.length}}
   <section class="pending-rolls-section" aria-labelledby="pending-heading">
     <h4 id="pending-heading">Pending Requests</h4>
-    <div role="list" aria-label="Pending roll requests">
+    <div class="pending-list" role="list" aria-label="Pending roll requests">
       {{#each pendingRolls}}
         <div class="pending-item" role="listitem">
           <span class="participant-name">{{this.participantName}}</span>
-          <span class="skill-name">{{this.skillName}}</span>
-          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" title="Cancel request" aria-label="Cancel {{this.participantName}}'s {{this.skillName}} request">
+          <span class="skill-name">{{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}}</span>
+          {{#if this.dc}}<span class="dc-badge">DC {{this.dc}}</span>{{/if}}
+          <button type="button" data-action="cancelRoll" data-request-id="{{this.id}}" data-tooltip="Cancel request" aria-label="Cancel {{this.participantName}}'s {{this.skillName}} request">
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
         </div>

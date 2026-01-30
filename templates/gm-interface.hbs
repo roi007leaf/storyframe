@@ -1,21 +1,109 @@
 <div class="storyframe-container">
   <header class="storyframe-header">
     <div class="journal-selector">
-      <label for="journal-selector">Journal</label>
-      <select name="journal" id="journal-selector" aria-label="Select journal">
-        <option value="">-- Select Journal --</option>
-        {{#each journals}}
-          <option value="{{this.id}}" {{#if (eq this.id ../selectedJournal)}}selected{{/if}}>{{this.name}}</option>
-        {{/each}}
-      </select>
+      <label>Journal</label>
+      <div class="custom-dropdown" data-dropdown="journal">
+        <button type="button" class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="dropdown-value">{{#if selectedJournalName}}{{selectedJournalName}}{{else}}-- Select Journal --{{/if}}</span>
+          <i class="fas fa-chevron-down dropdown-arrow" aria-hidden="true"></i>
+        </button>
+        <div class="dropdown-menu" role="listbox" aria-label="Select journal">
+          {{!-- Favorites section --}}
+          {{#if journalFolders.favorites.length}}
+            <div class="dropdown-section-header">
+              <i class="fas fa-star" aria-hidden="true"></i>
+              <span>Favorites</span>
+            </div>
+            {{#each journalFolders.favorites}}
+              <div class="dropdown-item-wrapper favorite-item">
+                <button type="button"
+                        class="dropdown-item favorite-item {{#if (eq this.id ../selectedJournal)}}selected{{/if}}"
+                        data-action="selectJournal"
+                        data-value="{{this.id}}"
+                        role="option"
+                        aria-selected="{{#if (eq this.id ../selectedJournal)}}true{{else}}false{{/if}}">
+                  <i class="fas fa-book-open" aria-hidden="true"></i>
+                  <span>{{this.name}}</span>
+                </button>
+                <button type="button"
+                        class="favorite-toggle active"
+                        data-action="toggleFavorite"
+                        data-journal-id="{{this.id}}"
+                        data-tooltip="Remove from favorites">
+                  <i class="fas fa-star" aria-hidden="true"></i>
+                </button>
+              </div>
+            {{/each}}
+            <div class="dropdown-divider"></div>
+          {{/if}}
+          {{!-- Folders and journals with depth-based indentation --}}
+          {{#each journalFolders.items}}
+            {{#if (eq this.type "folder")}}
+              <button type="button"
+                      class="dropdown-folder-item depth-{{this.depth}}"
+                      data-action="toggleFolder"
+                      data-folder-id="{{this.id}}">
+                <i class="fas fa-chevron-right folder-icon" aria-hidden="true"></i>
+                <i class="fas fa-folder folder-type-icon" aria-hidden="true"></i>
+                <span class="folder-name">{{this.name}}</span>
+              </button>
+            {{else}}
+              <div class="dropdown-item-wrapper depth-{{this.depth}}" data-folder-id="{{this.folderId}}">
+                <button type="button"
+                        class="dropdown-item {{#if (eq this.id ../selectedJournal)}}selected{{/if}}"
+                        data-action="selectJournal"
+                        data-value="{{this.id}}"
+                        role="option"
+                        aria-selected="{{#if (eq this.id ../selectedJournal)}}true{{else}}false{{/if}}">
+                  <i class="fas fa-book-open" aria-hidden="true"></i>
+                  <span>{{this.name}}</span>
+                </button>
+                <button type="button"
+                        class="favorite-toggle {{#if this.isFavorite}}active{{/if}}"
+                        data-action="toggleFavorite"
+                        data-journal-id="{{this.id}}"
+                        data-tooltip="{{#if this.isFavorite}}Remove from favorites{{else}}Add to favorites{{/if}}">
+                  <i class="{{#if this.isFavorite}}fas{{else}}far{{/if}} fa-star" aria-hidden="true"></i>
+                </button>
+              </div>
+            {{/if}}
+          {{/each}}
+          {{!-- Root-level journals --}}
+          {{#each journalFolders.rootJournals}}
+            <div class="dropdown-item-wrapper root-item">
+              <button type="button"
+                      class="dropdown-item root-item {{#if (eq this.id ../selectedJournal)}}selected{{/if}}"
+                      data-action="selectJournal"
+                      data-value="{{this.id}}"
+                      role="option"
+                      aria-selected="{{#if (eq this.id ../selectedJournal)}}true{{else}}false{{/if}}">
+                <i class="fas fa-book-open" aria-hidden="true"></i>
+                <span>{{this.name}}</span>
+              </button>
+              <button type="button"
+                      class="favorite-toggle {{#if this.isFavorite}}active{{/if}}"
+                      data-action="toggleFavorite"
+                      data-journal-id="{{this.id}}"
+                      data-tooltip="{{#if this.isFavorite}}Remove from favorites{{else}}Add to favorites{{/if}}">
+                <i class="{{#if this.isFavorite}}fas{{else}}far{{/if}} fa-star" aria-hidden="true"></i>
+              </button>
+            </div>
+          {{/each}}
+        </div>
+      </div>
     </div>
     <div class="header-actions">
+      {{#if canGoBack}}
+      <button type="button" data-action="goBack" data-tooltip="Go Back" aria-label="Go back to previous journal">
+        <i class="fas fa-arrow-left" aria-hidden="true"></i>
+      </button>
+      {{/if}}
       {{#if selectedJournal}}
-      <button type="button" data-action="editJournal" title="Edit Journal" aria-label="Edit journal in native editor">
+      <button type="button" data-action="editJournal" data-tooltip="Edit Journal" aria-label="Edit journal in native editor">
         <i class="fas fa-edit" aria-hidden="true"></i>
       </button>
       {{/if}}
-      <button type="button" data-action="toggleSidebar" title="Toggle Characters Sidebar" aria-label="Toggle characters sidebar">
+      <button type="button" data-action="toggleSidebar" data-tooltip="Toggle Characters Sidebar" aria-label="Toggle characters sidebar">
         <i class="fas fa-users" aria-hidden="true"></i>
       </button>
     </div>
@@ -37,7 +125,7 @@
           <div class="page-item level{{this.level}} {{#if (eq @index ../currentPageIndex)}}selected{{/if}}"
                data-action="selectPage"
                data-page-index="{{@index}}"
-               title="{{this.name}}"
+               data-tooltip="{{this.name}}"
                role="option"
                tabindex="0"
                aria-selected="{{#if (eq @index ../currentPageIndex)}}true{{else}}false{{/if}}">

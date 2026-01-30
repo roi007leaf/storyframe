@@ -129,16 +129,31 @@ export class StateManager {
   /**
    * Add a speaker to the list.
    * @param {Object} speaker - Speaker data (actorUuid or imagePath, label)
-   * @returns {Object} Created speaker with ID
+   * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
   async addSpeaker({ actorUuid = null, imagePath = null, label }) {
     if (!this.state) return null;
+
+    // Check for duplicate by actorUuid or imagePath
+    if (actorUuid) {
+      const existing = this.state.speakers.find((s) => s.actorUuid === actorUuid);
+      if (existing) {
+        ui.notifications.info(`${label || 'NPC'} is already in the list`);
+        return existing;
+      }
+    } else if (imagePath) {
+      const existing = this.state.speakers.find((s) => s.imagePath === imagePath);
+      if (existing) {
+        ui.notifications.info(`${label || 'NPC'} is already in the list`);
+        return existing;
+      }
+    }
 
     const speaker = {
       id: foundry.utils.randomID(),
       actorUuid,
       imagePath,
-      label
+      label,
     };
 
     this.state.speakers.push(speaker);
@@ -153,7 +168,7 @@ export class StateManager {
   async removeSpeaker(speakerId) {
     if (!this.state) return;
 
-    this.state.speakers = this.state.speakers.filter(s => s.id !== speakerId);
+    this.state.speakers = this.state.speakers.filter((s) => s.id !== speakerId);
 
     // Clear active speaker if removed
     if (this.state.activeSpeaker === speakerId) {
@@ -202,7 +217,7 @@ export class StateManager {
     if (!this.state) return null;
 
     // Check for duplicate by actorUuid
-    const existing = this.state.participants.find(p => p.actorUuid === actorUuid);
+    const existing = this.state.participants.find((p) => p.actorUuid === actorUuid);
     if (existing) {
       return existing; // Return existing instead of adding duplicate
     }
@@ -210,7 +225,7 @@ export class StateManager {
     const participant = {
       id: foundry.utils.randomID(),
       actorUuid,
-      userId
+      userId,
     };
 
     this.state.participants.push(participant);
@@ -226,10 +241,12 @@ export class StateManager {
   async removeParticipant(participantId) {
     if (!this.state) return;
 
-    this.state.participants = this.state.participants.filter(p => p.id !== participantId);
+    this.state.participants = this.state.participants.filter((p) => p.id !== participantId);
 
     // Clear pending rolls for this participant
-    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.participantId !== participantId);
+    this.state.pendingRolls = this.state.pendingRolls.filter(
+      (r) => r.participantId !== participantId,
+    );
 
     await this._persistState();
     this._broadcast();
@@ -267,7 +284,7 @@ export class StateManager {
   async removePendingRoll(requestId) {
     if (!this.state) return;
 
-    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.id !== requestId);
+    this.state.pendingRolls = this.state.pendingRolls.filter((r) => r.id !== requestId);
     await this._persistState();
     this._broadcast();
   }
@@ -279,7 +296,9 @@ export class StateManager {
   async clearPendingRollsForParticipant(participantId) {
     if (!this.state) return;
 
-    this.state.pendingRolls = this.state.pendingRolls.filter(r => r.participantId !== participantId);
+    this.state.pendingRolls = this.state.pendingRolls.filter(
+      (r) => r.participantId !== participantId,
+    );
     await this._persistState();
     this._broadcast();
   }
@@ -346,7 +365,7 @@ export class StateManager {
       speakers: [],
       participants: [],
       pendingRolls: [],
-      rollHistory: []
+      rollHistory: [],
     };
   }
 
