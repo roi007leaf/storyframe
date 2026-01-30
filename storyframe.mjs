@@ -225,6 +225,14 @@ Hooks.once('ready', async () => {
   }
 });
 
+// Hook: canvasReady (scene change - clear pending rolls)
+Hooks.on('canvasReady', () => {
+  // Clear pending rolls on scene change
+  if (game.user.isGM && game.storyframe.stateManager) {
+    game.storyframe.stateManager.clearPendingRolls();
+  }
+});
+
 // Hook: updateScene (listen for flag changes on all clients)
 Hooks.on('updateScene', async (scene, changed, options, userId) => {
   // Only current scene
