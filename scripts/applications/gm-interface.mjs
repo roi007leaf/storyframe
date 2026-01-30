@@ -36,7 +36,18 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       addSpeakerFromImage: GMInterfaceApp._onAddSpeakerFromImage,
       setSpeaker: GMInterfaceApp._onSetSpeaker,
       removeSpeaker: GMInterfaceApp._onRemoveSpeaker,
-      clearSpeaker: GMInterfaceApp._onClearSpeaker
+      clearSpeaker: GMInterfaceApp._onClearSpeaker,
+      toggleParticipantsPanel: GMInterfaceApp._onToggleParticipantsPanel,
+      addAllPCs: GMInterfaceApp._onAddAllPCs,
+      toggleParticipantSelection: GMInterfaceApp._onToggleParticipantSelection,
+      removeParticipant: GMInterfaceApp._onRemoveParticipant,
+      requestSkill: GMInterfaceApp._onRequestSkill,
+      openSkillMenu: GMInterfaceApp._onOpenSkillMenu,
+      setDC: GMInterfaceApp._onSetDC,
+      setCustomDC: GMInterfaceApp._onSetCustomDC,
+      setDCVisibility: GMInterfaceApp._onSetDCVisibility,
+      requestSelectedCheck: GMInterfaceApp._onRequestSelectedCheck,
+      requestAllCheck: GMInterfaceApp._onRequestAllCheck
     }
   };
 
@@ -64,6 +75,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._stateRestored = false;
     this.cssScraper = new CSSScraper();
     this.styleElement = null;
+
+    // Participant panel state
+    this.participantsPanelCollapsed = false;
+    this.selectedParticipants = new Set();
+    this.currentDC = 20;
+    this.dcVisibility = 'gm'; // 'gm' (hidden) or 'all' (visible to players)
 
     // Load saved position with validation
     const savedPosition = game.settings.get(MODULE_ID, 'gmWindowPosition');
@@ -238,6 +255,21 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       })
     );
 
+    // Resolve participants
+    const participants = await Promise.all(
+      (state.participants || []).map(async p => {
+        const actor = await fromUuid(p.actorUuid);
+        return {
+          id: p.id,
+          actorUuid: p.actorUuid,
+          userId: p.userId,
+          img: actor?.img || 'icons/svg/mystery-man.svg',
+          name: actor?.name || 'Unknown',
+          selected: this.selectedParticipants.has(p.id)
+        };
+      })
+    );
+
     console.log('StoryFrame | Final containerClasses for template:', containerClasses);
 
     return {
@@ -252,7 +284,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       pageLevel,
       speakers,
       activeSpeaker: state.activeSpeaker,
-      hasSpeakers: speakers.length > 0
+      hasSpeakers: speakers.length > 0,
+      participantsPanelCollapsed: this.participantsPanelCollapsed,
+      participants,
+      hasParticipants: participants.length > 0,
+      currentDC: this.currentDC,
+      dcVisibility: this.dcVisibility
     };
   }
 
@@ -358,65 +395,114 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
   _attachDragDropHandlers() {
     const gallery = this.element.querySelector('.speaker-gallery');
-    if (!gallery) return;
+    if (gallery) {
+      gallery.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        gallery.classList.add('drag-over');
+      });
 
-    gallery.addEventListener('dragover', (e) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'copy';
-      gallery.classList.add('drag-over');
-    });
+      gallery.addEventListener('dragleave', (e) => {
+        if (e.target === gallery) {
+          gallery.classList.remove('drag-over');
+        }
+      });
 
-    gallery.addEventListener('dragleave', (e) => {
-      if (e.target === gallery) {
+      gallery.addEventListener('drop', async (e) => {
+        e.preventDefault();
         gallery.classList.remove('drag-over');
-      }
-    });
 
-    gallery.addEventListener('drop', async (e) => {
-      e.preventDefault();
-      gallery.classList.remove('drag-over');
-
-      // Try to get StoryFrameImage data first (images from content)
-      const plainData = e.dataTransfer.getData('text/plain');
-      if (plainData) {
-        try {
-          const imageData = JSON.parse(plainData);
-          if (imageData.type === 'StoryFrameImage') {
-            const label = await foundry.applications.api.DialogV2.prompt({
-              window: { title: 'Speaker Name' },
-              content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
-              ok: {
-                label: 'Add',
-                callback: (event, button, dialog) => button.form.elements.label.value
-              },
-              rejectClose: false
-            });
-
-            if (label) {
-              await game.storyframe.socketManager.requestAddSpeaker({
-                imagePath: imageData.src,
-                label
+        // Try to get StoryFrameImage data first (images from content)
+        const plainData = e.dataTransfer.getData('text/plain');
+        if (plainData) {
+          try {
+            const imageData = JSON.parse(plainData);
+            if (imageData.type === 'StoryFrameImage') {
+              const label = await foundry.applications.api.DialogV2.prompt({
+                window: { title: 'Speaker Name' },
+                content: '<input type="text" name="label" placeholder="Enter speaker name" autofocus>',
+                ok: {
+                  label: 'Add',
+                  callback: (event, button, dialog) => button.form.elements.label.value
+                },
+                rejectClose: false
               });
+
+              if (label) {
+                await game.storyframe.socketManager.requestAddSpeaker({
+                  imagePath: imageData.src,
+                  label
+                });
+              }
+              return;
             }
+          } catch (err) {
+            // Not JSON or not our data, continue to Actor handling
+          }
+        }
+
+        // Handle Actor drops from sidebar
+        const data = TextEditor.getDragEventData(e);
+        if (data.type === 'Actor') {
+          const actor = await fromUuid(data.uuid);
+          if (actor) {
+            await game.storyframe.socketManager.requestAddSpeaker({
+              actorUuid: data.uuid,
+              label: actor.name
+            });
+          }
+        }
+      });
+    }
+
+    // Participant drop zone
+    const participantList = this.element.querySelector('[data-drop-zone="participant"]');
+    if (participantList) {
+      participantList.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        participantList.classList.add('drag-over');
+      });
+
+      participantList.addEventListener('dragleave', (e) => {
+        if (e.target === participantList) {
+          participantList.classList.remove('drag-over');
+        }
+      });
+
+      participantList.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        participantList.classList.remove('drag-over');
+
+        // Handle Actor drops from sidebar
+        const data = TextEditor.getDragEventData(e);
+        if (data.type === 'Actor') {
+          const actor = await fromUuid(data.uuid);
+          if (!actor) return;
+
+          // Check if it's a character type
+          if (actor.type !== 'character') {
+            ui.notifications.warn('Only player characters can be added as participants');
             return;
           }
-        } catch (err) {
-          // Not JSON or not our data, continue to Actor handling
-        }
-      }
 
-      // Handle Actor drops from sidebar
-      const data = TextEditor.getDragEventData(e);
-      if (data.type === 'Actor') {
-        const actor = await fromUuid(data.uuid);
-        if (actor) {
-          await game.storyframe.socketManager.requestAddSpeaker({
+          // Find owning player
+          const owningUser = game.users.find(user =>
+            !user.isGM && actor.testUserPermission(user, 'OWNER')
+          );
+
+          if (!owningUser) {
+            ui.notifications.warn(`No player owner found for ${actor.name}`);
+            return;
+          }
+
+          await game.storyframe.socketManager.requestAddParticipant({
             actorUuid: data.uuid,
-            label: actor.name
+            userId: owningUser.id
           });
         }
-      }
-    });
+      });
+    }
   }
 
   async _onClose(options) {
@@ -581,5 +667,247 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         console.log('StoryFrame | Injected PF2e Beginner Box CSS');
       }
     }
+  }
+
+  // --- Participant Management ---
+
+  /**
+   * Get all player characters (characters owned by non-GM users).
+   */
+  _getPlayerCharacters() {
+    return game.actors.filter(actor => {
+      if (actor.type !== 'character') return false;
+      return game.users.some(user =>
+        !user.isGM && actor.testUserPermission(user, 'OWNER')
+      );
+    });
+  }
+
+  /**
+   * Get skill display name from slug.
+   */
+  _getSkillName(slug) {
+    const skillMap = {
+      'per': 'Perception',
+      'acr': 'Acrobatics',
+      'arc': 'Arcana',
+      'ath': 'Athletics',
+      'cra': 'Crafting',
+      'dec': 'Deception',
+      'dip': 'Diplomacy',
+      'itm': 'Intimidation',
+      'med': 'Medicine',
+      'nat': 'Nature',
+      'occ': 'Occultism',
+      'prf': 'Performance',
+      'rel': 'Religion',
+      'soc': 'Society',
+      'ste': 'Stealth',
+      'sur': 'Survival',
+      'thi': 'Thievery'
+    };
+    return skillMap[slug] || slug.toUpperCase();
+  }
+
+  /**
+   * Request skill check for specified participants.
+   */
+  async _requestSkillCheck(skillSlug, participantIds) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state) return;
+
+    for (const participantId of participantIds) {
+      const participant = state.participants.find(p => p.id === participantId);
+      if (!participant) continue;
+
+      const requestId = foundry.utils.randomID();
+      const request = {
+        id: requestId,
+        participantId: participant.id,
+        actorUuid: participant.actorUuid,
+        userId: participant.userId,
+        skillSlug,
+        dc: this.currentDC,
+        dcVisibility: this.dcVisibility,
+        timestamp: Date.now()
+      };
+
+      // Add to pending rolls
+      await game.storyframe.socketManager.requestAddPendingRoll(request);
+
+      // Trigger prompt on player's client
+      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
+    }
+
+    const skillName = this._getSkillName(skillSlug);
+    ui.notifications.info(`Requested ${skillName} check from ${participantIds.length} participant(s)`);
+  }
+
+  // --- Participant Action Handlers ---
+
+  static async _onToggleParticipantsPanel(event, target) {
+    this.participantsPanelCollapsed = !this.participantsPanelCollapsed;
+    this.render();
+  }
+
+  static async _onAddAllPCs(event, target) {
+    const pcs = this._getPlayerCharacters();
+
+    if (pcs.length === 0) {
+      ui.notifications.warn('No player characters found');
+      return;
+    }
+
+    for (const actor of pcs) {
+      // Find owning player
+      const owningUser = game.users.find(user =>
+        !user.isGM && actor.testUserPermission(user, 'OWNER')
+      );
+
+      if (owningUser) {
+        await game.storyframe.socketManager.requestAddParticipant({
+          actorUuid: actor.uuid,
+          userId: owningUser.id
+        });
+      }
+    }
+
+    ui.notifications.info(`Added ${pcs.length} player character(s)`);
+  }
+
+  static async _onToggleParticipantSelection(event, target) {
+    const participantId = target.closest('[data-participant-id]')?.dataset.participantId;
+    if (!participantId) return;
+
+    if (this.selectedParticipants.has(participantId)) {
+      this.selectedParticipants.delete(participantId);
+    } else {
+      this.selectedParticipants.add(participantId);
+    }
+
+    this.render();
+  }
+
+  static async _onRemoveParticipant(event, target) {
+    event.stopPropagation();
+
+    const participantId = target.closest('[data-participant-id]')?.dataset.participantId;
+    if (!participantId) return;
+
+    await game.storyframe.socketManager.requestRemoveParticipant(participantId);
+    this.selectedParticipants.delete(participantId);
+  }
+
+  static async _onRequestSkill(event, target) {
+    const skillSlug = target.dataset.skill;
+    if (!skillSlug) return;
+
+    if (this.selectedParticipants.size === 0) {
+      ui.notifications.warn('No participants selected');
+      return;
+    }
+
+    await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+  }
+
+  static async _onOpenSkillMenu(event, target) {
+    // Show dialog with all PF2e skills
+    const allSkills = [
+      { slug: 'acr', name: 'Acrobatics' },
+      { slug: 'arc', name: 'Arcana' },
+      { slug: 'ath', name: 'Athletics' },
+      { slug: 'cra', name: 'Crafting' },
+      { slug: 'dec', name: 'Deception' },
+      { slug: 'dip', name: 'Diplomacy' },
+      { slug: 'itm', name: 'Intimidation' },
+      { slug: 'med', name: 'Medicine' },
+      { slug: 'nat', name: 'Nature' },
+      { slug: 'occ', name: 'Occultism' },
+      { slug: 'per', name: 'Perception' },
+      { slug: 'prf', name: 'Performance' },
+      { slug: 'rel', name: 'Religion' },
+      { slug: 'soc', name: 'Society' },
+      { slug: 'ste', name: 'Stealth' },
+      { slug: 'sur', name: 'Survival' },
+      { slug: 'thi', name: 'Thievery' }
+    ];
+
+    const content = `
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem;">
+        ${allSkills.map(s => `
+          <button type="button" data-skill="${s.slug}" style="padding: 0.5rem; text-align: left;">
+            ${s.name}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    const dialog = new foundry.applications.api.DialogV2({
+      window: { title: 'Select Skill' },
+      content,
+      buttons: [],
+      submit: () => {}
+    });
+
+    dialog.render(true);
+
+    // Add click handlers to buttons
+    dialog.element.addEventListener('click', async (e) => {
+      const button = e.target.closest('button[data-skill]');
+      if (button) {
+        const skillSlug = button.dataset.skill;
+        dialog.close();
+
+        if (this.selectedParticipants.size === 0) {
+          ui.notifications.warn('No participants selected');
+          return;
+        }
+
+        await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+      }
+    });
+  }
+
+  static async _onSetDC(event, target) {
+    const dc = parseInt(target.dataset.dc);
+    if (!isNaN(dc)) {
+      this.currentDC = dc;
+      this.render();
+    }
+  }
+
+  static async _onSetCustomDC(event, target) {
+    const dc = parseInt(target.value);
+    if (!isNaN(dc) && dc >= 1 && dc <= 60) {
+      this.currentDC = dc;
+      // Don't render on every keystroke, just update the value
+    }
+  }
+
+  static async _onSetDCVisibility(event, target) {
+    this.dcVisibility = target.value;
+    this.render();
+  }
+
+  static async _onRequestSelectedCheck(event, target) {
+    if (this.selectedParticipants.size === 0) {
+      ui.notifications.warn('No participants selected');
+      return;
+    }
+
+    // Use last clicked skill or default to Perception
+    // For now, prompt for skill selection
+    ui.notifications.info('Select a skill button to request a check');
+  }
+
+  static async _onRequestAllCheck(event, target) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants?.length) {
+      ui.notifications.warn('No participants');
+      return;
+    }
+
+    // Prompt for skill selection
+    ui.notifications.info('Select a skill button, then click this to request from all');
   }
 }
