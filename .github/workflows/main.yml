@@ -146,6 +146,7 @@ jobs:
              ./module.zip                        \
             `# The files that will be included.` \
             module.json                          \
+            storyframe.mjs                       \
             README.md                            \
             CHANGELOG.md                         \
             LICENSE                              \
