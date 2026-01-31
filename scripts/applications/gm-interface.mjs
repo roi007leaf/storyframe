@@ -77,7 +77,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     const state = game.storyframe.stateManager.getState();
     if (!state) {
       return {
@@ -387,8 +387,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     return { items, rootJournals, favorites };
   }
 
-  async _onRender(context, options) {
-    super._onRender(context, options);
+  async _onRender(context, _options) {
+    super._onRender(context, _options);
     this._attachDropdownHandler();
     this._attachSearchHandler();
     this._attachContentImageDrag();
@@ -822,7 +822,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
-  async _onClose(options) {
+  async _onClose(_options) {
     // Close the sidebar drawer if open
     if (game.storyframe.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.close();
@@ -855,7 +855,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     // Save minimized state
     await game.settings.set(MODULE_ID, 'gmWindowMinimized', this.minimized);
 
-    return super._onClose(options);
+    return super._onClose(_options);
   }
 
   /**
@@ -883,7 +883,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
   // --- Action Handlers ---
 
-  static async _onSelectPage(event, target) {
+  static async _onSelectPage(_event, target) {
     const pageIndex = parseInt(target.dataset.pageIndex);
     if (isNaN(pageIndex) || pageIndex === this.currentPageIndex) return;
 
@@ -894,13 +894,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  static async _onSearchPages(event, target) {
+  static async _onSearchPages(_event, target) {
     this.pageSearchFilter = target.value;
     this.currentPageIndex = 0; // Reset to first page when searching
     this.render();
   }
 
-  static async _onEditJournal(event, target) {
+  static async _onEditJournal(_event, _target) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.activeJournal) {
       ui.notifications.warn('No journal selected');
@@ -917,7 +917,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     journal.sheet.render(true);
   }
 
-  static async _onToggleFolder(event, target) {
+  static async _onToggleFolder(_event, target) {
     const folderId = target.dataset.folderId;
     if (!folderId) return;
 
@@ -973,7 +973,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     });
   }
 
-  static async _onSelectJournal(event, target) {
+  static async _onSelectJournal(_event, target) {
     const journalId = target.dataset.value;
     const dropdown = target.closest('.custom-dropdown');
 
@@ -991,7 +991,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     await game.storyframe.socketManager.requestSetActiveJournal(journalId || null);
   }
 
-  static async _onToggleSidebar(event, target) {
+  static async _onToggleSidebar(_event, _target) {
     // Get reference to the main interface (stored as gmApp)
     const mainInterface = game.storyframe.gmApp;
 
@@ -1062,7 +1062,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  static async _onGoBack(event, target) {
+  static async _onGoBack(_event, _target) {
     if (this.navigationHistory.length === 0) return;
 
     // Check for unsaved changes before navigating
@@ -1100,7 +1100,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
-  static async _onGoForward(event, target) {
+  static async _onGoForward(_event, _target) {
     if (this.forwardHistory.length === 0) return;
 
     // Check for unsaved changes before navigating
@@ -1138,7 +1138,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
-  static async _onPreviousPage(event, target) {
+  static async _onPreviousPage(_event, _target) {
     if (this.currentPageIndex <= 0) return;
 
     // Check for unsaved changes before switching pages
@@ -1148,7 +1148,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  static async _onNextPage(event, target) {
+  static async _onNextPage(_event, _target) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.activeJournal) return;
 
@@ -1165,7 +1165,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  static async _onToggleEditMode(event, target) {
+  static async _onToggleEditMode(_event, _target) {
     // Check for unsaved changes before leaving edit mode
     if (this.editMode && this.editorDirty) {
       const confirmed = await foundry.applications.api.DialogV2.confirm({
@@ -1190,7 +1190,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.render();
   }
 
-  static async _onSavePageContent(event, target) {
+  static async _onSavePageContent(_event, _target) {
     const success = await this._saveEditorContent();
     if (success) {
       // Exit edit mode and return to rendered view
@@ -1200,7 +1200,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     }
   }
 
-  static async _onCancelEdit(event, target) {
+  static async _onCancelEdit(_event, _target) {
     // Check for unsaved changes
     if (this.editorDirty) {
       const confirmed = await foundry.applications.api.DialogV2.confirm({

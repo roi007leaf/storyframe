@@ -165,7 +165,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     }
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     const state = game.storyframe.stateManager.getState();
     const layout = game.settings.get(MODULE_ID, 'playerViewerLayout') || 'grid';
 
@@ -216,8 +216,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     };
   }
 
-  _onRender(context, options) {
-    super._onRender(context, options);
+  _onRender(context, _options) {
+    super._onRender(context, _options);
 
     // Restore state on first render only
     if (!this._stateRestored) {
@@ -354,7 +354,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     this.render();
   }
 
-  async _onClose(options) {
+  async _onClose(_options) {
     // Save window position
     await game.settings.set(MODULE_ID, 'playerViewerPosition', {
       top: this.position.top,
@@ -366,14 +366,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     // Save minimized state
     await game.settings.set(MODULE_ID, 'playerViewerMinimized', this.minimized);
 
-    return super._onClose(options);
+    return super._onClose(_options);
   }
 
   /**
    * Method called by socket handler when GM sends a roll request.
    * Triggers re-render to display new roll prompt.
    */
-  showRollPrompt(requestData) {
+  showRollPrompt(_requestData) {
     this.render();
   }
 
@@ -395,7 +395,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * @param {Event} event - Click event
    * @param {HTMLElement} target - Button element
    */
-  static async _onExecuteRoll(event, target) {
+  static async _onExecuteRoll(_event, target) {
     const requestId = target.dataset.requestId;
     if (!requestId) {
       console.error(`${MODULE_ID} | No requestId on roll button`);

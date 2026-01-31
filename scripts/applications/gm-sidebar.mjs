@@ -167,7 +167,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  async _prepareContext(options) {
+  async _prepareContext(_options) {
     // Detect system info (needed throughout the method)
     const currentSystem = SystemAdapter.detectSystem();
 
@@ -312,8 +312,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     };
   }
 
-  async _onRender(context, options) {
-    super._onRender(context, options);
+  async _onRender(context, _options) {
+    super._onRender(context, _options);
     this._attachDragDropHandlers();
     this._disableWindowDrag();
     this._attachDCHandlers();
@@ -642,7 +642,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
                 content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
                 ok: {
                   label: 'Add',
-                  callback: (event, button, dialog) => button.form.elements.label.value,
+                  callback: (event, button, _dialog) => button.form.elements.label.value,
                 },
                 rejectClose: false,
               });
@@ -732,11 +732,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  async _onClose(options) {
+  async _onClose(_options) {
     // Stop tracking parent movements
     this._stopTrackingParent();
 
-    return super._onClose(options);
+    return super._onClose(_options);
   }
 
   // --- Helper Methods ---
@@ -896,7 +896,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
   // --- Action Handlers ---
 
-  static async _onAddSpeakerFromImage(event, target) {
+  static async _onAddSpeakerFromImage(_event, _target) {
     new FilePicker({
       type: 'image',
       callback: async (path) => {
@@ -905,7 +905,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
           content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
           ok: {
             label: 'Add',
-            callback: (event, button, dialog) => button.form.elements.label.value,
+            callback: (event, button, _dialog) => button.form.elements.label.value,
           },
           rejectClose: false,
         });
@@ -920,7 +920,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }).render(true);
   }
 
-  static async _onSetSpeaker(event, target) {
+  static async _onSetSpeaker(_event, target) {
     const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
     if (speakerId) {
       await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
@@ -945,11 +945,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  static async _onClearSpeaker(event, target) {
+  static async _onClearSpeaker(_event, _target) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(null);
   }
 
-  static async _onClearAllSpeakers(event, target) {
+  static async _onClearAllSpeakers(_event, _target) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.speakers?.length) return;
 
@@ -966,7 +966,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  static async _onClearAllParticipants(event, target) {
+  static async _onClearAllParticipants(_event, _target) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.participants?.length) return;
 
@@ -984,12 +984,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  static async _onTogglePCsPanel(event, target) {
+  static async _onTogglePCsPanel(_event, _target) {
     this.pcsPanelCollapsed = !this.pcsPanelCollapsed;
     this.render();
   }
 
-  static async _onAddAllPCs(event, target) {
+  static async _onAddAllPCs(_event, _target) {
     const pcs = this._getPlayerCharacters();
 
     if (pcs.length === 0) {
@@ -1013,7 +1013,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     ui.notifications.info(`Added ${pcs.length} PC(s)`);
   }
 
-  static async _onToggleParticipantSelection(event, target) {
+  static async _onToggleParticipantSelection(_event, target) {
     const participantId = target.closest('[data-participant-id]')?.dataset.participantId;
     if (!participantId) return;
 
@@ -1035,7 +1035,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.selectedParticipants.delete(participantId);
   }
 
-  static async _onToggleSelectAll(event, target) {
+  static async _onToggleSelectAll(_event, _target) {
     const state = game.storyframe.stateManager.getState();
     const allParticipantIds = (state.participants || []).map((p) => p.id);
 
@@ -1048,7 +1048,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.render();
   }
 
-  static async _onRequestSkill(event, target) {
+  static async _onRequestSkill(_event, target) {
     const skillSlug = target.dataset.skill;
     if (!skillSlug) return;
 
@@ -1060,7 +1060,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
   }
 
-  static async _onOpenSkillMenu(event, target) {
+  static async _onOpenSkillMenu(_event, target) {
     const allSkills = [
       { slug: 'per', name: 'Perception' },
       { slug: 'acr', name: 'Acrobatics' },
@@ -1173,7 +1173,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  static async _onOpenSkillConfig(event, target) {
+  static async _onOpenSkillConfig(_event, target) {
     const allSkills = [
       { slug: 'per', name: 'Perception' },
       { slug: 'acr', name: 'Acrobatics' },
@@ -1412,7 +1412,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
   }
 
-  static async _onSetDCSelect(event, target) {
+  static async _onSetDCSelect(_event, target) {
     const value = target.value;
     if (value === '') {
       this.currentDC = null;
@@ -1425,7 +1425,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.render();
   }
 
-  static async _onSetDifficulty(event, target) {
+  static async _onSetDifficulty(_event, target) {
     const difficulty = target.value;
     this.currentDifficulty = difficulty;
 
@@ -1438,7 +1438,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.render();
   }
 
-  static async _onCancelRoll(event, target) {
+  static async _onCancelRoll(_event, target) {
     const requestId = target.closest('[data-request-id]')?.dataset.requestId;
     if (!requestId) return;
 
@@ -1446,12 +1446,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     ui.notifications.info('Roll request cancelled');
   }
 
-  static async _onOpenPlayerWindows(event, target) {
+  static async _onOpenPlayerWindows(_event, _target) {
     game.storyframe.socketManager.openAllPlayerViewers();
     ui.notifications.info('Opening StoryFrame on all player clients');
   }
 
-  static async _onShowPendingRolls(event, target) {
+  static async _onShowPendingRolls(_event, target) {
     const state = game.storyframe.stateManager.getState();
     const pendingRolls = state?.pendingRolls || [];
 

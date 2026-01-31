@@ -294,7 +294,7 @@ Hooks.on('canvasReady', () => {
 });
 
 // Hook: updateScene (listen for flag changes on all clients)
-Hooks.on('updateScene', async (scene, changed, options, userId) => {
+Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   // Only current scene
   if (scene.id !== game.scenes.current?.id) return;
 
@@ -333,7 +333,7 @@ Hooks.on('updateScene', async (scene, changed, options, userId) => {
 });
 
 // Hook: updateJournalEntry (watch for journal content changes)
-Hooks.on('updateJournalEntry', async (journal, changed, options, userId) => {
+Hooks.on('updateJournalEntry', async (journal, _changed, _options, _userId) => {
   const state = game.storyframe.stateManager.getState();
   if (journal.uuid !== state?.activeJournal) return;
 
@@ -349,7 +349,7 @@ Hooks.on('updateJournalEntry', async (journal, changed, options, userId) => {
 });
 
 // Hook: closeJournalSheet (watch for editor closing after edits)
-Hooks.on('closeJournalSheet', async (sheet, html) => {
+Hooks.on('closeJournalSheet', async (sheet, _html) => {
   const state = game.storyframe.stateManager.getState();
   if (sheet.document.uuid !== state?.activeJournal) return;
 

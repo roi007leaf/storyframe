@@ -266,10 +266,10 @@ export class SocketManager {
    * CRITICAL: This runs on the PLAYER's client.
    * Must call playerApp.showRollPrompt() to display UI.
    */
-  _handlePromptSkillCheck(requestData) {
+  _handlePromptSkillCheck(_requestData) {
     // Trigger UI update on player viewer
     if (game.storyframe.playerApp) {
-      game.storyframe.playerApp.showRollPrompt(requestData);
+      game.storyframe.playerApp.showRollPrompt(_requestData);
     } else {
       console.warn(`${MODULE_ID} | playerApp not initialized for roll prompt`);
     }
@@ -279,7 +279,7 @@ export class SocketManager {
    * Handler: Roll history update.
    * Runs on all clients to sync roll history display.
    */
-  _handleRollHistoryUpdate(historyData) {
+  _handleRollHistoryUpdate(_historyData) {
     // Update local UI displays
     game.storyframe.gmApp?.render();
     game.storyframe.playerApp?.render();
