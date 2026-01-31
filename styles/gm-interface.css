@@ -910,3 +910,18 @@
 .gm-interface .editor-wrapper .ql-editor {
   background: #ffffff !important;
 }
+
+/* Journal content wrapper with light theme */
+.gm-interface .journal-content-wrapper.theme-light {
+  background: #f8f4f1;
+  color: #191813;
+}
+
+.gm-interface .journal-content-wrapper.theme-light .journal-entry-pages {
+  background: transparent;
+}
+
+.gm-interface .journal-content-wrapper.theme-light .journal-page-content {
+  background: transparent;
+  color: #191813;
+}
