@@ -544,6 +544,14 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       console.log(`GMInterface | Class extraction already in progress for ${journal.name}`);
       return;
     }
+
+    // Skip PFS journals (they use MetaMorphicJournalEntrySheet which has broken element collection)
+    if (journal.sheet?.constructor?.name === 'MetaMorphicJournalEntrySheet') {
+      console.log(`GMInterface | Skipping class extraction for PFS journal (MetaMorphic sheet)`);
+      this.journalClassCache.set(journal.uuid, game.system.id);
+      return;
+    }
+
     this._extractingClassFor = journal.uuid;
 
     console.log(`GMInterface | Starting scheduled class extraction for ${journal.name}`);
@@ -1247,6 +1255,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     try {
       // Clear any existing styles first
       this._clearJournalStyles();
+
+      // Force clear cache to ensure fresh CSS extraction
+      this.cssScraper.clearCache(journalUuid);
+      console.log(`GMInterface | Cleared cache for ${journalUuid}`);
 
       console.log(`GMInterface | Extracted class parameter for CSS scraper: ${extractedClass}`);
 
