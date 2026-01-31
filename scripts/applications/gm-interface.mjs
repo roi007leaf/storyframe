@@ -1248,10 +1248,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       // Clear any existing styles first
       this._clearJournalStyles();
 
-      // Force clear cache to ensure fresh CSS extraction
-      this.cssScraper.clearCache(journalUuid);
-      console.log(`GMInterface | Cleared cache for ${journalUuid}`);
-
       console.log(`GMInterface | Extracted class parameter for CSS scraper: ${extractedClass}`);
 
       // Get the sheet element if available
