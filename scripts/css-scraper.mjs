@@ -121,15 +121,16 @@ export class CSSScraper {
    * @private
    */
   async _extractJournalCSSAsync(journal, extractedClass, sheetElement) {
+    console.log(`CSSScraper | Searching for link stylesheets in sheet element...`);
+
     // Search for link stylesheets in the sheet element
     const linkElements = sheetElement.querySelectorAll('link[rel="stylesheet"]');
+    console.log(`CSSScraper | Found ${linkElements.length} link element(s) in sheet`);
 
     if (linkElements.length > 0) {
-      console.log(`CSSScraper | Found ${linkElements.length} link stylesheet(s) in sheet element`);
-
       // Log each link found
       linkElements.forEach(link => {
-        console.log(`CSSScraper | Found link stylesheet in sheet element: ${link.href}`);
+        console.log(`CSSScraper | Link href: ${link.href}`);
 
         // Check for premium module stylesheets
         const premiumModules = [
@@ -149,7 +150,7 @@ export class CSSScraper {
       // Wait for link stylesheets to load
       console.log(`CSSScraper | Waiting for ${linkElements.length} link stylesheet(s) to load...`);
       await this._waitForLinkStylesheets(linkElements);
-      console.log(`CSSScraper | All link stylesheets loaded or timed out`);
+      console.log(`CSSScraper | Finished waiting for link stylesheets`);
     }
 
     // Check for adoptedStyleSheets (shadow DOM or modern pattern)
@@ -158,8 +159,10 @@ export class CSSScraper {
     }
 
     // Now extract from document.styleSheets (includes the loaded link stylesheets)
-    console.log(`CSSScraper | Processing document.styleSheets: ${document.styleSheets.length}`);
-    return this._processStylesheets(journal, extractedClass, document.styleSheets);
+    console.log(`CSSScraper | Processing document.styleSheets: ${document.styleSheets.length} total sheets`);
+    const result = this._processStylesheets(journal, extractedClass, document.styleSheets);
+    console.log(`CSSScraper | Async extraction returning CSS: ${result.length} characters`);
+    return result;
   }
 
   /**
