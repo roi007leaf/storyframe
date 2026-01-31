@@ -564,15 +564,27 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           // If element is jQuery, find the root by class
           if (journal.sheet.element.length) {
-            // Try to find element with 'app' class (the root)
+            // Try to find DIV element with 'app' class (the root)
             for (let i = 0; i < journal.sheet.element.length; i++) {
               const el = journal.sheet.element[i];
-              if (el.classList?.contains('app') && el.classList?.contains('journal-sheet')) {
+              // Must be a DIV (not BUTTON or other elements) with app and journal-sheet classes
+              if (el.tagName === 'DIV' &&
+                  el.classList?.contains('app') &&
+                  el.classList?.contains('journal-sheet')) {
                 domElement = el;
                 break;
               }
             }
-            // Fallback to first element if not found
+            // Fallback to first DIV element if not found
+            if (!domElement) {
+              for (let i = 0; i < journal.sheet.element.length; i++) {
+                if (journal.sheet.element[i].tagName === 'DIV') {
+                  domElement = journal.sheet.element[i];
+                  break;
+                }
+              }
+            }
+            // Last resort: first element
             if (!domElement) domElement = journal.sheet.element[0];
           } else {
             domElement = journal.sheet.element;
