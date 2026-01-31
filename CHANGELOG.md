@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Module release workflow now includes `storyframe.mjs` in the module.zip archive
 - Toolbar button active states now properly reset when selection changes
 - Format buttons preserve and wrap selected text instead of replacing it
+- Premium module CSS no longer bleeds between different adventures (e.g., Kingmaker CSS showing in PFS journals)
+- CSS scraper now filters stylesheets by journal source pack to prevent cross-module styling conflicts
 
 ## [1.0.2] - 2026-01-30
 
