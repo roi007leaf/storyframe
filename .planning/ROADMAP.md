@@ -136,11 +136,13 @@ Plans:
   5. PFS journals display with PFS styling (including distinctive sidebar colors)
   6. Switching between premium module journals updates CSS correctly
   7. World journals (imported from packs) maintain their original premium module styling
-**Plans**: 2 plans
+**Plans**: 4 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — CSS filtering refactor with hybrid URL + keyword approach and selective namespacing
-- [ ] 07-02-PLAN.md — Cache persistence, extraction reliability, and visual verification
+- [x] 07-01-PLAN.md — CSS filtering refactor with hybrid URL + keyword approach and selective namespacing
+- [x] 07-02-PLAN.md — Cache persistence, extraction reliability, and visual verification
+- [ ] 07-03-PLAN.md — Fix CSS extraction timing and premium stylesheet detection (gap closure)
+- [ ] 07-04-PLAN.md — Visual verification of premium module styling (gap closure checkpoint)
 
 ## Progress
 
@@ -155,4 +157,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 4. Polish | 2/2 | Complete | 2026-01-29 |
 | 5. Journal Integration & UI Polish | 0/3 | Ready | - |
 | 6. PC Participants & PF2e Check Rolls | 0/4 | Ready | - |
-| 7. Premium Journal CSS Scraper | 0/2 | Ready | - |
+| 7. Premium Journal CSS Scraper | 2/4 | Gap Closure | - |
