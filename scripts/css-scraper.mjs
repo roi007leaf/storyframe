@@ -100,11 +100,11 @@ export class CSSScraper {
     console.log(`CSSScraper | Cache MISS for ${journal.uuid} - extracting fresh CSS`);
 
     // For known premium modules, fetch CSS directly from their module files
+    // These modules load CSS in non-standard ways (not in document.styleSheets)
     const premiumModuleMap = {
       'pf2e-km': 'modules/pf2e-kingmaker/styles/pf2e-km.css',
-      'pf2e-pfs07': 'modules/pf2e-pfs/styles/pf2e-pfs.css',
-      'pf2e-bb': 'modules/pf2e-beginner-box/styles/pf2e-bb.css'
-      // Add more as needed
+      'pf2e-bb': 'modules/pf2e-beginner-box/styles/pf2e-bb.css',
+      'pf2e-av': 'modules/pf2e-abomination-vaults/styles/pf2e-av.css'
     };
 
     if (extractedClass && premiumModuleMap[extractedClass]) {
