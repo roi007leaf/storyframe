@@ -421,8 +421,6 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         'journal-sheet',
         'journal-entry',
         'window-app',
-        'themed',
-        'theme-light',
       ];
       const systemClasses = context.containerClasses.split(' ').filter(Boolean);
       allClasses.push(...systemClasses);
