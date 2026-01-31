@@ -102,9 +102,13 @@ export class CSSScraper {
     // For known premium modules, fetch CSS directly from their module files
     // These modules load CSS in non-standard ways (not in document.styleSheets)
     const premiumModuleMap = {
-      'pf2e-km': 'modules/pf2e-kingmaker/styles/pf2e-km.css',
-      'pf2e-bb': 'modules/pf2e-beginner-box/styles/pf2e-bb.css',
-      'pf2e-av': 'modules/pf2e-abomination-vaults/styles/pf2e-av.css'
+      'pf2e-km': ['modules/pf2e-kingmaker/styles/pf2e-km.css'],
+      'pf2e-bb': ['modules/pf2e-beginner-box/styles/pf2e-bb.css'],
+      'pf2e-av': ['modules/pf2e-abomination-vaults/styles/pf2e-av.css'],
+      'pf2e-pfs04': ['modules/pf2e-pfs04-year-of-boundless-wonder-1314/style.css'],
+      'pf2e-pfs05': ['modules/pf2e-pfs05-year-of-unfettered-exploration-assets/style.css'],
+      'pf2e-pfs06': ['modules/pf2e-pfs06-year-of-immortal-influence/style.css'],
+      'pf2e-pfs07': ['modules/pf2e-pfs07-year-of-battles-spark/style.css']
     };
 
     if (extractedClass && premiumModuleMap[extractedClass]) {
@@ -124,29 +128,42 @@ export class CSSScraper {
    * Fetch premium module CSS directly from known file paths
    * @private
    */
-  async _fetchPremiumCSS(journal, extractedClass, cssUrl) {
-    console.log(`CSSScraper | Fetching premium CSS from: ${cssUrl}`);
+  async _fetchPremiumCSS(journal, extractedClass, cssUrls) {
+    console.log(`CSSScraper | Fetching premium CSS from ${cssUrls.length} file(s)`);
 
-    try {
-      const response = await fetch(cssUrl);
-      if (!response.ok) {
-        console.warn(`CSSScraper | Failed to fetch ${cssUrl}: ${response.status}`);
-        return this._extractJournalCSSSync(journal, extractedClass);
+    const allCSS = [];
+
+    for (const cssUrl of cssUrls) {
+      console.log(`CSSScraper | Fetching: ${cssUrl}`);
+
+      try {
+        const response = await fetch(cssUrl);
+        if (!response.ok) {
+          console.warn(`CSSScraper | Failed to fetch ${cssUrl}: ${response.status}`);
+          continue;
+        }
+
+        const css = await response.text();
+        console.log(`CSSScraper | Fetched ${css.length} characters from ${cssUrl}`);
+        allCSS.push(css);
+      } catch (error) {
+        console.error(`CSSScraper | Error fetching ${cssUrl}:`, error);
       }
+    }
 
-      const css = await response.text();
-      console.log(`CSSScraper | Fetched premium CSS: ${css.length} characters`);
-
-      // Cache it
-      this.cache.set(journal.uuid, css);
-      await this._saveCacheToSettings();
-
-      return css;
-    } catch (error) {
-      console.error(`CSSScraper | Error fetching premium CSS from ${cssUrl}:`, error);
-      // Fallback to normal extraction
+    if (allCSS.length === 0) {
+      console.warn(`CSSScraper | No premium CSS fetched, falling back to document.styleSheets`);
       return this._extractJournalCSSSync(journal, extractedClass);
     }
+
+    const combined = allCSS.join('\n\n');
+    console.log(`CSSScraper | Combined premium CSS: ${combined.length} characters`);
+
+    // Cache it
+    this.cache.set(journal.uuid, combined);
+    await this._saveCacheToSettings();
+
+    return combined;
   }
 
   /**
