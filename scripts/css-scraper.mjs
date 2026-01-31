@@ -99,9 +99,33 @@ export class CSSScraper {
 
     console.log(`CSSScraper | Cache MISS for ${journal.uuid} - extracting fresh CSS`);
 
-    // For known premium modules, fetch CSS directly from their module files
-    // These modules load CSS in non-standard ways (not in document.styleSheets)
-    const premiumModuleMap = {
+    // For premium modules, try to fetch CSS directly from common file patterns
+    // Many premium modules load CSS in non-standard ways (not in document.styleSheets)
+    if (extractedClass && extractedClass.startsWith('pf2e-')) {
+      const cssUrls = this._buildPremiumCSSUrls(extractedClass);
+      if (cssUrls.length > 0) {
+        console.log(`CSSScraper | Premium module class detected: ${extractedClass}`);
+        return this._fetchPremiumCSS(journal, extractedClass, cssUrls);
+      }
+    }
+
+    // If sheet element is provided, we need to wait for link stylesheets - use async
+    if (sheetElement) {
+      return this._extractJournalCSSAsync(journal, extractedClass, sheetElement);
+    } else {
+      return this._extractJournalCSSSync(journal, extractedClass);
+    }
+  }
+
+  /**
+   * Build potential CSS file URLs for a premium module class
+   * @private
+   */
+  _buildPremiumCSSUrls(extractedClass) {
+    const urls = [];
+
+    // Known mappings for modules with non-standard paths
+    const knownMappings = {
       'pf2e-km': ['modules/pf2e-kingmaker/styles/pf2e-km.css'],
       'pf2e-bb': ['modules/pf2e-beginner-box/styles/pf2e-bb.css'],
       'pf2e-av': ['modules/pf2e-abomination-vaults/styles/pf2e-av.css'],
@@ -111,17 +135,29 @@ export class CSSScraper {
       'pf2e-pfs07': ['modules/pf2e-pfs07-year-of-battles-spark/style.css']
     };
 
-    if (extractedClass && premiumModuleMap[extractedClass]) {
-      console.log(`CSSScraper | Premium module detected: ${extractedClass}`);
-      return this._fetchPremiumCSS(journal, extractedClass, premiumModuleMap[extractedClass]);
+    if (knownMappings[extractedClass]) {
+      return knownMappings[extractedClass];
     }
 
-    // If sheet element is provided, we need to wait for link stylesheets - use async
-    if (sheetElement) {
-      return this._extractJournalCSSAsync(journal, extractedClass, sheetElement);
-    } else {
-      return this._extractJournalCSSSync(journal, extractedClass);
+    // For AP series modules (pf2e-bloodlords, pf2e-gatewalkers, etc.), try common patterns
+    // Pattern: modules/pf2e-ap###-###-{name}/style.css
+    const apPatterns = {
+      'pf2e-bloodlords': 'pf2e-ap181-186-blood-lords',
+      'pf2e-gatewalkers': 'pf2e-ap187-189-gatewalkers',
+      'pf2e-stolenfate': 'pf2e-ap190-192-stolen-fate',
+      'pf2e-skyking': 'pf2e-ap193-195-sky-kings-tomb',
+      'pf2e-seasonofghosts': 'pf2e-ap196-199-season-of-ghosts',
+      'pf2e-wardensofwildwood': 'pf2e-ap201-203-wardens-of-wildwood',
+      'pf2e-curtaincall': 'pf2e-ap204-206-curtain-call',
+      'pf2e-triumphofthetusk': 'pf2e-ap207-209-triumph-of-the-tusk',
+      'pf2e-sporewar': 'pf2e-ap210-212-spore-war'
+    };
+
+    if (apPatterns[extractedClass]) {
+      urls.push(`modules/${apPatterns[extractedClass]}/style.css`);
     }
+
+    return urls;
   }
 
   /**
