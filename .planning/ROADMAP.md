@@ -18,6 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: Polish** - UX refinements, conversation persistence, hotkeys
 - [ ] **Phase 5: Journal Integration & UI Polish** - CSS scraper, edit button, drag-drop fix, design improvements
 - [ ] **Phase 6: PC Participants & PF2e Check Rolls** - GM defines PC participants, request check rolls from PCs
+- [ ] **Phase 7: Premium Journal CSS Scraper** - Fix CSS filtering and namespacing for premium modules
 
 ## Phase Details
 
@@ -124,10 +125,27 @@ Plans:
 - [ ] 06-03-PLAN.md — Player roll prompts and PF2e roll execution
 - [ ] 06-04-PLAN.md — Roll history panel and quick button settings
 
+### Phase 7: Premium Journal CSS Scraper
+**Goal**: CSS scraper correctly identifies premium module classes and applies proper styling to StoryFrame journals
+**Depends on**: Phase 6
+**Success Criteria** (what must be TRUE):
+  1. StoryFrame correctly extracts CSS classes from journal sheets (pf2e-km, pf2e-pfs07, etc.)
+  2. Premium module CSS classes apply to StoryFrame window without breaking functionality
+  3. CSS scraper filters stylesheets by journal source to prevent cross-module bleeding
+  4. Kingmaker journals display with Kingmaker styling
+  5. PFS journals display with PFS styling (including distinctive sidebar colors)
+  6. Switching between premium module journals updates CSS correctly
+  7. World journals (imported from packs) maintain their original premium module styling
+**Plans**: 2 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — CSS filtering refactor with hybrid URL + keyword approach and selective namespacing
+- [ ] 07-02-PLAN.md — Cache persistence, extraction reliability, and visual verification
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -137,3 +155,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 4. Polish | 2/2 | Complete | 2026-01-29 |
 | 5. Journal Integration & UI Polish | 0/3 | Ready | - |
 | 6. PC Participants & PF2e Check Rolls | 0/4 | Ready | - |
+| 7. Premium Journal CSS Scraper | 0/2 | Ready | - |
