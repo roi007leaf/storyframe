@@ -5,6 +5,39 @@
 export class CSSScraper {
   constructor() {
     this.cache = new Map(); // journalUuid -> cssText
+    this._loadCacheFromSettings();
+  }
+
+  /**
+   * Load cache from Foundry settings
+   * @private
+   */
+  _loadCacheFromSettings() {
+    if (typeof game === 'undefined' || !game.settings) return;
+    try {
+      const saved = game.settings.get('storyframe', 'journalClassCache');
+      if (saved && typeof saved === 'object') {
+        for (const [uuid, cssText] of Object.entries(saved)) {
+          this.cache.set(uuid, cssText);
+        }
+      }
+    } catch (e) {
+      console.debug('CSSScraper | Could not load cache from settings');
+    }
+  }
+
+  /**
+   * Save cache to Foundry settings
+   * @private
+   */
+  async _saveCacheToSettings() {
+    if (typeof game === 'undefined' || !game.settings) return;
+    try {
+      const cacheObj = Object.fromEntries(this.cache);
+      await game.settings.set('storyframe', 'journalClassCache', cacheObj);
+    } catch (e) {
+      console.debug('CSSScraper | Could not save cache to settings');
+    }
   }
 
   /**
@@ -116,6 +149,8 @@ export class CSSScraper {
 
     const cssText = styles.join('\n');
     this.cache.set(journal.uuid, cssText);
+    // Save to settings (fire-and-forget, don't await)
+    this._saveCacheToSettings();
     return cssText;
   }
 
@@ -238,6 +273,8 @@ export class CSSScraper {
    */
   clearCache(journalUuid) {
     this.cache.delete(journalUuid);
+    // Save updated cache to settings
+    this._saveCacheToSettings();
   }
 
   /**
@@ -245,5 +282,7 @@ export class CSSScraper {
    */
   clearAllCache() {
     this.cache.clear();
+    // Clear settings cache
+    this._saveCacheToSettings();
   }
 }

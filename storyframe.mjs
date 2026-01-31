@@ -126,6 +126,13 @@ Hooks.once('init', () => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'journalClassCache', {
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
     name: 'Toggle StoryFrame',
