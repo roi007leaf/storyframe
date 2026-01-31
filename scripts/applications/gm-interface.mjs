@@ -112,11 +112,28 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
-        // Check cache first, or use system ID as default
-        if (this.journalClassCache.has(journal.uuid)) {
+        // First check if journal is from a known premium module pack
+        // This avoids opening sheets unnecessarily
+        const packToPremiumClass = {
+          'pf2e-kingmaker': 'pf2e-km',
+          'pf2e-beginner-box': 'pf2e-bb',
+          'pf2e-abomination-vaults': 'pf2e-av'
+          // Skip PFS - causes infinite loop with MetaMorphic sheet
+        };
+
+        const packModule = journal.pack ? journal.pack.split('.')[0] : null;
+        if (packModule && packToPremiumClass[packModule]) {
+          containerClasses = packToPremiumClass[packModule];
+          this.journalClassCache.set(journal.uuid, containerClasses);
+          console.log(`GMInterface | Detected premium pack: ${packModule}, using class: ${containerClasses}`);
+        }
+        // Check cache
+        else if (this.journalClassCache.has(journal.uuid)) {
           containerClasses = this.journalClassCache.get(journal.uuid);
           console.log(`GMInterface | Using cached class for ${journal.name}: ${containerClasses}`);
-        } else if (journal.sheet?.rendered && journal.sheet?.element) {
+        }
+        // Extract from already-rendered sheet
+        else if (journal.sheet?.rendered && journal.sheet?.element) {
           console.log(`GMInterface | Sheet already rendered for ${journal.name}, extracting classes...`);
           // If sheet is already rendered, extract classes immediately - element is jQuery object
           // Find the actual root DIV (has 'app' class), not child elements
