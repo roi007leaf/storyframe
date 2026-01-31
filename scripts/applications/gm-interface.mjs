@@ -65,6 +65,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this._stateRestored = false;
     this.cssScraper = new CSSScraper();
     this.styleElement = null;
+    this.journalClassCache = new Map(); // Cache journal UUID -> CSS class
 
     // Navigation history for back/forward buttons
     this.navigationHistory = [];
@@ -110,54 +111,53 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (state.activeJournal) {
       const journal = await fromUuid(state.activeJournal);
       if (journal) {
-        // Extract system-specific classes from journal sheet root element
-        // (pf2e-bb, dnd5e, etc. are on the root .app element, not inner container)
-        if (journal.sheet?.element?.[0]) {
-          const rootClasses = journal.sheet.element.attr('class');
-          // Extract only system/module classes (pf2e-bb, etc.)
-          // Filter out Foundry framework classes
+        // Check cache first, or use system ID as default
+        if (this.journalClassCache.has(journal.uuid)) {
+          containerClasses = this.journalClassCache.get(journal.uuid);
+        } else if (journal.sheet?.rendered && journal.sheet?.element) {
+          // If sheet is already rendered, extract classes immediately - element is jQuery object
+          // Find the actual root DIV (has 'app' class), not child elements
+          let domElement = null;
+
+          if (journal.sheet.element.length) {
+            // Try to find element with 'app' class (the root)
+            for (let i = 0; i < journal.sheet.element.length; i++) {
+              const el = journal.sheet.element[i];
+              if (el.classList?.contains('app') && el.classList?.contains('journal-sheet')) {
+                domElement = el;
+                break;
+              }
+            }
+            // Fallback to first element if not found
+            if (!domElement) domElement = journal.sheet.element[0];
+          } else {
+            domElement = journal.sheet.element;
+          }
+
+          const rootClasses = domElement.className;
           const allClasses = rootClasses.split(' ');
-          const systemClass = allClasses.find(
-            (cls) =>
-              cls.startsWith('pf2e') ||
-              cls.startsWith('dnd5e') ||
-              cls.startsWith('swade') ||
-              cls.includes('outlaws') ||
-              cls.includes('bloodlords') ||
-              cls.includes('gatewalkers') ||
-              cls.includes('stolenfate') ||
-              cls.includes('skyking') ||
-              cls.includes('seasonofghosts') ||
-              cls.includes('wardensofwildwood') ||
-              cls.includes('curtaincall') ||
-              cls.includes('triumphofthetusk') ||
-              cls.includes('sporewar') ||
-              cls.includes('shadesofblood') ||
-              cls.includes('mythspeaker') ||
-              cls.includes('revengeoftherunelords') ||
-              (cls.includes('-') &&
-                !cls.startsWith('window') &&
-                !cls.startsWith('journal') &&
-                !cls.startsWith('app')),
+
+          // Prioritize premium module classes over generic theme classes
+          const premiumClass = allClasses.find((cls) =>
+            cls.startsWith('pf2e-') ||
+            cls.startsWith('dnd5e-') ||
+            cls.startsWith('swade-')
           );
-          if (systemClass) {
-            containerClasses = systemClass;
-          }
-        }
 
-        // Fallback: build classes manually if not extracted from sheet
-        if (!containerClasses) {
-          // Start with system ID
+          const genericClass = allClasses.find((cls) =>
+            (cls.includes('-') &&
+              !cls.startsWith('window') &&
+              !cls.startsWith('journal') &&
+              !cls.startsWith('app') &&
+              !cls.startsWith('theme'))
+          );
+
+          containerClasses = premiumClass || genericClass || game.system.id;
+          this.journalClassCache.set(journal.uuid, containerClasses);
+        } else {
+          // Use system ID for now, schedule async class extraction
           containerClasses = game.system.id;
-
-          // Add module-specific suffixes
-          if (game.modules.get('pf2e-beginner-box')?.active) {
-            containerClasses = 'pf2e-bb';
-          } else if (game.modules.get('pf2e-abomination-vaults')?.active) {
-            containerClasses = 'pf2e-av';
-          } else if (game.modules.get('pf2e-kingmaker')?.active) {
-            containerClasses = 'pf2e-km';
-          }
+          this._scheduleClassExtraction(journal);
         }
         // Support all page types (text, image, pdf, video)
         // Sort by page.sort property to match native journal order
@@ -397,9 +397,18 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
     // Add system/module classes to root for journal CSS compatibility
     if (context.containerClasses) {
+      // Remove any existing system and premium module classes first (including erroneous ones)
+      const systemAndPremiumClasses = ['pf2e', 'dnd5e', 'swade', 'header-control',
+        'pf2e-km', 'pf2e-bb', 'pf2e-av', 'pf2e-outlaws',
+        'pf2e-bloodlords', 'pf2e-gatewalkers', 'pf2e-stolenfate', 'pf2e-skyking',
+        'pf2e-seasonofghosts', 'pf2e-wardensofwildwood', 'pf2e-curtaincall',
+        'pf2e-triumphofthetusk', 'pf2e-sporewar'];
+
+      systemAndPremiumClasses.forEach((cls) => {
+        this.element.classList.remove(cls);
+      });
+
       const allClasses = [
-        'sheet',
-        'window-app',
         'journal-sheet',
         'journal-entry',
         'themed',
@@ -488,6 +497,93 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       this.editMode = false;
       this.render();
     }
+  }
+
+  /**
+   * Schedule async extraction of CSS classes from journal sheet
+   * This happens in the background to avoid blocking StoryFrame's render
+   */
+  async _scheduleClassExtraction(journal) {
+    // Don't extract if already in progress for this journal
+    if (this._extractingClassFor === journal.uuid) {
+      return;
+    }
+    this._extractingClassFor = journal.uuid;
+
+    // Run after a small delay to let StoryFrame render first
+    setTimeout(async () => {
+      const wasRendered = journal.sheet?.rendered;
+      let sheetOpenedByUs = false;
+
+      try {
+        // Temporarily render if not already open
+        if (!wasRendered) {
+          journal.sheet.render(true, { focus: false });
+          sheetOpenedByUs = true;
+          await new Promise(resolve => setTimeout(resolve, 200)); // Wait for render
+        }
+
+        // Extract classes - journal.sheet.element is a jQuery object
+        // Find the actual root DIV (has 'app' class), not child elements
+        if (journal.sheet?.element) {
+          let domElement = null;
+
+          // If element is jQuery, find the root by class
+          if (journal.sheet.element.length) {
+            // Try to find element with 'app' class (the root)
+            for (let i = 0; i < journal.sheet.element.length; i++) {
+              const el = journal.sheet.element[i];
+              if (el.classList?.contains('app') && el.classList?.contains('journal-sheet')) {
+                domElement = el;
+                break;
+              }
+            }
+            // Fallback to first element if not found
+            if (!domElement) domElement = journal.sheet.element[0];
+          } else {
+            domElement = journal.sheet.element;
+          }
+
+          const rootClasses = domElement.className;
+          const allClasses = rootClasses.split(' ');
+          // Prioritize premium module classes over generic theme classes
+          const premiumClass = allClasses.find((cls) =>
+            cls.startsWith('pf2e-') ||
+            cls.startsWith('dnd5e-') ||
+            cls.startsWith('swade-')
+          );
+
+          const genericClass = allClasses.find((cls) =>
+            (cls.includes('-') &&
+              !cls.startsWith('window') &&
+              !cls.startsWith('journal') &&
+              !cls.startsWith('app') &&
+              !cls.startsWith('theme'))
+          );
+
+          const extractedClass = premiumClass || genericClass || game.system.id;
+
+          // Cache the class in GMInterface
+          this.journalClassCache.set(journal.uuid, extractedClass);
+
+          // Extract and cache CSS using the extracted class
+          this.cssScraper.extractJournalCSS(journal, extractedClass);
+
+          // Re-render to apply the correct classes
+          this.render();
+        } else {
+          console.warn(`StoryFrame | Could not find sheet element for ${journal.name}`);
+        }
+      } catch (error) {
+        console.error('StoryFrame | Failed to extract journal classes:', error);
+      } finally {
+        // ALWAYS close if we opened it
+        if (sheetOpenedByUs && journal.sheet?.rendered) {
+          journal.sheet.close();
+        }
+        this._extractingClassFor = null;
+      }
+    }, 100);
   }
 
   /**
@@ -1021,8 +1117,17 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const journal = await fromUuid(journalUuid);
     if (!journal) return;
 
-    // Extract CSS
-    const cssText = this.cssScraper.extractJournalCSS(journal);
+    // Clear any existing styles first
+    this._clearJournalStyles();
+
+    // Force clear cache to ensure fresh CSS extraction
+    this.cssScraper.clearCache(journalUuid);
+
+    // Get the extracted class for this journal (for filtering stylesheets)
+    const extractedClass = this.journalClassCache.get(journal.uuid) || null;
+
+    // Extract CSS - pass extracted class for better filtering
+    const cssText = this.cssScraper.extractJournalCSS(journal, extractedClass);
 
     // Namespace rules to target our journal content area
     // Use a class selector to avoid ID specificity issues that would override premium module styles
