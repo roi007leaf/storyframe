@@ -120,6 +120,29 @@ export class CSSScraper {
   }
 
   /**
+   * Determine if a selector should be namespaced
+   * @param {string} selector - CSS selector
+   * @returns {boolean} True if selector should be namespaced
+   * @private
+   */
+  shouldNamespace(selector) {
+    const selectorLower = selector.toLowerCase();
+
+    // Don't namespace selectors with DOM-contextual elements
+    const contextualElements = ['body', 'html', ':root'];
+    if (contextualElements.some(ctx => selectorLower.includes(ctx))) {
+      return false;
+    }
+
+    // Don't namespace already-scoped selectors
+    if (selector.includes('.journal-page-content')) return false;
+    if (selector.includes('.journal-entry')) return false;
+
+    // Namespace everything else
+    return true;
+  }
+
+  /**
    * Namespace CSS rules to prevent conflicts
    * @param {string} cssText - Raw CSS text
    * @param {string} namespace - Selector prefix (default: .storyframe-content)
@@ -148,7 +171,32 @@ export class CSSScraper {
     // Process each rule
     return rules
       .map((rule) => {
-        // Skip @-rules (they scope themselves)
+        // Preserve @layer directives entirely (complex cascade implications)
+        if (rule.trim().startsWith('@layer')) {
+          return rule;
+        }
+
+        // Handle @media rules by recursing into their contents
+        if (rule.trim().startsWith('@media')) {
+          // Extract media query and rules inside
+          const openBrace = rule.indexOf('{');
+          if (openBrace === -1) return rule;
+
+          const mediaQuery = rule.substring(0, openBrace + 1);
+          const innerRules = rule.substring(openBrace + 1, rule.lastIndexOf('}'));
+          const closeBrace = rule.substring(rule.lastIndexOf('}'));
+
+          // Recurse to namespace inner rules
+          const namespacedInner = this.namespaceCSSRules(innerRules, namespace);
+          return `${mediaQuery}\n${namespacedInner}\n${closeBrace}`;
+        }
+
+        // Preserve @keyframes entirely
+        if (rule.trim().startsWith('@keyframes')) {
+          return rule;
+        }
+
+        // Skip other @-rules
         if (rule.startsWith('@')) {
           return rule;
         }
@@ -160,15 +208,21 @@ export class CSSScraper {
         const selector = rule.substring(0, openBrace).trim();
         const declaration = rule.substring(openBrace);
 
-        // Split multiple selectors
+        // Split multiple selectors (comma-separated)
         const selectors = selector.split(',').map((s) => s.trim());
 
-        // Prefix each selector
+        // Apply selective namespacing to each selector
         const namespaced = selectors
           .map((sel) => {
             // Already namespaced
             if (sel.startsWith(namespace)) return sel;
 
+            // Check if this selector should be namespaced
+            if (!this.shouldNamespace(sel)) {
+              return sel; // Preserve original
+            }
+
+            // Namespace this selector
             return `${namespace} ${sel}`;
           })
           .join(', ');
