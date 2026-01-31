@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 ## Current Position
 
 Phase: 7 of 7 (Premium Journal CSS Scraper)
-Plan: 1 of 1
+Plan: 2 of 2
 Status: Phase complete
-Last activity: 2026-01-31 — Completed 07-01-PLAN.md (hybrid CSS filtering & selective namespacing)
+Last activity: 2026-01-31 — Completed 07-02-PLAN.md (settings cache persistence & debug logging)
 
 Progress: [██████████] 100%
 
@@ -33,11 +33,11 @@ Progress: [██████████] 100%
 | 4. Polish | 2/2 | 3min | 1.5min |
 | 5. Integration/Polish | 1/2 | 2min | 2min |
 | 6. Participants/Rolls | 3/4 | 8min | 2.7min |
-| 7. CSS Scraper | 1/1 | 122min | 122min |
+| 7. CSS Scraper | 2/2 | 125min | 62.5min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (2min), 06-02 (4min), 06-03 (2min), 07-01 (122min)
-- Trend: CSS scraper refactor took longer due to complexity of filtering and namespacing logic
+- Last 5 plans: 06-02 (4min), 06-03 (2min), 07-01 (122min), 07-02 (3min)
+- Trend: CSS scraper refactor completed; debug logs added for user diagnostics
 
 *Updated after each plan completion*
 
@@ -140,6 +140,12 @@ From 07-01:
 - World journal handling: Use extractedClass parameter when journal.pack is null
 - CORS handling: Catch SecurityError specifically, skip external stylesheets gracefully
 
+From 07-02:
+- Settings-based cache: CSS cache persists via game.settings.set('journalClassCache')
+- Sheet lifecycle: try-finally guarantees cleanup with sheetOpenedByUs flag
+- Debug logging: Comprehensive logs for cache, extraction, filtering, namespacing, application
+- Console diagnostics: User can filter F12 console by "CSSScraper" or "GMInterface"
+
 ### Pending Todos
 
 None yet.
@@ -169,8 +175,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-01-31T14:04:36Z
-Stopped at: Completed 07-01-PLAN.md (hybrid CSS filtering & selective namespacing)
+Last session: 2026-01-31T14:38:29Z
+Stopped at: Completed 07-02-PLAN.md (settings cache persistence & debug logging)
 Resume file: None
 
 Config (if exists):
