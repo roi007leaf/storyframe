@@ -1195,6 +1195,16 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       return; // Will be called again after class extraction completes
     }
 
+    // Skip CSS scraping for non-premium journals (official Foundry journals)
+    const knownPremiumClasses = ['pf2e-km', 'pf2e-bb', 'pf2e-av'];
+    const isPremium = knownPremiumClasses.includes(extractedClass);
+
+    if (!isPremium) {
+      console.log(`GMInterface | Skipping CSS scraping for non-premium journal (class: ${extractedClass})`);
+      this._clearJournalStyles(); // Clear any previous premium styles
+      return;
+    }
+
     this._cssUpdatePending = true;
 
     try {
