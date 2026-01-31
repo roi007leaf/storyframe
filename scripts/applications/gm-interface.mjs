@@ -533,6 +533,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
       console.log(`GMInterface | Sheet was already rendered: ${wasRendered}`);
 
+      // Take snapshot of stylesheets BEFORE opening sheet
+      const stylesheetsBefore = new Set(
+        Array.from(document.styleSheets).map(s => s.href || 'inline')
+      );
+      console.log(`GMInterface | Stylesheets before opening sheet: ${stylesheetsBefore.size}`);
+
       try {
         // Temporarily render if not already open
         if (!wasRendered) {
@@ -540,6 +546,16 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           journal.sheet.render(true, { focus: false });
           sheetOpenedByUs = true;
           await new Promise(resolve => setTimeout(resolve, 200)); // Wait for render
+
+          // Wait additional time for stylesheets to load
+          await new Promise(resolve => setTimeout(resolve, 300));
+          console.log(`GMInterface | Waited 500ms total for sheet and stylesheets to load`);
+
+          // Take snapshot AFTER opening
+          const stylesheetsAfter = Array.from(document.styleSheets).map(s => s.href || 'inline');
+          const newStylesheets = stylesheetsAfter.filter(href => !stylesheetsBefore.has(href));
+          console.log(`GMInterface | New stylesheets added by journal sheet: ${newStylesheets.length}`);
+          newStylesheets.forEach(href => console.log(`GMInterface |   - ${href}`));
         }
 
         // Extract classes - journal.sheet.element is a jQuery object
