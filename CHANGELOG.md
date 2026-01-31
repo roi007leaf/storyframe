@@ -5,11 +5,47 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.3] - 2026-01-30
+## [1.0.3] - 2026-01-31
+
+### Added
+
+#### Rich Text Editor Enhancements
+
+- **Comprehensive formatting toolbar** with dropdowns for:
+  - Font family selection (18 fonts including Foundry-specific fonts)
+  - Font size selection (8pt - 36pt)
+  - Block format selection (Paragraph, Headings 1-6, Blockquote, Preformatted, Div)
+- **Foundry VTT format tools**:
+  - Secret Block insertion for GM-only content
+  - Code Block formatting
+  - Horizontal Rule insertion
+- **PF2e-specific format tools**:
+  - Inline Header formatting
+  - Info Block, Stat Block, and Written Note templates
+  - Trait tag insertion
+  - Action Glyph icons (1/2/3/Free/Reaction)
+  - GM Text Block and GM Text Inline for system-specific GM content
+- **Collapsible toolbar categories** - Foundry and PF2e format groups expand/collapse for cleaner UI
+- **Active format highlighting** - Toolbar buttons highlight in blue when that format is applied to selected text
+- **Format toggling** - Click a highlighted format button to remove that formatting
+- **HTML Source View** - Toggle between WYSIWYG and raw HTML editing
+- **FilePicker integration** - Image insertion now uses Foundry's file browser instead of URL prompts
+- **Image management** - Click images to select them, press Delete to remove
+- **Selected text preservation** - Format buttons wrap selected text instead of replacing it
+- **Enhanced clear formatting** - Removes all formatting including PF2e/Foundry special blocks
+
+### Changed
+
+- Replaced Quill.js with custom contenteditable-based editor for better control and Foundry integration
+- Extracted editor into separate `StoryFrameEditor` class in `scripts/storyframe-editor.mjs`
+- Save button now automatically exits edit mode and returns to rendered view
+- Toolbar uses compact, wrapping layout with proper flex-wrap behavior
 
 ### Fixed
 
-- Module zip did not include main file
+- Module release workflow now includes `storyframe.mjs` in the module.zip archive
+- Toolbar button active states now properly reset when selection changes
+- Format buttons preserve and wrap selected text instead of replacing it
 
 ## [1.0.2] - 2026-01-30
 

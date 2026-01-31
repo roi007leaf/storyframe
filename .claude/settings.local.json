@@ -1,5 +1,10 @@
 {
   "permissions": {
-    "allow": ["Bash(ls:*)", "Bash(find:*)"]
+    "allow": [
+      "Bash(ls:*)",
+      "Bash(find:*)",
+      "Bash(node -c:*)",
+      "Bash(npm run lint)"
+    ]
   }
 }

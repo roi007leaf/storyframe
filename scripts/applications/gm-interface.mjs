@@ -1,7 +1,8 @@
-/* eslint-disable no-undef */
+ 
 const MODULE_ID = 'storyframe';
 
 import { CSSScraper } from '../css-scraper.mjs';
+import { StoryFrameEditor } from '../storyframe-editor.mjs';
 
 // Inline validatePosition (avoids import issues with ESModule side-effect pattern)
 function validatePosition(saved) {
@@ -449,41 +450,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   }
 
   /**
-   * Load Quill.js library from CDN
-   */
-  async _loadQuill() {
-    // Check if Quill is already loaded
-    if (window.Quill) return true;
-
-    return new Promise((resolve, reject) => {
-      // Load CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://cdn.quilljs.com/1.3.7/quill.snow.css';
-      document.head.appendChild(link);
-
-      // Load JS
-      const script = document.createElement('script');
-      script.src = 'https://cdn.quilljs.com/1.3.7/quill.js';
-      script.onload = () => resolve(true);
-      script.onerror = () => reject(new Error('Failed to load Quill.js'));
-      document.head.appendChild(script);
-    });
-  }
-
-  /**
-   * Initialize the Quill.js editor for the current page
+   * Initialize the StoryFrame editor for the current page
    */
   async _initializeEditor() {
-    // Load Quill if not already loaded
-    try {
-      await this._loadQuill();
-    } catch (error) {
-      console.error('StoryFrame | Failed to load Quill.js:', error);
-      ui.notifications.error('Failed to load editor library');
-      return;
-    }
-
     const editorContainer = this.element.querySelector('#quill-editor');
     if (!editorContainer) {
       console.error('StoryFrame | Editor container not found');
@@ -504,52 +473,17 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     // Get the raw content (not enriched)
     const rawContent = page.text.content || '';
 
-    // Clean up existing editor if any
-    if (this.editor) {
-      this.editor = null;
-    }
-
-    // Clear the container to ensure clean state
-    editorContainer.innerHTML = '';
-
     try {
-      // Initialize Quill
-      this.editor = new Quill(editorContainer, {
-        theme: 'snow',
-        modules: {
-          toolbar: [
-            [{ header: [1, 2, 3, 4, 5, 6, false] }],
-            ['bold', 'italic', 'underline', 'strike'],
-            [{ list: 'ordered' }, { list: 'bullet' }],
-            [{ indent: '-1' }, { indent: '+1' }],
-            [{ align: [] }],
-            ['link', 'image'],
-            ['clean'],
-          ],
-        },
+      // Create and initialize the editor
+      this.editor = new StoryFrameEditor(editorContainer, rawContent, (dirty) => {
+        this.editorDirty = dirty;
+        this._updateDirtyIndicator();
       });
 
-      // Track dirty state BEFORE setting content to avoid false dirty flag
+      await this.editor.initialize();
       this.editorDirty = false;
-
-      // Set initial content using clipboard API (safer than direct innerHTML)
-      // Wait a tick for Quill to fully initialize
-      setTimeout(() => {
-        if (rawContent) {
-          const delta = this.editor.clipboard.convert(rawContent);
-          this.editor.setContents(delta, 'silent');
-        }
-
-        // Listen for changes AFTER initial content is set
-        this.editor.on('text-change', (delta, oldDelta, source) => {
-          if (source === 'user') {
-            this.editorDirty = true;
-            this._updateDirtyIndicator();
-          }
-        });
-      }, 0);
     } catch (error) {
-      console.error('StoryFrame | Failed to initialize Quill editor:', error);
+      console.error('StoryFrame | Failed to initialize editor:', error);
       ui.notifications.error('Failed to initialize editor');
       this.editMode = false;
       this.render();
@@ -583,8 +517,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     if (!page) return false;
 
     try {
-      // Get HTML content from Quill editor
-      const content = this.editor.root.innerHTML;
+      // Get HTML content from editor
+      // This preserves all HTML structure, classes, attributes, and style tags
+      const content = this.editor.getContent();
 
       // Update the page
       await page.update({ 'text.content': content });
@@ -606,8 +541,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
    */
   _destroyEditor() {
     if (this.editor) {
-      // Quill doesn't have a destroy method, just clear the reference
-      // The editor container will be removed when the parent is re-rendered
+      this.editor.destroy();
       this.editor = null;
     }
     this.editorDirty = false;
@@ -1259,7 +1193,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   static async _onSavePageContent(event, target) {
     const success = await this._saveEditorContent();
     if (success) {
-      // Stay in edit mode after saving
+      // Exit edit mode and return to rendered view
+      this.editMode = false;
+      this._destroyEditor();
+      this.render();
     }
   }
 
