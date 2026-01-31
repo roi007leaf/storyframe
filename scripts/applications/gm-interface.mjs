@@ -616,20 +616,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
                 }
               }
             }
-            // Last resort: find the sheet in the DOM by its ID
-            if (!domElement && journal.sheet.id) {
-              const sheetId = `${journal.sheet.constructor.name}-${journal.documentName}-${journal.id}`;
-              domElement = document.getElementById(sheetId);
-              if (domElement) {
-                console.log(`GMInterface | Found sheet in DOM by ID: ${sheetId}`);
-              } else {
-                console.warn(`GMInterface | Could not find sheet by ID: ${sheetId}`);
-              }
-            }
-            // Absolute last resort: first element
+            // Last resort: first element
             if (!domElement) {
               domElement = journal.sheet.element[0];
-              console.warn(`GMInterface | No DIV found, using first element: ${domElement?.tagName}`);
+              console.warn(`GMInterface | No DIV found, using first element: ${domElement.tagName}`);
             }
           } else {
             domElement = journal.sheet.element;
