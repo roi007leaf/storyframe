@@ -1213,9 +1213,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         console.log(`GMInterface | Sheet not rendered, using document.styleSheets only`);
       }
 
-      // Extract CSS - pass extracted class and sheet element
-      const cssText = this.cssScraper.extractJournalCSS(journal, extractedClass, sheetElement);
-      console.log(`GMInterface | Extracted CSS length: ${cssText.length} characters`);
+      // Extract CSS - pass extracted class and sheet element (await for async premium fetch)
+      const cssText = await this.cssScraper.extractJournalCSS(journal, extractedClass, sheetElement);
+      console.log(`GMInterface | Extracted CSS length: ${cssText?.length || 0} characters`);
 
       // Namespace rules to target our journal content area
       // Use a class selector to avoid ID specificity issues that would override premium module styles
