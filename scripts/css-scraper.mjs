@@ -281,11 +281,22 @@ export class CSSScraper {
             // Keyword-based filtering: Check if rule matches primary OR secondary keywords
             const ruleText = rule.cssText.toLowerCase();
 
+            // For premium modules with extractedClass, be more lenient with filtering
+            // The Kingmaker CSS might not contain "pf2e-km" in every rule
+            const hasPremiumClass = extractedClass && (
+              extractedClass.includes('pf2e-km') ||
+              extractedClass.includes('pf2e-pfs') ||
+              extractedClass.includes('pf2e-bb')
+            );
+
             const matchesPrimary = primaryKeywords.length === 0 ||
               primaryKeywords.some(kw => ruleText.includes(kw.toLowerCase()));
             const matchesSecondary = secondaryKeywords.some(kw => ruleText.includes(kw));
 
-            if (matchesPrimary || matchesSecondary) {
+            // If we have a premium class, include ALL journal-related rules (don't filter by premium keywords)
+            const matchesRule = hasPremiumClass ? matchesSecondary : (matchesPrimary || matchesSecondary);
+
+            if (matchesRule) {
               styles.push(rule.cssText);
               sheetMatches++;
               matchedRules++;
