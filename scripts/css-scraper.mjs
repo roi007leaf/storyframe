@@ -260,6 +260,16 @@ export class CSSScraper {
         if (!rules) continue;
 
         console.debug(`CSSScraper | Processing stylesheet: ${sheet.href || '(inline)'} - ${rules.length} rules`);
+
+        // For large inline stylesheets (>100 rules), log first few rules to identify content
+        if (!sheet.href && rules.length > 100) {
+          console.log(`CSSScraper | Large inline stylesheet detected (${rules.length} rules). First 3 rules:`);
+          for (let j = 0; j < Math.min(3, rules.length); j++) {
+            const ruleText = rules[j].cssText.substring(0, 150); // First 150 chars
+            console.log(`CSSScraper |   Rule ${j}: ${ruleText}...`);
+          }
+        }
+
         processedSheets++;
         totalRules += rules.length;
 
