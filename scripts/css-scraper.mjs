@@ -222,6 +222,13 @@ export class CSSScraper {
 
     console.log(`CSSScraper | Processing ${styleSheets.length} stylesheets`);
 
+    // Log ALL stylesheet URLs first to see if pf2e-km.css is present
+    console.log(`CSSScraper | All stylesheet URLs:`);
+    for (let i = 0; i < styleSheets.length; i++) {
+      const sheet = styleSheets[i];
+      console.log(`CSSScraper |   [${i}] ${sheet.href || '(inline style)'}`);
+    }
+
     // Iterate all stylesheets
     let processedSheets = 0;
     let skippedSheets = 0;
