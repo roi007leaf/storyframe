@@ -20,9 +20,10 @@ export class CSSScraper {
         for (const [uuid, cssText] of Object.entries(saved)) {
           this.cache.set(uuid, cssText);
         }
+        console.log(`CSSScraper | Loaded cache from settings: ${this.cache.size} entries`);
       }
     } catch (e) {
-      console.debug('CSSScraper | Could not load cache from settings');
+      console.debug('CSSScraper | Could not load cache from settings:', e);
     }
   }
 
@@ -35,8 +36,9 @@ export class CSSScraper {
     try {
       const cacheObj = Object.fromEntries(this.cache);
       await game.settings.set('storyframe', 'journalClassCache', cacheObj);
+      console.log(`CSSScraper | Saved cache to settings: ${this.cache.size} entries`);
     } catch (e) {
-      console.debug('CSSScraper | Could not save cache to settings');
+      console.debug('CSSScraper | Could not save cache to settings:', e);
     }
   }
 
@@ -49,16 +51,25 @@ export class CSSScraper {
   extractJournalCSS(journal, extractedClass = null) {
     if (!journal) return '';
 
+    console.log(`CSSScraper | Extracting CSS for journal: ${journal.name} (${journal.uuid})`);
+    console.log(`CSSScraper | Extracted class: ${extractedClass || 'none'}`);
+
     // Check cache
     if (this.cache.has(journal.uuid)) {
+      console.log(`CSSScraper | Cache HIT for ${journal.uuid}`);
       return this.cache.get(journal.uuid);
     }
+
+    console.log(`CSSScraper | Cache MISS for ${journal.uuid} - extracting fresh CSS`);
 
     const styles = [];
 
     // Determine which module/pack this journal is from
     const journalPack = journal.pack; // e.g., "pf2e-beginner-box.journals"
     let targetModuleId = journalPack ? journalPack.split('.')[0] : null;
+
+    console.log(`CSSScraper | Journal pack: ${journalPack || 'none (world journal)'}`);
+    console.log(`CSSScraper | Initial target module ID: ${targetModuleId || 'none'}`);
 
     // For world journals (pack is null), use extractedClass to determine module
     if (!targetModuleId && extractedClass) {
@@ -68,6 +79,7 @@ export class CSSScraper {
       if (match) {
         targetModuleId = match[1]; // e.g., 'km' from 'pf2e-km'
       }
+      console.log(`CSSScraper | Target module ID from extractedClass: ${targetModuleId}`);
     }
 
     // Build keyword list for content filtering
@@ -90,6 +102,9 @@ export class CSSScraper {
       'text-content',
     ];
 
+    console.log(`CSSScraper | Primary keywords: ${primaryKeywords.join(', ') || 'none'}`);
+    console.log(`CSSScraper | Secondary keywords: ${secondaryKeywords.join(', ')}`);
+
     // Build exclusion list for URL filtering (other premium modules)
     const otherPremiumModules = [
       'kingmaker', 'beginner-box', 'abomination-vaults', 'outlaws',
@@ -97,7 +112,14 @@ export class CSSScraper {
       'wardensofwildwood', 'curtaincall', 'triumphofthetusk', 'sporewar', 'pfs'
     ];
 
+    console.log(`CSSScraper | Processing ${document.styleSheets.length} stylesheets`);
+
     // Iterate all stylesheets
+    let processedSheets = 0;
+    let skippedSheets = 0;
+    let totalRules = 0;
+    let matchedRules = 0;
+
     for (let i = 0; i < document.styleSheets.length; i++) {
       const sheet = document.styleSheets[i];
 
@@ -111,7 +133,8 @@ export class CSSScraper {
         });
 
         if (isFromOtherModule) {
-          console.debug('CSSScraper | Skipping stylesheet from other module:', sheet.href);
+          console.log(`CSSScraper | SKIPPED (other module): ${sheet.href}`);
+          skippedSheets++;
           continue;
         }
       }
@@ -121,6 +144,11 @@ export class CSSScraper {
         const rules = sheet.cssRules || sheet.rules;
         if (!rules) continue;
 
+        console.debug(`CSSScraper | Processing stylesheet: ${sheet.href || '(inline)'} - ${rules.length} rules`);
+        processedSheets++;
+        totalRules += rules.length;
+
+        let sheetMatches = 0;
         for (let j = 0; j < rules.length; j++) {
           const rule = rules[j];
 
@@ -134,21 +162,33 @@ export class CSSScraper {
 
             if (matchesPrimary || matchesSecondary) {
               styles.push(rule.cssText);
+              sheetMatches++;
+              matchedRules++;
             }
           }
+        }
+
+        if (sheetMatches > 0) {
+          console.log(`CSSScraper | Matched ${sheetMatches} rules from: ${sheet.href || '(inline)'}`);
         }
       } catch (e) {
         // CORS - skip external stylesheet
         if (e.name === 'SecurityError') {
-          console.debug('CSSScraper | Cannot access external stylesheet:', sheet.href);
+          console.debug('CSSScraper | Cannot access external stylesheet (CORS):', sheet.href);
+          skippedSheets++;
         } else {
           console.warn('CSSScraper | Error reading stylesheet:', e);
         }
       }
     }
 
+    console.log(`CSSScraper | SUMMARY: Processed ${processedSheets} sheets, skipped ${skippedSheets} sheets`);
+    console.log(`CSSScraper | Total rules examined: ${totalRules}, matched: ${matchedRules}`);
+    console.log(`CSSScraper | Final CSS payload: ${styles.join('\n').length} characters`);
+
     const cssText = styles.join('\n');
     this.cache.set(journal.uuid, cssText);
+    console.log(`CSSScraper | Cached CSS for ${journal.uuid}`);
     // Save to settings (fire-and-forget, don't await)
     this._saveCacheToSettings();
     return cssText;
@@ -184,6 +224,9 @@ export class CSSScraper {
    * @returns {string} Namespaced CSS
    */
   namespaceCSSRules(cssText, namespace = '.storyframe-content') {
+    console.log(`CSSScraper | Namespacing CSS with selector: ${namespace}`);
+    console.log(`CSSScraper | Input CSS length: ${cssText.length} characters`);
+
     // Split into individual rules
     const rules = [];
     let buffer = '';
@@ -203,8 +246,13 @@ export class CSSScraper {
       }
     }
 
+    console.log(`CSSScraper | Parsed ${rules.length} CSS rules for namespacing`);
+
     // Process each rule
-    return rules
+    let preserved = 0;
+    let namespaced = 0;
+
+    const result = rules
       .map((rule) => {
         // Preserve @layer directives entirely (complex cascade implications)
         if (rule.trim().startsWith('@layer')) {
@@ -247,24 +295,32 @@ export class CSSScraper {
         const selectors = selector.split(',').map((s) => s.trim());
 
         // Apply selective namespacing to each selector
-        const namespaced = selectors
+        const namespacedSelectors = selectors
           .map((sel) => {
             // Already namespaced
             if (sel.startsWith(namespace)) return sel;
 
             // Check if this selector should be namespaced
             if (!this.shouldNamespace(sel)) {
+              preserved++;
+              console.debug(`CSSScraper | PRESERVED: ${sel}`);
               return sel; // Preserve original
             }
 
             // Namespace this selector
+            namespaced++;
             return `${namespace} ${sel}`;
           })
           .join(', ');
 
-        return `${namespaced} ${declaration}`;
+        return `${namespacedSelectors} ${declaration}`;
       })
       .join('\n');
+
+    console.log(`CSSScraper | Namespacing complete: ${namespaced} selectors namespaced, ${preserved} preserved`);
+    console.log(`CSSScraper | Output CSS length: ${result.length} characters`);
+
+    return result;
   }
 
   /**

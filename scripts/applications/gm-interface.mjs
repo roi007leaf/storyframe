@@ -114,7 +114,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         // Check cache first, or use system ID as default
         if (this.journalClassCache.has(journal.uuid)) {
           containerClasses = this.journalClassCache.get(journal.uuid);
+          console.log(`GMInterface | Using cached class for ${journal.name}: ${containerClasses}`);
         } else if (journal.sheet?.rendered && journal.sheet?.element) {
+          console.log(`GMInterface | Sheet already rendered for ${journal.name}, extracting classes...`);
           // If sheet is already rendered, extract classes immediately - element is jQuery object
           // Find the actual root DIV (has 'app' class), not child elements
           let domElement = null;
@@ -154,9 +156,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           containerClasses = premiumClass || genericClass || game.system.id;
           this.journalClassCache.set(journal.uuid, containerClasses);
+          console.log(`GMInterface | Extracted class from rendered sheet: ${containerClasses}`);
+          console.log(`GMInterface | All classes found: ${allClasses.join(', ')}`);
         } else {
           // Use system ID for now, schedule async class extraction
           containerClasses = game.system.id;
+          console.log(`GMInterface | Sheet not rendered, using system ID: ${containerClasses}`);
+          console.log(`GMInterface | Scheduling async class extraction for ${journal.name}`);
           this._scheduleClassExtraction(journal);
         }
         // Support all page types (text, image, pdf, video)
@@ -397,6 +403,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
     // Add system/module classes to root for journal CSS compatibility
     if (context.containerClasses) {
+      console.log(`GMInterface | Applying container classes: ${context.containerClasses}`);
+
       // Remove any existing system and premium module classes first (including erroneous ones)
       const systemAndPremiumClasses = ['pf2e', 'dnd5e', 'swade', 'header-control',
         'pf2e-km', 'pf2e-bb', 'pf2e-av', 'pf2e-outlaws',
@@ -417,6 +425,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
       const systemClasses = context.containerClasses.split(' ').filter(Boolean);
       allClasses.push(...systemClasses);
 
+      console.log(`GMInterface | Final classes to apply: ${allClasses.join(', ')}`);
+
       allClasses.forEach((cls) => {
         if (cls && !this.element.classList.contains(cls)) {
           this.element.classList.add(cls);
@@ -427,8 +437,10 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     // Update journal styles when journal is selected
     const state = game.storyframe.stateManager.getState();
     if (state?.activeJournal) {
+      console.log(`GMInterface | Active journal detected, updating styles: ${state.activeJournal}`);
       await this._updateJournalStyles(state.activeJournal);
     } else {
+      console.log(`GMInterface | No active journal, clearing styles`);
       this._clearJournalStyles();
     }
 
@@ -506,18 +518,24 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
   async _scheduleClassExtraction(journal) {
     // Don't extract if already in progress for this journal
     if (this._extractingClassFor === journal.uuid) {
+      console.log(`GMInterface | Class extraction already in progress for ${journal.name}`);
       return;
     }
     this._extractingClassFor = journal.uuid;
+
+    console.log(`GMInterface | Starting scheduled class extraction for ${journal.name}`);
 
     // Run after a small delay to let StoryFrame render first
     setTimeout(async () => {
       const wasRendered = journal.sheet?.rendered;
       let sheetOpenedByUs = false;
 
+      console.log(`GMInterface | Sheet was already rendered: ${wasRendered}`);
+
       try {
         // Temporarily render if not already open
         if (!wasRendered) {
+          console.log(`GMInterface | Temporarily rendering sheet to extract classes...`);
           journal.sheet.render(true, { focus: false });
           sheetOpenedByUs = true;
           await new Promise(resolve => setTimeout(resolve, 200)); // Wait for render
@@ -563,22 +581,29 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           const extractedClass = premiumClass || genericClass || game.system.id;
 
+          console.log(`GMInterface | Extracted class: ${extractedClass}`);
+          console.log(`GMInterface | All classes from sheet: ${allClasses.join(', ')}`);
+          console.log(`GMInterface | Premium class: ${premiumClass || 'none'}, Generic class: ${genericClass || 'none'}`);
+
           // Cache the class in GMInterface
           this.journalClassCache.set(journal.uuid, extractedClass);
 
           // Extract and cache CSS using the extracted class
+          console.log(`GMInterface | Triggering CSS extraction with class: ${extractedClass}`);
           this.cssScraper.extractJournalCSS(journal, extractedClass);
 
           // Re-render to apply the correct classes
+          console.log(`GMInterface | Re-rendering interface to apply extracted class`);
           this.render();
         } else {
-          console.warn(`StoryFrame | Could not find sheet element for ${journal.name}`);
+          console.warn(`GMInterface | Could not find sheet element for ${journal.name}`);
         }
       } catch (error) {
-        console.error('StoryFrame | Failed to extract journal classes:', error);
+        console.error('GMInterface | Failed to extract journal classes:', error);
       } finally {
         // ALWAYS close if we opened it
         if (sheetOpenedByUs && journal.sheet?.rendered) {
+          console.log(`GMInterface | Closing temporarily-opened sheet`);
           journal.sheet.close();
         }
         this._extractingClassFor = null;
@@ -1117,30 +1142,39 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     const journal = await fromUuid(journalUuid);
     if (!journal) return;
 
+    console.log(`GMInterface | _updateJournalStyles called for: ${journal.name}`);
+
     // Clear any existing styles first
     this._clearJournalStyles();
 
     // Force clear cache to ensure fresh CSS extraction
     this.cssScraper.clearCache(journalUuid);
+    console.log(`GMInterface | Cleared cache for ${journalUuid}`);
 
     // Get the extracted class for this journal (for filtering stylesheets)
     const extractedClass = this.journalClassCache.get(journal.uuid) || null;
+    console.log(`GMInterface | Extracted class parameter for CSS scraper: ${extractedClass || 'none'}`);
 
     // Extract CSS - pass extracted class for better filtering
     const cssText = this.cssScraper.extractJournalCSS(journal, extractedClass);
+    console.log(`GMInterface | Extracted CSS length: ${cssText.length} characters`);
 
     // Namespace rules to target our journal content area
     // Use a class selector to avoid ID specificity issues that would override premium module styles
+    console.log(`GMInterface | Namespacing CSS with: .storyframe.gm-interface`);
     const scopedCSS = this.cssScraper.namespaceCSSRules(cssText, '.storyframe.gm-interface');
+    console.log(`GMInterface | Namespaced CSS length: ${scopedCSS.length} characters`);
 
     // Inject into document
     if (!this.styleElement) {
       this.styleElement = document.createElement('style');
       this.styleElement.id = 'storyframe-journal-styles';
       document.head.appendChild(this.styleElement);
+      console.log(`GMInterface | Created new style element in document head`);
     }
 
     this.styleElement.textContent = scopedCSS;
+    console.log(`GMInterface | Injected CSS into style element`);
   }
 
   _clearJournalStyles() {
