@@ -115,23 +115,46 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         // Check cache first, or use system ID as default
         if (this.journalClassCache.has(journal.uuid)) {
           containerClasses = this.journalClassCache.get(journal.uuid);
-          console.log(`GMInterface | Using cached class for ${journal.name}: ${containerClasses}`);
-        } else if (journal.sheet?.rendered && journal.sheet?.element) {
+
+          // Validate cached class - if it's a UI element class, invalidate it
+          const invalidClasses = ['header-control', 'window-header', 'icon', 'fa-solid'];
+          if (invalidClasses.some(invalid => containerClasses.includes(invalid))) {
+            console.warn(`GMInterface | Invalid cached class detected (${containerClasses}), clearing cache`);
+            this.journalClassCache.delete(journal.uuid);
+            containerClasses = game.system.id;
+          } else {
+            console.log(`GMInterface | Using cached class for ${journal.name}: ${containerClasses}`);
+          }
+        }
+
+        if (!this.journalClassCache.has(journal.uuid) && journal.sheet?.rendered && journal.sheet?.element) {
           console.log(`GMInterface | Sheet already rendered for ${journal.name}, extracting classes...`);
           // If sheet is already rendered, extract classes immediately - element is jQuery object
           // Find the actual root DIV (has 'app' class), not child elements
           let domElement = null;
 
           if (journal.sheet.element.length) {
-            // Try to find element with 'app' class (the root)
+            // Try to find DIV element with 'app' class (the root)
             for (let i = 0; i < journal.sheet.element.length; i++) {
               const el = journal.sheet.element[i];
-              if (el.classList?.contains('app') && el.classList?.contains('journal-sheet')) {
+              // Must be a DIV (not BUTTON or other elements)
+              if (el.tagName === 'DIV' &&
+                  el.classList?.contains('app') &&
+                  el.classList?.contains('journal-sheet')) {
                 domElement = el;
                 break;
               }
             }
-            // Fallback to first element if not found
+            // Fallback to first DIV element if not found
+            if (!domElement) {
+              for (let i = 0; i < journal.sheet.element.length; i++) {
+                if (journal.sheet.element[i].tagName === 'DIV') {
+                  domElement = journal.sheet.element[i];
+                  break;
+                }
+              }
+            }
+            // Last resort: first element
             if (!domElement) domElement = journal.sheet.element[0];
           } else {
             domElement = journal.sheet.element;
