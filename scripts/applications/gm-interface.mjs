@@ -658,15 +658,8 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           console.log(`GMInterface | All classes from sheet: ${allClasses.join(', ')}`);
           console.log(`GMInterface | Premium class: ${premiumClass || 'none'}, Generic class: ${genericClass || 'none'}`);
 
-          // Validate extracted class - don't cache UI element classes
-          const invalidClasses = ['header-control', 'window-header', 'icon', 'fa-solid', 'control'];
-          if (invalidClasses.some(invalid => extractedClass.includes(invalid))) {
-            console.warn(`GMInterface | Extracted invalid UI class (${extractedClass}), using system ID instead`);
-            this.journalClassCache.set(journal.uuid, game.system.id);
-          } else {
-            // Cache the class in GMInterface
-            this.journalClassCache.set(journal.uuid, extractedClass);
-          }
+          // Cache the class in GMInterface
+          this.journalClassCache.set(journal.uuid, extractedClass);
 
           // Now call _updateJournalStyles directly - it will extract CSS with the correct class
           console.log(`GMInterface | Triggering CSS extraction with class: ${extractedClass}`);
