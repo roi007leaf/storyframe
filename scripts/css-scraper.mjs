@@ -99,10 +99,52 @@ export class CSSScraper {
 
     console.log(`CSSScraper | Cache MISS for ${journal.uuid} - extracting fresh CSS`);
 
+    // For known premium modules, fetch CSS directly from their module files
+    const premiumModuleMap = {
+      'pf2e-km': 'modules/pf2e-kingmaker/styles/pf2e-km.css',
+      'pf2e-pfs07': 'modules/pf2e-pfs/styles/pf2e-pfs.css',
+      'pf2e-bb': 'modules/pf2e-beginner-box/styles/pf2e-bb.css'
+      // Add more as needed
+    };
+
+    if (extractedClass && premiumModuleMap[extractedClass]) {
+      console.log(`CSSScraper | Premium module detected: ${extractedClass}`);
+      return this._fetchPremiumCSS(journal, extractedClass, premiumModuleMap[extractedClass]);
+    }
+
     // If sheet element is provided, we need to wait for link stylesheets - use async
     if (sheetElement) {
       return this._extractJournalCSSAsync(journal, extractedClass, sheetElement);
     } else {
+      return this._extractJournalCSSSync(journal, extractedClass);
+    }
+  }
+
+  /**
+   * Fetch premium module CSS directly from known file paths
+   * @private
+   */
+  async _fetchPremiumCSS(journal, extractedClass, cssUrl) {
+    console.log(`CSSScraper | Fetching premium CSS from: ${cssUrl}`);
+
+    try {
+      const response = await fetch(cssUrl);
+      if (!response.ok) {
+        console.warn(`CSSScraper | Failed to fetch ${cssUrl}: ${response.status}`);
+        return this._extractJournalCSSSync(journal, extractedClass);
+      }
+
+      const css = await response.text();
+      console.log(`CSSScraper | Fetched premium CSS: ${css.length} characters`);
+
+      // Cache it
+      this.cache.set(journal.uuid, css);
+      await this._saveCacheToSettings();
+
+      return css;
+    } catch (error) {
+      console.error(`CSSScraper | Error fetching premium CSS from ${cssUrl}:`, error);
+      // Fallback to normal extraction
       return this._extractJournalCSSSync(journal, extractedClass);
     }
   }
