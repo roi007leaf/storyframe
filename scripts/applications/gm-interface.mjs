@@ -116,12 +116,12 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
         if (this.journalClassCache.has(journal.uuid)) {
           containerClasses = this.journalClassCache.get(journal.uuid);
 
-          // Validate cached class - if it's a UI element class, invalidate it
-          const invalidClasses = ['header-control', 'window-header', 'icon', 'fa-solid'];
+          // Validate cached class - if it's a UI element class, replace with system ID
+          const invalidClasses = ['header-control', 'window-header', 'icon', 'fa-solid', 'control'];
           if (invalidClasses.some(invalid => containerClasses.includes(invalid))) {
-            console.warn(`GMInterface | Invalid cached class detected (${containerClasses}), clearing cache`);
-            this.journalClassCache.delete(journal.uuid);
+            console.warn(`GMInterface | Invalid cached class detected (${containerClasses}), using system ID`);
             containerClasses = game.system.id;
+            this.journalClassCache.set(journal.uuid, containerClasses); // Cache the fallback to prevent loop
           } else {
             console.log(`GMInterface | Using cached class for ${journal.name}: ${containerClasses}`);
           }
