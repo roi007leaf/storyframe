@@ -66,6 +66,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
     this.cssScraper = new CSSScraper();
     this.styleElement = null;
     this.journalClassCache = new Map(); // Cache journal UUID -> CSS class
+    this._cssUpdatePending = false; // Prevent multiple simultaneous CSS updates
 
     // Navigation history for back/forward buttons
     this.navigationHistory = [];
@@ -588,9 +589,9 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
           // Cache the class in GMInterface
           this.journalClassCache.set(journal.uuid, extractedClass);
 
-          // Extract and cache CSS using the extracted class
+          // Now call _updateJournalStyles directly - it will extract CSS with the correct class
           console.log(`GMInterface | Triggering CSS extraction with class: ${extractedClass}`);
-          this.cssScraper.extractJournalCSS(journal, extractedClass);
+          await this._updateJournalStyles(journal.uuid);
 
           // Re-render to apply the correct classes
           console.log(`GMInterface | Re-rendering interface to apply extracted class`);
@@ -1144,37 +1145,81 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
     console.log(`GMInterface | _updateJournalStyles called for: ${journal.name}`);
 
-    // Clear any existing styles first
-    this._clearJournalStyles();
-
-    // Force clear cache to ensure fresh CSS extraction
-    this.cssScraper.clearCache(journalUuid);
-    console.log(`GMInterface | Cleared cache for ${journalUuid}`);
-
-    // Get the extracted class for this journal (for filtering stylesheets)
-    const extractedClass = this.journalClassCache.get(journal.uuid) || null;
-    console.log(`GMInterface | Extracted class parameter for CSS scraper: ${extractedClass || 'none'}`);
-
-    // Extract CSS - pass extracted class for better filtering
-    const cssText = this.cssScraper.extractJournalCSS(journal, extractedClass);
-    console.log(`GMInterface | Extracted CSS length: ${cssText.length} characters`);
-
-    // Namespace rules to target our journal content area
-    // Use a class selector to avoid ID specificity issues that would override premium module styles
-    console.log(`GMInterface | Namespacing CSS with: .storyframe.gm-interface`);
-    const scopedCSS = this.cssScraper.namespaceCSSRules(cssText, '.storyframe.gm-interface');
-    console.log(`GMInterface | Namespaced CSS length: ${scopedCSS.length} characters`);
-
-    // Inject into document
-    if (!this.styleElement) {
-      this.styleElement = document.createElement('style');
-      this.styleElement.id = 'storyframe-journal-styles';
-      document.head.appendChild(this.styleElement);
-      console.log(`GMInterface | Created new style element in document head`);
+    // Prevent multiple simultaneous updates
+    if (this._cssUpdatePending) {
+      console.log(`GMInterface | CSS update already pending, skipping`);
+      return;
     }
 
-    this.styleElement.textContent = scopedCSS;
-    console.log(`GMInterface | Injected CSS into style element`);
+    // Check if extractedClass is cached
+    const extractedClass = this.journalClassCache.get(journal.uuid);
+
+    if (!extractedClass) {
+      console.log(`GMInterface | CSS extraction deferred - awaiting class determination`);
+      // Trigger class extraction if not already in progress
+      if (!this._extractingClassFor) {
+        this._scheduleClassExtraction(journal);
+      }
+      return; // Will be called again after class extraction completes
+    }
+
+    this._cssUpdatePending = true;
+
+    try {
+      // Clear any existing styles first
+      this._clearJournalStyles();
+
+      // Force clear cache to ensure fresh CSS extraction
+      this.cssScraper.clearCache(journalUuid);
+      console.log(`GMInterface | Cleared cache for ${journalUuid}`);
+
+      console.log(`GMInterface | Extracted class parameter for CSS scraper: ${extractedClass}`);
+
+      // Get the sheet element if available
+      let sheetElement = null;
+      if (journal.sheet?.rendered && journal.sheet?.element) {
+        // jQuery element - get the DOM element
+        if (journal.sheet.element.length) {
+          for (let i = 0; i < journal.sheet.element.length; i++) {
+            const el = journal.sheet.element[i];
+            if (el.classList?.contains('app') && el.classList?.contains('journal-sheet')) {
+              sheetElement = el;
+              break;
+            }
+          }
+          if (!sheetElement) sheetElement = journal.sheet.element[0];
+        } else {
+          sheetElement = journal.sheet.element;
+        }
+        console.log(`GMInterface | Passing sheet element to CSS scraper`);
+        console.log(`GMInterface | Sheet element tag: ${sheetElement.tagName}, classes: ${sheetElement.className}`);
+      } else {
+        console.log(`GMInterface | Sheet not rendered, using document.styleSheets only`);
+      }
+
+      // Extract CSS - pass extracted class and sheet element
+      const cssText = this.cssScraper.extractJournalCSS(journal, extractedClass, sheetElement);
+      console.log(`GMInterface | Extracted CSS length: ${cssText.length} characters`);
+
+      // Namespace rules to target our journal content area
+      // Use a class selector to avoid ID specificity issues that would override premium module styles
+      console.log(`GMInterface | Namespacing CSS with: .storyframe.gm-interface`);
+      const scopedCSS = this.cssScraper.namespaceCSSRules(cssText, '.storyframe.gm-interface');
+      console.log(`GMInterface | Namespaced CSS length: ${scopedCSS.length} characters`);
+
+      // Inject into document
+      if (!this.styleElement) {
+        this.styleElement = document.createElement('style');
+        this.styleElement.id = 'storyframe-journal-styles';
+        document.head.appendChild(this.styleElement);
+        console.log(`GMInterface | Created new style element in document head`);
+      }
+
+      this.styleElement.textContent = scopedCSS;
+      console.log(`GMInterface | Injected CSS into style element`);
+    } finally {
+      this._cssUpdatePending = false;
+    }
   }
 
   _clearJournalStyles() {

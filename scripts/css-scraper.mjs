@@ -43,16 +43,53 @@ export class CSSScraper {
   }
 
   /**
+   * Wait for link stylesheets to load
+   * @param {NodeList} linkElements - Link elements to wait for
+   * @param {number} timeoutMs - Timeout in milliseconds
+   * @returns {Promise<void>}
+   * @private
+   */
+  async _waitForLinkStylesheets(linkElements, timeoutMs = 2000) {
+    const promises = Array.from(linkElements).map(link => {
+      // Check if already loaded (has matching entry in document.styleSheets)
+      const alreadyLoaded = Array.from(document.styleSheets).some(s => s.href === link.href);
+      if (alreadyLoaded) return Promise.resolve();
+
+      // Wait for load event or timeout
+      return new Promise(resolve => {
+        const timeout = setTimeout(() => {
+          console.warn(`CSSScraper | Timeout waiting for stylesheet: ${link.href}`);
+          resolve();
+        }, timeoutMs);
+        link.addEventListener('load', () => {
+          clearTimeout(timeout);
+          console.log(`CSSScraper | Link stylesheet loaded: ${link.href}`);
+          resolve();
+        }, { once: true });
+        // Also handle error event
+        link.addEventListener('error', () => {
+          clearTimeout(timeout);
+          console.warn(`CSSScraper | Failed to load stylesheet: ${link.href}`);
+          resolve();
+        }, { once: true });
+      });
+    });
+    await Promise.all(promises);
+  }
+
+  /**
    * Extract journal-relevant CSS rules from document stylesheets
    * @param {JournalEntry} journal - Journal document to extract CSS for
    * @param {string} extractedClass - Optional pre-extracted class (e.g., 'pf2e-km')
-   * @returns {string} Concatenated CSS text
+   * @param {HTMLElement} sheetElement - Optional rendered sheet DOM element
+   * @returns {Promise<string>|string} Concatenated CSS text
    */
-  extractJournalCSS(journal, extractedClass = null) {
+  extractJournalCSS(journal, extractedClass = null, sheetElement = null) {
     if (!journal) return '';
 
     console.log(`CSSScraper | Extracting CSS for journal: ${journal.name} (${journal.uuid})`);
     console.log(`CSSScraper | Extracted class: ${extractedClass || 'none'}`);
+    console.log(`CSSScraper | Sheet element provided: ${!!sheetElement}`);
 
     // Check cache
     if (this.cache.has(journal.uuid)) {
@@ -62,6 +99,74 @@ export class CSSScraper {
 
     console.log(`CSSScraper | Cache MISS for ${journal.uuid} - extracting fresh CSS`);
 
+    // If sheet element is provided, we need to wait for link stylesheets - use async
+    if (sheetElement) {
+      return this._extractJournalCSSAsync(journal, extractedClass, sheetElement);
+    } else {
+      return this._extractJournalCSSSync(journal, extractedClass);
+    }
+  }
+
+  /**
+   * Synchronous CSS extraction (no sheet element)
+   * @private
+   */
+  _extractJournalCSSSync(journal, extractedClass) {
+
+    return this._processStylesheets(journal, extractedClass, document.styleSheets);
+  }
+
+  /**
+   * Async CSS extraction (with sheet element to search for link stylesheets)
+   * @private
+   */
+  async _extractJournalCSSAsync(journal, extractedClass, sheetElement) {
+    // Search for link stylesheets in the sheet element
+    const linkElements = sheetElement.querySelectorAll('link[rel="stylesheet"]');
+
+    if (linkElements.length > 0) {
+      console.log(`CSSScraper | Found ${linkElements.length} link stylesheet(s) in sheet element`);
+
+      // Log each link found
+      linkElements.forEach(link => {
+        console.log(`CSSScraper | Found link stylesheet in sheet element: ${link.href}`);
+
+        // Check for premium module stylesheets
+        const premiumModules = [
+          'pf2e-kingmaker-tools', 'pf2e-pfs', 'pf2e-beginner-box',
+          'pf2e-abomination-vaults', 'pf2e-outlaws', 'pf2e-bloodlords',
+          'pf2e-gatewalkers', 'pf2e-stolenfate', 'pf2e-skyking',
+          'pf2e-seasonofghosts', 'pf2e-wardensofwildwood', 'pf2e-curtaincall',
+          'pf2e-triumphofthetusk', 'pf2e-sporewar'
+        ];
+
+        const isPremium = premiumModules.some(mod => link.href.includes(`modules/${mod}/`));
+        if (isPremium) {
+          console.log(`CSSScraper | FOUND premium module stylesheet: ${link.href}`);
+        }
+      });
+
+      // Wait for link stylesheets to load
+      console.log(`CSSScraper | Waiting for ${linkElements.length} link stylesheet(s) to load...`);
+      await this._waitForLinkStylesheets(linkElements);
+      console.log(`CSSScraper | All link stylesheets loaded or timed out`);
+    }
+
+    // Check for adoptedStyleSheets (shadow DOM or modern pattern)
+    if (sheetElement.adoptedStyleSheets && sheetElement.adoptedStyleSheets.length > 0) {
+      console.log(`CSSScraper | Found ${sheetElement.adoptedStyleSheets.length} adopted stylesheet(s) in sheet`);
+    }
+
+    // Now extract from document.styleSheets (includes the loaded link stylesheets)
+    console.log(`CSSScraper | Processing document.styleSheets: ${document.styleSheets.length}`);
+    return this._processStylesheets(journal, extractedClass, document.styleSheets);
+  }
+
+  /**
+   * Process stylesheets and extract matching rules
+   * @private
+   */
+  _processStylesheets(journal, extractedClass, styleSheets) {
     const styles = [];
 
     // Determine which module/pack this journal is from
@@ -112,7 +217,7 @@ export class CSSScraper {
       'wardensofwildwood', 'curtaincall', 'triumphofthetusk', 'sporewar', 'pfs'
     ];
 
-    console.log(`CSSScraper | Processing ${document.styleSheets.length} stylesheets`);
+    console.log(`CSSScraper | Processing ${styleSheets.length} stylesheets`);
 
     // Iterate all stylesheets
     let processedSheets = 0;
@@ -120,8 +225,8 @@ export class CSSScraper {
     let totalRules = 0;
     let matchedRules = 0;
 
-    for (let i = 0; i < document.styleSheets.length; i++) {
-      const sheet = document.styleSheets[i];
+    for (let i = 0; i < styleSheets.length; i++) {
+      const sheet = styleSheets[i];
 
       // URL-based filtering: Skip stylesheets from other premium modules
       if (targetModuleId && sheet.href) {
