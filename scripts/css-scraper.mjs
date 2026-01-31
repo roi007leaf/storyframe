@@ -10,9 +10,10 @@ export class CSSScraper {
   /**
    * Extract journal-relevant CSS rules from document stylesheets
    * @param {JournalEntry} journal - Journal document to extract CSS for
+   * @param {string} extractedClass - Optional pre-extracted class (e.g., 'pf2e-km')
    * @returns {string} Concatenated CSS text
    */
-  extractJournalCSS(journal) {
+  extractJournalCSS(journal, extractedClass = null) {
     if (!journal) return '';
 
     // Check cache
@@ -22,34 +23,67 @@ export class CSSScraper {
 
     const styles = [];
 
-    // Keywords that indicate journal/premium module CSS
-    const journalKeywords = [
+    // Determine which module/pack this journal is from
+    const journalPack = journal.pack; // e.g., "pf2e-beginner-box.journals"
+    let targetModuleId = journalPack ? journalPack.split('.')[0] : null;
+
+    // For world journals (pack is null), use extractedClass to determine module
+    if (!targetModuleId && extractedClass) {
+      targetModuleId = extractedClass;
+      // Extract module name from class (e.g., 'km' from 'pf2e-km')
+      const match = extractedClass.match(/pf2e-(\w+)/);
+      if (match) {
+        targetModuleId = match[1]; // e.g., 'km' from 'pf2e-km'
+      }
+    }
+
+    // Build keyword list for content filtering
+    // Primary keywords: the extracted class itself
+    const primaryKeywords = [];
+    if (extractedClass) {
+      primaryKeywords.push(extractedClass);
+      // Also add the class without 'pf2e-' prefix if applicable
+      const shortName = extractedClass.replace('pf2e-', '');
+      if (shortName !== extractedClass) {
+        primaryKeywords.push(shortName);
+      }
+    }
+
+    // Secondary keywords: general journal-related classes
+    const secondaryKeywords = [
       'journal',
-      'pf2e',
-      'dnd5e',
-      'swade',
-      'outlaws',
-      'bloodlords',
-      'gatewalkers',
-      'stolenfate',
-      'skyking',
-      'seasonofghosts',
-      'wardensofwildwood',
-      'curtaincall',
-      'triumphofthetusk',
-      'sporewar',
-      'beginner-box',
-      'abomination-vaults',
-      'kingmaker',
       'page-content',
       'entry-page',
       'text-content',
+    ];
+
+    // Build exclusion list for URL filtering (other premium modules)
+    const otherPremiumModules = [
+      'kingmaker', 'beginner-box', 'abomination-vaults', 'outlaws',
+      'bloodlords', 'gatewalkers', 'stolenfate', 'skyking', 'seasonofghosts',
+      'wardensofwildwood', 'curtaincall', 'triumphofthetusk', 'sporewar', 'pfs'
     ];
 
     // Iterate all stylesheets
     for (let i = 0; i < document.styleSheets.length; i++) {
       const sheet = document.styleSheets[i];
 
+      // URL-based filtering: Skip stylesheets from other premium modules
+      if (targetModuleId && sheet.href) {
+        const sheetLower = sheet.href.toLowerCase();
+
+        const isFromOtherModule = otherPremiumModules.some(mod => {
+          // Skip if stylesheet contains another module's name AND target doesn't match
+          return sheetLower.includes(mod) && !targetModuleId.toLowerCase().includes(mod);
+        });
+
+        if (isFromOtherModule) {
+          console.debug('CSSScraper | Skipping stylesheet from other module:', sheet.href);
+          continue;
+        }
+      }
+
+      // Access cssRules with CORS handling
       try {
         const rules = sheet.cssRules || sheet.rules;
         if (!rules) continue;
@@ -58,11 +92,14 @@ export class CSSScraper {
           const rule = rules[j];
 
           if (rule.cssText) {
-            // Only include rules that look journal-related
+            // Keyword-based filtering: Check if rule matches primary OR secondary keywords
             const ruleText = rule.cssText.toLowerCase();
-            const isJournalRelated = journalKeywords.some((kw) => ruleText.includes(kw));
 
-            if (isJournalRelated) {
+            const matchesPrimary = primaryKeywords.length === 0 ||
+              primaryKeywords.some(kw => ruleText.includes(kw.toLowerCase()));
+            const matchesSecondary = secondaryKeywords.some(kw => ruleText.includes(kw));
+
+            if (matchesPrimary || matchesSecondary) {
               styles.push(rule.cssText);
             }
           }
