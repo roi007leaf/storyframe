@@ -587,6 +587,13 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
 
           // If element is jQuery, find the root by class
           if (journal.sheet.element.length) {
+            // Debug: log all elements in collection
+            console.log(`GMInterface | jQuery collection has ${journal.sheet.element.length} elements:`);
+            for (let i = 0; i < Math.min(5, journal.sheet.element.length); i++) {
+              const el = journal.sheet.element[i];
+              console.log(`GMInterface |   [${i}] ${el.tagName} with classes: ${el.className}`);
+            }
+
             // Try to find DIV element with 'app' class (the root)
             for (let i = 0; i < journal.sheet.element.length; i++) {
               const el = journal.sheet.element[i];
@@ -595,6 +602,7 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
                   el.classList?.contains('app') &&
                   el.classList?.contains('journal-sheet')) {
                 domElement = el;
+                console.log(`GMInterface | Found root DIV at index ${i}`);
                 break;
               }
             }
@@ -603,12 +611,16 @@ export class GMInterfaceApp extends foundry.applications.api.HandlebarsApplicati
               for (let i = 0; i < journal.sheet.element.length; i++) {
                 if (journal.sheet.element[i].tagName === 'DIV') {
                   domElement = journal.sheet.element[i];
+                  console.log(`GMInterface | Using fallback DIV at index ${i}`);
                   break;
                 }
               }
             }
             // Last resort: first element
-            if (!domElement) domElement = journal.sheet.element[0];
+            if (!domElement) {
+              domElement = journal.sheet.element[0];
+              console.warn(`GMInterface | No DIV found, using first element: ${domElement.tagName}`);
+            }
           } else {
             domElement = journal.sheet.element;
           }
