@@ -1,0 +1,96 @@
+/* ========================================
+   DC Preset Manager
+   ======================================== */
+
+.dc-preset-manager {
+  background: var(--sf-surface-dark, #1a1a2e);
+  color: var(--sf-text-primary, #ddd);
+}
+
+.preset-manager {
+  padding: 16px;
+}
+
+.preset-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.preset-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.preset-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.preset-card.add-new {
+  border-style: dashed;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 100px;
+  color: #888;
+}
+
+.preset-card.add-new:hover {
+  color: #ddd;
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.preset-card .preset-name {
+  font-weight: 600;
+  font-size: 1.1em;
+  color: var(--sf-text-primary, #ddd);
+}
+
+.preset-card .preset-dc {
+  font-size: 1.3em;
+  font-family: var(--font-mono, monospace);
+  color: var(--sf-accent-success, #4ecdc4);
+  font-weight: 700;
+}
+
+.preset-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.preset-actions button {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 0.85em;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #ddd;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.preset-actions button:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.preset-actions button:active {
+  transform: translateY(1px);
+}
