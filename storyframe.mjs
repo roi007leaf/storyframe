@@ -247,6 +247,31 @@ Hooks.once('ready', async () => {
   }
   await game.storyframe.stateManager.load();
 
+  // Migration: Detect and perform migration from 1.x to 2.x
+  const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');
+  const currentVersion = game.modules.get(MODULE_ID).version;
+
+  if (!oldVersion || oldVersion.startsWith('1.')) {
+    // Clean up deprecated settings
+    try {
+      await game.settings.set(MODULE_ID, 'gmWindowPosition', {});
+      await game.settings.set(MODULE_ID, 'gmWindowMinimized', false);
+      await game.settings.set(MODULE_ID, 'favoriteJournals', []);
+      await game.settings.set(MODULE_ID, 'gmWindowWasOpen', false);
+    } catch (e) {
+      console.warn(`${MODULE_ID} | Migration cleanup warning:`, e);
+    }
+
+    await game.settings.set(MODULE_ID, 'moduleVersion', currentVersion);
+
+    ui.notifications.info(
+      'StoryFrame 2.0: Now integrated with Foundry journals! Open a journal, then click the toggle button in the header to manage speakers.',
+      { permanent: true },
+    );
+
+    console.log(`${MODULE_ID} | Migrated from ${oldVersion || '1.x'} to ${currentVersion}`);
+  }
+
   // Migration: Add stealth to quick skills if missing (added in later update)
   if (game.user.isGM) {
     const quickSkills = game.settings.get(MODULE_ID, 'quickButtonSkills');
@@ -266,8 +291,6 @@ Hooks.once('ready', async () => {
       console.log(`${MODULE_ID} | Added stealth to quick skills`);
     }
   }
-
-  // GM window only opens when button is pressed (no auto-open)
 
   // Initialize player viewer for non-GM users
   if (!game.user.isGM) {
@@ -303,11 +326,8 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   await game.storyframe.stateManager.load();
   const state = game.storyframe.stateManager.getState();
 
-  // Update GM interface and sidebar if open
+  // Update GM sidebar if open
   if (game.user.isGM) {
-    if (game.storyframe.gmApp?.rendered) {
-      game.storyframe.gmApp.render();
-    }
     if (game.storyframe.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.render();
     }
