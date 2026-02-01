@@ -4,7 +4,7 @@ import SystemAdapter from '../system-adapter.mjs';
 
 /**
  * GM Sidebar for StoryFrame
- * Drawer-style window that attaches to the right side of the main GM Interface
+ * Drawer-style window that attaches to native Foundry journal sheets
  */
 export class GMSidebarApp extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2,
@@ -42,6 +42,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       cancelRoll: GMSidebarApp._onCancelRoll,
       openPlayerWindows: GMSidebarApp._onOpenPlayerWindows,
       showPendingRolls: GMSidebarApp._onShowPendingRolls,
+      togglePresetDropdown: GMSidebarApp._onTogglePresetDropdown,
+      applyPreset: GMSidebarApp._onApplyPreset,
+      openPresetManager: GMSidebarApp._onOpenPresetManager,
     },
   };
 
@@ -52,7 +55,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     },
   };
 
-  /** @type {GMInterfaceApp|null} Reference to the parent interface */
+  /** @type {foundry.applications.sheets.journal.JournalEntrySheet|null} Reference to the parent journal sheet */
   parentInterface = null;
 
   /** @type {Function|null} Bound handler for parent position changes */
@@ -68,12 +71,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
 
-    // Store reference to parent interface (stored as gmApp in game.storyframe)
-    this.parentInterface = game.storyframe?.gmApp || null;
+    // Parent reference (set externally when attaching)
+    this.parentInterface = null;
   }
 
   /**
-   * Position the drawer adjacent to the parent interface
+   * Position the drawer adjacent to the parent journal sheet
    * @param {number} retryCount - Number of retry attempts remaining
    */
   _positionAsDrawer(retryCount = 3) {
@@ -85,8 +88,8 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       return;
     }
 
-    // Get parent position from the actual DOM element for accuracy
-    const parentEl = this.parentInterface.element;
+    // Handle jQuery element wrapper from JournalSheet
+    const parentEl = this.parentInterface.element[0] || this.parentInterface.element;
     const parentRect = parentEl.getBoundingClientRect();
 
     // Check if parent has valid dimensions (not at 0,0 with no size)
@@ -118,42 +121,50 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       height: newHeight,
     });
 
-    // Also set directly on the element as a fallback (some ApplicationV2 implementations need this)
+    // Match parent z-index + 1 to appear above it
+    const parentZIndex = parseInt(window.getComputedStyle(parentEl).zIndex) || 99;
     if (this.element) {
-      this.element.style.left = `${adjustedLeft}px`;
-      this.element.style.top = `${newTop}px`;
-      this.element.style.height = `${newHeight}px`;
+      this.element.style.zIndex = parentZIndex + 1;
     }
   }
 
   /**
-   * Start tracking parent window movements
+   * Start tracking parent journal sheet movements and state changes
    */
   _startTrackingParent() {
-    if (!this.parentInterface) {
+    if (!this.parentInterface?.element) {
       return;
     }
 
-    if (!this.parentInterface.element) {
-      return;
-    }
+    // Handle jQuery element wrapper from JournalSheet
+    const element = this.parentInterface.element[0] || this.parentInterface.element;
 
-    // Create a MutationObserver to watch for style changes on parent element
+    // Create a MutationObserver to watch for style and class changes
     this._parentObserver = new MutationObserver((mutations) => {
-      if (this.rendered && this.parentInterface?.rendered) {
-        // Only reposition if style actually changed
-        for (const mutation of mutations) {
-          if (mutation.attributeName === 'style') {
-            this._positionAsDrawer(0); // No retries during tracking updates
-            break;
+      if (!this.rendered || !this.parentInterface?.rendered) return;
+
+      for (const mutation of mutations) {
+        if (mutation.attributeName === 'style') {
+          this._positionAsDrawer(0); // No retries during tracking updates
+          break;
+        }
+        if (mutation.attributeName === 'class') {
+          // Handle minimize/maximize
+          const isMinimized = element.classList.contains('minimized');
+          if (isMinimized && this.rendered) {
+            this.element.style.display = 'none';
+          } else if (!isMinimized && this.rendered) {
+            this.element.style.display = '';
+            this._positionAsDrawer(0);
           }
+          break;
         }
       }
     });
 
-    this._parentObserver.observe(this.parentInterface.element, {
+    this._parentObserver.observe(element, {
       attributes: true,
-      attributeFilter: ['style'],
+      attributeFilter: ['style', 'class'],
     });
   }
 
@@ -289,6 +300,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         }))
       : null;
 
+    // Load DC presets
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+    const dcPresets = allPresets.filter((p) => !p.system || p.system === currentSystem);
+
     return {
       speakers,
       activeSpeaker: state.activeSpeaker,
@@ -309,6 +324,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       dcOptions,
       isPF2e: currentSystem === 'pf2e',
       isDND5e: currentSystem === 'dnd5e',
+      dcPresets,
     };
   }
 
@@ -730,11 +746,62 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         }
       });
     }
+
+    // Check drop zone - entire skill section
+    const skillSection = this.element.querySelector('.skill-config-panel');
+    if (skillSection) {
+      skillSection.addEventListener('dragover', (e) => {
+        const types = Array.from(e.dataTransfer.types);
+        if (types.includes('text/plain')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'copy';
+          skillSection.classList.add('check-drag-over');
+        }
+      });
+
+      skillSection.addEventListener('dragleave', (e) => {
+        if (!skillSection.contains(e.relatedTarget)) {
+          skillSection.classList.remove('check-drag-over');
+        }
+      });
+
+      skillSection.addEventListener('drop', async (e) => {
+        e.preventDefault();
+        skillSection.classList.remove('check-drag-over');
+
+        try {
+          const data = JSON.parse(e.dataTransfer.getData('text/plain'));
+
+          if (data.type === 'StoryFrameCheck' && data.dc) {
+            this.currentDC = data.dc;
+
+            const dcInput = this.element.querySelector('#dc-input');
+            if (dcInput) dcInput.value = data.dc;
+
+            ui.notifications.info(`Applied: ${data.label}`);
+
+            // If skill specified and participants selected, auto-request
+            if (data.skillSlug && this.selectedParticipants.size > 0) {
+              await this._requestSkillCheck(
+                data.skillSlug,
+                Array.from(this.selectedParticipants),
+                data.actionSlug,
+              );
+            }
+          }
+        } catch (err) {
+          console.error('Failed to parse check drop:', err);
+        }
+      });
+    }
   }
 
   async _onClose(_options) {
     // Stop tracking parent movements
     this._stopTrackingParent();
+
+    // Save visibility state
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
 
     return super._onClose(_options);
   }
@@ -1725,5 +1792,48 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       popup.style.bottom = 'auto';
       popup.style.top = '10px';
     }
+  }
+
+  static _onTogglePresetDropdown(_event, target) {
+    const dropdown = this.element.querySelector('.preset-dropdown');
+    if (!dropdown) return;
+
+    const isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+
+    if (!isVisible) {
+      const closeHandler = (e) => {
+        if (!dropdown.contains(e.target) && !target.contains(e.target)) {
+          dropdown.style.display = 'none';
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    }
+  }
+
+  static async _onApplyPreset(_event, target) {
+    const presetId = target.dataset.presetId;
+    const presets = game.settings.get(MODULE_ID, 'dcPresets');
+    const preset = presets.find((p) => p.id === presetId);
+
+    if (!preset) return;
+
+    this.currentDC = preset.dc;
+    const dcInput = this.element.querySelector('#dc-input');
+    if (dcInput) dcInput.value = preset.dc;
+
+    const dropdown = this.element.querySelector('.preset-dropdown');
+    if (dropdown) dropdown.style.display = 'none';
+
+    ui.notifications.info(`Applied: ${preset.name} (DC ${preset.dc})`);
+  }
+
+  static async _onOpenPresetManager(_event, _target) {
+    if (!game.storyframe.presetManager) {
+      const { DCPresetManager } = await import('./dc-preset-manager.mjs');
+      game.storyframe.presetManager = new DCPresetManager();
+    }
+    game.storyframe.presetManager.render(true);
   }
 }

@@ -109,63 +109,95 @@
             </button>
           </div>
 
-          {{#if isPF2e}}
-            {{#if partyLevel}}
-            <div class="difficulty-selector">
-              <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
-              <select id="difficulty-select" aria-label="Difficulty by level">
-                {{#each difficultyOptions}}
-                  <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+          <div class="dc-controls-wrapper">
+            <div class="preset-selector">
+              <button type="button"
+                      class="preset-btn"
+                      data-action="togglePresetDropdown"
+                      data-tooltip="DC Presets">
+                <i class="fas fa-bookmark"></i>
+              </button>
+
+              <div class="preset-dropdown" style="display: none;">
+                {{#each dcPresets}}
+                  <button type="button"
+                          class="preset-option"
+                          data-action="applyPreset"
+                          data-preset-id="{{this.id}}"
+                          data-dc="{{this.dc}}">
+                    <span class="preset-name">{{this.name}}</span>
+                    <span class="preset-dc">DC {{this.dc}}</span>
+                  </button>
                 {{/each}}
-              </select>
+                {{#if dcPresets.length}}
+                <div class="preset-divider"></div>
+                {{/if}}
+                <button type="button"
+                        class="preset-option manage"
+                        data-action="openPresetManager">
+                  <i class="fas fa-cog"></i> Manage Presets
+                </button>
+              </div>
             </div>
+
+            {{#if isPF2e}}
+              {{#if partyLevel}}
+              <div class="difficulty-selector">
+                <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
+                <select id="difficulty-select" aria-label="Difficulty by level">
+                  {{#each difficultyOptions}}
+                    <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              {{/if}}
+
+              <div class="dc-selector">
+                <label class="label" for="dc-input">DC</label>
+                <input type="number"
+                       id="dc-input"
+                       class="dc-input"
+                       value="{{currentDC}}"
+                       min="1"
+                       max="60"
+                       placeholder="--"
+                       aria-label="Difficulty class">
+              </div>
+            {{else if isDND5e}}
+              <div class="difficulty-selector dnd5e">
+                <label class="label" for="dc-select-dnd5e">Difficulty</label>
+                <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+                  {{#each dcOptions}}
+                    <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+
+              <div class="dc-selector">
+                <label class="label" for="dc-input">DC</label>
+                <input type="number"
+                       id="dc-input"
+                       class="dc-input"
+                       value="{{currentDC}}"
+                       min="1"
+                       max="60"
+                       placeholder="--"
+                       aria-label="Difficulty class">
+              </div>
+            {{else}}
+              <div class="dc-selector">
+                <label class="label" for="dc-input">DC</label>
+                <input type="number"
+                       id="dc-input"
+                       class="dc-input"
+                       value="{{currentDC}}"
+                       min="1"
+                       max="60"
+                       placeholder="--"
+                       aria-label="Difficulty class">
+              </div>
             {{/if}}
-
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
-            </div>
-          {{else if isDND5e}}
-            <div class="difficulty-selector dnd5e">
-              <label class="label" for="dc-select-dnd5e">Difficulty</label>
-              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
-                {{#each dcOptions}}
-                  <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
-                {{/each}}
-              </select>
-            </div>
-
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
-            </div>
-          {{else}}
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
-            </div>
-          {{/if}}
+          </div>
         </div>
 
         <div class="skill-actions" role="group" aria-label="Quick skill buttons">

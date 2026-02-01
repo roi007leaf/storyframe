@@ -882,3 +882,163 @@
     opacity: 0.5;
   }
 }
+
+/* ========================================
+   Journal Header Toggle Button
+   ======================================== */
+
+.window-header .storyframe-sidebar-toggle {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--color-text-dark-primary, #333);
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.window-header .storyframe-sidebar-toggle:hover {
+  color: #000;
+  text-shadow: 0 0 8px rgba(94, 129, 172, 0.5);
+}
+
+.window-header .storyframe-sidebar-toggle.active {
+  color: var(--sf-accent-primary, #5e81ac);
+}
+
+.window-header .storyframe-sidebar-toggle.active:hover {
+  color: var(--sf-accent-primary-hover, #81a1c1);
+}
+
+/* ========================================
+   Draggable Checks in Journal
+   ======================================== */
+
+.sf-check[data-check] {
+  cursor: grab;
+  text-decoration: underline dotted;
+  color: var(--sf-accent-success, #4ecdc4);
+  padding: 2px 4px;
+  border-radius: 3px;
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.sf-check[data-check]:hover {
+  background: rgba(78, 205, 196, 0.1);
+}
+
+.sf-check[data-check]:active {
+  cursor: grabbing;
+}
+
+/* ========================================
+   Check Drop Zone
+   ======================================== */
+
+.skill-config-panel.check-drag-over {
+  outline: 2px dashed var(--sf-accent-success, #4ecdc4);
+  outline-offset: 4px;
+  background: rgba(78, 205, 196, 0.05);
+  transition: all 0.2s;
+}
+
+/* ========================================
+   DC Preset Controls
+   ======================================== */
+
+.dc-controls-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.preset-selector {
+  position: relative;
+}
+
+.preset-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 6px 8px;
+  color: #ddd;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 32px;
+}
+
+.preset-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.preset-dropdown {
+  position: absolute;
+  bottom: 100%;
+  left: 0;
+  margin-bottom: 4px;
+  background: var(--sf-surface-dark, #1a1a2e);
+  border: 1px solid var(--sf-border-subtle, #3d3d5c);
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+  min-width: 200px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.preset-option {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #ddd;
+  text-align: left;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.15s;
+}
+
+.preset-option:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.preset-option.manage {
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #888;
+  gap: 8px;
+}
+
+.preset-option.manage:hover {
+  color: #ddd;
+}
+
+.preset-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.preset-dc {
+  font-size: 0.9em;
+  color: #888;
+  font-family: var(--font-mono, monospace);
+}
+
+.preset-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 0;
+}

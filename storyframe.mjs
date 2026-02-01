@@ -99,11 +99,32 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'gmSidebarVisible', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
     type: Boolean,
     default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'dcPresets', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.register(MODULE_ID, 'moduleVersion', {
+    scope: 'client',
+    config: false,
+    type: String,
+    default: '',
   });
 
   game.settings.register(MODULE_ID, 'gmWindowWasOpen', {
@@ -332,36 +353,154 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   }
 });
 
-// Hook: updateJournalEntry (watch for journal content changes)
-Hooks.on('updateJournalEntry', async (journal, _changed, _options, _userId) => {
-  const state = game.storyframe.stateManager.getState();
-  if (journal.uuid !== state?.activeJournal) return;
+// Hook: renderJournalSheet (attach sidebar to native journals)
+Hooks.on('renderJournalSheet', async (sheet, [html]) => {
+  if (!game.user.isGM) return;
 
-  // Clear cache for updated journal
-  if (game.storyframe.gmApp?.cssScraper) {
-    game.storyframe.gmApp.cssScraper.clearCache(journal.uuid);
+  // Inject toggle button into header
+  _injectSidebarToggleButton(sheet, html);
+
+  // Enrich checks in journal content
+  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+  const contentArea = html.querySelector('.journal-entry-content, .journal-entry-page');
+  if (contentArea) {
+    enrichChecks(contentArea);
   }
 
-  // Re-scrape and inject
-  if (game.user.isGM && game.storyframe.gmApp?.rendered) {
-    await game.storyframe.gmApp._updateJournalStyles(journal.uuid);
-  }
-});
+  // Auto-show sidebar if it should be visible
+  const sidebar = game.storyframe.gmSidebar;
+  const shouldShow = game.settings.get(MODULE_ID, 'gmSidebarVisible');
+  const isMinimized = sheet.element[0]?.classList.contains('minimized');
 
-// Hook: closeJournalSheet (watch for editor closing after edits)
-Hooks.on('closeJournalSheet', async (sheet, _html) => {
-  const state = game.storyframe.stateManager.getState();
-  if (sheet.document.uuid !== state?.activeJournal) return;
-
-  // Clear cache - styles may have changed
-  if (game.storyframe.gmApp?.cssScraper) {
-    game.storyframe.gmApp.cssScraper.clearCache(sheet.document.uuid);
-  }
-
-  // Re-scrape with delay to ensure stylesheets detached/updated
-  setTimeout(async () => {
-    if (game.user.isGM && game.storyframe.gmApp?.rendered) {
-      await game.storyframe.gmApp._updateJournalStyles(sheet.document.uuid);
+  if (shouldShow && !isMinimized) {
+    if (!sidebar?.rendered) {
+      _attachSidebarToSheet(sheet);
+    } else {
+      // Already rendered, update parent and reposition
+      sidebar.parentInterface = sheet;
+      sidebar._stopTrackingParent();
+      sidebar._startTrackingParent();
+      sidebar._positionAsDrawer(3);
     }
-  }, 200);
+  }
+
+  _updateToggleButtonState(sheet, html);
 });
+
+// Hook: closeJournalSheet (handle sidebar reattachment)
+Hooks.on('closeJournalSheet', async (sheet, _html) => {
+  if (!game.user.isGM) return;
+
+  // Handle sidebar reattachment
+  const sidebar = game.storyframe.gmSidebar;
+  if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+  // Find other open journals
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      app instanceof foundry.applications.sheets.journal.JournalEntrySheet &&
+      app !== sheet &&
+      app.rendered,
+  );
+
+  if (openJournals.length > 0) {
+    // Reattach to most recent
+    const newParent = openJournals[openJournals.length - 1];
+    sidebar.parentInterface = newParent;
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+    _updateAllJournalToggleButtons();
+  } else {
+    // No journals left, close sidebar
+    sidebar.close();
+  }
+});
+
+// Helper: Inject sidebar toggle button into journal header
+function _injectSidebarToggleButton(sheet, html) {
+  const controls = html.querySelector('.window-controls');
+  if (!controls || controls.querySelector('.storyframe-sidebar-toggle')) return;
+
+  const toggleBtn = document.createElement('button');
+  toggleBtn.className = 'header-control storyframe-sidebar-toggle';
+  toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
+  toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
+  toggleBtn.innerHTML = '<i class="fas fa-users"></i>';
+
+  toggleBtn.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await _toggleSidebarForSheet(sheet);
+  };
+
+  const closeBtn = controls.querySelector('[data-action="close"]');
+  if (closeBtn) {
+    controls.insertBefore(toggleBtn, closeBtn);
+  } else {
+    controls.appendChild(toggleBtn);
+  }
+}
+
+// Helper: Update toggle button state to reflect sidebar visibility
+function _updateToggleButtonState(sheet, html) {
+  const toggleBtn = html.querySelector('.storyframe-sidebar-toggle');
+  if (!toggleBtn) return;
+
+  const sidebar = game.storyframe.gmSidebar;
+  const isVisible = sidebar?.rendered && sidebar.parentInterface === sheet;
+
+  toggleBtn.classList.toggle('active', isVisible);
+  toggleBtn.setAttribute(
+    'data-tooltip',
+    isVisible ? 'Hide StoryFrame Sidebar' : 'Show StoryFrame Sidebar',
+  );
+}
+
+// Helper: Toggle sidebar for a specific journal sheet
+async function _toggleSidebarForSheet(sheet) {
+  const sidebar = game.storyframe.gmSidebar;
+  const isAttachedToThis = sidebar?.rendered && sidebar.parentInterface === sheet;
+
+  if (isAttachedToThis) {
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
+    sidebar.close();
+  } else {
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
+    _attachSidebarToSheet(sheet);
+  }
+
+  _updateAllJournalToggleButtons();
+}
+
+// Helper: Attach sidebar to a journal sheet
+function _attachSidebarToSheet(sheet) {
+  if (!game.storyframe.gmSidebar) {
+    game.storyframe.gmSidebar = new GMSidebarApp();
+  }
+
+  const sidebar = game.storyframe.gmSidebar;
+  sidebar.parentInterface = sheet;
+  sidebar._stateRestored = false;
+
+  if (!sidebar.rendered) {
+    sidebar.render(true);
+  } else {
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+  }
+}
+
+// Helper: Update all journal toggle buttons to reflect current state
+function _updateAllJournalToggleButtons() {
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      app instanceof foundry.applications.sheets.journal.JournalEntrySheet && app.rendered,
+  );
+
+  for (const journal of openJournals) {
+    const html = journal.element[0] || journal.element;
+    _updateToggleButtonState(journal, html);
+  }
+}

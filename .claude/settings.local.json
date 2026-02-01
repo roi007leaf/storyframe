@@ -4,7 +4,9 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(node -c:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Skill(gsd:add-phase)",
+      "Skill(gsd:add-phase:*)"
     ]
   }
 }
