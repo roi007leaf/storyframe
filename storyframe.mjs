@@ -125,6 +125,13 @@ Hooks.once('init', () => {
     default: [],
   });
 
+  game.settings.register(MODULE_ID, 'challengeLibrary', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
   game.settings.register(MODULE_ID, 'moduleVersion', {
     scope: 'client',
     config: false,

@@ -135,6 +135,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     },
     actions: {
       executeRoll: PlayerViewerApp._onExecuteRoll,
+      selectChallengeOption: PlayerViewerApp._onSelectChallengeOption,
     },
   };
 
@@ -187,6 +188,27 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       showDCs = challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM);
     }
 
+    // Check if active challenge applies to this player
+    let activeChallenge = null;
+    if (state?.activeChallenge && myParticipants.length > 0) {
+      // Show challenge to ALL players with participants
+      // Apply DC visibility based on system settings
+      const enrichedOptions = state.activeChallenge.options.map(opt => ({
+        ...opt,
+        skillOptionsDisplay: opt.skillOptions.map(so => ({
+          ...so,
+          skillName: PlayerViewerApp._getSkillDisplayName(so.skill),
+          dc: so.dc, // Always include actual DC (needed for roll)
+          showDC: showDCs, // Flag to control display only
+        })),
+      }));
+
+      activeChallenge = {
+        ...state.activeChallenge,
+        options: enrichedOptions,
+      };
+    }
+
     // Group pending rolls by actor
     let actorRollGroups = [];
     if (myParticipantIds.size > 0 && state?.pendingRolls) {
@@ -229,7 +251,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // No speakers - show empty state but still include pending rolls
     if (!state?.speakers || state.speakers.length === 0) {
-      return { empty: true, layout, actorRollGroups };
+      return { empty: true, layout, actorRollGroups, activeChallenge };
     }
 
     // Resolve ALL speakers
@@ -241,6 +263,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       layout,
       empty: false,
       actorRollGroups,
+      activeChallenge,
     };
   }
 
@@ -561,6 +584,96 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       ui.notifications.info(`${displayName} check submitted (${roll.total ?? 'N/A'})`);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
+      ui.notifications.error('Failed to execute roll');
+    }
+  }
+
+  /**
+   * Handle challenge option selection.
+   * @param {Event} _event - Click event
+   * @param {HTMLElement} target - Button element
+   */
+  static async _onSelectChallengeOption(_event, target) {
+    const skillSlug = target.dataset.skill;
+    const dc = parseInt(target.dataset.dc);
+    const state = game.storyframe.stateManager.getState();
+    const challenge = state?.activeChallenge;
+
+    if (!challenge) {
+      ui.notifications.warn('Challenge no longer active');
+      return;
+    }
+
+    if (!skillSlug || !dc) {
+      ui.notifications.error('Invalid skill or DC');
+      return;
+    }
+
+    // Find my participant (any participant for this user)
+    const myParticipant = state.participants?.find(p => p.userId === game.user.id);
+
+    if (!myParticipant) {
+      ui.notifications.error('No participant found for your user');
+      return;
+    }
+
+    // Execute roll
+    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc);
+  }
+
+  /**
+   * Execute skill roll for challenge option.
+   * @param {Object} participant - Participant data
+   * @param {string} skillSlug - Skill slug
+   * @param {number} dc - DC value
+   */
+  static async _executeSkillRoll(participant, skillSlug, dc) {
+    const actor = await fromUuid(participant.actorUuid);
+    if (!actor) {
+      ui.notifications.error('Actor not found');
+      return;
+    }
+
+    const currentSystem = SystemAdapter.detectSystem();
+    const skillSlugMap = getSkillSlugMap();
+    const fullSlug = skillSlugMap[skillSlug] || skillSlug;
+
+    const rollOptions = { skipDialog: false };
+    if (dc !== null && dc !== undefined) {
+      rollOptions.dc = { value: dc };
+    }
+
+    try {
+      let roll;
+      if (currentSystem === 'pf2e') {
+        if (skillSlug === 'per') {
+          roll = await actor.perception.roll(rollOptions);
+        } else {
+          const skill = actor.skills?.[fullSlug];
+          if (!skill) {
+            ui.notifications.error(`Skill "${fullSlug}" not found`);
+            return;
+          }
+          roll = await skill.roll(rollOptions);
+        }
+      } else if (currentSystem === 'dnd5e') {
+        const config = { skill: fullSlug };
+        if (dc !== null && dc !== undefined) {
+          config.target = dc;
+        }
+        const rollResult = await actor.rollSkill(config, {}, {});
+        roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else {
+        ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        return;
+      }
+
+      if (!roll) return;
+
+      const skillName = PlayerViewerApp._getSkillDisplayName(skillSlug);
+      ui.notifications.info(`${skillName} check completed (${roll.total ?? 'N/A'})`);
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error executing challenge roll:`, error);
       ui.notifications.error('Failed to execute roll');
     }
   }

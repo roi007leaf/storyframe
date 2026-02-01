@@ -1,12 +1,12 @@
 const MODULE_ID = 'storyframe';
 const FLAG_KEY = 'data';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 
 /**
  * Manages speaker state persistence in Scene flags.
  * State structure:
  * {
- *   version: 2,
+ *   version: 3,
  *   activeJournal: string|null,  // JournalEntry UUID
  *   activeSpeaker: string|null,  // Speaker ID
  *   speakers: [{
@@ -38,7 +38,21 @@ const SCHEMA_VERSION = 2;
  *     degreeOfSuccess: string, // 'criticalSuccess', 'success', 'failure', 'criticalFailure'
  *     timestamp: number,
  *     chatMessageId: string|null
- *   }]
+ *   }],
+ *   activeChallenge: {    // Multi-option challenge
+ *     id: string,
+ *     name: string,
+ *     image: string|null,
+ *     selectedParticipants: [string],  // Participant IDs
+ *     options: [{
+ *       id: string,
+ *       skillOptions: [{      // Multiple skill-DC pairs
+ *         skill: string,      // Skill slug
+ *         dc: number
+ *       }],
+ *       description: string
+ *     }]
+ *   } | null
  * }
  */
 export class StateManager {
@@ -343,6 +357,37 @@ export class StateManager {
     this._broadcast();
   }
 
+  // --- Challenge Management ---
+
+  /**
+   * Set active challenge and persist.
+   * @param {Object} challengeData - Challenge data with options
+   */
+  async setActiveChallenge(challengeData) {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.activeChallenge = challengeData;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+  }
+
+  /**
+   * Clear active challenge and persist.
+   */
+  async clearActiveChallenge() {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.activeChallenge = null;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+  }
+
   /**
    * Persist state to scene flags.
    */
@@ -365,6 +410,7 @@ export class StateManager {
       participants: [],
       pendingRolls: [],
       rollHistory: [],
+      activeChallenge: null,
     };
   }
 
@@ -380,6 +426,11 @@ export class StateManager {
       oldData.participants = [];
       oldData.pendingRolls = [];
       oldData.rollHistory = [];
+    }
+
+    // Migration: v2 -> v3 (add activeChallenge)
+    if (oldData.version === 2) {
+      oldData.activeChallenge = null;
     }
 
     oldData.version = SCHEMA_VERSION;

@@ -20,12 +20,44 @@
     </div>
   </div>
 
-  {{#if actorRollGroups.length}}
+  {{#if (or actorRollGroups.length activeChallenge)}}
   <aside class="rolls-sidebar">
+    {{#if activeChallenge}}
+    <div class="challenge-section">
+      <div class="challenge-header">
+        {{#if activeChallenge.image}}
+        <img src="{{activeChallenge.image}}" alt="{{activeChallenge.name}}" class="challenge-image" loading="lazy">
+        {{/if}}
+        <h3>{{activeChallenge.name}}</h3>
+      </div>
+      <div class="challenge-options">
+        {{#each activeChallenge.options}}
+        <div class="challenge-option-group">
+          <div class="option-description">{{this.description}}</div>
+          <div class="option-skills-list">
+            {{#each this.skillOptionsDisplay}}
+            <button type="button"
+                    class="challenge-skill-btn"
+                    data-action="selectChallengeOption"
+                    data-option-id="{{../id}}"
+                    data-skill="{{this.skill}}"
+                    data-dc="{{this.dc}}"
+                    aria-label="Roll {{this.skillName}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
+              <span class="skill-name">{{this.skillName}}</span>
+              {{#if this.showDC}}<span class="dc-badge">DC {{this.dc}}</span>{{/if}}
+            </button>
+            {{/each}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+    {{#if actorRollGroups.length}}
     <div class="sidebar-header">
       <h3>Pending Rolls</h3>
     </div>
-    <div class="sidebar-content">
+    <div class="sidebar-content">{{/if}}
       {{#each actorRollGroups}}
         <div class="actor-roll-group">
           <div class="actor-header">
@@ -51,7 +83,7 @@
           </div>
         </div>
       {{/each}}
-    </div>
+    {{#if actorRollGroups.length}}</div>{{/if}}
   </aside>
   {{/if}}
 </div>

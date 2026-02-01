@@ -27,6 +27,10 @@ export class SocketManager {
     this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
     this.socket.register('openPlayerViewer', this._handleOpenPlayerViewer);
     this.socket.register('closePlayerViewer', this._handleClosePlayerViewer);
+
+    // Register challenge handlers
+    this.socket.register('setActiveChallenge', this._handleSetActiveChallenge);
+    this.socket.register('clearActiveChallenge', this._handleClearActiveChallenge);
   }
 
   // --- Public API (call from any client) ---
@@ -163,6 +167,23 @@ export class SocketManager {
    */
   closeAllPlayerViewers() {
     this.socket.executeForEveryone('closePlayerViewer');
+  }
+
+  // --- Challenge API ---
+
+  /**
+   * Request GM to set active challenge.
+   * @param {Object} challengeData - Challenge data
+   */
+  async requestSetActiveChallenge(challengeData) {
+    return await this.socket.executeAsGM('setActiveChallenge', challengeData);
+  }
+
+  /**
+   * Request GM to clear active challenge.
+   */
+  async requestClearActiveChallenge() {
+    return await this.socket.executeAsGM('clearActiveChallenge');
   }
 
   // --- Handlers (execute on GM client) ---
@@ -325,5 +346,23 @@ export class SocketManager {
     if (game.storyframe.playerViewer?.rendered) {
       game.storyframe.playerViewer.close();
     }
+  }
+
+  // --- Challenge Handlers ---
+
+  /**
+   * Handler: Set active challenge.
+   * Runs on GM client.
+   */
+  async _handleSetActiveChallenge(challengeData) {
+    await game.storyframe.stateManager?.setActiveChallenge(challengeData);
+  }
+
+  /**
+   * Handler: Clear active challenge.
+   * Runs on GM client.
+   */
+  async _handleClearActiveChallenge() {
+    await game.storyframe.stateManager?.clearActiveChallenge();
   }
 }

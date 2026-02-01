@@ -121,6 +121,14 @@
         <button type="button" data-action="openPlayerWindows" data-tooltip="Open\Close on players" aria-label="Open StoryFrame viewer on all player clients">
           <i class="fas fa-tv" aria-hidden="true"></i>
         </button>
+        <button type="button" data-action="manageChallengeLibrary" data-tooltip="Challenge Library" aria-label="Manage saved challenges">
+          <i class="fas fa-folder-open" aria-hidden="true"></i>
+        </button>
+        {{#if hasParticipants}}
+        <button type="button" data-action="presentChallenge" data-tooltip="Present Challenge" aria-label="Present multi-option challenge to all players">
+          <i class="fas fa-tasks" aria-hidden="true"></i>
+        </button>
+        {{/if}}
         {{#if hasParticipants}}
         <button type="button" data-action="clearAllParticipants" data-tooltip="Clear all PCs" aria-label="Remove all PCs">
           <i class="fas fa-trash" aria-hidden="true"></i>
@@ -328,6 +336,14 @@
   <div class="pending-rolls-indicator" data-action="showPendingRolls" data-tooltip="{{pendingRolls.length}} pending roll(s) - click to manage" role="button" tabindex="0" aria-label="{{pendingRolls.length}} pending rolls, click to view">
     <i class="fas fa-hourglass-half" aria-hidden="true"></i>
     <span class="pending-count">{{pendingRolls.length}}</span>
+  </div>
+  {{/if}}
+
+  <!-- Active Challenge Indicator -->
+  {{#if hasActiveChallenge}}
+  <div class="active-challenge-indicator" data-action="clearChallenge" data-tooltip="{{activeChallenge.name}} - click to clear" role="button" tabindex="0" aria-label="Active challenge: {{activeChallenge.name}}, click to clear">
+    <i class="fas fa-tasks" aria-hidden="true"></i>
+    <span class="challenge-name">{{activeChallenge.name}}</span>
   </div>
   {{/if}}
 </div>

@@ -5,7 +5,43 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.0] - 2026-02-01
+## [1.2.0] - 2026-02-01
+
+### Added
+
+#### Multi-Option Challenge System
+- **Present Challenge** - GM broadcasts multi-option skill challenges to all players
+  - Proper ApplicationV2 dialog class with dedicated template and CSS
+  - Card-based builder with name, optional image, and multiple options
+  - Each option: description + multiple skill-DC pairs
+  - Each skill can have different DC (e.g., "Crafting DC 15 OR Diplomacy DC 17")
+  - Add/remove skills within each option
+  - Add/remove option cards
+  - Visible to ALL players (no participant selection needed)
+  - Players self-select which option to attempt
+  - Respects system DC visibility settings
+  - Options remain available after use (no auto-removal)
+- **Challenge Library** - Save and reuse prepared challenges
+  - Proper ApplicationV2 dialog class with dedicated template and CSS
+  - Folder icon button in PCs section (always available)
+  - Beautiful card layout showing challenge name and options preview
+  - "Present to All Players" button per challenge
+  - Delete button with confirmation
+  - "Save to library" checkbox in builder dialog
+  - Challenges stored per-world, templates reusable across scenes
+- **Player Challenge UI** - Players see challenge in rolls sidebar
+  - Challenge name and optional image
+  - Each option shows as card with description
+  - Click any skill button to immediately roll with its DC
+  - DC badge shows if system allows
+  - Direct roll execution with DC pre-filled
+- **Styled Dialog** - Custom StoryFrame button styling throughout
+  - Gradient buttons with hover/active effects
+  - Color-coded actions (blue=add, red=remove, green=submit)
+  - Box shadows and lift animations
+- **Clear Challenge** - GM can manually clear active challenge (click indicator)
+
+## [1.1.0] - 2026-02-01
 
 ### Added
 

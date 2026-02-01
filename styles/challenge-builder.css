@@ -1,0 +1,372 @@
+/* Challenge Builder Dialog */
+
+.storyframe.challenge-builder {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(26, 26, 46, 0.95));
+  max-height: 90vh;
+}
+
+.storyframe.challenge-builder .window-content {
+  padding: 0;
+  overflow: hidden;
+  max-height: calc(90vh - 40px);
+  display: flex;
+  flex-direction: column;
+}
+
+.storyframe.challenge-builder .challenge-builder-form {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+}
+
+.storyframe.challenge-builder .challenge-dialog-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(90vh - 140px);
+}
+
+.storyframe.challenge-builder .challenge-dialog-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.storyframe.challenge-builder .challenge-dialog-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 5px;
+  margin: 4px 0;
+}
+
+.storyframe.challenge-builder .challenge-dialog-content::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.5), rgba(94, 129, 172, 0.4));
+  border-radius: 5px;
+  border: 2px solid rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .challenge-dialog-content::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.7), rgba(94, 129, 172, 0.6));
+}
+
+/* Form Labels */
+.storyframe.challenge-builder label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  color: #b0b8c8;
+}
+
+/* Form Inputs */
+.storyframe.challenge-builder input[type="text"],
+.storyframe.challenge-builder input[type="number"],
+.storyframe.challenge-builder textarea,
+.storyframe.challenge-builder select {
+  padding: 8px 12px;
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  color: #e0e0e0;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.storyframe.challenge-builder input:focus,
+.storyframe.challenge-builder textarea:focus,
+.storyframe.challenge-builder select:focus {
+  border-color: rgba(94, 129, 172, 0.6);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.15);
+}
+
+.storyframe.challenge-builder textarea {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* Pick Image Button */
+.storyframe.challenge-builder .challenge-pick-image {
+  margin-top: 6px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, rgba(76, 86, 106, 0.4), rgba(76, 86, 106, 0.3));
+  border: 1px solid rgba(76, 86, 106, 0.5);
+  color: #d8dee9;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .challenge-pick-image:hover {
+  background: linear-gradient(135deg, rgba(76, 86, 106, 0.5), rgba(76, 86, 106, 0.4));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .challenge-pick-image:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+/* Save Checkbox */
+.storyframe.challenge-builder .save-checkbox-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.15), rgba(163, 190, 140, 0.08));
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.storyframe.challenge-builder .save-checkbox-wrapper:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.2), rgba(163, 190, 140, 0.12));
+  border-color: rgba(163, 190, 140, 0.4);
+}
+
+.storyframe.challenge-builder .save-checkbox-wrapper input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #a3be8c;
+  cursor: pointer;
+}
+
+.storyframe.challenge-builder .save-checkbox-wrapper label {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 13px;
+  color: #a3be8c;
+  margin: 0;
+}
+
+/* Options Section Label */
+.storyframe.challenge-builder .options-section-label {
+  font-weight: 700;
+  font-size: 13px;
+  color: #5e81ac;
+  margin: 12px 0 8px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.storyframe.challenge-builder .options-section-label::before {
+  content: '';
+  height: 2px;
+  width: 24px;
+  background: linear-gradient(90deg, rgba(94, 129, 172, 0.6), transparent);
+}
+
+/* Options List */
+.storyframe.challenge-builder .challenge-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Option Cards */
+.storyframe.challenge-builder .challenge-option-card {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.08));
+  border: 1px solid rgba(94, 129, 172, 0.35);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .challenge-option-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid rgba(94, 129, 172, 0.25);
+}
+
+.storyframe.challenge-builder .challenge-option-title {
+  font-weight: 700;
+  font-size: 13px;
+  color: #5e81ac;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .challenge-option-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storyframe.challenge-builder .challenge-option-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Skills List */
+.storyframe.challenge-builder .skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.storyframe.challenge-builder .skill-dc-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.storyframe.challenge-builder .skill-dc-row .skill-select {
+  flex: 1;
+}
+
+.storyframe.challenge-builder .skill-dc-row .dc-input {
+  width: 80px;
+}
+
+/* Buttons */
+.storyframe.challenge-builder .add-skill-btn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.3), rgba(94, 129, 172, 0.2));
+  border: 1px solid rgba(94, 129, 172, 0.5);
+  color: #5e81ac;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .add-skill-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.45), rgba(94, 129, 172, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .add-skill-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .challenge-add-option {
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.35), rgba(94, 129, 172, 0.25));
+  border: 1px solid rgba(94, 129, 172, 0.6);
+  color: #ffffff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .challenge-add-option:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.5), rgba(94, 129, 172, 0.4));
+  transform: translateY(-2px);
+  box-shadow: 0 5px 14px rgba(0, 0, 0, 0.35);
+}
+
+.storyframe.challenge-builder .challenge-add-option:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.storyframe.challenge-builder .skill-dc-row-remove,
+.storyframe.challenge-builder .challenge-option-remove {
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
+  border: 1px solid rgba(191, 97, 106, 0.5);
+  color: #bf616a;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .skill-dc-row-remove {
+  padding: 8px 10px;
+}
+
+.storyframe.challenge-builder .challenge-option-remove {
+  padding: 6px 12px;
+}
+
+.storyframe.challenge-builder .skill-dc-row-remove:hover,
+.storyframe.challenge-builder .challenge-option-remove:hover {
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.45), rgba(191, 97, 106, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .skill-dc-row-remove:active,
+.storyframe.challenge-builder .challenge-option-remove:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Form Footer */
+.storyframe.challenge-builder .form-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(94, 129, 172, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.storyframe.challenge-builder .submit-btn {
+  padding: 12px 28px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.4), rgba(163, 190, 140, 0.3));
+  border: 1px solid rgba(163, 190, 140, 0.6);
+  color: #a3be8c;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .submit-btn:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.55), rgba(163, 190, 140, 0.45));
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.4);
+}
+
+.storyframe.challenge-builder .submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}

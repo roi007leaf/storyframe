@@ -1,6 +1,8 @@
 const MODULE_ID = 'storyframe';
 
 import * as SystemAdapter from '../system-adapter.mjs';
+import { ChallengeBuilderDialog } from './challenge-builder.mjs';
+import { ChallengeLibraryDialog } from './challenge-library.mjs';
 
 /**
  * GM Sidebar for StoryFrame
@@ -55,6 +57,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       showCheckDCsPopup: GMSidebarAppBase._onShowCheckDCsPopup,
       setImageAsSpeaker: GMSidebarAppBase._onSetImageAsSpeaker,
       setActorAsSpeaker: GMSidebarAppBase._onSetActorAsSpeaker,
+      presentChallenge: GMSidebarAppBase._onPresentChallenge,
+      clearChallenge: GMSidebarAppBase._onClearChallenge,
+      manageChallengeLibrary: GMSidebarAppBase._onManageChallengeLibrary,
     },
   };
 
@@ -318,6 +323,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
     const dcPresets = allPresets.filter((p) => !p.system || p.system === currentSystem);
 
+    // Active challenge
+    const activeChallenge = state?.activeChallenge || null;
+    const hasActiveChallenge = activeChallenge !== null;
+
     return {
       speakers,
       activeSpeaker: state.activeSpeaker,
@@ -350,6 +359,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasJournalImages: journalImages.length > 0,
       journalActors,
       hasJournalActors: journalActors.length > 0,
+      activeChallenge,
+      hasActiveChallenge,
     };
   }
 
@@ -2294,5 +2305,353 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       label: actor.name,
     });
     ui.notifications.info(`Added ${actor.name} as NPC`);
+  }
+
+  static async _onPresentChallenge(_event, _target) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants || state.participants.length === 0) {
+      ui.notifications.warn('Add PCs first');
+      return;
+    }
+
+    // Get all participant IDs
+    const allParticipantIds = state.participants.map(p => p.id);
+    const builder = new ChallengeBuilderDialog(new Set(allParticipantIds));
+    builder.render(true);
+  }
+
+  static async _onClearChallenge(_event, _target) {
+    await game.storyframe.socketManager.requestClearActiveChallenge();
+    ui.notifications.info('Challenge cleared');
+  }
+
+  static async _onManageChallengeLibrary(_event, _target) {
+    const state = game.storyframe.stateManager.getState();
+    const allParticipantIds = state?.participants ? new Set(state.participants.map(p => p.id)) : new Set();
+    const library = new ChallengeLibraryDialog(allParticipantIds, this);
+    library.render(true);
+  }
+
+  static async _onManageChallengeLibraryOLD(_event, _target) {
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+
+    if (savedChallenges.length === 0) {
+      ui.notifications.info('No saved challenges. Create one and check "Save to library"');
+      return;
+    }
+
+    // Build library manager dialog (OLD INLINE VERSION - TO BE DELETED)
+    const challengeCards = savedChallenges.map(c => {
+      const optionsPreview = c.options.map((opt, idx) => {
+        const skillsText = opt.skillOptions.map(so => {
+          const skillName = this._getSkillName(so.skill);
+          return `<span class="skill-dc-pill">${skillName} <strong>DC ${so.dc}</strong></span>`;
+        }).join(' ');
+        return `
+          <div class="lib-option-preview">
+            <div class="opt-num">Option ${idx + 1}</div>
+            <div class="opt-desc">${opt.description}</div>
+            <div class="opt-skills">${skillsText}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="lib-challenge-card" data-challenge-id="${c.id}">
+          <div class="lib-card-header">
+            <div class="lib-card-title-section">
+              <i class="fas fa-flag-checkered lib-card-icon"></i>
+              <span class="lib-card-title">${c.name}</span>
+            </div>
+            <button type="button" class="lib-delete-btn" data-challenge-id="${c.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div class="lib-card-body">
+            ${optionsPreview}
+          </div>
+          <button type="button" class="lib-present-btn" data-challenge-id="${c.id}">
+            <i class="fas fa-paper-plane"></i> Present to Selected PCs
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    const content = `
+      <style>
+        .lib-manager-content {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          max-height: 520px;
+          overflow-y: auto;
+          padding: 4px;
+        }
+        .lib-manager-content::-webkit-scrollbar { width: 8px; }
+        .lib-manager-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .lib-manager-content::-webkit-scrollbar-thumb { background: rgba(94, 129, 172, 0.4); border-radius: 4px; }
+        .lib-manager-content::-webkit-scrollbar-thumb:hover { background: rgba(94, 129, 172, 0.6); }
+
+        .lib-challenge-card {
+          background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.08));
+          border: 1px solid rgba(94, 129, 172, 0.35);
+          border-radius: 10px;
+          padding: 16px;
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+          transition: all 0.3s ease;
+        }
+        .lib-challenge-card:hover {
+          border-color: rgba(94, 129, 172, 0.5);
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.35);
+          transform: translateY(-2px);
+        }
+
+        .lib-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid rgba(94, 129, 172, 0.25);
+        }
+
+        .lib-card-title-section {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+        }
+
+        .lib-card-icon {
+          font-size: 18px;
+          color: rgba(94, 129, 172, 0.7);
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .lib-card-title {
+          font-weight: 700;
+          font-size: 16px;
+          color: #e0e0e0;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+          letter-spacing: 0.02em;
+        }
+
+        .lib-delete-btn {
+          background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
+          border: 1px solid rgba(191, 97, 106, 0.5);
+          color: #bf616a;
+          padding: 7px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 600;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .lib-delete-btn:hover {
+          background: linear-gradient(135deg, rgba(191, 97, 106, 0.45), rgba(191, 97, 106, 0.35));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .lib-delete-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .lib-delete-btn i { font-size: 10px; }
+
+        .lib-card-body {
+          font-size: 12px;
+          color: #d8dee9;
+          margin-bottom: 12px;
+          line-height: 1.5;
+        }
+
+        .lib-option-preview {
+          margin: 8px 0;
+          padding: 10px 14px;
+          background: rgba(0, 0, 0, 0.3);
+          border-left: 3px solid rgba(94, 129, 172, 0.5);
+          border-radius: 0 6px 6px 0;
+          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .lib-option-preview:first-child { margin-top: 0; }
+        .lib-option-preview:last-child { margin-bottom: 0; }
+
+        .opt-num {
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(94, 129, 172, 0.8);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 4px;
+        }
+
+        .opt-desc {
+          font-size: 13px;
+          font-weight: 600;
+          color: #e0e0e0;
+          margin-bottom: 6px;
+          line-height: 1.4;
+        }
+
+        .opt-skills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 6px;
+        }
+
+        .skill-dc-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+          border: 1px solid rgba(94, 129, 172, 0.4);
+          border-radius: 12px;
+          font-size: 11px;
+          color: #a8b5c8;
+          font-weight: 500;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .skill-dc-pill strong {
+          color: #5e81ac;
+          font-weight: 700;
+          font-family: monospace;
+        }
+
+        .lib-present-btn {
+          width: 100%;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, rgba(163, 190, 140, 0.35), rgba(163, 190, 140, 0.25));
+          border: 1px solid rgba(163, 190, 140, 0.6);
+          color: #a3be8c;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          transition: all 0.25s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .lib-present-btn:hover {
+          background: linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(163, 190, 140, 0.4));
+          transform: translateY(-2px);
+          box-shadow: 0 5px 16px rgba(0, 0, 0, 0.35);
+        }
+        .lib-present-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        }
+        .lib-present-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .lib-present-btn:disabled:hover {
+          transform: none;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .lib-present-btn i { font-size: 12px; }
+
+        .lib-empty-state {
+          text-align: center;
+          padding: 60px 40px;
+          color: #888;
+          font-size: 14px;
+        }
+        .lib-empty-state i {
+          font-size: 48px;
+          margin-bottom: 16px;
+          opacity: 0.3;
+        }
+      </style>
+      <div class="lib-manager-content">
+        ${challengeCards}
+      </div>
+    `;
+
+    const libDialog = new foundry.applications.api.DialogV2({
+      window: { title: 'Challenge Library' },
+      content,
+      position: { width: 480 },
+      buttons: [{
+        action: 'close',
+        label: 'Close',
+        default: true,
+      }],
+      render: (_event, html) => {
+        // Delete challenge
+        html.querySelectorAll('.lib-delete-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const challengeId = btn.dataset.challengeId;
+
+            const confirmed = await foundry.applications.api.DialogV2.confirm({
+              window: { title: 'Delete Challenge' },
+              content: '<p>Delete this challenge from library?</p>',
+              yes: { label: 'Delete' },
+              no: { label: 'Cancel' },
+              rejectClose: false,
+            });
+
+            if (confirmed) {
+              const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+              const filtered = savedChallenges.filter(c => c.id !== challengeId);
+              await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
+              btn.closest('.lib-challenge-card').remove();
+              ui.notifications.info('Challenge deleted');
+
+              // Close dialog if no more challenges
+              if (filtered.length === 0) {
+                libDialog.close();
+              }
+            }
+          });
+        });
+
+        // Present challenge
+        html.querySelectorAll('.lib-present-btn').forEach(btn => {
+          const hasSelection = this.selectedParticipants.size > 0;
+          btn.disabled = !hasSelection;
+
+          if (!hasSelection) {
+            btn.title = 'Select PCs first';
+          }
+
+          btn.addEventListener('click', async () => {
+            const challengeId = btn.dataset.challengeId;
+            const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+            const template = savedChallenges.find(c => c.id === challengeId);
+
+            if (!template) return;
+
+            // Create challenge data from template
+            const challengeData = {
+              id: foundry.utils.randomID(),
+              name: template.name,
+              image: template.image,
+              selectedParticipants: Array.from(this.selectedParticipants),
+              options: template.options,
+            };
+
+            await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
+            ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size} PC(s)`);
+            libDialog.close();
+          });
+        });
+      },
+    });
+
+    await libDialog.render(true);
   }
 }

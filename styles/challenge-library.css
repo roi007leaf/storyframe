@@ -1,0 +1,258 @@
+/* Challenge Library Dialog */
+
+.storyframe.challenge-library {
+  background: linear-gradient(135deg, rgba(26, 26, 46, 0.98), rgba(26, 26, 46, 0.95));
+}
+
+.storyframe.challenge-library .window-content {
+  padding: 16px;
+  overflow: hidden;
+}
+
+.storyframe.challenge-library .library-content {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.storyframe.challenge-library .library-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.storyframe.challenge-library .library-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.storyframe.challenge-library .library-content::-webkit-scrollbar-thumb {
+  background: rgba(94, 129, 172, 0.4);
+  border-radius: 4px;
+}
+
+.storyframe.challenge-library .library-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 129, 172, 0.6);
+}
+
+/* Challenge Cards */
+.storyframe.challenge-library .lib-challenge-card {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.08));
+  border: 1px solid rgba(94, 129, 172, 0.35);
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.3s ease;
+}
+
+.storyframe.challenge-library .lib-challenge-card:hover {
+  border-color: rgba(94, 129, 172, 0.5);
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.35);
+  transform: translateY(-2px);
+}
+
+/* Card Header */
+.storyframe.challenge-library .lib-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid rgba(94, 129, 172, 0.25);
+}
+
+.storyframe.challenge-library .lib-card-title-section {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+}
+
+.storyframe.challenge-library .lib-card-icon {
+  font-size: 18px;
+  color: rgba(94, 129, 172, 0.7);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-library .lib-card-title {
+  font-weight: 700;
+  font-size: 16px;
+  color: #e0e0e0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  letter-spacing: 0.02em;
+}
+
+/* Delete Button */
+.storyframe.challenge-library .lib-delete-btn {
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
+  border: 1px solid rgba(191, 97, 106, 0.5);
+  color: #bf616a;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .lib-delete-btn:hover {
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.45), rgba(191, 97, 106, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-library .lib-delete-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .lib-delete-btn i {
+  font-size: 10px;
+}
+
+/* Card Body */
+.storyframe.challenge-library .lib-card-body {
+  margin-bottom: 12px;
+}
+
+.storyframe.challenge-library .lib-option-preview {
+  margin: 8px 0;
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.3);
+  border-left: 3px solid rgba(94, 129, 172, 0.5);
+  border-radius: 0 6px 6px 0;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .lib-option-preview:first-child {
+  margin-top: 0;
+}
+
+.storyframe.challenge-library .lib-option-preview:last-child {
+  margin-bottom: 0;
+}
+
+.storyframe.challenge-library .opt-num {
+  font-size: 10px;
+  font-weight: 700;
+  color: rgba(94, 129, 172, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+
+.storyframe.challenge-library .opt-desc {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.storyframe.challenge-library .opt-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.storyframe.challenge-library .skill-dc-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 12px;
+  font-size: 11px;
+  color: #a8b5c8;
+  font-weight: 500;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .skill-dc-pill strong {
+  color: #5e81ac;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+/* Present Button */
+.storyframe.challenge-library .lib-present-btn {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.35), rgba(163, 190, 140, 0.25));
+  border: 1px solid rgba(163, 190, 140, 0.6);
+  color: #a3be8c;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 13px;
+  transition: all 0.25s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-library .lib-present-btn:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(163, 190, 140, 0.4));
+  transform: translateY(-2px);
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.35);
+}
+
+.storyframe.challenge-library .lib-present-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.storyframe.challenge-library .lib-present-btn:disabled,
+.storyframe.challenge-library .lib-present-btn.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.storyframe.challenge-library .lib-present-btn:disabled:hover,
+.storyframe.challenge-library .lib-present-btn.disabled:hover {
+  transform: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.35), rgba(163, 190, 140, 0.25));
+}
+
+.storyframe.challenge-library .lib-present-btn i {
+  font-size: 12px;
+}
+
+/* Empty State */
+.storyframe.challenge-library .lib-empty-state {
+  text-align: center;
+  padding: 60px 40px;
+  color: #888;
+}
+
+.storyframe.challenge-library .lib-empty-state i {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+  display: block;
+}
+
+.storyframe.challenge-library .lib-empty-state p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.storyframe.challenge-library .lib-empty-state .hint {
+  font-size: 12px;
+  color: #666;
+  font-style: italic;
+}

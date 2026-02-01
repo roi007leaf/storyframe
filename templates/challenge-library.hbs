@@ -1,0 +1,45 @@
+<div class="library-content">
+  {{#if hasChallenges}}
+    {{#each challenges}}
+    <div class="lib-challenge-card" data-challenge-id="{{this.id}}">
+      <div class="lib-card-header">
+        <div class="lib-card-title-section">
+          <i class="fas fa-flag-checkered lib-card-icon"></i>
+          <span class="lib-card-title">{{this.name}}</span>
+        </div>
+        <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+
+      <div class="lib-card-body">
+        {{#each this.options}}
+        <div class="lib-option-preview">
+          <div class="opt-num">Option {{this.index}}</div>
+          <div class="opt-desc">{{this.description}}</div>
+          <div class="opt-skills">
+            {{#each this.skillOptions}}
+            <span class="skill-dc-pill">{{this.skillName}} <strong>DC {{this.dc}}</strong></span>
+            {{/each}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+
+      <button type="button"
+              class="lib-present-btn {{#unless ../hasParticipants}}disabled{{/unless}}"
+              data-action="presentChallenge"
+              data-challenge-id="{{this.id}}"
+              {{#unless ../hasParticipants}}disabled{{/unless}}>
+        <i class="fas fa-paper-plane"></i> Present to Selected PCs
+      </button>
+    </div>
+    {{/each}}
+  {{else}}
+    <div class="lib-empty-state">
+      <i class="fas fa-folder-open"></i>
+      <p>No saved challenges</p>
+      <p class="hint">Create a challenge and check "Save to library"</p>
+    </div>
+  {{/if}}
+</div>
