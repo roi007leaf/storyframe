@@ -204,7 +204,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   async _prepareContext(_options) {
-    console.log('StoryFrame | _prepareContext called, selectedParticipants:', this.selectedParticipants);
     // Detect system info (needed throughout the method)
     const currentSystem = SystemAdapter.detectSystem();
 
@@ -302,9 +301,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }));
 
     // Get lore skills from participants
-    console.log('StoryFrame | About to call _getLoreSkills, class:', this.constructor.name);
     const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
-    console.log('StoryFrame | _getLoreSkills returned:', loreSkills);
 
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;

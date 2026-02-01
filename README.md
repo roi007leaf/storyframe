@@ -34,10 +34,16 @@ The GM Sidebar attaches to the side of journal sheets, providing context-aware t
 ### Player Viewer
 
 - **Synchronized NPC Gallery** - All GM-added NPCs appear with active speaker highlighted
-- **Skill Check Prompts** - Respond to GM requests with one-click rolling
+- **Rolls Sidebar** - Dedicated sidebar for pending skill checks (similar to GM view):
+  - Grouped by actor when controlling multiple PCs
+  - Always visible - no popups or dialogs needed
+  - One-click roll buttons for quick responses
+  - Shows skill name, DC, and actor avatar
+  - Rolls persist until completed (cancelling dialog keeps request active)
 - **System Integration**:
-  - **PF2e**: Action dialogs with modifiers and degree of success
+  - **PF2e**: Action dialogs with modifiers, degree of success, and lore skills
   - **D&D 5e**: Skill checks respecting Challenge Visibility settings
+- **Multi-PC Support** - Players controlling multiple characters see all pending rolls
 - **Full-screen View** - Right-click any portrait to enlarge
 
 ### Technical
@@ -92,9 +98,16 @@ The GM Sidebar attaches to the side of journal sheets, providing context-aware t
 ### For Players
 
 1. **View NPCs**: Press `Ctrl+Shift+S` to open StoryFrame viewer
+   - Main area: NPC gallery with active speaker highlighted
+   - Right sidebar: Pending skill check requests (when present)
 2. **Active Speaker**: Highlighted NPC shows who's currently speaking
-3. **Skill Checks**: When prompted, click Roll button to make check
-4. **Enlarge Portraits**: Right-click any NPC for full-screen view
+3. **Skill Checks**:
+   - Pending rolls appear in right sidebar grouped by character
+   - Click dice icon to open roll dialog
+   - Complete the roll to remove from pending list
+   - Cancelling roll dialog keeps request active for later
+4. **Multiple Characters**: If controlling multiple PCs, see all roll requests organized by character
+5. **Enlarge Portraits**: Right-click any NPC for full-screen view
 
 ## Configuration
 
@@ -110,7 +123,9 @@ The GM Sidebar attaches to the side of journal sheets, providing context-aware t
 StoryFrame uses system-specific implementations for deep integration:
 - **GMSidebarAppPF2e** - PF2e inline checks, lore skills, party actors, level-based DCs
 - **GMSidebarAppDND5e** - D&D 5e roll-link-group checks/saves, DC evaluation
+- **PlayerViewerApp** - Consistent sidebar design with rolls grouped by actor
 - **SystemAdapter** - Centralized system detection, skill/DC configurations
+- **SocketManager** - Real-time sync of speakers, participants, and roll requests
 
 ## Compatibility
 
@@ -131,7 +146,12 @@ StoryFrame uses system-specific implementations for deep integration:
 - **Level-based DCs**: Auto-calculated DCs for party level 0-25
 - **Difficulty Modifiers**: Trivial (-10) to Extreme (+10)
 - **Degree of Success**: Critical success/success/failure/critical failure
-- **Lore Skills**: Detects and includes character-specific lore skills
+- **Lore Skills**: Full support for character-specific lore skills
+  - Automatically detects lore skills (e.g., Cooking Lore, Warfare Lore)
+  - Shows in quick skill buttons when single PC selected
+  - Available in "All Skills" menu
+  - Properly displays in roll requests with formatted names
+- **Party Integration**: One-click to add all party members as participants
 
 ### D&D 5e
 

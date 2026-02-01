@@ -172,7 +172,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     // Find ALL participants for this player (they may control multiple PCs)
     const myParticipants = state?.participants?.filter((p) => p.userId === game.user.id) || [];
     const myParticipantIds = new Set(myParticipants.map(p => p.id));
-    let pendingRolls = [];
 
     // Check if DCs should be shown to players based on system settings
     const currentSystem = SystemAdapter.detectSystem();
@@ -490,10 +489,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             roll = await actor.perception.roll(rollOptions);
           } else {
             // Skills use actor.skills[fullSlug].roll()
-            console.log('StoryFrame | Looking for skill:', { fullSlug, skills: actor.skills });
             const skill = actor.skills?.[fullSlug];
             if (!skill) {
-              console.error('StoryFrame | Skill not found:', { fullSlug, availableSkills: Object.keys(actor.skills || {}) });
               ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
               return;
             }
@@ -539,7 +536,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       // Check if roll was successful (not cancelled)
       if (!roll) {
-        console.log('StoryFrame | Roll cancelled by player');
         return;
       }
 

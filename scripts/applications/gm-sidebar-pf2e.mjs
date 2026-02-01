@@ -7,10 +7,6 @@ const MODULE_ID = 'storyframe';
  * PF2e-specific GM Sidebar implementation
  */
 export class GMSidebarAppPF2e extends GMSidebarAppBase {
-  constructor(...args) {
-    super(...args);
-    console.log('StoryFrame | GMSidebarAppPF2e initialized');
-  }
   /**
    * Parse PF2e inline checks from journal content
    */
@@ -44,51 +40,33 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
    * Only returns lore skills when exactly 1 participant is selected
    */
   static async _getLoreSkills(state, selectedParticipants) {
-    console.log('StoryFrame | _getLoreSkills called', {
-      selectedCount: selectedParticipants?.size,
-      participantCount: state?.participants?.length,
-    });
-
     // Only show lore skills when exactly 1 PC is selected
-    if (selectedParticipants?.size !== 1) {
-      console.log('StoryFrame | No lore - not exactly 1 PC selected');
-      return [];
-    }
-    if (!state?.participants?.length) {
-      console.log('StoryFrame | No lore - no participants in state');
-      return [];
-    }
+    if (selectedParticipants?.size !== 1) return [];
+    if (!state?.participants?.length) return [];
 
     const selectedId = Array.from(selectedParticipants)[0];
     const participant = state.participants.find((p) => p.id === selectedId);
-    console.log('StoryFrame | Selected participant:', { selectedId, participant });
     if (!participant) return [];
 
     const actor = await fromUuid(participant.actorUuid);
-    console.log('StoryFrame | Actor:', { uuid: participant.actorUuid, actor, skills: actor?.system?.skills });
     if (!actor?.system?.skills) return [];
 
     const lores = new Set();
 
     // PF2e stores lore skills with keys containing "-lore"
     for (const [key, skill] of Object.entries(actor.system.skills)) {
-      console.log('StoryFrame | Checking skill:', { key, label: skill.label, hasLore: key.includes('-lore') });
       if (key.includes('-lore') && skill.label) {
         lores.add(skill.label);
-        console.log('StoryFrame | Added lore:', skill.label);
       }
     }
 
-    const result = Array.from(lores)
+    return Array.from(lores)
       .sort()
       .map((loreName) => ({
         slug: loreName.toLowerCase().replace(/\s+/g, '-'),
         name: loreName,
         isLore: true,
       }));
-
-    console.log('StoryFrame | Lore skills result:', result);
-    return result;
   }
 
   /**
