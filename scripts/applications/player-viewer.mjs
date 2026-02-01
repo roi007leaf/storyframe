@@ -142,6 +142,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/player-viewer.hbs',
+      scrollable: ['.speaker-gallery', '.sidebar-content'],
     },
   };
 
@@ -512,10 +513,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             // Perception uses actor.perception.roll()
             roll = await actor.perception.roll(rollOptions);
           } else {
-            // Skills use actor.skills[fullSlug].roll()
-            const skill = actor.skills?.[fullSlug];
+            // Try to find the skill - check both actor.skills and actor.system.skills for lore skills
+            let skill = actor.skills?.[fullSlug];
+
+            // If not found and it's a lore skill, try actor.system.skills
+            if (!skill && fullSlug.includes('-lore')) {
+              skill = actor.system?.skills?.[fullSlug];
+            }
+
             if (!skill) {
-              ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
+              ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -578,11 +585,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       // Submit result to GM via socket
       await game.storyframe.socketManager.requestSubmitRollResult(result);
-
-      const skillName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
-      const actionName = request.actionSlug ? ACTION_DISPLAY_NAMES[request.actionSlug] : null;
-      const displayName = actionName ? `${skillName} (${actionName})` : skillName;
-      ui.notifications.info(`${displayName} check submitted (${roll.total ?? 'N/A'})`);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error('Failed to execute roll');
@@ -658,9 +660,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           if (skillSlug === 'per') {
             roll = await actor.perception.roll(rollOptions);
           } else {
-            const skill = actor.skills?.[fullSlug];
+            // Try to find the skill - check both actor.skills and actor.system.skills for lore skills
+            let skill = actor.skills?.[fullSlug];
+
+            // If not found and it's a lore skill, try actor.system.skills
+            if (!skill && fullSlug.includes('-lore')) {
+              skill = actor.system?.skills?.[fullSlug];
+            }
+
             if (!skill) {
-              ui.notifications.error(`Skill "${fullSlug}" not found`);
+              ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -735,6 +744,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         'sense-direction': 'senseDirection',
         track: 'track',
         subsist: 'subsist',
+        craft: 'craft',
+        repair: 'repair',
+        'identify-alchemy': 'identifyAlchemy',
       };
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];

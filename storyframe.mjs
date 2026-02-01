@@ -1,6 +1,6 @@
-import { StateManager } from './scripts/state-manager.mjs';
-import { SocketManager } from './scripts/socket-manager.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
+import { SocketManager } from './scripts/socket-manager.mjs';
+import { StateManager } from './scripts/state-manager.mjs';
 
 // Module constants
 const MODULE_ID = 'storyframe';
@@ -276,12 +276,6 @@ Hooks.once('ready', async () => {
     }
 
     await game.settings.set(MODULE_ID, 'moduleVersion', currentVersion);
-
-    ui.notifications.info(
-      'StoryFrame 2.0: Now integrated with Foundry journals! Open a journal, then click the toggle button in the header to manage speakers.',
-      { permanent: true },
-    );
-
   }
 
   // Migration: Add stealth to quick skills if missing (added in later update)
@@ -461,7 +455,7 @@ Hooks.on('closeJournalSheet', async (sheet, _html) => {
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
       (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-       app.constructor.name === 'JournalEntrySheet5e') &&
+        app.constructor.name === 'JournalEntrySheet5e') &&
       app !== sheet &&
       app.rendered,
   );
@@ -492,7 +486,7 @@ Hooks.on('closeJournalEntrySheet5e', async (sheet, _html) => {
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
       (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-       app.constructor.name === 'JournalEntrySheet5e') &&
+        app.constructor.name === 'JournalEntrySheet5e') &&
       app !== sheet &&
       app.rendered,
   );
@@ -541,8 +535,8 @@ function _injectSidebarToggleButton(sheet, html) {
 
   // Insert before close button (try multiple selectors for different systems)
   const closeBtn = header.querySelector('.close') ||
-                   header.querySelector('[data-action="close"]') ||
-                   header.querySelector('.header-control[aria-label*="Close"]');
+    header.querySelector('[data-action="close"]') ||
+    header.querySelector('.header-control[aria-label*="Close"]');
 
 
   if (closeBtn) {

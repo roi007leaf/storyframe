@@ -61,13 +61,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       presentChallenge: GMSidebarAppBase._onPresentChallenge,
       clearChallenge: GMSidebarAppBase._onClearChallenge,
       manageChallengeLibrary: GMSidebarAppBase._onManageChallengeLibrary,
+      createChallengeFromSelection: GMSidebarAppBase._onCreateChallengeFromSelection,
     },
   };
 
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-sidebar.hbs',
-      scrollable: ['.speaker-gallery', '.panel-content'],
+      scrollable: ['.gm-sidebar-container', '.speaker-gallery', '.panel-content'],
     },
   };
 
@@ -90,6 +91,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
+
+    // Track active speaker for change detection
+    this._lastActiveSpeaker = null;
 
     // Parent reference (set externally when attaching)
     this.parentInterface = null;
@@ -210,6 +214,132 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
+  /**
+   * Override render to preserve scroll position and handle speaker-only updates
+   */
+  async _render(force, options) {
+    // Check if this is a speaker-only update that we can handle without re-rendering
+    if (this._handleSpeakerUpdate()) {
+      return;
+    }
+
+    // Save scroll positions before render
+    const scrollPositions = this._saveScrollPositions();
+
+    // Perform render
+    await super._render(force, options);
+
+    // Update tracked active speaker after render
+    const state = game.storyframe.stateManager?.getState();
+    if (state) {
+      this._lastActiveSpeaker = state.activeSpeaker;
+    }
+
+    // Restore scroll positions after render with multiple attempts to ensure it works
+    if (scrollPositions) {
+      this._restoreScrollPositions(scrollPositions);
+    }
+  }
+
+  /**
+   * Check if this render is just for a speaker change and handle it directly
+   * @returns {boolean} True if the update was handled without re-rendering
+   */
+  _handleSpeakerUpdate() {
+    if (!this.element) return false;
+
+    const state = game.storyframe.stateManager.getState();
+    if (!state) return false;
+
+    // Check if only the active speaker changed
+    const currentActiveSpeaker = this._lastActiveSpeaker;
+    const newActiveSpeaker = state.activeSpeaker;
+
+    if (currentActiveSpeaker !== newActiveSpeaker) {
+      // Update speaker UI directly
+      const speakers = this.element.querySelectorAll('[data-speaker-id]');
+      speakers.forEach((speaker) => {
+        const speakerId = speaker.dataset.speakerId;
+        const isActive = speakerId === newActiveSpeaker;
+
+        if (isActive) {
+          speaker.classList.add('active');
+          speaker.setAttribute('aria-selected', 'true');
+        } else {
+          speaker.classList.remove('active');
+          speaker.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      // Update our cached value
+      this._lastActiveSpeaker = newActiveSpeaker;
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Save scroll positions of scrollable containers
+   */
+  _saveScrollPositions() {
+    if (!this.element) return null;
+
+    const positions = {};
+    const container = this.element.querySelector('.gm-sidebar-container');
+    if (container) {
+      positions.main = container.scrollTop;
+    }
+
+    return positions;
+  }
+
+  /**
+   * Restore scroll positions of scrollable containers
+   * Uses multiple timing approaches and mutation observer to ensure it works
+   */
+  _restoreScrollPositions(positions) {
+    if (!this.element || !positions) return;
+
+    const restore = () => {
+      const container = this.element?.querySelector('.gm-sidebar-container');
+      if (container && positions.main !== undefined && container.scrollTop !== positions.main) {
+        container.scrollTop = positions.main;
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediate restore
+    restore();
+
+    // Try after animation frame
+    requestAnimationFrame(() => restore());
+
+    // Try with small delays
+    setTimeout(() => restore(), 0);
+    setTimeout(() => restore(), 10);
+    setTimeout(() => restore(), 50);
+
+    // Also set up a mutation observer to restore on DOM changes
+    const container = this.element?.querySelector('.gm-sidebar-container');
+    if (container && positions.main !== undefined) {
+      const observer = new MutationObserver(() => {
+        if (restore()) {
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+      });
+
+      // Disconnect after 500ms to avoid memory leaks
+      setTimeout(() => observer.disconnect(), 500);
+    }
+  }
+
   async _prepareContext(_options) {
     // Detect system info (needed throughout the method)
     const currentSystem = SystemAdapter.detectSystem();
@@ -217,7 +347,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
 
     // Extract checks, images, and actors from parent journal
-    const journalCheckGroups = this._extractJournalChecks();
+    let journalCheckGroups = this._extractJournalChecks();
     const journalImages = this._extractJournalImages();
     const journalActors = this._extractJournalActors();
     const hasJournalChecks = journalCheckGroups.length > 0;
@@ -313,9 +443,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
 
-    // Get system-specific DC options and difficulty adjustments
+    // Get system-specific DC options
     const dcOptions = SystemAdapter.getDCOptions();
-    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
     // Get system-specific context (override in subclass)
     const systemContext = await this._prepareContextSystemSpecific();
@@ -1057,6 +1186,16 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return [];
   }
 
+  /**
+   * Get available skills from selected participants (system-specific - override in subclass)
+   * @param {Object} state - Game state
+   * @param {Set} selectedParticipants - Set of selected participant IDs
+   * @returns {Promise<Set<string>>} Set of available skill slugs (lowercase)
+   */
+  static async _getAvailableSkills(_state, _selectedParticipants) {
+    return new Set();
+  }
+
   _getSkillName(slug) {
     const skills = SystemAdapter.getSkills();
     const skill = skills[slug];
@@ -1115,10 +1254,21 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     let sentCount = 0;
     let offlineCount = 0;
+    let missingSkillCount = 0;
 
     for (const participantId of participantIds) {
       const participant = state.participants.find((p) => p.id === participantId);
       if (!participant) continue;
+
+      // Validate that the participant has this skill
+      const actor = await fromUuid(participant.actorUuid);
+      if (actor) {
+        const hasSkill = await this._actorHasSkill(actor, skillSlug);
+        if (!hasSkill) {
+          missingSkillCount++;
+          continue;
+        }
+      }
 
       const user = game.users.get(participant.userId);
       if (!user?.active) {
@@ -1154,6 +1304,20 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (offlineCount > 0) {
       ui.notifications.warn(`${offlineCount} PC(s) offline - skipped`);
     }
+    if (missingSkillCount > 0) {
+      ui.notifications.warn(`${missingSkillCount} PC(s) don't have ${skillName} - skipped`);
+    }
+  }
+
+  /**
+   * Check if an actor has a specific skill (system-specific - override in subclass)
+   * @param {Actor} actor - The actor to check
+   * @param {string} skillSlug - The skill slug to check for
+   * @returns {Promise<boolean>} True if the actor has the skill
+   */
+  async _actorHasSkill(_actor, _skillSlug) {
+    // Base implementation always returns true - subclasses should override
+    return true;
   }
 
   /**
@@ -1316,20 +1480,31 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   static async _onAddPartyPCs(_event, _target) {
     // Default: fall back to adding all PCs
-    return this._onAddAllPCs(_event, _target);
+    return GMSidebarAppBase._onAddAllPCs.call(this, _event, _target);
   }
 
   static async _onToggleParticipantSelection(_event, target) {
-    const participantId = target.closest('[data-participant-id]')?.dataset.participantId;
+    const participantElement = target.closest('[data-participant-id]');
+    const participantId = participantElement?.dataset.participantId;
     if (!participantId) return;
 
-    if (this.selectedParticipants.has(participantId)) {
+    const isSelected = this.selectedParticipants.has(participantId);
+
+    if (isSelected) {
       this.selectedParticipants.delete(participantId);
+      participantElement.classList.remove('selected');
+      participantElement.setAttribute('aria-selected', 'false');
     } else {
       this.selectedParticipants.add(participantId);
+      participantElement.classList.add('selected');
+      participantElement.setAttribute('aria-selected', 'true');
     }
 
-    this.render();
+    // Update select all checkbox state
+    this._updateSelectAllCheckbox();
+
+    // Note: Journal checks filtering will update on next natural render
+    // This avoids scroll jump while maintaining functionality
   }
 
   static async _onRemoveParticipant(event, target) {
@@ -1345,13 +1520,43 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
     const allParticipantIds = (state.participants || []).map((p) => p.id);
 
-    if (this.selectedParticipants.size === allParticipantIds.length) {
-      this.selectedParticipants.clear();
-    } else {
+    const selectAll = this.selectedParticipants.size !== allParticipantIds.length;
+
+    if (selectAll) {
       this.selectedParticipants = new Set(allParticipantIds);
+    } else {
+      this.selectedParticipants.clear();
     }
 
-    this.render();
+    // Update all participant elements
+    const participants = this.element.querySelectorAll('[data-participant-id]');
+    participants.forEach((el) => {
+      if (selectAll) {
+        el.classList.add('selected');
+        el.setAttribute('aria-selected', 'true');
+      } else {
+        el.classList.remove('selected');
+        el.setAttribute('aria-selected', 'false');
+      }
+    });
+
+    // Update checkbox state
+    this._updateSelectAllCheckbox();
+  }
+
+  /**
+   * Update the select all checkbox state based on current selection
+   */
+  static _updateSelectAllCheckbox() {
+    const checkbox = this.element.querySelector('#select-all-checkbox');
+    if (!checkbox) return;
+
+    const state = game.storyframe.stateManager.getState();
+    const totalParticipants = state?.participants?.length || 0;
+    const selectedCount = this.selectedParticipants.size;
+
+    checkbox.checked = totalParticipants > 0 && selectedCount === totalParticipants;
+    checkbox.indeterminate = selectedCount > 0 && selectedCount < totalParticipants;
   }
 
   static async _onRequestSkill(_event, target) {
@@ -1468,7 +1673,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       });
       btn.addEventListener('click', async () => {
         const skillSlug = btn.dataset.skill;
-        const isLore = btn.dataset.isLore === 'true';
         menu.remove();
 
         if (appInstance.selectedParticipants.size === 0) {
@@ -2108,7 +2312,44 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     await game.settings.set(MODULE_ID, 'dcPresets', presets);
 
     input.value = '';
-    this.render();
+
+    // Update DOM directly instead of re-rendering to preserve scroll position
+    const dropdown = this.element.querySelector('.preset-dropdown');
+    let presetList = dropdown?.querySelector('.preset-list');
+
+    // Create preset list if it doesn't exist (first preset)
+    if (!presetList) {
+      const divider = document.createElement('div');
+      divider.className = 'preset-divider';
+      dropdown.appendChild(divider);
+
+      presetList = document.createElement('div');
+      presetList.className = 'preset-list';
+      dropdown.appendChild(presetList);
+    }
+
+    // Create and add new preset item
+    const presetItem = document.createElement('div');
+    presetItem.className = 'preset-item';
+    presetItem.innerHTML = `
+      <button type="button"
+              class="preset-option"
+              data-action="applyPreset"
+              data-preset-id="${preset.id}"
+              data-dc="${preset.dc}"
+              data-tooltip="${preset.name}">
+        ${preset.dc}
+      </button>
+      <button type="button"
+              class="preset-delete-btn"
+              data-action="deletePresetQuick"
+              data-preset-id="${preset.id}"
+              data-tooltip="Delete">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    presetList.appendChild(presetItem);
+
     ui.notifications.info(`Added DC ${dcValue}`);
   }
 
@@ -2118,7 +2359,20 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const filtered = presets.filter((p) => p.id !== presetId);
 
     await game.settings.set(MODULE_ID, 'dcPresets', filtered);
-    this.render();
+
+    // Update DOM directly instead of re-rendering to preserve scroll position
+    const presetItem = target.closest('.preset-item');
+    if (presetItem) {
+      presetItem.remove();
+
+      // If this was the last preset, remove the divider and list container
+      const presetList = this.element.querySelector('.preset-list');
+      if (presetList && presetList.children.length === 0) {
+        const divider = this.element.querySelector('.preset-divider');
+        if (divider) divider.remove();
+        presetList.remove();
+      }
+    }
   }
 
   static async _onShowCheckDCsPopup(event, target) {
@@ -2152,7 +2406,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Position above button
     const rect = target.getBoundingClientRect();
     document.body.appendChild(menu);
-    const menuRect = menu.getBoundingClientRect();
 
     menu.style.cssText = `
       position: fixed;
@@ -2330,6 +2583,103 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // No participant requirement
     const library = new ChallengeLibraryDialog(new Set(), this);
     library.render(true);
+  }
+
+  /**
+   * Create a challenge from selected journal text
+   */
+  static async _onCreateChallengeFromSelection(_event, _target) {
+    // Get the journal content element
+    const content = this._getJournalContent();
+    if (!content) {
+      ui.notifications.warn('No journal content found');
+      return;
+    }
+
+    // Get selected text from the journal
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      ui.notifications.warn('No text selected in journal');
+      return;
+    }
+
+    // Check if selection is within the journal content
+    const range = selection.getRangeAt(0);
+    if (!content.contains(range.commonAncestorContainer)) {
+      ui.notifications.warn('Selection must be within the journal content');
+      return;
+    }
+
+    // Create a temporary container with the selected HTML
+    const fragment = range.cloneContents();
+    const tempContainer = document.createElement('div');
+    tempContainer.appendChild(fragment);
+
+    // Parse checks from the selected content
+    const checks = this._parseChecksFromContent(tempContainer);
+
+    if (checks.length === 0) {
+      ui.notifications.warn('No skill checks found in selected text');
+      return;
+    }
+
+    // Prompt for challenge name
+    const challengeName = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Create Challenge' },
+      content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+      ok: {
+        label: 'Create',
+        callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
+      },
+      rejectClose: false,
+    });
+
+    if (!challengeName) return;
+
+    // Create options from checks - each check becomes an option
+    const options = checks.map((check) => {
+      // Extract description without DC reference
+      let description = check.label || '';
+      // Remove common DC patterns like "DC 15" or "(DC 15)" from description
+      description = description.replace(/\(?\s*DC\s*\d+\s*\)?/gi, '').trim();
+      // If description is empty after cleaning, use skill name
+      if (!description) {
+        description = check.skillName.charAt(0).toUpperCase() + check.skillName.slice(1);
+      }
+
+      // Map skill name to short slug for the challenge system
+      const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
+
+      return {
+        id: foundry.utils.randomID(),
+        description,
+        skillOptions: [{
+          skill: skillSlug || check.skillName,
+          dc: check.dc,
+          action: null,
+          isSecret: false,
+        }],
+      };
+    });
+
+    // Create challenge template
+    const template = {
+      id: foundry.utils.randomID(),
+      name: challengeName,
+      image: null,
+      options,
+      createdAt: Date.now(),
+    };
+
+    // Save to library
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    savedChallenges.push(template);
+    await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+
+    ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+
+    // Clear selection
+    selection.removeAllRanges();
   }
 
   static async _onManageChallengeLibraryOLD(_event, _target) {

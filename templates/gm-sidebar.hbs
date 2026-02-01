@@ -190,31 +190,25 @@
               </div>
             {{/if}}
 
-            <div class="dc-input-group">
-              <label class="dc-label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
-              <button type="button"
-                      class="preset-btn"
-                      data-action="togglePresetDropdown"
-                      data-tooltip="DC Presets">
-                <i class="fas fa-bookmark"></i>
-              </button>
-            </div>
-
-            <label class="secret-roll-toggle" data-tooltip="GM Only Roll">
-              <input type="checkbox" id="secret-roll-checkbox">
-              <i class="fas fa-eye-slash"></i>
-              <span>Secret</span>
-            </label>
-
             <div class="preset-selector">
+              <div class="dc-input-group">
+                <label class="dc-label" for="dc-input">DC</label>
+                <input type="number"
+                       id="dc-input"
+                       class="dc-input"
+                       value="{{currentDC}}"
+                       min="1"
+                       max="60"
+                       placeholder="--"
+                       aria-label="Difficulty class">
+                <button type="button"
+                        class="preset-btn"
+                        data-action="togglePresetDropdown"
+                        data-tooltip="DC Presets">
+                  <i class="fas fa-bookmark"></i>
+                </button>
+              </div>
+
               <div class="preset-dropdown" style="display: none;">
                 <div class="preset-add-form">
                   <input type="number"
@@ -256,6 +250,12 @@
                 {{/if}}
               </div>
             </div>
+
+            <label class="secret-roll-toggle" data-tooltip="GM Only Roll">
+              <input type="checkbox" id="secret-roll-checkbox">
+              <i class="fas fa-eye-slash"></i>
+              <span>Secret</span>
+            </label>
           </div>
         </div>
 
@@ -330,6 +330,9 @@
         <h3 id="challenges-heading">Challenges</h3>
       </div>
       <div class="section-actions">
+        <button type="button" data-action="createChallengeFromSelection" data-tooltip="Create from Selection" aria-label="Create challenge from selected journal text">
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        </button>
         <button type="button" data-action="manageChallengeLibrary" data-tooltip="Challenge Library" aria-label="Manage saved challenges">
           <i class="fas fa-folder-open" aria-hidden="true"></i>
         </button>
