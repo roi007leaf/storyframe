@@ -1,7 +1,5 @@
 import { StateManager } from './scripts/state-manager.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
-import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
-import { GMSidebarApp } from './scripts/applications/gm-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 
 // Module constants
@@ -22,14 +20,12 @@ export function validatePosition(saved) {
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
-  console.log(`${MODULE_ID} | Initializing`);
 
   // Create namespace if it doesn't exist (socketlib.ready may fire first)
   if (!game.storyframe) {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null,
       gmSidebar: null,
     };
   }
@@ -99,11 +95,41 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'gmSidebarVisible', {
+    scope: 'client',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'autoOpenSidebar', {
+    name: 'Auto-Open Sidebar',
+    hint: 'Automatically open the sidebar when opening a journal',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
     type: Boolean,
     default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'dcPresets', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.register(MODULE_ID, 'moduleVersion', {
+    scope: 'client',
+    config: false,
+    type: String,
+    default: '',
   });
 
   game.settings.register(MODULE_ID, 'gmWindowWasOpen', {
@@ -113,13 +139,18 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  // System-specific default skills
+  const defaultSkills = game.system.id === 'dnd5e'
+    ? 'prc,ins,ste,per,inv,ath' // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
+    : 'per,dec,dip,itm,ste,prf'; // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
+
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'Quick Button Skills',
     hint: 'Configure via the gear icon in the GM Sidebar skill buttons area',
     scope: 'world',
     config: false, // Configured via UI in GM Sidebar
     type: String,
-    default: 'per,dec,dip,itm,ste,prf',
+    default: defaultSkills,
     onChange: () => {
       // Re-render GM sidebar if open
       game.storyframe.gmSidebar?.render();
@@ -129,23 +160,23 @@ Hooks.once('init', () => {
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
     name: 'Toggle StoryFrame',
-    hint: 'Show or hide the StoryFrame window',
+    hint: 'Show or hide the StoryFrame sidebar',
     editable: [{ key: 'KeyS', modifiers: ['Control', 'Shift'] }],
     onDown: () => {
       if (game.user.isGM) {
-        // Toggle GM interface and sidebar together
-        if (!game.storyframe?.gmApp) {
-          game.storyframe.gmApp = new GMInterfaceApp();
-        }
-        if (!game.storyframe?.gmSidebar) {
-          game.storyframe.gmSidebar = new GMSidebarApp();
-        }
-        if (game.storyframe.gmApp.rendered) {
-          game.storyframe.gmApp.close();
-          game.storyframe.gmSidebar.close();
+        // Find an open journal sheet
+        const openJournal = Object.values(ui.windows).find(
+          (app) =>
+            app instanceof foundry.applications.sheets.journal.JournalEntrySheet &&
+            app.rendered,
+        );
+
+        if (openJournal) {
+          // Toggle sidebar for the open journal
+          _toggleSidebarForSheet(openJournal);
         } else {
-          game.storyframe.gmApp.render(true);
-          game.storyframe.gmSidebar.render(true);
+          // No journal open - inform user
+          ui.notifications.info('Open a journal to use StoryFrame');
         }
       } else {
         // Toggle player viewer
@@ -167,20 +198,17 @@ Hooks.once('init', () => {
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
-  console.log(`${MODULE_ID} | Setup`);
   game.storyframe.stateManager = new StateManager();
 });
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
-  console.log(`${MODULE_ID} | Registering sockets`);
 
   // Defensive: socketlib.ready can fire before init in v13
   if (!game.storyframe) {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null,
       gmSidebar: null,
     };
   }
@@ -190,8 +218,6 @@ Hooks.once('socketlib.ready', () => {
 
 // Hook: getSceneControlButtons (register buttons)
 Hooks.on('getSceneControlButtons', (controls) => {
-  console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
-  console.log(`${MODULE_ID} | Available controls:`, Object.keys(controls));
 
   if (!controls.tokens) {
     console.warn(`${MODULE_ID} | tokens controls not found`);
@@ -200,28 +226,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
 
   // v13: tools is an object, not array - use property assignment
   if (!controls.tokens.tools) controls.tokens.tools = {};
-
-  // GM button (GM only)
-  if (game.user?.isGM) {
-    controls.tokens.tools.storyframe = {
-      name: 'storyframe',
-      title: 'StoryFrame',
-      icon: 'fas fa-book-open',
-      visible: true,
-      onClick: () => {
-        if (!game.storyframe?.gmApp) {
-          game.storyframe.gmApp = new GMInterfaceApp();
-        }
-        if (!game.storyframe?.gmSidebar) {
-          game.storyframe.gmSidebar = new GMSidebarApp();
-        }
-        game.storyframe.gmApp.render(true);
-        game.storyframe.gmSidebar.render(true);
-      },
-      button: true,
-    };
-    console.log(`${MODULE_ID} | Added GM button`);
-  }
 
   // Player button (non-GM only)
   if (!game.user?.isGM) {
@@ -238,18 +242,40 @@ Hooks.on('getSceneControlButtons', (controls) => {
       },
       button: true,
     };
-    console.log(`${MODULE_ID} | Added Player button`);
   }
 });
 
 // Hook: ready (UI operations, everything loaded)
 Hooks.once('ready', async () => {
-  console.log(`${MODULE_ID} | Ready`);
   if (!game.storyframe?.stateManager) {
     console.error(`${MODULE_ID} | StateManager not initialized`);
     return;
   }
   await game.storyframe.stateManager.load();
+
+  // Migration: Detect and perform migration from 1.x to 2.x
+  const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');
+  const currentVersion = game.modules.get(MODULE_ID).version;
+
+  if (!oldVersion || oldVersion.startsWith('1.')) {
+    // Clean up deprecated settings
+    try {
+      await game.settings.set(MODULE_ID, 'gmWindowPosition', {});
+      await game.settings.set(MODULE_ID, 'gmWindowMinimized', false);
+      await game.settings.set(MODULE_ID, 'favoriteJournals', []);
+      await game.settings.set(MODULE_ID, 'gmWindowWasOpen', false);
+    } catch (e) {
+      console.warn(`${MODULE_ID} | Migration cleanup warning:`, e);
+    }
+
+    await game.settings.set(MODULE_ID, 'moduleVersion', currentVersion);
+
+    ui.notifications.info(
+      'StoryFrame 2.0: Now integrated with Foundry journals! Open a journal, then click the toggle button in the header to manage speakers.',
+      { permanent: true },
+    );
+
+  }
 
   // Migration: Add stealth to quick skills if missing (added in later update)
   if (game.user.isGM) {
@@ -267,21 +293,12 @@ Hooks.once('ready', async () => {
         skills.push('ste');
       }
       await game.settings.set(MODULE_ID, 'quickButtonSkills', skills.join(','));
-      console.log(`${MODULE_ID} | Added stealth to quick skills`);
     }
   }
 
-  // GM window only opens when button is pressed (no auto-open)
-
-  // Initialize player viewer for non-GM users
+  // Initialize player viewer for non-GM users (but don't auto-open)
   if (!game.user.isGM) {
     game.storyframe.playerViewer = new PlayerViewerApp();
-
-    // Auto-open if there are speakers (gallery shows all, not just active)
-    const state = game.storyframe.stateManager.getState();
-    if (state?.speakers?.length > 0) {
-      game.storyframe.playerViewer.render(true);
-    }
   }
 });
 
@@ -301,17 +318,13 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   // Only storyframe flags
   if (!changed.flags?.storyframe) return;
 
-  console.log(`${MODULE_ID} | Scene flags updated`);
 
   // Reload state
   await game.storyframe.stateManager.load();
   const state = game.storyframe.stateManager.getState();
 
-  // Update GM interface and sidebar if open
+  // Update GM sidebar if open
   if (game.user.isGM) {
-    if (game.storyframe.gmApp?.rendered) {
-      game.storyframe.gmApp.render();
-    }
     if (game.storyframe.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.render();
     }
@@ -332,36 +345,277 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   }
 });
 
-// Hook: updateJournalEntry (watch for journal content changes)
-Hooks.on('updateJournalEntry', async (journal, _changed, _options, _userId) => {
-  const state = game.storyframe.stateManager.getState();
-  if (journal.uuid !== state?.activeJournal) return;
+// Hook: renderJournalSheet (attach sidebar to native journals)
+// Note: Also handles D&D 5e's JournalEntrySheet5e
+Hooks.on('renderJournalSheet', async (sheet, html) => {
+  if (!game.user.isGM) return;
 
-  // Clear cache for updated journal
-  if (game.storyframe.gmApp?.cssScraper) {
-    game.storyframe.gmApp.cssScraper.clearCache(journal.uuid);
+  // Get the actual element - handle jQuery, arrays, and raw elements
+  let element;
+  if (Array.isArray(html)) {
+    element = html[0];
+  } else if (html instanceof HTMLElement) {
+    element = html;
+  } else if (html?.jquery) {
+    element = html[0];
+  } else {
+    element = sheet.element;
   }
 
-  // Re-scrape and inject
-  if (game.user.isGM && game.storyframe.gmApp?.rendered) {
-    await game.storyframe.gmApp._updateJournalStyles(journal.uuid);
+  // Ensure we have an HTMLElement
+  if (element?.jquery) {
+    element = element[0];
   }
+
+  // Inject toggle button into header
+  _injectSidebarToggleButton(sheet, element);
+
+  // Enrich checks in journal content
+  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+  const contentArea =
+    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  if (contentArea) {
+    enrichChecks(contentArea);
+  }
+
+  // Auto-open sidebar if setting enabled
+  const sidebar = game.storyframe.gmSidebar;
+  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
+
+  if (autoOpen && !sidebar?.rendered) {
+    _attachSidebarToSheet(sheet);
+  }
+
+  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
+  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
+    sidebar.render();
+  }
+
+  _updateToggleButtonState(sheet, element);
 });
 
-// Hook: closeJournalSheet (watch for editor closing after edits)
+// Hook: D&D 5e specific journal sheet
+Hooks.on('renderJournalEntrySheet5e', async (sheet, html) => {
+  if (!game.user.isGM) return;
+
+  // Get the actual element - handle jQuery, arrays, and raw elements
+  let element;
+  if (Array.isArray(html)) {
+    element = html[0];
+  } else if (html instanceof HTMLElement) {
+    element = html;
+  } else if (html?.jquery) {
+    element = html[0];
+  } else {
+    element = sheet.element;
+  }
+
+  // Ensure we have an HTMLElement
+  if (element?.jquery) {
+    element = element[0];
+  }
+
+  // Inject toggle button into header
+  _injectSidebarToggleButton(sheet, element);
+
+  // Enrich checks in journal content
+  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+  const contentArea =
+    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  if (contentArea) {
+    enrichChecks(contentArea);
+  }
+
+  // Auto-open sidebar if setting enabled
+  const sidebar = game.storyframe.gmSidebar;
+  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
+
+  if (autoOpen && !sidebar?.rendered) {
+    _attachSidebarToSheet(sheet);
+  }
+
+  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
+  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
+    sidebar.render();
+  }
+
+  _updateToggleButtonState(sheet, element);
+});
+
+// Hook: closeJournalSheet (handle sidebar reattachment)
 Hooks.on('closeJournalSheet', async (sheet, _html) => {
-  const state = game.storyframe.stateManager.getState();
-  if (sheet.document.uuid !== state?.activeJournal) return;
+  if (!game.user.isGM) return;
 
-  // Clear cache - styles may have changed
-  if (game.storyframe.gmApp?.cssScraper) {
-    game.storyframe.gmApp.cssScraper.clearCache(sheet.document.uuid);
+  // Handle sidebar reattachment
+  const sidebar = game.storyframe.gmSidebar;
+  if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+  // Find other open journals
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+       app.constructor.name === 'JournalEntrySheet5e') &&
+      app !== sheet &&
+      app.rendered,
+  );
+
+  if (openJournals.length > 0) {
+    // Reattach to most recent
+    const newParent = openJournals[openJournals.length - 1];
+    sidebar.parentInterface = newParent;
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+    _updateAllJournalToggleButtons();
+  } else {
+    // No journals left, close sidebar
+    sidebar.close();
+  }
+});
+
+// Hook: D&D 5e close journal sheet
+Hooks.on('closeJournalEntrySheet5e', async (sheet, _html) => {
+  if (!game.user.isGM) return;
+
+  // Handle sidebar reattachment
+  const sidebar = game.storyframe.gmSidebar;
+  if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+  // Find other open journals
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+       app.constructor.name === 'JournalEntrySheet5e') &&
+      app !== sheet &&
+      app.rendered,
+  );
+
+  if (openJournals.length > 0) {
+    // Reattach to most recent
+    const newParent = openJournals[openJournals.length - 1];
+    sidebar.parentInterface = newParent;
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+    _updateAllJournalToggleButtons();
+  } else {
+    // No journals left, close sidebar
+    sidebar.close();
+  }
+});
+
+// Helper: Inject sidebar toggle button into journal header
+function _injectSidebarToggleButton(sheet, html) {
+
+  // V13 journal sheets have buttons directly in .window-header
+  const header = html.querySelector('.window-header');
+
+  if (!header) {
+    console.warn('StoryFrame: Could not find .window-header in journal', html);
+    return;
   }
 
-  // Re-scrape with delay to ensure stylesheets detached/updated
-  setTimeout(async () => {
-    if (game.user.isGM && game.storyframe.gmApp?.rendered) {
-      await game.storyframe.gmApp._updateJournalStyles(sheet.document.uuid);
+  // Don't add if already present
+  if (header.querySelector('.storyframe-sidebar-toggle')) {
+    return;
+  }
+
+  const toggleBtn = document.createElement('a');
+  toggleBtn.className = 'header-button control storyframe-sidebar-toggle';
+  toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
+  toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
+  toggleBtn.innerHTML = '<i class="fas fa-users"></i>';
+
+  toggleBtn.onclick = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    await _toggleSidebarForSheet(sheet);
+  };
+
+  // Insert before close button (try multiple selectors for different systems)
+  const closeBtn = header.querySelector('.close') ||
+                   header.querySelector('[data-action="close"]') ||
+                   header.querySelector('.header-control[aria-label*="Close"]');
+
+
+  if (closeBtn) {
+    header.insertBefore(toggleBtn, closeBtn);
+  } else {
+    header.appendChild(toggleBtn);
+  }
+}
+
+// Helper: Update toggle button state to reflect sidebar visibility
+function _updateToggleButtonState(sheet, html) {
+  const toggleBtn = html.querySelector('.storyframe-sidebar-toggle');
+  if (!toggleBtn) return;
+
+  const sidebar = game.storyframe.gmSidebar;
+  const isVisible = sidebar?.rendered && sidebar.parentInterface === sheet;
+
+  toggleBtn.classList.toggle('active', isVisible);
+  toggleBtn.setAttribute(
+    'data-tooltip',
+    isVisible ? 'Hide StoryFrame Sidebar' : 'Show StoryFrame Sidebar',
+  );
+}
+
+// Helper: Toggle sidebar for a specific journal sheet
+async function _toggleSidebarForSheet(sheet) {
+  const sidebar = game.storyframe.gmSidebar;
+  const isAttachedToThis = sidebar?.rendered && sidebar.parentInterface === sheet;
+
+  if (isAttachedToThis) {
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
+    sidebar.close();
+  } else {
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
+    _attachSidebarToSheet(sheet);
+  }
+
+  _updateAllJournalToggleButtons();
+}
+
+// Helper: Attach sidebar to a journal sheet
+async function _attachSidebarToSheet(sheet) {
+  if (!game.storyframe.gmSidebar) {
+    // Instantiate correct subclass based on system
+    const system = game.system.id;
+
+    if (system === 'pf2e') {
+      const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar-pf2e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppPF2e();
+    } else if (system === 'dnd5e') {
+      const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar-dnd5e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+    } else {
+      const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppBase();
     }
-  }, 200);
-});
+  }
+
+  const sidebar = game.storyframe.gmSidebar;
+  sidebar.parentInterface = sheet;
+  sidebar._stateRestored = false;
+
+  if (!sidebar.rendered) {
+    sidebar.render(true);
+  } else {
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+  }
+}
+
+// Helper: Update all journal toggle buttons to reflect current state
+function _updateAllJournalToggleButtons() {
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      app instanceof foundry.applications.sheets.journal.JournalEntrySheet && app.rendered,
+  );
+
+  for (const journal of openJournals) {
+    const html = journal.element[0] || journal.element;
+    _updateToggleButtonState(journal, html);
+  }
+}

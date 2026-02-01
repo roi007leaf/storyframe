@@ -13,137 +13,196 @@
   flex-direction: column;
   height: 100%;
   overflow: hidden;
+  position: relative;
 }
 
 .storyframe.player-viewer .player-viewer-container {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  gap: 0;
+  height: 100%;
 }
 
-/* Roll Prompts Section */
-.storyframe.player-viewer .roll-prompts {
+/* Main Content (Speaker Gallery) */
+.storyframe.player-viewer .main-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-width: 0;
+}
+
+/* Rolls Sidebar */
+.storyframe.player-viewer .rolls-sidebar {
+  width: 280px;
   flex-shrink: 0;
-  background: linear-gradient(135deg, rgba(235, 203, 139, 0.15), rgba(235, 203, 139, 0.08));
-  border-bottom: 1px solid rgba(235, 203, 139, 0.25);
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.12), rgba(235, 203, 139, 0.06));
+  border-left: 2px solid rgba(235, 203, 139, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: -4px 0 12px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  max-height: 100%;
+}
+
+.storyframe.player-viewer .sidebar-header {
   padding: var(--sf-space-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sf-space-sm);
+  background: rgba(235, 203, 139, 0.15);
+  border-bottom: 1px solid rgba(235, 203, 139, 0.25);
+  flex-shrink: 0;
 }
 
-.storyframe.player-viewer .roll-prompt {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--sf-surface-primary);
-  border-radius: var(--sf-radius-lg);
-  padding: var(--sf-space-md) var(--sf-space-lg);
-  box-shadow: var(--sf-shadow-md);
-  border: 1px solid rgba(235, 203, 139, 0.2);
-  animation:
-    roll-prompt-enter 0.4s var(--sf-ease-spring),
-    roll-prompt-glow 2.5s ease-in-out infinite 0.4s;
-}
-
-@keyframes roll-prompt-enter {
-  from {
-    opacity: 0;
-    transform: translateY(-10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@keyframes roll-prompt-glow {
-  0%,
-  100% {
-    box-shadow:
-      var(--sf-shadow-md),
-      0 0 0 0 rgba(235, 203, 139, 0);
-  }
-  50% {
-    box-shadow:
-      var(--sf-shadow-lg),
-      0 0 20px rgba(235, 203, 139, 0.15);
-  }
-}
-
-.storyframe.player-viewer .roll-prompt .prompt-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.storyframe.player-viewer .roll-prompt .prompt-header {
-  display: flex;
-  align-items: center;
-  gap: var(--sf-space-sm);
-}
-
-.storyframe.player-viewer .roll-prompt .skill-name {
+.storyframe.player-viewer .sidebar-header h3 {
+  margin: 0;
+  font-size: var(--sf-font-base);
   font-weight: 700;
-  font-size: var(--sf-font-lg);
-  color: var(--sf-text-primary);
-  letter-spacing: -0.01em;
-}
-
-.storyframe.player-viewer .roll-prompt .dc-badge {
-  font-size: var(--sf-font-sm);
-  font-weight: 700;
-  color: var(--sf-accent-primary);
-  padding: 2px 8px;
-  background: rgba(94, 129, 172, 0.15);
-  border-radius: var(--sf-radius-md);
-}
-
-.storyframe.player-viewer .roll-prompt .prompt-text {
-  font-size: var(--sf-font-sm);
-  color: var(--sf-text-muted);
+  color: var(--sf-text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  font-weight: 500;
 }
 
-.storyframe.player-viewer .roll-prompt .roll-btn {
+.storyframe.player-viewer .sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--sf-space-sm);
+  min-height: 0;
+  scroll-behavior: smooth;
+}
+
+.storyframe.player-viewer .sidebar-content > .actor-roll-group {
+  margin-bottom: var(--sf-space-md);
+}
+
+.storyframe.player-viewer .sidebar-content > .actor-roll-group:last-child {
+  margin-bottom: 0;
+}
+
+.storyframe.player-viewer .sidebar-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.storyframe.player-viewer .sidebar-content::-webkit-scrollbar-track {
+  background: rgba(235, 203, 139, 0.1);
+  border-radius: var(--sf-radius-sm);
+}
+
+.storyframe.player-viewer .sidebar-content::-webkit-scrollbar-thumb {
+  background: rgba(235, 203, 139, 0.3);
+  border-radius: var(--sf-radius-sm);
+}
+
+.storyframe.player-viewer .sidebar-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(235, 203, 139, 0.5);
+}
+
+/* Actor Roll Group */
+.storyframe.player-viewer .actor-roll-group {
+  background: var(--sf-surface-primary);
+  border-radius: var(--sf-radius-lg);
+  border: 1px solid rgba(235, 203, 139, 0.2);
+  box-shadow: var(--sf-shadow-sm);
+  overflow: hidden;
+}
+
+.storyframe.player-viewer .actor-header {
   display: flex;
   align-items: center;
   gap: var(--sf-space-sm);
-  padding: var(--sf-space-sm) var(--sf-space-xl);
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  background: rgba(235, 203, 139, 0.08);
+  border-bottom: 1px solid rgba(235, 203, 139, 0.15);
+}
+
+.storyframe.player-viewer .actor-header .actor-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sf-radius-md);
+  object-fit: contain;
+  border: 2px solid rgba(235, 203, 139, 0.3);
+  box-shadow: var(--sf-shadow-xs);
+}
+
+.storyframe.player-viewer .actor-header .actor-name {
+  font-weight: 700;
+  font-size: var(--sf-font-sm);
+  color: var(--sf-text-primary);
+  flex: 1;
+}
+
+/* Roll List */
+.storyframe.player-viewer .roll-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: rgba(235, 203, 139, 0.1);
+}
+
+.storyframe.player-viewer .roll-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  background: var(--sf-surface-primary);
+  transition: background var(--sf-transition-base);
+}
+
+.storyframe.player-viewer .roll-item:hover {
+  background: rgba(235, 203, 139, 0.05);
+}
+
+.storyframe.player-viewer .roll-item .roll-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.storyframe.player-viewer .roll-item .skill-name {
+  font-weight: 600;
+  font-size: var(--sf-font-sm);
+  color: var(--sf-text-primary);
+  margin-bottom: 2px;
+  word-wrap: break-word;
+}
+
+.storyframe.player-viewer .roll-item .dc-badge {
+  font-size: var(--sf-font-xs);
+  font-weight: 700;
+  color: var(--sf-accent-primary);
+  background: rgba(94, 129, 172, 0.15);
+  padding: 2px 6px;
+  border-radius: var(--sf-radius-sm);
+  display: inline-block;
+}
+
+.storyframe.player-viewer .roll-item .roll-btn {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, var(--sf-accent-primary), #4a6fa5);
   color: white;
   border: none;
-  border-radius: var(--sf-radius-lg);
-  font-weight: 700;
-  font-size: var(--sf-font-base);
+  border-radius: var(--sf-radius-md);
   cursor: pointer;
-  transition: all var(--sf-transition-base) var(--sf-ease-out);
-  box-shadow:
-    var(--sf-shadow-sm),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  transition: all var(--sf-transition-base);
+  box-shadow: var(--sf-shadow-sm);
+  flex-shrink: 0;
 }
 
-.storyframe.player-viewer .roll-prompt .roll-btn:hover {
+.storyframe.player-viewer .roll-item .roll-btn:hover {
   background: linear-gradient(135deg, var(--sf-accent-primary-hover), #5a7fb5);
   transform: translateY(-2px);
-  box-shadow:
-    var(--sf-shadow-md),
-    0 4px 12px rgba(94, 129, 172, 0.3);
+  box-shadow: var(--sf-shadow-md);
 }
 
-.storyframe.player-viewer .roll-prompt .roll-btn:active {
-  transform: translateY(0);
-  box-shadow: var(--sf-shadow-sm);
-}
-
-.storyframe.player-viewer .roll-prompt .roll-btn i {
-  font-size: 1.25em;
+.storyframe.player-viewer .roll-item .roll-btn i {
+  font-size: 1.1em;
   animation: dice-wobble 0.6s ease-in-out infinite;
 }
 
@@ -161,7 +220,8 @@
 }
 
 .storyframe.player-viewer .speaker-gallery {
-  flex: 1 1 0;
+  flex: 1;
+  overflow-y: auto;
   padding: var(--sf-space-md);
   overflow: hidden;
   min-height: 0;
@@ -194,9 +254,10 @@
 }
 
 .storyframe.player-viewer .speaker-gallery.layout-list .speaker-item img {
-  width: 50px;
+  width: fit-content;
   height: 50px;
   margin-right: var(--sf-space-md);
+  object-fit: contain;
 }
 
 /* Horizontal row layout */
@@ -240,7 +301,8 @@
   flex: 1 1 0;
   min-height: 0;
   min-width: 0;
-  width: 100%;
+  width: fit-content;
+  max-width: 100%;
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;

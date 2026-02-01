@@ -1,0 +1,19 @@
+<div class="preset-manager">
+  <div class="preset-grid">
+    {{#each presets}}
+      <div class="preset-card" data-preset-id="{{this.id}}" data-tooltip="{{this.name}}">
+        <div class="preset-dc-large">{{this.dc}}</div>
+        <button type="button"
+                class="delete-btn"
+                data-action="deletePreset"
+                data-preset-id="{{this.id}}"
+                data-tooltip="Delete">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    {{/each}}
+    <div class="preset-card add-new" data-action="createPreset">
+      <i class="fas fa-plus"></i>
+    </div>
+  </div>
+</div>

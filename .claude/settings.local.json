@@ -4,7 +4,12 @@
       "Bash(ls:*)",
       "Bash(find:*)",
       "Bash(node -c:*)",
-      "Bash(npm run lint)"
+      "Bash(npm run lint)",
+      "Skill(gsd:add-phase)",
+      "Skill(gsd:add-phase:*)",
+      "Bash(npm view:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(npx get-shit-done-cc:*)"
     ]
   }
 }

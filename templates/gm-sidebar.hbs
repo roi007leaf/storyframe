@@ -1,8 +1,16 @@
 <div class="gm-sidebar-container">
   <!-- NPCs Section -->
-  <section class="npcs-section" aria-labelledby="npcs-heading">
+  <section class="npcs-section {{#if npcsPanelCollapsed}}collapsed{{/if}}" aria-labelledby="npcs-heading">
     <div class="section-header">
-      <h3 id="npcs-heading">NPCs</h3>
+      <div class="section-header-left collapsible"
+           data-action="toggleNPCsPanel"
+           role="button"
+           tabindex="0"
+           aria-expanded="{{#unless npcsPanelCollapsed}}true{{else}}false{{/unless}}"
+           aria-controls="npcs-panel-content">
+        <h3 id="npcs-heading">NPCs</h3>
+        <i class="fas fa-chevron-up" aria-hidden="true"></i>
+      </div>
       <div class="section-actions">
         <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
           <i class="fas fa-plus" aria-hidden="true"></i>
@@ -18,7 +26,8 @@
       </div>
     </div>
 
-    <div class="speaker-gallery" role="list" aria-label="NPC speakers">
+    <div class="panel-content" id="npcs-panel-content">
+      <div class="speaker-gallery" role="list" aria-label="NPC speakers">
       {{#if hasSpeakers}}
         {{#each speakers}}
           <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
@@ -41,6 +50,52 @@
           <span>Drag actors here</span>
         </div>
       {{/if}}
+      </div>
+
+      {{#if hasJournalImages}}
+      <div class="journal-images-inline">
+        <div class="section-divider">
+          <span>Journal Images</span>
+        </div>
+        <div class="journal-images-gallery">
+        {{#each journalImages}}
+          <div class="journal-image-item"
+               data-action="setImageAsSpeaker"
+               data-image-id="{{this.id}}"
+               data-image-src="{{this.src}}"
+               data-tooltip="Click to add {{this.alt}} as NPC">
+            <div class="journal-image-item-thumb">
+              <img src="{{this.src}}" alt="{{this.alt}}" loading="lazy">
+            </div>
+            <span class="journal-image-label">{{this.alt}}</span>
+            <i class="fas fa-plus journal-image-add-icon"></i>
+          </div>
+        {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      {{#if hasJournalActors}}
+      <div class="journal-actors-inline">
+        <div class="section-divider">
+          <span>Journal Actors</span>
+        </div>
+        <div class="journal-actors-gallery">
+        {{#each journalActors}}
+          <div class="journal-actor-item"
+               data-action="setActorAsSpeaker"
+               data-actor-id="{{this.id}}"
+               data-tooltip="Click to add {{this.name}} as NPC">
+            <div class="journal-actor-item-thumb">
+              <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+            </div>
+            <span class="journal-actor-label">{{this.name}}</span>
+            <i class="fas fa-plus journal-actor-add-icon"></i>
+          </div>
+        {{/each}}
+        </div>
+      </div>
+      {{/if}}
     </div>
   </section>
 
@@ -57,7 +112,13 @@
         <i class="fas fa-chevron-up" aria-hidden="true"></i>
       </div>
       <div class="section-actions">
-        <button type="button" data-action="openPlayerWindows" data-tooltip="Open on players" aria-label="Open StoryFrame viewer on all player clients">
+        <button type="button" data-action="addPartyPCs" data-tooltip="Add party members" aria-label="Add all party members">
+          <i class="fas fa-user-group" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="addAllPCs" data-tooltip="Add all PCs" aria-label="Add all player characters">
+          <i class="fas fa-users" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="openPlayerWindows" data-tooltip="Open\Close on players" aria-label="Open StoryFrame viewer on all player clients">
           <i class="fas fa-tv" aria-hidden="true"></i>
         </button>
         {{#if hasParticipants}}
@@ -89,40 +150,48 @@
               </button>
             </div>
           {{/each}}
-          <button type="button" class="add-btn" data-action="addAllPCs" data-tooltip="Add more" aria-label="Add all player characters">
-            <i class="fas fa-plus" aria-hidden="true"></i>
-          </button>
         {{else}}
-          <button type="button" class="add-btn large" data-action="addAllPCs" data-tooltip="Add All PCs" aria-label="Add all player characters">
-            <i class="fas fa-users" aria-hidden="true"></i>
-          </button>
+          <div class="empty-state compact" role="status">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <span>Use buttons above to add PCs</span>
+          </div>
         {{/if}}
       </div>
 
       {{#if hasParticipants}}
-      <div class="check-request-bar" role="toolbar" aria-label="Skill check controls">
+      <div class="check-request-bar {{#if (and (gt selectedCount 0) currentDC)}}ready{{/if}}" role="toolbar" aria-label="Skill check controls">
         <div class="bar-top">
-          <div class="selection-info">
+          <div class="selection-info {{#if (gt selectedCount 0)}}has-selection{{/if}}">
             <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
             <button type="button" data-action="toggleSelectAll" class="link-btn" data-tooltip="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
               <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
             </button>
           </div>
 
-          {{#if isPF2e}}
-            {{#if partyLevel}}
-            <div class="difficulty-selector">
-              <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
-              <select id="difficulty-select" aria-label="Difficulty by level">
-                {{#each difficultyOptions}}
-                  <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-                {{/each}}
-              </select>
-            </div>
+          <div class="dc-controls-wrapper">
+            {{#if isPF2e}}
+              {{#if partyLevel}}
+              <div class="difficulty-selector compact">
+                <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
+                <select id="difficulty-select" aria-label="Difficulty by level">
+                  {{#each difficultyOptions}}
+                    <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
+              {{/if}}
+            {{else if isDND5e}}
+              <div class="difficulty-selector dnd5e compact">
+                <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+                  {{#each dcOptions}}
+                    <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
+                  {{/each}}
+                </select>
+              </div>
             {{/if}}
 
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
+            <div class="dc-input-group">
+              <label class="dc-label" for="dc-input">DC</label>
               <input type="number"
                      id="dc-input"
                      class="dc-input"
@@ -131,41 +200,63 @@
                      max="60"
                      placeholder="--"
                      aria-label="Difficulty class">
-            </div>
-          {{else if isDND5e}}
-            <div class="difficulty-selector dnd5e">
-              <label class="label" for="dc-select-dnd5e">Difficulty</label>
-              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
-                {{#each dcOptions}}
-                  <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
-                {{/each}}
-              </select>
+              <button type="button"
+                      class="preset-btn"
+                      data-action="togglePresetDropdown"
+                      data-tooltip="DC Presets">
+                <i class="fas fa-bookmark"></i>
+              </button>
             </div>
 
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
+            <label class="secret-roll-toggle" data-tooltip="GM Only Roll">
+              <input type="checkbox" id="secret-roll-checkbox">
+              <i class="fas fa-eye-slash"></i>
+              <span>Secret</span>
+            </label>
+
+            <div class="preset-selector">
+              <div class="preset-dropdown" style="display: none;">
+                <div class="preset-add-form">
+                  <input type="number"
+                         id="new-preset-dc"
+                         class="preset-dc-input"
+                         placeholder="Add DC"
+                         min="1"
+                         max="60">
+                  <button type="button"
+                          class="preset-add-btn"
+                          data-action="addPresetQuick"
+                          data-tooltip="Add preset">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+                {{#if dcPresets.length}}
+                <div class="preset-divider"></div>
+                <div class="preset-list">
+                  {{#each dcPresets}}
+                    <div class="preset-item">
+                      <button type="button"
+                              class="preset-option"
+                              data-action="applyPreset"
+                              data-preset-id="{{this.id}}"
+                              data-dc="{{this.dc}}"
+                              data-tooltip="{{this.name}}">
+                        {{this.dc}}
+                      </button>
+                      <button type="button"
+                              class="preset-delete-btn"
+                              data-action="deletePresetQuick"
+                              data-preset-id="{{this.id}}"
+                              data-tooltip="Delete">
+                        <i class="fas fa-times"></i>
+                      </button>
+                    </div>
+                  {{/each}}
+                </div>
+                {{/if}}
+              </div>
             </div>
-          {{else}}
-            <div class="dc-selector">
-              <label class="label" for="dc-input">DC</label>
-              <input type="number"
-                     id="dc-input"
-                     class="dc-input"
-                     value="{{currentDC}}"
-                     min="1"
-                     max="60"
-                     placeholder="--"
-                     aria-label="Difficulty class">
-            </div>
-          {{/if}}
+          </div>
         </div>
 
         <div class="skill-actions" role="group" aria-label="Quick skill buttons">
@@ -186,6 +277,47 @@
             <i class="fas fa-cog" aria-hidden="true"></i>
           </button>
         </div>
+
+        {{#if hasLoreSkills}}
+        <div class="lore-skills-section">
+          <div class="lore-header">
+            <i class="fas fa-book"></i>
+            <span>Lore Skills</span>
+          </div>
+          <div class="lore-skills-grid">
+            {{#each loreSkills}}
+              <button type="button"
+                      class="skill-btn lore"
+                      data-action="requestSkill"
+                      data-skill="{{this.slug}}"
+                      data-tooltip="{{this.name}}"
+                      aria-label="Request {{this.name}} check">
+                {{this.name}}
+              </button>
+            {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if hasJournalChecks}}
+        <div class="journal-checks-inline">
+          <div class="section-divider">
+            <span>Journal Checks</span>
+          </div>
+          <div class="journal-checks-grid">
+          {{#each journalCheckGroups}}
+            <button type="button"
+                    class="journal-skill-btn"
+                    data-action="showCheckDCsPopup"
+                    data-skill="{{this.skillName}}"
+                    data-tooltip="{{this.skillName}} Checks"
+                    aria-label="{{this.skillName}} Checks">
+              {{this.skillName}}
+            </button>
+          {{/each}}
+          </div>
+        </div>
+        {{/if}}
       </div>
       {{/if}}
     </div>
