@@ -42,8 +42,9 @@
                     data-option-id="{{../id}}"
                     data-skill="{{this.skill}}"
                     data-dc="{{this.dc}}"
-                    aria-label="Roll {{this.skillName}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
-              <span class="skill-name">{{this.skillName}}</span>
+                    data-action-slug="{{this.action}}"
+                    aria-label="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
+              <span class="skill-name">{{this.skillName}}{{#if this.action}} <em>({{this.action}})</em>{{/if}}</span>
               {{#if this.showDC}}<span class="dc-badge">DC {{this.dc}}</span>{{/if}}
             </button>
             {{/each}}

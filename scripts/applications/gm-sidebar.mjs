@@ -35,6 +35,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       toggleNPCsPanel: GMSidebarAppBase._onToggleNPCsPanel,
       toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
       toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
+      toggleChallengesPanel: GMSidebarAppBase._onToggleChallengesPanel,
       addAllPCs: GMSidebarAppBase._onAddAllPCs,
       addPartyPCs: GMSidebarAppBase._onAddPartyPCs,
       toggleParticipantSelection: GMSidebarAppBase._onToggleParticipantSelection,
@@ -85,6 +86,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.npcsPanelCollapsed = false;
     this.journalChecksPanelCollapsed = false;
     this.journalImagesPanelCollapsed = true; // Collapsed by default
+    this.challengesPanelCollapsed = false;
     this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
@@ -348,6 +350,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       npcsPanelCollapsed: this.npcsPanelCollapsed,
       journalChecksPanelCollapsed: this.journalChecksPanelCollapsed,
       journalImagesPanelCollapsed: this.journalImagesPanelCollapsed,
+      challengesPanelCollapsed: this.challengesPanelCollapsed,
       currentSystem,
       dcOptions,
       isPF2e: currentSystem === 'pf2e',
@@ -1275,6 +1278,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onToggleJournalImagesPanel(_event, _target) {
     this.journalImagesPanelCollapsed = !this.journalImagesPanelCollapsed;
+    this.render();
+  }
+
+  static async _onToggleChallengesPanel(_event, _target) {
+    this.challengesPanelCollapsed = !this.challengesPanelCollapsed;
     this.render();
   }
 
@@ -2308,15 +2316,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static async _onPresentChallenge(_event, _target) {
-    const state = game.storyframe.stateManager.getState();
-    if (!state?.participants || state.participants.length === 0) {
-      ui.notifications.warn('Add PCs first');
-      return;
-    }
-
-    // Get all participant IDs
-    const allParticipantIds = state.participants.map(p => p.id);
-    const builder = new ChallengeBuilderDialog(new Set(allParticipantIds));
+    // No participant requirement - challenge is broadcast to all players
+    const builder = new ChallengeBuilderDialog(new Set());
     builder.render(true);
   }
 
@@ -2326,9 +2327,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static async _onManageChallengeLibrary(_event, _target) {
-    const state = game.storyframe.stateManager.getState();
-    const allParticipantIds = state?.participants ? new Set(state.participants.map(p => p.id)) : new Set();
-    const library = new ChallengeLibraryDialog(allParticipantIds, this);
+    // No participant requirement
+    const library = new ChallengeLibraryDialog(new Set(), this);
     library.render(true);
   }
 

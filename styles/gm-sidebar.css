@@ -1110,6 +1110,100 @@
   }
 }
 
+/* Challenges Section */
+.challenges-section {
+  margin-top: var(--sf-space-md);
+}
+
+.challenges-section.collapsed .panel-content {
+  display: none;
+}
+
+.challenges-section.collapsed .section-header-left > i {
+  transform: rotate(0deg);
+}
+
+.challenges-section:not(.collapsed) .section-header-left > i {
+  transform: rotate(180deg);
+}
+
+.challenges-section .section-divider {
+  margin: var(--sf-space-md) 0 var(--sf-space-sm) 0;
+  padding: var(--sf-space-xs) 0;
+  border-bottom: 1px solid rgba(94, 129, 172, 0.2);
+  font-size: var(--sf-font-xs);
+  font-weight: 700;
+  color: rgba(94, 129, 172, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-xs);
+}
+
+.challenge-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sf-space-sm);
+  margin-top: var(--sf-space-sm);
+}
+
+.challenge-action-btn {
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: var(--sf-radius-md);
+  color: #e0e0e0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-xs);
+  font-size: var(--sf-font-xs);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  text-align: center;
+  min-height: 60px;
+}
+
+.challenge-action-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.35), rgba(94, 129, 172, 0.25));
+  border-color: rgba(94, 129, 172, 0.6);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+.challenge-action-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.challenge-action-btn i {
+  font-size: 20px;
+  color: rgba(94, 129, 172, 0.8);
+}
+
+.challenge-action-btn span {
+  font-size: var(--sf-font-xs);
+  line-height: 1.2;
+}
+
+.challenge-action-btn.present {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.25), rgba(163, 190, 140, 0.15));
+  border-color: rgba(163, 190, 140, 0.5);
+}
+
+.challenge-action-btn.present:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.35), rgba(163, 190, 140, 0.25));
+  border-color: rgba(163, 190, 140, 0.7);
+}
+
+.challenge-action-btn.present i {
+  color: rgba(163, 190, 140, 0.9);
+}
+
 /* Active Challenge Indicator */
 .active-challenge-indicator {
   position: absolute;

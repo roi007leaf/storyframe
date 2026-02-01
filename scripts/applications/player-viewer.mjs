@@ -199,6 +199,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ...so,
           skillName: PlayerViewerApp._getSkillDisplayName(so.skill),
           dc: so.dc, // Always include actual DC (needed for roll)
+          action: so.action || null,
           showDC: showDCs, // Flag to control display only
         })),
       }));
@@ -596,6 +597,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static async _onSelectChallengeOption(_event, target) {
     const skillSlug = target.dataset.skill;
     const dc = parseInt(target.dataset.dc);
+    const actionSlug = target.dataset.actionSlug || null;
     const state = game.storyframe.stateManager.getState();
     const challenge = state?.activeChallenge;
 
@@ -617,8 +619,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Execute roll
-    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc);
+    // Execute roll (with optional action)
+    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc, actionSlug);
   }
 
   /**
@@ -626,8 +628,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * @param {Object} participant - Participant data
    * @param {string} skillSlug - Skill slug
    * @param {number} dc - DC value
+   * @param {string|null} actionSlug - Optional action slug (PF2e only)
    */
-  static async _executeSkillRoll(participant, skillSlug, dc) {
+  static async _executeSkillRoll(participant, skillSlug, dc, actionSlug = null) {
     const actor = await fromUuid(participant.actorUuid);
     if (!actor) {
       ui.notifications.error('Actor not found');
@@ -646,15 +649,22 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     try {
       let roll;
       if (currentSystem === 'pf2e') {
-        if (skillSlug === 'per') {
-          roll = await actor.perception.roll(rollOptions);
+        // Use action if provided, otherwise basic skill roll
+        if (actionSlug && game.pf2e?.actions) {
+          roll = await PlayerViewerApp._tryExecuteAction(actor, actionSlug, rollOptions);
+          // Don't fall back to basic roll - action handles everything
         } else {
-          const skill = actor.skills?.[fullSlug];
-          if (!skill) {
-            ui.notifications.error(`Skill "${fullSlug}" not found`);
-            return;
+          // Basic skill roll
+          if (skillSlug === 'per') {
+            roll = await actor.perception.roll(rollOptions);
+          } else {
+            const skill = actor.skills?.[fullSlug];
+            if (!skill) {
+              ui.notifications.error(`Skill "${fullSlug}" not found`);
+              return;
+            }
+            roll = await skill.roll(rollOptions);
           }
-          roll = await skill.roll(rollOptions);
         }
       } else if (currentSystem === 'dnd5e') {
         const config = { skill: fullSlug };

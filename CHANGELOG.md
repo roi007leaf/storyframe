@@ -13,13 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Present Challenge** - GM broadcasts multi-option skill challenges to all players
   - Proper ApplicationV2 dialog class with dedicated template and CSS
   - Card-based builder with name, optional image, and multiple options
+  - Scrollable dialog for long challenges (max-height: 90vh)
   - Each option: description + multiple skill-DC pairs
   - Each skill can have different DC (e.g., "Crafting DC 15 OR Diplomacy DC 17")
+  - **Lore skills support** - All lore skills from participants available in dropdown
+  - **Skill actions (PF2e)** - Optional action dropdown per skill (e.g., "Demoralize")
   - Add/remove skills within each option
   - Add/remove option cards
   - Visible to ALL players (no participant selection needed)
   - Players self-select which option to attempt
-  - Respects system DC visibility settings
+  - Respects system DC visibility settings (hides DCs if metagame setting off)
   - Options remain available after use (no auto-removal)
 - **Challenge Library** - Save and reuse prepared challenges
   - Proper ApplicationV2 dialog class with dedicated template and CSS

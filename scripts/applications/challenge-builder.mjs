@@ -44,17 +44,90 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     this.skillCounts.set(0, 1);
   }
 
+  _onRender(context, _options) {
+    super._onRender(context, _options);
+
+    // Attach skill change handlers for initial option
+    if (context.isPF2e) {
+      this._attachSkillChangeHandlers();
+    }
+  }
+
+  _attachSkillChangeHandlers() {
+    const skillDropdowns = this.element.querySelectorAll('.skill-dropdown');
+    skillDropdowns.forEach(skillSelect => {
+      skillSelect.addEventListener('change', () => {
+        const row = skillSelect.closest('.skill-dc-row');
+        const actionSelect = row?.querySelector('.action-select');
+        const actionDropdown = row?.querySelector('.action-dropdown');
+        if (!actionSelect || !actionDropdown) return;
+
+        const selectedOption = skillSelect.selectedOptions[0];
+        if (!selectedOption) return;
+
+        const actionsData = selectedOption.dataset.actions;
+        if (actionsData && actionsData !== '[]' && actionsData !== 'null') {
+          try {
+            const actions = JSON.parse(actionsData);
+            if (actions && actions.length > 0) {
+              actionDropdown.innerHTML = '<option value="">No action</option>' +
+                actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
+              actionSelect.style.display = 'block';
+              return;
+            }
+          } catch (e) {
+            console.error('Failed to parse actions:', e);
+          }
+        }
+        actionSelect.style.display = 'none';
+        actionDropdown.value = '';
+      });
+    });
+  }
+
   async _prepareContext(_options) {
+    const currentSystem = SystemAdapter.detectSystem();
     const systemSkills = SystemAdapter.getSkills();
     const skills = Object.entries(systemSkills).map(([slug, skill]) => ({
       slug,
       name: skill.name,
+      actions: skill.actions || [],
     }));
+
+    // Get lore skills from all participants
+    const state = game.storyframe.stateManager.getState();
+    const loreSkills = await this._getLoreSkills(state);
 
     return {
       skills,
+      loreSkills,
+      hasLoreSkills: loreSkills.length > 0,
+      isPF2e: currentSystem === 'pf2e',
       hasInitialOption: true,
     };
+  }
+
+  async _getLoreSkills(state) {
+    if (!state?.participants || state.participants.length === 0) return [];
+
+    const currentSystem = SystemAdapter.detectSystem();
+    if (currentSystem !== 'pf2e') return [];
+
+    const loreSkillsSet = new Set();
+
+    for (const participant of state.participants) {
+      const actor = await fromUuid(participant.actorUuid);
+      if (!actor?.skills) continue;
+
+      for (const [skillSlug, skillData] of Object.entries(actor.skills)) {
+        if (skillData.lore) {
+          const loreName = skillData.label || skillData.name || skillSlug;
+          loreSkillsSet.add(JSON.stringify({ slug: skillSlug, name: loreName }));
+        }
+      }
+    }
+
+    return Array.from(loreSkillsSet).map(s => JSON.parse(s));
   }
 
   static async _onSubmit(event, target) {
@@ -79,16 +152,23 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       const idx = card.dataset.optionIndex;
       const description = formData[`option-${idx}-desc`] || '';
 
-      // Parse skill-DC pairs
+      // Parse skill-DC pairs (with optional actions)
       const skillOptions = [];
       const skillRows = card.querySelectorAll('.skill-dc-row');
       skillRows.forEach((row) => {
         const skillIdx = row.dataset.skillIndex;
         const skill = formData[`option-${idx}-skill-${skillIdx}`];
         const dc = formData[`option-${idx}-dc-${skillIdx}`];
+        const action = formData[`option-${idx}-action-${skillIdx}`] || null;
+        const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
 
         if (skill && dc) {
-          skillOptions.push({ skill, dc: parseInt(dc) });
+          skillOptions.push({
+            skill,
+            dc: parseInt(dc),
+            action,
+            isSecret,
+          });
         }
       });
 
@@ -143,21 +223,40 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const skillsList = this.element.querySelector(`.skills-list[data-option-index="${optionIdx}"]`);
     const skillCount = this.skillCounts.get(optionIdx) || 1;
 
+    const context = await this._prepareContext();
     const systemSkills = SystemAdapter.getSkills();
     const skillOptions = Object.entries(systemSkills)
-      .map(([slug, skill]) => `<option value="${slug}">${skill.name}</option>`)
+      .map(([slug, skill]) => {
+        const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
+        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+      })
       .join('');
+
+    const loreOptions = context.loreSkills
+      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
+      .join('');
+
+    const currentSystem = SystemAdapter.detectSystem();
+    const isPF2e = currentSystem === 'pf2e';
 
     const newSkillRow = document.createElement('div');
     newSkillRow.className = 'skill-dc-row';
     newSkillRow.dataset.skillIndex = skillCount;
     newSkillRow.innerHTML = `
       <div class="skill-select">
-        <select name="option-${optionIdx}-skill-${skillCount}" required>
+        <select name="option-${optionIdx}-skill-${skillCount}" class="skill-dropdown" data-skill-index="${skillCount}" required>
           <option value="">Select skill...</option>
           ${skillOptions}
+          ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
         </select>
       </div>
+      ${isPF2e ? `
+      <div class="action-select" style="display: none;">
+        <select name="option-${optionIdx}-action-${skillCount}" class="action-dropdown">
+          <option value="">No action</option>
+        </select>
+      </div>
+      ` : ''}
       <div class="dc-input">
         <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" max="60" placeholder="DC" required>
       </div>
@@ -167,6 +266,30 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     `;
 
     skillsList.appendChild(newSkillRow);
+
+    // Attach skill change handler to show/hide action dropdown
+    if (isPF2e) {
+      const skillSelect = newSkillRow.querySelector('.skill-dropdown');
+      const actionSelect = newSkillRow.querySelector('.action-select');
+      const actionDropdown = newSkillRow.querySelector('.action-dropdown');
+
+      skillSelect.addEventListener('change', () => {
+        const selectedOption = skillSelect.selectedOptions[0];
+        if (!selectedOption) return;
+
+        const actionsData = selectedOption.dataset.actions;
+        if (actionsData && actionsData !== '[]') {
+          const actions = JSON.parse(actionsData);
+          actionDropdown.innerHTML = '<option value="">No action</option>' +
+            actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
+          actionSelect.style.display = 'block';
+        } else {
+          actionSelect.style.display = 'none';
+          actionDropdown.value = '';
+        }
+      });
+    }
+
     this.skillCounts.set(optionIdx, skillCount + 1);
   }
 
@@ -183,10 +306,18 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
   }
 
   static async _onAddOption(_event, _target) {
+    const context = await this._prepareContext();
     const optionsList = this.element.querySelector('.challenge-options-list');
     const systemSkills = SystemAdapter.getSkills();
     const skillOptions = Object.entries(systemSkills)
-      .map(([slug, skill]) => `<option value="${slug}">${skill.name}</option>`)
+      .map(([slug, skill]) => {
+        const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
+        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+      })
+      .join('');
+
+    const loreOptions = context.loreSkills
+      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
       .join('');
 
     const newOption = document.createElement('div');
@@ -205,11 +336,19 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           <div class="skills-list" data-option-index="${this.optionCount}">
             <div class="skill-dc-row" data-skill-index="0">
               <div class="skill-select">
-                <select name="option-${this.optionCount}-skill-0" required>
+                <select name="option-${this.optionCount}-skill-0" class="skill-dropdown" data-skill-index="0" required>
                   <option value="">Select skill...</option>
                   ${skillOptions}
+                  ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
                 </select>
               </div>
+              ${context.isPF2e ? `
+              <div class="action-select" style="display: none;">
+                <select name="option-${this.optionCount}-action-0" class="action-dropdown">
+                  <option value="">No action</option>
+                </select>
+              </div>
+              ` : ''}
               <div class="dc-input">
                 <input type="number" name="option-${this.optionCount}-dc-0" min="1" max="60" placeholder="DC" required>
               </div>
@@ -228,6 +367,12 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     this.skillCounts.set(this.optionCount, 1);
     optionsList.appendChild(newOption);
+
+    // Attach skill change handler for new option
+    if (context.isPF2e) {
+      this._attachSkillChangeHandlers();
+    }
+
     this.optionCount++;
   }
 

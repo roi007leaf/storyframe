@@ -44,9 +44,12 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
       const optionsPreview = c.options.map((opt, idx) => {
         const skillOptions = opt.skillOptions.map(so => {
           const skillName = this.gmSidebar._getSkillName(so.skill);
+          const actionName = so.action ? this.gmSidebar._getActionName(so.skill, so.action) : null;
           return {
             skillName,
+            actionName,
             dc: so.dc,
+            displayText: actionName ? `${skillName} (${actionName})` : skillName,
           };
         });
 
@@ -68,7 +71,6 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     return {
       challenges,
       hasChallenges: challenges.length > 0,
-      hasParticipants: this.selectedParticipants.size > 0,
     };
   }
 
@@ -82,22 +84,17 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    if (this.selectedParticipants.size === 0) {
-      ui.notifications.warn('Add PCs first');
-      return;
-    }
-
     // Create challenge data from template
     const challengeData = {
       id: foundry.utils.randomID(),
       name: template.name,
       image: template.image,
-      selectedParticipants: Array.from(this.selectedParticipants),
+      selectedParticipants: [], // Broadcast to all players
       options: template.options,
     };
 
     await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
-    ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size} PC(s)`);
+    ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
 
     this.close();
   }
