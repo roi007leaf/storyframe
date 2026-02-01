@@ -374,7 +374,6 @@ export class StateManager {
    * @returns {Object} Migrated state
    */
   async _migrate(oldData) {
-    console.log(`${MODULE_ID} | Migrating state from v${oldData.version} to v${SCHEMA_VERSION}`);
 
     // Migration: v1 -> v2 (add participants, pendingRolls, rollHistory)
     if (oldData.version === 1) {

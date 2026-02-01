@@ -1,6 +1,5 @@
 import { StateManager } from './scripts/state-manager.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
-import { GMSidebarApp } from './scripts/applications/gm-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 
 // Module constants
@@ -21,7 +20,6 @@ export function validatePosition(saved) {
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
-  console.log(`${MODULE_ID} | Initializing`);
 
   // Create namespace if it doesn't exist (socketlib.ready may fire first)
   if (!game.storyframe) {
@@ -104,6 +102,15 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'autoOpenSidebar', {
+    name: 'Auto-Open Sidebar',
+    hint: 'Automatically open the sidebar when opening a journal',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
@@ -132,13 +139,18 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  // System-specific default skills
+  const defaultSkills = game.system.id === 'dnd5e'
+    ? 'prc,ins,ste,per,inv,ath' // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
+    : 'per,dec,dip,itm,ste,prf'; // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
+
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'Quick Button Skills',
     hint: 'Configure via the gear icon in the GM Sidebar skill buttons area',
     scope: 'world',
     config: false, // Configured via UI in GM Sidebar
     type: String,
-    default: 'per,dec,dip,itm,ste,prf',
+    default: defaultSkills,
     onChange: () => {
       // Re-render GM sidebar if open
       game.storyframe.gmSidebar?.render();
@@ -186,13 +198,11 @@ Hooks.once('init', () => {
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
-  console.log(`${MODULE_ID} | Setup`);
   game.storyframe.stateManager = new StateManager();
 });
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
-  console.log(`${MODULE_ID} | Registering sockets`);
 
   // Defensive: socketlib.ready can fire before init in v13
   if (!game.storyframe) {
@@ -208,8 +218,6 @@ Hooks.once('socketlib.ready', () => {
 
 // Hook: getSceneControlButtons (register buttons)
 Hooks.on('getSceneControlButtons', (controls) => {
-  console.log(`${MODULE_ID} | getSceneControlButtons fired, isGM:`, game.user?.isGM);
-  console.log(`${MODULE_ID} | Available controls:`, Object.keys(controls));
 
   if (!controls.tokens) {
     console.warn(`${MODULE_ID} | tokens controls not found`);
@@ -234,13 +242,11 @@ Hooks.on('getSceneControlButtons', (controls) => {
       },
       button: true,
     };
-    console.log(`${MODULE_ID} | Added Player button`);
   }
 });
 
 // Hook: ready (UI operations, everything loaded)
 Hooks.once('ready', async () => {
-  console.log(`${MODULE_ID} | Ready`);
   if (!game.storyframe?.stateManager) {
     console.error(`${MODULE_ID} | StateManager not initialized`);
     return;
@@ -269,7 +275,6 @@ Hooks.once('ready', async () => {
       { permanent: true },
     );
 
-    console.log(`${MODULE_ID} | Migrated from ${oldVersion || '1.x'} to ${currentVersion}`);
   }
 
   // Migration: Add stealth to quick skills if missing (added in later update)
@@ -288,19 +293,12 @@ Hooks.once('ready', async () => {
         skills.push('ste');
       }
       await game.settings.set(MODULE_ID, 'quickButtonSkills', skills.join(','));
-      console.log(`${MODULE_ID} | Added stealth to quick skills`);
     }
   }
 
-  // Initialize player viewer for non-GM users
+  // Initialize player viewer for non-GM users (but don't auto-open)
   if (!game.user.isGM) {
     game.storyframe.playerViewer = new PlayerViewerApp();
-
-    // Auto-open if there are speakers (gallery shows all, not just active)
-    const state = game.storyframe.stateManager.getState();
-    if (state?.speakers?.length > 0) {
-      game.storyframe.playerViewer.render(true);
-    }
   }
 });
 
@@ -320,7 +318,6 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   // Only storyframe flags
   if (!changed.flags?.storyframe) return;
 
-  console.log(`${MODULE_ID} | Scene flags updated`);
 
   // Reload state
   await game.storyframe.stateManager.load();
@@ -349,37 +346,100 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
 });
 
 // Hook: renderJournalSheet (attach sidebar to native journals)
-Hooks.on('renderJournalSheet', async (sheet, [html]) => {
+// Note: Also handles D&D 5e's JournalEntrySheet5e
+Hooks.on('renderJournalSheet', async (sheet, html) => {
   if (!game.user.isGM) return;
 
+  // Get the actual element - handle jQuery, arrays, and raw elements
+  let element;
+  if (Array.isArray(html)) {
+    element = html[0];
+  } else if (html instanceof HTMLElement) {
+    element = html;
+  } else if (html?.jquery) {
+    element = html[0];
+  } else {
+    element = sheet.element;
+  }
+
+  // Ensure we have an HTMLElement
+  if (element?.jquery) {
+    element = element[0];
+  }
+
   // Inject toggle button into header
-  _injectSidebarToggleButton(sheet, html);
+  _injectSidebarToggleButton(sheet, element);
 
   // Enrich checks in journal content
   const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea = html.querySelector('.journal-entry-content, .journal-entry-page');
+  const contentArea =
+    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
   if (contentArea) {
     enrichChecks(contentArea);
   }
 
-  // Auto-show sidebar if it should be visible
+  // Auto-open sidebar if setting enabled
   const sidebar = game.storyframe.gmSidebar;
-  const shouldShow = game.settings.get(MODULE_ID, 'gmSidebarVisible');
-  const isMinimized = sheet.element[0]?.classList.contains('minimized');
+  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
 
-  if (shouldShow && !isMinimized) {
-    if (!sidebar?.rendered) {
-      _attachSidebarToSheet(sheet);
-    } else {
-      // Already rendered, update parent and reposition
-      sidebar.parentInterface = sheet;
-      sidebar._stopTrackingParent();
-      sidebar._startTrackingParent();
-      sidebar._positionAsDrawer(3);
-    }
+  if (autoOpen && !sidebar?.rendered) {
+    _attachSidebarToSheet(sheet);
   }
 
-  _updateToggleButtonState(sheet, html);
+  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
+  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
+    sidebar.render();
+  }
+
+  _updateToggleButtonState(sheet, element);
+});
+
+// Hook: D&D 5e specific journal sheet
+Hooks.on('renderJournalEntrySheet5e', async (sheet, html) => {
+  if (!game.user.isGM) return;
+
+  // Get the actual element - handle jQuery, arrays, and raw elements
+  let element;
+  if (Array.isArray(html)) {
+    element = html[0];
+  } else if (html instanceof HTMLElement) {
+    element = html;
+  } else if (html?.jquery) {
+    element = html[0];
+  } else {
+    element = sheet.element;
+  }
+
+  // Ensure we have an HTMLElement
+  if (element?.jquery) {
+    element = element[0];
+  }
+
+  // Inject toggle button into header
+  _injectSidebarToggleButton(sheet, element);
+
+  // Enrich checks in journal content
+  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+  const contentArea =
+    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  if (contentArea) {
+    enrichChecks(contentArea);
+  }
+
+  // Auto-open sidebar if setting enabled
+  const sidebar = game.storyframe.gmSidebar;
+  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
+
+  if (autoOpen && !sidebar?.rendered) {
+    _attachSidebarToSheet(sheet);
+  }
+
+  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
+  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
+    sidebar.render();
+  }
+
+  _updateToggleButtonState(sheet, element);
 });
 
 // Hook: closeJournalSheet (handle sidebar reattachment)
@@ -393,7 +453,39 @@ Hooks.on('closeJournalSheet', async (sheet, _html) => {
   // Find other open journals
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
-      app instanceof foundry.applications.sheets.journal.JournalEntrySheet &&
+      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+       app.constructor.name === 'JournalEntrySheet5e') &&
+      app !== sheet &&
+      app.rendered,
+  );
+
+  if (openJournals.length > 0) {
+    // Reattach to most recent
+    const newParent = openJournals[openJournals.length - 1];
+    sidebar.parentInterface = newParent;
+    sidebar._stopTrackingParent();
+    sidebar._startTrackingParent();
+    sidebar._positionAsDrawer(3);
+    _updateAllJournalToggleButtons();
+  } else {
+    // No journals left, close sidebar
+    sidebar.close();
+  }
+});
+
+// Hook: D&D 5e close journal sheet
+Hooks.on('closeJournalEntrySheet5e', async (sheet, _html) => {
+  if (!game.user.isGM) return;
+
+  // Handle sidebar reattachment
+  const sidebar = game.storyframe.gmSidebar;
+  if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+  // Find other open journals
+  const openJournals = Object.values(ui.windows).filter(
+    (app) =>
+      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+       app.constructor.name === 'JournalEntrySheet5e') &&
       app !== sheet &&
       app.rendered,
   );
@@ -414,11 +506,22 @@ Hooks.on('closeJournalSheet', async (sheet, _html) => {
 
 // Helper: Inject sidebar toggle button into journal header
 function _injectSidebarToggleButton(sheet, html) {
-  const controls = html.querySelector('.window-controls');
-  if (!controls || controls.querySelector('.storyframe-sidebar-toggle')) return;
 
-  const toggleBtn = document.createElement('button');
-  toggleBtn.className = 'header-control storyframe-sidebar-toggle';
+  // V13 journal sheets have buttons directly in .window-header
+  const header = html.querySelector('.window-header');
+
+  if (!header) {
+    console.warn('StoryFrame: Could not find .window-header in journal', html);
+    return;
+  }
+
+  // Don't add if already present
+  if (header.querySelector('.storyframe-sidebar-toggle')) {
+    return;
+  }
+
+  const toggleBtn = document.createElement('a');
+  toggleBtn.className = 'header-button control storyframe-sidebar-toggle';
   toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
   toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
   toggleBtn.innerHTML = '<i class="fas fa-users"></i>';
@@ -429,11 +532,16 @@ function _injectSidebarToggleButton(sheet, html) {
     await _toggleSidebarForSheet(sheet);
   };
 
-  const closeBtn = controls.querySelector('[data-action="close"]');
+  // Insert before close button (try multiple selectors for different systems)
+  const closeBtn = header.querySelector('.close') ||
+                   header.querySelector('[data-action="close"]') ||
+                   header.querySelector('.header-control[aria-label*="Close"]');
+
+
   if (closeBtn) {
-    controls.insertBefore(toggleBtn, closeBtn);
+    header.insertBefore(toggleBtn, closeBtn);
   } else {
-    controls.appendChild(toggleBtn);
+    header.appendChild(toggleBtn);
   }
 }
 
@@ -469,9 +577,21 @@ async function _toggleSidebarForSheet(sheet) {
 }
 
 // Helper: Attach sidebar to a journal sheet
-function _attachSidebarToSheet(sheet) {
+async function _attachSidebarToSheet(sheet) {
   if (!game.storyframe.gmSidebar) {
-    game.storyframe.gmSidebar = new GMSidebarApp();
+    // Instantiate correct subclass based on system
+    const system = game.system.id;
+
+    if (system === 'pf2e') {
+      const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar-pf2e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppPF2e();
+    } else if (system === 'dnd5e') {
+      const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar-dnd5e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+    } else {
+      const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppBase();
+    }
   }
 
   const sidebar = game.storyframe.gmSidebar;

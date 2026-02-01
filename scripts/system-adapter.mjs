@@ -67,6 +67,78 @@ export function getDifficultyAdjustments() {
   }
 }
 
+/**
+ * Get skill slug from skill name (system-aware)
+ * @param {string} skillName - Full skill name (e.g., "Athletics", "Perception")
+ * @returns {string|null} Skill slug or null if not found
+ */
+export function getSkillSlugFromName(skillName) {
+  const skills = getSkills();
+  const normalized = skillName.toLowerCase();
+
+  for (const [slug, skill] of Object.entries(skills)) {
+    if (skill.name.toLowerCase() === normalized) {
+      return slug;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Get short name for skill slug (system-aware)
+ * @param {string} slug - Skill slug (e.g., "ath", "prc")
+ * @returns {string} Short display name
+ */
+export function getSkillShortName(slug) {
+  const system = detectSystem();
+
+  // System-specific short names
+  const shortNames = {
+    pf2e: {
+      per: 'Per',
+      acr: 'Acr',
+      arc: 'Arc',
+      ath: 'Ath',
+      cra: 'Cra',
+      dec: 'Dec',
+      dip: 'Dip',
+      itm: 'Itm',
+      med: 'Med',
+      nat: 'Nat',
+      occ: 'Occ',
+      prf: 'Prf',
+      rel: 'Rel',
+      soc: 'Soc',
+      ste: 'Ste',
+      sur: 'Sur',
+      thi: 'Thi',
+    },
+    dnd5e: {
+      acr: 'Acr',
+      ani: 'Ani',
+      arc: 'Arc',
+      ath: 'Ath',
+      dec: 'Dec',
+      his: 'His',
+      ins: 'Ins',
+      itm: 'Itm',
+      inv: 'Inv',
+      med: 'Med',
+      nat: 'Nat',
+      prc: 'Prc',
+      prf: 'Prf',
+      per: 'Per',
+      rel: 'Rel',
+      slt: 'Slt',
+      ste: 'Ste',
+      sur: 'Sur',
+    },
+  };
+
+  return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
+}
+
 // ============================================================================
 // PF2e System Data
 // ============================================================================

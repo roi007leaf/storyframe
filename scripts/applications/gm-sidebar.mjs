@@ -1,19 +1,19 @@
 const MODULE_ID = 'storyframe';
 
-import SystemAdapter from '../system-adapter.mjs';
+import * as SystemAdapter from '../system-adapter.mjs';
 
 /**
  * GM Sidebar for StoryFrame
  * Drawer-style window that attaches to native Foundry journal sheets
  */
-export class GMSidebarApp extends foundry.applications.api.HandlebarsApplicationMixin(
+export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2,
 ) {
   static DEFAULT_OPTIONS = {
     id: 'storyframe-gm-sidebar',
     classes: ['storyframe', 'gm-sidebar', 'drawer'],
     window: {
-      title: 'Characters',
+      title: 'Storyframe',
       icon: 'fas fa-users',
       resizable: false,
       minimizable: false,
@@ -23,28 +23,38 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       height: 500,
     },
     actions: {
-      addSpeakerFromImage: GMSidebarApp._onAddSpeakerFromImage,
-      setSpeaker: GMSidebarApp._onSetSpeaker,
-      removeSpeaker: GMSidebarApp._onRemoveSpeaker,
-      clearSpeaker: GMSidebarApp._onClearSpeaker,
-      clearAllSpeakers: GMSidebarApp._onClearAllSpeakers,
-      clearAllParticipants: GMSidebarApp._onClearAllParticipants,
-      togglePCsPanel: GMSidebarApp._onTogglePCsPanel,
-      addAllPCs: GMSidebarApp._onAddAllPCs,
-      toggleParticipantSelection: GMSidebarApp._onToggleParticipantSelection,
-      removeParticipant: GMSidebarApp._onRemoveParticipant,
-      toggleSelectAll: GMSidebarApp._onToggleSelectAll,
-      requestSkill: GMSidebarApp._onRequestSkill,
-      openSkillMenu: GMSidebarApp._onOpenSkillMenu,
-      openSkillConfig: GMSidebarApp._onOpenSkillConfig,
-      setDCSelect: GMSidebarApp._onSetDCSelect,
-      setDifficulty: GMSidebarApp._onSetDifficulty,
-      cancelRoll: GMSidebarApp._onCancelRoll,
-      openPlayerWindows: GMSidebarApp._onOpenPlayerWindows,
-      showPendingRolls: GMSidebarApp._onShowPendingRolls,
-      togglePresetDropdown: GMSidebarApp._onTogglePresetDropdown,
-      applyPreset: GMSidebarApp._onApplyPreset,
-      openPresetManager: GMSidebarApp._onOpenPresetManager,
+      addSpeakerFromImage: GMSidebarAppBase._onAddSpeakerFromImage,
+      setSpeaker: GMSidebarAppBase._onSetSpeaker,
+      removeSpeaker: GMSidebarAppBase._onRemoveSpeaker,
+      clearSpeaker: GMSidebarAppBase._onClearSpeaker,
+      clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
+      clearAllParticipants: GMSidebarAppBase._onClearAllParticipants,
+      togglePCsPanel: GMSidebarAppBase._onTogglePCsPanel,
+      toggleNPCsPanel: GMSidebarAppBase._onToggleNPCsPanel,
+      toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
+      toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
+      addAllPCs: GMSidebarAppBase._onAddAllPCs,
+      addPartyPCs: GMSidebarAppBase._onAddPartyPCs,
+      toggleParticipantSelection: GMSidebarAppBase._onToggleParticipantSelection,
+      removeParticipant: GMSidebarAppBase._onRemoveParticipant,
+      toggleSelectAll: GMSidebarAppBase._onToggleSelectAll,
+      requestSkill: GMSidebarAppBase._onRequestSkill,
+      openSkillMenu: GMSidebarAppBase._onOpenSkillMenu,
+      openSkillConfig: GMSidebarAppBase._onOpenSkillConfig,
+      setDCSelect: GMSidebarAppBase._onSetDCSelect,
+      setDifficulty: GMSidebarAppBase._onSetDifficulty,
+      cancelRoll: GMSidebarAppBase._onCancelRoll,
+      openPlayerWindows: GMSidebarAppBase._onOpenPlayerWindows,
+      closePlayerWindows: GMSidebarAppBase._onClosePlayerWindows,
+      showPendingRolls: GMSidebarAppBase._onShowPendingRolls,
+      togglePresetDropdown: GMSidebarAppBase._onTogglePresetDropdown,
+      applyPreset: GMSidebarAppBase._onApplyPreset,
+      addPresetQuick: GMSidebarAppBase._onAddPresetQuick,
+      deletePresetQuick: GMSidebarAppBase._onDeletePresetQuick,
+      applyJournalCheck: GMSidebarAppBase._onApplyJournalCheck,
+      showCheckDCsPopup: GMSidebarAppBase._onShowCheckDCsPopup,
+      setImageAsSpeaker: GMSidebarAppBase._onSetImageAsSpeaker,
+      setActorAsSpeaker: GMSidebarAppBase._onSetActorAsSpeaker,
     },
   };
 
@@ -65,8 +75,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     super(options);
     this._stateRestored = false;
 
-    // Panel state
+    // Panel state (progressive disclosure - less important sections collapsed)
     this.pcsPanelCollapsed = false;
+    this.npcsPanelCollapsed = false;
+    this.journalChecksPanelCollapsed = false;
+    this.journalImagesPanelCollapsed = true; // Collapsed by default
     this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
@@ -80,7 +93,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
    * @param {number} retryCount - Number of retry attempts remaining
    */
   _positionAsDrawer(retryCount = 3) {
-    if (!this.parentInterface?.rendered || !this.parentInterface.element) {
+    // Check if parent exists and has element (ApplicationV2 doesn't have .rendered property)
+    if (!this.parentInterface?.element) {
+      console.warn('StoryFrame: Parent interface not ready for positioning', {
+        hasElement: !!this.parentInterface?.element,
+        retryCount,
+      });
       // Retry if we have attempts left
       if (retryCount > 0) {
         setTimeout(() => this._positionAsDrawer(retryCount - 1), 100);
@@ -88,8 +106,10 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       return;
     }
 
-    // Handle jQuery element wrapper from JournalSheet
-    const parentEl = this.parentInterface.element[0] || this.parentInterface.element;
+    // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
+    const parentEl = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
     const parentRect = parentEl.getBoundingClientRect();
 
     // Check if parent has valid dimensions (not at 0,0 with no size)
@@ -115,6 +135,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
 
     // Use setPosition for ApplicationV2
+    if (!this.element) {
+      console.warn('StoryFrame: Sidebar element not found, cannot position');
+      return;
+    }
+
     this.setPosition({
       left: adjustedLeft,
       top: newTop,
@@ -123,9 +148,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
 
     // Match parent z-index + 1 to appear above it
     const parentZIndex = parseInt(window.getComputedStyle(parentEl).zIndex) || 99;
-    if (this.element) {
-      this.element.style.zIndex = parentZIndex + 1;
-    }
+    this.element.style.zIndex = parentZIndex + 1;
   }
 
   /**
@@ -136,12 +159,14 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       return;
     }
 
-    // Handle jQuery element wrapper from JournalSheet
-    const element = this.parentInterface.element[0] || this.parentInterface.element;
+    // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
+    const element = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
 
     // Create a MutationObserver to watch for style and class changes
     this._parentObserver = new MutationObserver((mutations) => {
-      if (!this.rendered || !this.parentInterface?.rendered) return;
+      if (!this.rendered || !this.parentInterface) return;
 
       for (const mutation of mutations) {
         if (mutation.attributeName === 'style') {
@@ -179,10 +204,17 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   async _prepareContext(_options) {
+    console.log('StoryFrame | _prepareContext called, selectedParticipants:', this.selectedParticipants);
     // Detect system info (needed throughout the method)
     const currentSystem = SystemAdapter.detectSystem();
 
     const state = game.storyframe.stateManager.getState();
+
+    // Extract checks, images, and actors from parent journal
+    const journalCheckGroups = this._extractJournalChecks();
+    const journalImages = this._extractJournalImages();
+    const journalActors = this._extractJournalActors();
+    const hasJournalChecks = journalCheckGroups.length > 0;
 
     if (!state) {
       const dcOptions = SystemAdapter.getDCOptions();
@@ -269,6 +301,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       shortName: this._getSkillShortName(slug),
     }));
 
+    // Get lore skills from participants
+    console.log('StoryFrame | About to call _getLoreSkills, class:', this.constructor.name);
+    const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
+    console.log('StoryFrame | _getLoreSkills returned:', loreSkills);
+
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
 
@@ -276,29 +313,9 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     const dcOptions = SystemAdapter.getDCOptions();
     const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
-    // For PF2e: Get party level and calculate DC by level
-    // For D&D 5e: Use difficulty-based DCs
-    let partyLevel = null;
-    let calculatedDC = null;
-
-    if (currentSystem === 'pf2e') {
-      partyLevel = await this._getPartyLevel();
-      calculatedDC =
-        partyLevel !== null ? this._calculateDCByLevel(partyLevel, this.currentDifficulty) : null;
-
-      // If using difficulty-based DC, update currentDC
-      if (this.currentDC === null && calculatedDC !== null) {
-        this.currentDC = calculatedDC;
-      }
-    }
-
-    // Build difficulty options with current selection (PF2e only)
-    const difficultyOptions = difficultyAdjustments
-      ? difficultyAdjustments.map((d) => ({
-          ...d,
-          selected: d.id === this.currentDifficulty,
-        }))
-      : null;
+    // Get system-specific context (override in subclass)
+    const systemContext = await this._prepareContextSystemSpecific();
+    const { partyLevel = null, calculatedDC = null, difficultyOptions = null } = systemContext;
 
     // Load DC presets
     const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
@@ -319,13 +336,212 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       difficultyOptions,
       pendingRolls,
       quickButtonSkills,
+      loreSkills,
+      hasLoreSkills: loreSkills.length > 0,
       pcsPanelCollapsed: this.pcsPanelCollapsed,
+      npcsPanelCollapsed: this.npcsPanelCollapsed,
+      journalChecksPanelCollapsed: this.journalChecksPanelCollapsed,
+      journalImagesPanelCollapsed: this.journalImagesPanelCollapsed,
       currentSystem,
       dcOptions,
       isPF2e: currentSystem === 'pf2e',
       isDND5e: currentSystem === 'dnd5e',
       dcPresets,
+      journalCheckGroups,
+      hasJournalChecks,
+      journalImages,
+      hasJournalImages: journalImages.length > 0,
+      journalActors,
+      hasJournalActors: journalActors.length > 0,
     };
+  }
+
+  /**
+   * Extract checks from parent journal content
+   * Subclasses override to parse system-specific check formats
+   */
+  _extractJournalChecks() {
+    if (!this.parentInterface?.element) return [];
+
+    const content = this._getJournalContent();
+    if (!content) return [];
+
+    const checks = this._parseChecksFromContent(content);
+    return this._groupChecksBySkill(checks);
+  }
+
+  /**
+   * Get journal content element (helper)
+   */
+  _getJournalContent() {
+    const element = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
+    return element.querySelector('.journal-page-content');
+  }
+
+  /**
+   * Parse checks from content (system-specific - override in subclass)
+   * @param {HTMLElement} content - Journal content element
+   * @returns {Array} Array of check objects { label, skillName, dc, id }
+   */
+  _parseChecksFromContent(_content) {
+    // Base implementation returns empty - subclasses override
+    return [];
+  }
+
+  /**
+   * Group checks by skill (common logic)
+   */
+  _groupChecksBySkill(checks) {
+    // Remove duplicates
+    const unique = [];
+    const seen = new Set();
+    checks.forEach((check) => {
+      const key = `${check.skillName}-${check.dc}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(check);
+      }
+    });
+
+    // Group by skill type
+    const grouped = {};
+    unique.forEach((check) => {
+      const skill = check.skillName;
+      const skillDisplay = skill.charAt(0).toUpperCase() + skill.slice(1);
+      if (!grouped[skill]) {
+        grouped[skill] = {
+          skillName: skillDisplay,
+          skillSlug: skill,
+          checks: [],
+        };
+      }
+      grouped[skill].checks.push(check);
+    });
+
+    return Object.values(grouped);
+  }
+
+  /**
+   * Extract checks from parent journal (ungrouped version for backward compat)
+   */
+  _extractJournalChecksFlat() {
+    const grouped = this._extractJournalChecks();
+    const flat = [];
+    grouped.forEach((group) => flat.push(...group.checks));
+    return flat;
+  }
+
+  /**
+   * Extract images from parent journal content
+   */
+  _extractJournalImages() {
+    if (!this.parentInterface?.element) return [];
+
+    // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
+    const element = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const content = element.querySelector('.journal-page-content');
+    if (!content) return [];
+
+    // Get current speakers to filter out
+    const state = game.storyframe.stateManager.getState();
+    const speakerImages = new Set();
+    if (state?.speakers) {
+      state.speakers.forEach((speaker) => {
+        if (speaker.imagePath) speakerImages.add(speaker.imagePath);
+      });
+    }
+
+    const images = [];
+    const imgElements = content.querySelectorAll('img');
+
+
+    imgElements.forEach((img) => {
+      if (img.src && !img.src.includes('icons/svg/mystery-man') && !speakerImages.has(img.src)) {
+        images.push({
+          src: img.src,
+          alt: img.alt || 'Image',
+          id: foundry.utils.randomID(),
+        });
+      }
+    });
+
+    // Remove duplicates by src
+    const unique = [];
+    const seen = new Set();
+    images.forEach((img) => {
+      if (!seen.has(img.src)) {
+        seen.add(img.src);
+        unique.push(img);
+      }
+    });
+
+    return unique;
+  }
+
+  _extractJournalActors() {
+    if (!this.parentInterface?.element) return [];
+
+    // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
+    const element = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const content = element.querySelector('.journal-page-content');
+    if (!content) return [];
+
+    // Get current speakers to filter out
+    const state = game.storyframe.stateManager.getState();
+    const speakerUuids = new Set();
+    if (state?.speakers) {
+      state.speakers.forEach((speaker) => {
+        if (speaker.actorUuid) speakerUuids.add(speaker.actorUuid);
+      });
+    }
+
+    const actors = [];
+
+    // Find all content links that reference actors
+    // Handles both @Actor[id] and @UUID[Actor.id] formats
+    const actorLinks = content.querySelectorAll('a.content-link[data-uuid^="Actor."], a.content-link[data-uuid*="Actor."]');
+
+    actorLinks.forEach((link) => {
+      const uuid = link.dataset.uuid;
+
+      // Extract actor ID from UUID (handles both "Actor.id" and full UUIDs)
+      const actorId = uuid.includes('Actor.')
+        ? uuid.split('Actor.')[1].split('.')[0]
+        : null;
+
+      if (!actorId) return;
+
+      const actorName = link.textContent || 'Unknown';
+
+      if (!speakerUuids.has(uuid)) {
+        const actor = game.actors.get(actorId);
+        if (actor && actor.type !== 'loot' && actor.type !== 'hazard') {
+          actors.push({
+            id: actorId,
+            name: actorName,
+            img: actor.img,
+          });
+        }
+      }
+    });
+
+    // Remove duplicates by id
+    const unique = [];
+    const seen = new Set();
+    actors.forEach((actor) => {
+      if (!seen.has(actor.id)) {
+        seen.add(actor.id);
+        unique.push(actor);
+      }
+    });
+
+    return unique;
   }
 
   async _onRender(context, _options) {
@@ -335,23 +551,13 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this._attachDCHandlers();
     this._attachImageContextMenu();
     this._attachSkillActionContextMenu();
+    this._attachPlayerWindowsContextMenu();
 
-    // Position as drawer on first render
+    // Position as drawer (parent should already be set by _attachSidebarToSheet)
     if (!this._stateRestored) {
-      // Get fresh reference to parent
-      this.parentInterface = game.storyframe?.gmApp || null;
-
-      // Use setTimeout to ensure parent element is fully in DOM and positioned
-      setTimeout(() => {
-        // Position adjacent to parent (with retry logic)
-        this._positionAsDrawer(5); // Allow up to 5 retries
-
-        // Start tracking parent movements after positioning
-        setTimeout(() => {
-          this._startTrackingParent();
-        }, 100);
-      }, 100); // Increased delay to give parent more time
-
+      // Position immediately on first render
+      this._positionAsDrawer(5);
+      this._startTrackingParent();
       this._stateRestored = true;
     } else {
       // On subsequent renders, re-position as drawer
@@ -379,7 +585,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   _attachDCHandlers() {
-    // DC input field
+    // Common DC input field
     const dcInput = this.element.querySelector('#dc-input');
     if (dcInput) {
       dcInput.addEventListener('change', (e) => {
@@ -395,47 +601,22 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       });
     }
 
-    // PF2e: Difficulty selector
-    const difficultySelect = this.element.querySelector('#difficulty-select');
-    if (difficultySelect) {
-      difficultySelect.addEventListener('change', async (e) => {
-        const difficulty = e.target.value;
-        this.currentDifficulty = difficulty;
+    // System-specific DC handlers (override in subclass)
+    this._attachSystemDCHandlers();
+  }
 
-        // Recalculate DC based on party level and new difficulty
-        const partyLevel = await this._getPartyLevel();
-        if (partyLevel !== null) {
-          this.currentDC = this._calculateDCByLevel(partyLevel, difficulty);
-          // Update the DC input field
-          const dcInput = this.element.querySelector('#dc-input');
-          if (dcInput) {
-            dcInput.value = this.currentDC;
-          }
-        }
-      });
-    }
-
-    // D&D 5e: DC difficulty selector
-    const dnd5eDCSelect = this.element.querySelector('#dc-select-dnd5e');
-    if (dnd5eDCSelect) {
-      dnd5eDCSelect.addEventListener('change', (e) => {
-        const dc = parseInt(e.target.value);
-        if (!isNaN(dc)) {
-          this.currentDC = dc;
-          // Update the DC input field
-          const dcInput = this.element.querySelector('#dc-input');
-          if (dcInput) {
-            dcInput.value = this.currentDC;
-          }
-        }
-      });
-    }
+  /**
+   * Attach system-specific DC handlers (override in subclass)
+   */
+  _attachSystemDCHandlers() {
+    // Base implementation does nothing
   }
 
   /**
    * Attach right-click context menu for NPC image enlargement
    */
   _attachImageContextMenu() {
+    // NPC speaker thumbnails
     const images = this.element.querySelectorAll('.speaker-thumbnail img');
     images.forEach((img) => {
       img.addEventListener('contextmenu', (e) => {
@@ -445,6 +626,28 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
           img.alt ||
           img.closest('.speaker-thumbnail')?.querySelector('.speaker-name')?.textContent ||
           'NPC';
+        this._showEnlargedImage(img.src, name);
+      });
+    });
+
+    // Journal images
+    const journalImages = this.element.querySelectorAll('.journal-image-item-thumb img');
+    journalImages.forEach((img) => {
+      img.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const name = img.alt || 'Image';
+        this._showEnlargedImage(img.src, name);
+      });
+    });
+
+    // Journal actors
+    const journalActors = this.element.querySelectorAll('.journal-actor-item-thumb img');
+    journalActors.forEach((img) => {
+      img.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const name = img.alt || 'Actor';
         this._showEnlargedImage(img.src, name);
       });
     });
@@ -497,6 +700,20 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         }
       });
     });
+  }
+
+  /**
+   * Attach right-click handler to open player windows button (to close)
+   */
+  _attachPlayerWindowsContextMenu() {
+    const btn = this.element.querySelector('[data-action="openPlayerWindows"]');
+    if (btn) {
+      btn.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        GMSidebarAppBase._onClosePlayerWindows(e, btn);
+      });
+    }
   }
 
   /**
@@ -628,6 +845,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   _attachDragDropHandlers() {
+
     // NPC gallery drop zone
     const gallery = this.element.querySelector('.speaker-gallery');
     if (gallery) {
@@ -815,33 +1033,34 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     });
   }
 
+  /**
+   * Get unique lore skills from participants
+   */
+  /**
+   * Get lore skills from participants (system-specific - override in subclass)
+   * @param {Object} state - Game state
+   * @param {Set} selectedParticipants - Set of selected participant IDs
+   * @returns {Promise<Array>} Lore skills
+   */
+  static async _getLoreSkills(_state, _selectedParticipants) {
+    return [];
+  }
+
   _getSkillName(slug) {
     const skills = SystemAdapter.getSkills();
     const skill = skills[slug];
-    return skill?.name || slug.toUpperCase();
+    if (skill?.name) return skill.name;
+
+    // Handle lore skills - slug is like "cooking-lore" or "warfare-lore"
+    if (slug.includes('-lore')) {
+      return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
+    return slug.toUpperCase();
   }
 
   _getSkillShortName(slug) {
-    const shortNames = {
-      per: 'Per',
-      acr: 'Acr',
-      arc: 'Arc',
-      ath: 'Ath',
-      cra: 'Cra',
-      dec: 'Dec',
-      dip: 'Dip',
-      itm: 'Itm',
-      med: 'Med',
-      nat: 'Nat',
-      occ: 'Occ',
-      prf: 'Prf',
-      rel: 'Rel',
-      soc: 'Soc',
-      ste: 'Ste',
-      sur: 'Sur',
-      thi: 'Thi',
-    };
-    return shortNames[slug] || slug.substring(0, 3);
+    return SystemAdapter.getSkillShortName(slug);
   }
 
   async _resolveParticipantName(participant) {
@@ -850,59 +1069,38 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   /**
-   * Get the party level (average or highest of selected participants)
-   * @returns {Promise<number|null>} The party level or null if no participants
+   * Get party level for DC calculation (system-specific - override in subclass)
+   * @returns {Promise<number|null>}
    */
   async _getPartyLevel() {
-    const state = game.storyframe.stateManager.getState();
-    if (!state?.participants?.length) return null;
-
-    // Get levels from all participants
-    const levels = await Promise.all(
-      state.participants.map(async (p) => {
-        const actor = await fromUuid(p.actorUuid);
-        // PF2e stores level in system.details.level.value
-        return actor?.system?.details?.level?.value ?? actor?.system?.level ?? null;
-      }),
-    );
-
-    const validLevels = levels.filter((l) => l !== null);
-    if (validLevels.length === 0) return null;
-
-    // Use the average level (rounded)
-    return Math.round(validLevels.reduce((a, b) => a + b, 0) / validLevels.length);
+    return null;
   }
 
   /**
-   * Calculate DC from level and difficulty
-   * @param {number} level - The party level
-   * @param {string} difficultyId - The difficulty ID
-   * @returns {number} The calculated DC
+   * Calculate DC by level (system-specific - override in subclass)
+   * @param {number} level - Party level
+   * @param {string} difficultyId - Difficulty ID
+   * @returns {number|null}
    */
+  _calculateDCByLevel(_level, _difficultyId) {
+    return null;
+  }
+
   /**
-   * Calculate DC by level (PF2e only)
-   * @param {number} level - The party level
-   * @param {string} difficultyId - The difficulty adjustment ID
-   * @returns {number} The calculated DC
+   * Prepare system-specific context for template (override in subclass)
+   * @returns {Promise<Object>} { partyLevel?, calculatedDC?, difficultyOptions? }
    */
-  _calculateDCByLevel(level, difficultyId) {
-    const dcOptions = SystemAdapter.getDCOptions();
-    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
-
-    // Find the base DC for the level
-    const levelOption = dcOptions.find((opt) => opt.value === level);
-    const baseDC = levelOption?.dc || 14;
-
-    // Apply difficulty adjustment
-    const difficulty = difficultyAdjustments?.find((d) => d.id === difficultyId);
-    const adjustment = difficulty?.adjustment || 0;
-
-    return baseDC + adjustment;
+  async _prepareContextSystemSpecific() {
+    return {};
   }
 
   async _requestSkillCheck(skillSlug, participantIds, actionSlug = null) {
     const state = game.storyframe.stateManager.getState();
     if (!state) return;
+
+    // Check if secret roll is enabled
+    const secretCheckbox = this.element.querySelector('#secret-roll-checkbox');
+    const isSecretRoll = secretCheckbox?.checked || false;
 
     let sentCount = 0;
     let offlineCount = 0;
@@ -926,6 +1124,7 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
         skillSlug,
         actionSlug,
         dc: this.currentDC,
+        isSecretRoll,
         timestamp: Date.now(),
       };
 
@@ -1056,6 +1255,21 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     this.render();
   }
 
+  static async _onToggleNPCsPanel(_event, _target) {
+    this.npcsPanelCollapsed = !this.npcsPanelCollapsed;
+    this.render();
+  }
+
+  static async _onToggleJournalChecksPanel(_event, _target) {
+    this.journalChecksPanelCollapsed = !this.journalChecksPanelCollapsed;
+    this.render();
+  }
+
+  static async _onToggleJournalImagesPanel(_event, _target) {
+    this.journalImagesPanelCollapsed = !this.journalImagesPanelCollapsed;
+    this.render();
+  }
+
   static async _onAddAllPCs(_event, _target) {
     const pcs = this._getPlayerCharacters();
 
@@ -1078,6 +1292,15 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     }
 
     ui.notifications.info(`Added ${pcs.length} PC(s)`);
+  }
+
+  /**
+   * Add party PCs (system-specific - override in subclass)
+   * Base implementation falls back to adding all PCs
+   */
+  static async _onAddPartyPCs(_event, _target) {
+    // Default: fall back to adding all PCs
+    return this._onAddAllPCs(_event, _target);
   }
 
   static async _onToggleParticipantSelection(_event, target) {
@@ -1128,25 +1351,18 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   static async _onOpenSkillMenu(_event, target) {
-    const allSkills = [
-      { slug: 'per', name: 'Perception' },
-      { slug: 'acr', name: 'Acrobatics' },
-      { slug: 'arc', name: 'Arcana' },
-      { slug: 'ath', name: 'Athletics' },
-      { slug: 'cra', name: 'Crafting' },
-      { slug: 'dec', name: 'Deception' },
-      { slug: 'dip', name: 'Diplomacy' },
-      { slug: 'itm', name: 'Intimidation' },
-      { slug: 'med', name: 'Medicine' },
-      { slug: 'nat', name: 'Nature' },
-      { slug: 'occ', name: 'Occultism' },
-      { slug: 'prf', name: 'Performance' },
-      { slug: 'rel', name: 'Religion' },
-      { slug: 'soc', name: 'Society' },
-      { slug: 'ste', name: 'Stealth' },
-      { slug: 'sur', name: 'Survival' },
-      { slug: 'thi', name: 'Thievery' },
-    ];
+    // Get system-specific skills
+    const systemSkills = SystemAdapter.getSkills();
+    const allSkills = Object.entries(systemSkills).map(([slug, skill]) => ({
+      slug,
+      name: skill.name,
+      isLore: false,
+    }));
+
+    // Add lore skills from participants
+    const state = game.storyframe.stateManager.getState();
+    const participantLores = await this.constructor._getLoreSkills(state, this.selectedParticipants);
+    allSkills.push(...participantLores);
 
     const appInstance = this;
 
@@ -1156,12 +1372,28 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     // Create popup menu
     const menu = document.createElement('div');
     menu.className = 'storyframe-skill-menu';
-    menu.innerHTML = allSkills
+
+    const regularSkills = allSkills.filter((s) => !s.isLore);
+    const loreSkills = allSkills.filter((s) => s.isLore);
+
+    let menuHTML = regularSkills
       .map(
         (s) =>
           `<button type="button" class="skill-option" data-skill="${s.slug}">${s.name}</button>`,
       )
       .join('');
+
+    if (loreSkills.length > 0) {
+      menuHTML += '<div class="skill-divider"></div>';
+      menuHTML += loreSkills
+        .map(
+          (s) =>
+            `<button type="button" class="skill-option lore" data-skill="${s.slug}" data-is-lore="true"><i class="fas fa-book"></i> ${s.name}</button>`,
+        )
+        .join('');
+    }
+
+    menu.innerHTML = menuHTML;
 
     // Position near the button
     const rect = target.getBoundingClientRect();
@@ -1182,19 +1414,33 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     `;
 
+    // Style divider
+    const divider = menu.querySelector('.skill-divider');
+    if (divider) {
+      divider.style.cssText = `
+        height: 1px;
+        background: rgba(255, 255, 255, 0.1);
+        margin: 4px 8px;
+      `;
+    }
+
     // Add click handlers
     menu.querySelectorAll('.skill-option').forEach((btn) => {
+      const isLore = btn.classList.contains('lore');
       btn.style.cssText = `
         padding: 8px 14px;
         background: transparent;
         border: none;
-        color: #e0e0e0;
+        color: ${isLore ? '#aaa' : '#e0e0e0'};
         cursor: pointer;
         text-align: left;
         border-radius: 6px;
         font-size: 13px;
         font-weight: 500;
         transition: background 0.15s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       `;
       btn.addEventListener('mouseenter', () => {
         btn.style.background = 'rgba(94, 129, 172, 0.3)';
@@ -1206,12 +1452,15 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
       });
       btn.addEventListener('click', async () => {
         const skillSlug = btn.dataset.skill;
+        const isLore = btn.dataset.isLore === 'true';
         menu.remove();
 
         if (appInstance.selectedParticipants.size === 0) {
           ui.notifications.warn('No PCs selected');
           return;
         }
+
+        // For lore skills, pass the slug as-is (it's the lore name slugified)
         await appInstance._requestSkillCheck(
           skillSlug,
           Array.from(appInstance.selectedParticipants),
@@ -1241,25 +1490,12 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   }
 
   static async _onOpenSkillConfig(_event, target) {
-    const allSkills = [
-      { slug: 'per', name: 'Perception' },
-      { slug: 'acr', name: 'Acrobatics' },
-      { slug: 'arc', name: 'Arcana' },
-      { slug: 'ath', name: 'Athletics' },
-      { slug: 'cra', name: 'Crafting' },
-      { slug: 'dec', name: 'Deception' },
-      { slug: 'dip', name: 'Diplomacy' },
-      { slug: 'itm', name: 'Intimidation' },
-      { slug: 'med', name: 'Medicine' },
-      { slug: 'nat', name: 'Nature' },
-      { slug: 'occ', name: 'Occultism' },
-      { slug: 'prf', name: 'Performance' },
-      { slug: 'rel', name: 'Religion' },
-      { slug: 'soc', name: 'Society' },
-      { slug: 'ste', name: 'Stealth' },
-      { slug: 'sur', name: 'Survival' },
-      { slug: 'thi', name: 'Thievery' },
-    ];
+    // Get system-specific skills
+    const systemSkills = SystemAdapter.getSkills();
+    const allSkills = Object.entries(systemSkills).map(([slug, skill]) => ({
+      slug,
+      name: skill.name,
+    }));
 
     // Get current selected skills
     const currentSetting = game.settings.get(MODULE_ID, 'quickButtonSkills');
@@ -1516,6 +1752,11 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
   static async _onOpenPlayerWindows(_event, _target) {
     game.storyframe.socketManager.openAllPlayerViewers();
     ui.notifications.info('Opening StoryFrame on all player clients');
+  }
+
+  static async _onClosePlayerWindows(_event, _target) {
+    game.storyframe.socketManager.closeAllPlayerViewers();
+    ui.notifications.info('Closing StoryFrame on all player clients');
   }
 
   static async _onShowPendingRolls(_event, target) {
@@ -1829,11 +2070,232 @@ export class GMSidebarApp extends foundry.applications.api.HandlebarsApplication
     ui.notifications.info(`Applied: ${preset.name} (DC ${preset.dc})`);
   }
 
-  static async _onOpenPresetManager(_event, _target) {
-    if (!game.storyframe.presetManager) {
-      const { DCPresetManager } = await import('./dc-preset-manager.mjs');
-      game.storyframe.presetManager = new DCPresetManager();
+  static async _onAddPresetQuick(_event, _target) {
+    const input = this.element.querySelector('#new-preset-dc');
+    const dcValue = parseInt(input.value);
+
+    if (isNaN(dcValue) || dcValue < 1 || dcValue > 60) {
+      ui.notifications.warn('Enter a valid DC (1-60)');
+      return;
     }
-    game.storyframe.presetManager.render(true);
+
+    const preset = {
+      id: foundry.utils.randomID(),
+      name: `DC ${dcValue}`,
+      dc: dcValue,
+      system: game.system.id,
+      createdAt: Date.now(),
+    };
+
+    const presets = game.settings.get(MODULE_ID, 'dcPresets');
+    presets.push(preset);
+    await game.settings.set(MODULE_ID, 'dcPresets', presets);
+
+    input.value = '';
+    this.render();
+    ui.notifications.info(`Added DC ${dcValue}`);
+  }
+
+  static async _onDeletePresetQuick(_event, target) {
+    const presetId = target.dataset.presetId;
+    const presets = game.settings.get(MODULE_ID, 'dcPresets');
+    const filtered = presets.filter((p) => p.id !== presetId);
+
+    await game.settings.set(MODULE_ID, 'dcPresets', filtered);
+    this.render();
+  }
+
+  static async _onShowCheckDCsPopup(event, target) {
+    const skillName = target.dataset.skill;
+
+    // Find all checks for this skill from context
+    const context = await this._prepareContext();
+    const skillGroup = context.journalCheckGroups.find((g) => g.skillName === skillName);
+
+    if (!skillGroup?.checks?.length) return;
+
+    // Create popup menu
+    const menu = document.createElement('div');
+    menu.className = 'storyframe-dc-popup';
+
+    menu.innerHTML = `
+      <div class="dc-popup-header">${skillName}</div>
+      <div class="dc-popup-items">
+        ${skillGroup.checks.map((check) => `
+          <button type="button"
+                  class="dc-option"
+                  data-dc="${check.dc}"
+                  data-skill="${check.skillName}"
+                  data-tooltip="${check.label}">
+            ${check.dc}
+          </button>
+        `).join('')}
+      </div>
+    `;
+
+    // Position above button
+    const rect = target.getBoundingClientRect();
+    document.body.appendChild(menu);
+    const menuRect = menu.getBoundingClientRect();
+
+    menu.style.cssText = `
+      position: fixed;
+      bottom: ${window.innerHeight - rect.top + 4}px;
+      left: ${rect.left}px;
+      z-index: 10000;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 8px;
+      padding: 0;
+      min-width: 100px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    `;
+
+    // Style header
+    const header = menu.querySelector('.dc-popup-header');
+    header.style.cssText = `
+      padding: 8px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    // Style items container
+    const items = menu.querySelector('.dc-popup-items');
+    items.style.cssText = `
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+      gap: 6px;
+      padding: 8px;
+    `;
+
+    // Style DC buttons
+    menu.querySelectorAll('.dc-option').forEach((btn) => {
+      btn.style.cssText = `
+        padding: 12px;
+        background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+        border: 1px solid rgba(94, 129, 172, 0.4);
+        border-radius: 6px;
+        color: var(--sf-accent-primary, #5e81ac);
+        cursor: pointer;
+        font-size: 1.4em;
+        font-weight: 700;
+        font-family: var(--font-mono, monospace);
+        transition: all 0.15s ease;
+      `;
+
+      btn.addEventListener('mouseenter', () => {
+        btn.style.background = 'linear-gradient(135deg, rgba(94, 129, 172, 0.35), rgba(94, 129, 172, 0.25))';
+        btn.style.transform = 'scale(1.05)';
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        btn.style.background = 'linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15))';
+        btn.style.transform = 'scale(1)';
+      });
+
+      btn.addEventListener('click', async () => {
+        const dc = parseInt(btn.dataset.dc);
+        const skill = btn.dataset.skill;
+        menu.remove();
+
+        // Set DC and request check
+        this.currentDC = dc;
+        const dcInput = this.element.querySelector('#dc-input');
+        if (dcInput) dcInput.value = dc;
+
+        if (this.selectedParticipants.size > 0) {
+          const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
+          if (skillSlug) {
+            await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+          }
+        } else {
+          ui.notifications.warn('Select PCs first');
+        }
+      });
+    });
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!menu.contains(e.target)) {
+        menu.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+  }
+
+  static async _onApplyJournalCheck(_event, target) {
+    const dc = parseInt(target.dataset.dc);
+    const skillName = target.dataset.skill;
+
+
+    if (isNaN(dc)) return;
+
+    // Set the DC
+    this.currentDC = dc;
+    const dcInput = this.element.querySelector('#dc-input');
+    if (dcInput) dcInput.value = dc;
+
+    // If PCs are selected and we have a skill, request the roll
+    if (this.selectedParticipants.size > 0 && skillName) {
+      // Map skill name to slug using SystemAdapter
+      const skillSlug = SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase();
+
+      if (skillSlug) {
+        await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+      } else {
+        ui.notifications.warn(`Unknown skill: ${skillName}`);
+      }
+    } else if (this.selectedParticipants.size === 0) {
+      ui.notifications.warn('Select PCs first to request a roll');
+    } else {
+      ui.notifications.info(`Set DC to ${dc}`);
+    }
+  }
+
+  static async _onSetImageAsSpeaker(_event, target) {
+    const imageSrc = target.dataset.imageSrc;
+    if (!imageSrc) return;
+
+    const label = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'NPC Name' },
+      content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
+      ok: {
+        label: 'Add',
+        callback: (event, button, _dialog) => button.form.elements.label.value,
+      },
+      rejectClose: false,
+    });
+
+    if (label) {
+      await game.storyframe.socketManager.requestAddSpeaker({
+        imagePath: imageSrc,
+        label,
+      });
+      ui.notifications.info(`Added ${label} as NPC`);
+    }
+  }
+
+  static async _onSetActorAsSpeaker(_event, target) {
+    const actorId = target.dataset.actorId;
+    if (!actorId) return;
+
+    const actor = game.actors.get(actorId);
+    if (!actor) {
+      ui.notifications.error('Actor not found');
+      return;
+    }
+
+    await game.storyframe.socketManager.requestAddSpeaker({
+      actorUuid: actor.uuid,
+      imagePath: actor.img,
+      label: actor.name,
+    });
+    ui.notifications.info(`Added ${actor.name} as NPC`);
   }
 }

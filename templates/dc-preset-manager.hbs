@@ -1,28 +1,19 @@
 <div class="preset-manager">
   <div class="preset-grid">
     {{#each presets}}
-      <div class="preset-card" data-preset-id="{{this.id}}">
-        <div class="preset-name">{{this.name}}</div>
-        <div class="preset-dc">DC {{this.dc}}</div>
-        <div class="preset-actions">
-          <button type="button"
-                  data-action="editPreset"
-                  data-preset-id="{{this.id}}"
-                  data-tooltip="Edit preset">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button type="button"
-                  data-action="deletePreset"
-                  data-preset-id="{{this.id}}"
-                  data-tooltip="Delete preset">
-            <i class="fas fa-trash"></i>
-          </button>
-        </div>
+      <div class="preset-card" data-preset-id="{{this.id}}" data-tooltip="{{this.name}}">
+        <div class="preset-dc-large">{{this.dc}}</div>
+        <button type="button"
+                class="delete-btn"
+                data-action="deletePreset"
+                data-preset-id="{{this.id}}"
+                data-tooltip="Delete">
+          <i class="fas fa-times"></i>
+        </button>
       </div>
     {{/each}}
     <div class="preset-card add-new" data-action="createPreset">
       <i class="fas fa-plus"></i>
-      <span>Add Preset</span>
     </div>
   </div>
 </div>

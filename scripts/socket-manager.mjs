@@ -26,6 +26,7 @@ export class SocketManager {
     this.socket.register('promptSkillCheck', this._handlePromptSkillCheck);
     this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
     this.socket.register('openPlayerViewer', this._handleOpenPlayerViewer);
+    this.socket.register('closePlayerViewer', this._handleClosePlayerViewer);
   }
 
   // --- Public API (call from any client) ---
@@ -155,6 +156,13 @@ export class SocketManager {
    */
   openAllPlayerViewers() {
     this.socket.executeForEveryone('openPlayerViewer');
+  }
+
+  /**
+   * Close player viewer on all player clients.
+   */
+  closeAllPlayerViewers() {
+    this.socket.executeForEveryone('closePlayerViewer');
   }
 
   // --- Handlers (execute on GM client) ---
@@ -302,6 +310,20 @@ export class SocketManager {
       });
     } else if (!game.storyframe.playerViewer.rendered) {
       game.storyframe.playerViewer.render(true);
+    }
+  }
+
+  /**
+   * Handler: Close player viewer.
+   * Runs on all clients - closes the player viewer for non-GM users.
+   */
+  _handleClosePlayerViewer() {
+    // Only close for non-GM users
+    if (game.user.isGM) return;
+
+    // Close viewer if it exists and is rendered
+    if (game.storyframe.playerViewer?.rendered) {
+      game.storyframe.playerViewer.close();
     }
   }
 }

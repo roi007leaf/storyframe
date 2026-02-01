@@ -13,7 +13,7 @@
 
 .preset-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
   gap: 12px;
 }
 
@@ -21,13 +21,15 @@
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
-  padding: 12px;
-  cursor: pointer;
+  padding: 16px;
+  cursor: default;
   transition: all 0.2s;
-  min-height: 80px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: center;
+  position: relative;
 }
 
 .preset-card:hover {
@@ -38,59 +40,45 @@
 
 .preset-card.add-new {
   border-style: dashed;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 100px;
   color: #888;
+  cursor: pointer;
 }
 
 .preset-card.add-new:hover {
   color: #ddd;
   border-color: rgba(255, 255, 255, 0.3);
-  background: rgba(255, 255, 255, 0.08);
 }
 
-.preset-card .preset-name {
-  font-weight: 600;
-  font-size: 1.1em;
-  color: var(--sf-text-primary, #ddd);
-}
-
-.preset-card .preset-dc {
-  font-size: 1.3em;
+.preset-card .preset-dc-large {
+  font-size: 2.5em;
   font-family: var(--font-mono, monospace);
   color: var(--sf-accent-success, #4ecdc4);
   font-weight: 700;
 }
 
-.preset-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.preset-actions button {
-  flex: 1;
-  padding: 4px 8px;
-  font-size: 0.85em;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 4px;
-  color: #ddd;
+.preset-card .delete-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  background: transparent;
+  border: none;
+  color: #666;
   cursor: pointer;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
   transition: all 0.15s;
+  opacity: 0;
 }
 
-.preset-actions button:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
+.preset-card:hover .delete-btn {
+  opacity: 1;
 }
 
-.preset-actions button:active {
-  transform: translateY(1px);
+.preset-card .delete-btn:hover {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6b6b;
 }

@@ -21,7 +21,6 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     },
     actions: {
       createPreset: DCPresetManager._onCreatePreset,
-      editPreset: DCPresetManager._onEditPreset,
       deletePreset: DCPresetManager._onDeletePreset,
     },
   };
@@ -45,33 +44,21 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
   }
 
   static async _onCreatePreset(_event, _target) {
-    const name = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Create DC Preset' },
-      content: '<input type="text" name="name" placeholder="Preset name (e.g., Hard Lock)" autofocus>',
-      ok: {
-        label: 'Next',
-        callback: (event, button, _dialog) => button.form.elements.name.value,
-      },
-      rejectClose: false,
-    });
-
-    if (!name) return;
-
     const dcValue = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Set DC Value' },
-      content: '<input type="number" name="dc" min="1" max="60" value="15" autofocus>',
+      window: { title: 'Add DC Preset' },
+      content: '<input type="number" name="dc" min="1" max="60" placeholder="Enter DC value" autofocus>',
       ok: {
-        label: 'Create',
+        label: 'Add',
         callback: (event, button, _dialog) => parseInt(button.form.elements.dc.value),
       },
       rejectClose: false,
     });
 
-    if (!dcValue) return;
+    if (!dcValue || isNaN(dcValue)) return;
 
     const preset = {
       id: foundry.utils.randomID(),
-      name,
+      name: `DC ${dcValue}`,
       dc: dcValue,
       system: game.system.id,
       createdAt: Date.now(),
@@ -82,47 +69,13 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     await game.settings.set(MODULE_ID, 'dcPresets', presets);
 
     this.render();
-    ui.notifications.info(`Created preset: ${name} (DC ${dcValue})`);
-  }
 
-  static async _onEditPreset(_event, target) {
-    const presetId = target.dataset.presetId;
-    const presets = game.settings.get(MODULE_ID, 'dcPresets');
-    const preset = presets.find((p) => p.id === presetId);
+    // Refresh sidebar to show new preset in dropdown
+    if (game.storyframe.gmSidebar?.rendered) {
+      game.storyframe.gmSidebar.render();
+    }
 
-    if (!preset) return;
-
-    const name = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Edit Preset Name' },
-      content: `<input type="text" name="name" value="${preset.name}" autofocus>`,
-      ok: {
-        label: 'Next',
-        callback: (event, button, _dialog) => button.form.elements.name.value,
-      },
-      rejectClose: false,
-    });
-
-    if (!name) return;
-
-    const dcValue = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Edit DC Value' },
-      content: `<input type="number" name="dc" min="1" max="60" value="${preset.dc}" autofocus>`,
-      ok: {
-        label: 'Save',
-        callback: (event, button, _dialog) => parseInt(button.form.elements.dc.value),
-      },
-      rejectClose: false,
-    });
-
-    if (!dcValue) return;
-
-    preset.name = name;
-    preset.dc = dcValue;
-
-    await game.settings.set(MODULE_ID, 'dcPresets', presets);
-
-    this.render();
-    ui.notifications.info(`Updated preset: ${name} (DC ${dcValue})`);
+    ui.notifications.info(`Added DC ${dcValue} preset`);
   }
 
   static async _onDeletePreset(_event, target) {
@@ -144,6 +97,12 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     await game.settings.set(MODULE_ID, 'dcPresets', filtered);
 
     this.render();
-    ui.notifications.info(`Deleted preset: ${preset.name}`);
+
+    // Refresh sidebar to update preset dropdown
+    if (game.storyframe.gmSidebar?.rendered) {
+      game.storyframe.gmSidebar.render();
+    }
+
+    ui.notifications.info(`Deleted preset: DC ${preset.dc}`);
   }
 }

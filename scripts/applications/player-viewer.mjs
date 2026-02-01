@@ -169,8 +169,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const state = game.storyframe.stateManager.getState();
     const layout = game.settings.get(MODULE_ID, 'playerViewerLayout') || 'grid';
 
-    // Find this player's participant and pending rolls (always check, regardless of speakers)
-    const myParticipant = state?.participants?.find((p) => p.userId === game.user.id);
+    // Find ALL participants for this player (they may control multiple PCs)
+    const myParticipants = state?.participants?.filter((p) => p.userId === game.user.id) || [];
+    const myParticipantIds = new Set(myParticipants.map(p => p.id));
     let pendingRolls = [];
 
     // Check if DCs should be shown to players based on system settings
@@ -187,21 +188,49 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       showDCs = challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM);
     }
 
-    if (myParticipant && state?.pendingRolls) {
-      pendingRolls = state.pendingRolls
-        .filter((roll) => roll.participantId === myParticipant.id)
-        .map((roll) => ({
-          ...roll,
-          skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
-          actionName: roll.actionSlug ? ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
-          // Only include DC if the system setting allows it
-          dc: showDCs ? roll.dc : null,
-        }));
+    // Group pending rolls by actor
+    let actorRollGroups = [];
+    if (myParticipantIds.size > 0 && state?.pendingRolls) {
+      const rolls = await Promise.all(
+        state.pendingRolls
+          .filter((roll) => myParticipantIds.has(roll.participantId))
+          .map(async (roll) => {
+            // Get participant and actor info
+            const participant = state.participants.find(p => p.id === roll.participantId);
+            const actor = participant ? await fromUuid(participant.actorUuid) : null;
+
+            return {
+              ...roll,
+              skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
+              actionName: roll.actionSlug ? ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
+              dc: showDCs ? roll.dc : null,
+              actorName: actor?.name || 'Unknown',
+              actorImg: actor?.img || 'icons/svg/mystery-man.svg',
+              actorId: participant?.actorUuid || 'unknown',
+            };
+          })
+      );
+
+      // Group by actor
+      const groupedByActor = rolls.reduce((acc, roll) => {
+        if (!acc[roll.actorId]) {
+          acc[roll.actorId] = {
+            actorId: roll.actorId,
+            actorName: roll.actorName,
+            actorImg: roll.actorImg,
+            rolls: [],
+          };
+        }
+        acc[roll.actorId].rolls.push(roll);
+        return acc;
+      }, {});
+
+      actorRollGroups = Object.values(groupedByActor);
     }
 
     // No speakers - show empty state but still include pending rolls
     if (!state?.speakers || state.speakers.length === 0) {
-      return { empty: true, layout, pendingRolls };
+      return { empty: true, layout, actorRollGroups };
     }
 
     // Resolve ALL speakers
@@ -212,7 +241,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       activeSpeakerId: state.activeSpeaker,
       layout,
       empty: false,
-      pendingRolls,
+      actorRollGroups,
     };
   }
 
@@ -386,7 +415,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static _getSkillDisplayName(slug) {
     const skills = SystemAdapter.getSkills();
     const skill = skills[slug];
-    return skill?.name || slug.toUpperCase();
+    if (skill?.name) return skill.name;
+
+    // Handle lore skills - slug is like "cooking-lore" or "warfare-lore"
+    if (slug.includes('-lore')) {
+      return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    }
+
+    return slug.toUpperCase();
   }
 
   /**
@@ -435,6 +471,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       if (request.dc !== null && request.dc !== undefined) {
         rollOptions.dc = { value: request.dc };
       }
+      // Add blind roll mode if secret
+      if (request.isSecretRoll) {
+        rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+      }
 
       if (currentSystem === 'pf2e') {
         // PF2e: Use action system if actionSlug provided
@@ -450,8 +490,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             roll = await actor.perception.roll(rollOptions);
           } else {
             // Skills use actor.skills[fullSlug].roll()
+            console.log('StoryFrame | Looking for skill:', { fullSlug, skills: actor.skills });
             const skill = actor.skills?.[fullSlug];
             if (!skill) {
+              console.error('StoryFrame | Skill not found:', { fullSlug, availableSkills: Object.keys(actor.skills || {}) });
               ui.notifications.error(`Skill "${fullSlug}" not found on actor`);
               return;
             }
@@ -467,8 +509,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         const dialogConfig = {};
         const messageConfig = {};
 
-        // Add DC to message flavor if provided and challenge visibility allows it
+        // Add DC for success/failure evaluation
         if (request.dc !== null && request.dc !== undefined) {
+          config.target = request.dc;
+
           // Check D&D 5e challenge visibility setting
           const challengeVisibility = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
 
@@ -480,11 +524,22 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           }
         }
 
+        // Add secret roll mode if requested
+        if (request.isSecretRoll) {
+          messageConfig.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        }
+
         const rollResult = await actor.rollSkill(config, dialogConfig, messageConfig);
         // D&D 5e rollSkill may return an array or single roll
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
         ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        return;
+      }
+
+      // Check if roll was successful (not cancelled)
+      if (!roll) {
+        console.log('StoryFrame | Roll cancelled by player');
         return;
       }
 
@@ -494,11 +549,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         participantId: request.participantId,
         skillSlug: request.skillSlug,
         actionSlug: request.actionSlug,
-        total: roll?.total ?? 0,
+        total: roll.total ?? 0,
         // PF2e has degreeOfSuccess, D&D 5e doesn't
-        degreeOfSuccess: roll?.degreeOfSuccess?.value || null,
+        degreeOfSuccess: roll.degreeOfSuccess?.value || null,
         timestamp: Date.now(),
-        chatMessageId: roll?.message?.id || null,
+        chatMessageId: roll.message?.id || null,
       };
 
       // Submit result to GM via socket
@@ -507,7 +562,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       const skillName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
       const actionName = request.actionSlug ? ACTION_DISPLAY_NAMES[request.actionSlug] : null;
       const displayName = actionName ? `${skillName} (${actionName})` : skillName;
-      ui.notifications.info(`${displayName} check submitted (${roll?.total ?? 'N/A'})`);
+      ui.notifications.info(`${displayName} check submitted (${roll.total ?? 'N/A'})`);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error('Failed to execute roll');

@@ -5,6 +5,59 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-02-01
+
+### Added
+
+#### Journal Content Integration
+- **Journal Images Gallery** - All images in journal automatically appear in NPC panel
+  - Grid layout with compact square thumbnails (50px)
+  - Click to add image as NPC speaker with custom name prompt
+  - Right-click to view full-screen
+  - Filters out images already used as speakers
+- **Journal Actors Gallery** - Actor references (@Actor[id]{name}) auto-detected
+  - Parsed from Foundry content links in journal pages
+  - Grid layout matching image gallery style
+  - Click to add actor as NPC speaker instantly
+  - Right-click to view actor portrait full-screen
+  - Filters out actors already added as speakers, loot actors, and hazards
+
+#### Skill Check Enhancements
+- **Secret Rolls** - New checkbox in DC controls for GM-only rolls (blind mode)
+- **System-Specific Skill Menus** - Three-dots and gear menus now show correct skills per system
+- **D&D 5e Inline Checks** - Auto-detects `[[/check skill dc=15]]` and `[[/save ability dc=12]]` syntax
+
+#### UI Enhancements
+- **PC hover border** - PCs now show accent border on hover for better interactivity
+- **Compact galleries** - Journal images/actors use 50px grid for more items per row
+- **Cleaner UI** - Removed + icons from journal images for simpler appearance
+- **DC dropdown fix** - Click events no longer auto-close dropdowns
+
+### Changed
+- **Major Refactor**: System-specific implementations
+  - Created `GMSidebarAppBase` abstract class with common functionality
+  - Created `GMSidebarAppPF2e` subclass for PF2e-specific features
+  - Created `GMSidebarAppDND5e` subclass for D&D 5e-specific features
+  - Moved skill mapping to `SystemAdapter` module
+- Journal-sourced NPCs now integrated directly into sidebar workflow
+- NPC panel structure reorganized with journal content sections
+- **Full D&D 5e Support** - Sidebar now works with D&D 5e journal sheets (JournalEntrySheet5e)
+- **System-Specific Defaults** - Quick skill buttons default to appropriate skills per system
+- **NPC section sizing** - Now sizes to content (max 60vh) instead of filling viewport
+- **Player viewer control** - Right-click TV icon closes viewers for all players
+
+### Fixed
+- D&D 5e check detection now parses `<span class="roll-link-group">` correctly
+- D&D 5e rolls now evaluate success/failure with `config.target` DC
+- D&D 5e actor links (@UUID format) now detected in journal
+- ApplicationV2 element handling for both PF2e and D&D 5e journal sheets
+- jQuery object unwrapping for proper DOM access
+- Journal actor filtering now correctly uses UUID comparison
+
+### Removed
+- Debug console.log statements throughout codebase
+- Hardcoded system-specific logic from base class
+
 ## [1.0.3] - 2026-01-31
 
 ### Added
