@@ -260,6 +260,12 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       <div class="dc-input">
         <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" max="60" placeholder="DC" required>
       </div>
+      <div class="secret-checkbox">
+        <input type="checkbox" name="option-${optionIdx}-secret-${skillCount}" id="option-${optionIdx}-secret-${skillCount}" data-tooltip="Secret roll (GM only)">
+        <label for="option-${optionIdx}-secret-${skillCount}" data-tooltip="Secret roll (GM only)">
+          <i class="fas fa-eye-slash"></i>
+        </label>
+      </div>
       <button type="button" class="skill-dc-row-remove" data-action="removeSkill">
         <i class="fas fa-times"></i>
       </button>
