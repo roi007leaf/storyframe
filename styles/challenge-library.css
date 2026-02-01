@@ -83,6 +83,44 @@
   letter-spacing: 0.02em;
 }
 
+/* Card Actions */
+.storyframe.challenge-library .lib-card-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Edit Button */
+.storyframe.challenge-library .lib-edit-btn {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.3), rgba(94, 129, 172, 0.2));
+  border: 1px solid rgba(94, 129, 172, 0.5);
+  color: #5e81ac;
+  padding: 7px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .lib-edit-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.45), rgba(94, 129, 172, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-library .lib-edit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-library .lib-edit-btn i {
+  font-size: 10px;
+}
+
 /* Delete Button */
 .storyframe.challenge-library .lib-delete-btn {
   background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
@@ -179,6 +217,18 @@
   color: #5e81ac;
   font-weight: 700;
   font-family: monospace;
+}
+
+.storyframe.challenge-library .skill-dc-pill .secret-marker {
+  font-size: 9px;
+  color: #888;
+  margin-left: 4px;
+}
+
+.storyframe.challenge-library .skill-dc-pill .secret-marker {
+  font-size: 9px;
+  color: #888;
+  margin-left: 4px;
 }
 
 /* Present Button */

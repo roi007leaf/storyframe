@@ -2,24 +2,27 @@
   <div class="challenge-dialog-content">
     <label>
       Challenge Name
-      <input type="text" name="challengeName" placeholder="e.g., Reinforce Camp" required autofocus>
+      <input type="text" name="challengeName" placeholder="e.g., Reinforce Camp" value="{{#if initialData}}{{initialData.name}}{{/if}}" required autofocus>
     </label>
 
     <label>
       Challenge Image (optional)
-      <input type="text" name="challengeImage" placeholder="path/to/image.png">
+      <input type="text" name="challengeImage" placeholder="path/to/image.png" value="{{#if initialData}}{{initialData.image}}{{/if}}">
       <button type="button" class="challenge-pick-image" data-action="pickImage">
         <i class="fas fa-image"></i> Pick Image
       </button>
     </label>
 
+    {{#unless editMode}}
     <div class="save-checkbox-wrapper">
       <input type="checkbox" name="saveToLibrary" id="save-to-library">
       <label for="save-to-library">Save this challenge to library</label>
     </div>
+    {{/unless}}
 
     <div class="options-section-label">Challenge Options</div>
     <div class="challenge-options-list">
+      {{#if hasInitialOption}}
       <div class="challenge-option-card" data-option-index="0">
         <div class="challenge-option-header">
           <span class="challenge-option-title">Option 1</span>
@@ -52,7 +55,7 @@
                 </div>
                 {{/if}}
                 <div class="dc-input">
-                  <input type="number" name="option-0-dc-0" min="1" max="60" placeholder="DC" required>
+                  <input type="number" name="option-0-dc-0" min="1" max="600" placeholder="DC">
                 </div>
                 <div class="secret-checkbox">
                   <input type="checkbox" name="option-0-secret-0" id="option-0-secret-0" data-tooltip=""="Secret roll (GM only)">
@@ -68,10 +71,11 @@
           </div>
           <div class="challenge-option-field">
             <label>Description</label>
-            <textarea name="option-0-desc" placeholder="e.g., Fortify the camp defenses with barricades" required></textarea>
+            <textarea name="option-0-desc" placeholder="e.g., Fortify the camp defenses with barricades"></textarea>
           </div>
         </div>
       </div>
+      {{/if}}
     </div>
 
     <button type="button" class="challenge-add-option" data-action="addOption">
@@ -81,7 +85,7 @@
 
   <footer class="form-footer">
     <button type="button" class="submit-btn" data-action="submit">
-      <i class="fas fa-paper-plane"></i> Present Challenge
+      <i class="fas fa-paper-plane"></i> {{#if editMode}}Update & Present{{else}}Present Challenge{{/if}}
     </button>
   </footer>
 </form>

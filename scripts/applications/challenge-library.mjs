@@ -20,6 +20,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     },
     actions: {
       presentChallenge: ChallengeLibraryDialog._onPresentChallenge,
+      editChallenge: ChallengeLibraryDialog._onEditChallenge,
       deleteChallenge: ChallengeLibraryDialog._onDeleteChallenge,
     },
   };
@@ -49,6 +50,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
             skillName,
             actionName,
             dc: so.dc,
+            isSecret: so.isSecret || false,
             displayText: actionName ? `${skillName} (${actionName})` : skillName,
           };
         });
@@ -96,6 +98,31 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
     ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
 
+    this.close();
+  }
+
+  static async _onEditChallenge(_event, target) {
+    const challengeId = target.dataset.challengeId;
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    const template = savedChallenges.find(c => c.id === challengeId);
+
+    if (!template) {
+      ui.notifications.error('Challenge not found');
+      return;
+    }
+
+    // Import ChallengeBuilderDialog
+    const { ChallengeBuilderDialog } = await import('./challenge-builder.mjs');
+
+    // Open builder in edit mode
+    const builder = new ChallengeBuilderDialog(new Set(), {
+      editMode: true,
+      templateId: challengeId,
+      templateData: template,
+    });
+    builder.render(true);
+
+    // Close library dialog
     this.close();
   }
 

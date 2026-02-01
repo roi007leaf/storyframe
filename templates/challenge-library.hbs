@@ -7,9 +7,14 @@
           <i class="fas fa-flag-checkered lib-card-icon"></i>
           <span class="lib-card-title">{{this.name}}</span>
         </div>
-        <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}">
-          <i class="fas fa-trash"></i>
-        </button>
+        <div class="lib-card-actions">
+          <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="Edit challenge">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="Delete challenge">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
       </div>
 
       <div class="lib-card-body">
@@ -19,7 +24,10 @@
           <div class="opt-desc">{{this.description}}</div>
           <div class="opt-skills">
             {{#each this.skillOptions}}
-            <span class="skill-dc-pill">{{this.skillName}} <strong>DC {{this.dc}}</strong></span>
+            <span class="skill-dc-pill">
+              {{this.displayText}} <strong>DC {{this.dc}}</strong>
+              {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
+            </span>
             {{/each}}
           </div>
         </div>
@@ -27,11 +35,10 @@
       </div>
 
       <button type="button"
-              class="lib-present-btn {{#unless ../hasParticipants}}disabled{{/unless}}"
+              class="lib-present-btn"
               data-action="presentChallenge"
-              data-challenge-id="{{this.id}}"
-              {{#unless ../hasParticipants}}disabled{{/unless}}>
-        <i class="fas fa-paper-plane"></i> Present to Selected PCs
+              data-challenge-id="{{this.id}}">
+        <i class="fas fa-paper-plane"></i> Present to All Players
       </button>
     </div>
     {{/each}}

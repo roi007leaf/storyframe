@@ -39,18 +39,143 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
   constructor(selectedParticipants, options = {}) {
     super(options);
     this.selectedParticipants = selectedParticipants;
+    this.editMode = options.editMode || false;
+    this.templateId = options.templateId || null;
+    this.templateData = options.templateData || null;
     this.optionCount = 1;
     this.skillCounts = new Map();
     this.skillCounts.set(0, 1);
   }
 
-  _onRender(context, _options) {
+  async _onRender(context, _options) {
     super._onRender(context, _options);
 
-    // Attach skill change handlers for initial option
+    // If edit mode, populate form with template data
+    if (this.editMode && this.templateData) {
+      await this._populateFormFromTemplate(context);
+    }
+
+    // Attach skill change handlers
     if (context.isPF2e) {
       this._attachSkillChangeHandlers();
     }
+  }
+
+  async _populateFormFromTemplate(context) {
+    // Set name and image
+    const nameInput = this.element.querySelector('[name="challengeName"]');
+    const imageInput = this.element.querySelector('[name="challengeImage"]');
+    if (nameInput) nameInput.value = this.templateData.name || '';
+    if (imageInput) imageInput.value = this.templateData.image || '';
+
+    // Clear initial option if exists
+    const optionsList = this.element.querySelector('.challenge-options-list');
+    optionsList.innerHTML = '';
+
+    // Recreate options from template
+    this.optionCount = 0;
+    for (const opt of this.templateData.options) {
+      await this._createOptionFromData(opt, context);
+      this.optionCount++;
+    }
+  }
+
+  async _createOptionFromData(optData, context) {
+    const systemSkills = SystemAdapter.getSkills();
+    const skillOptions = Object.entries(systemSkills)
+      .map(([slug, skill]) => {
+        const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
+        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+      })
+      .join('');
+
+    const loreOptions = context.loreSkills
+      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
+      .join('');
+
+    const optionsList = this.element.querySelector('.challenge-options-list');
+    const newOption = document.createElement('div');
+    newOption.className = 'challenge-option-card';
+    newOption.dataset.optionIndex = this.optionCount;
+
+    // Build skill rows HTML
+    const skillRowsHtml = optData.skillOptions.map((so, soIdx) => {
+      const actionHtml = context.isPF2e ? `
+        <div class="action-select" ${so.action ? '' : 'style="display: none;"'}>
+          <select name="option-${this.optionCount}-action-${soIdx}" class="action-dropdown">
+            <option value="">No action</option>
+          </select>
+        </div>
+      ` : '';
+
+      return `
+        <div class="skill-dc-row" data-skill-index="${soIdx}">
+          <div class="skill-select">
+            <select name="option-${this.optionCount}-skill-${soIdx}" class="skill-dropdown" data-skill-index="${soIdx}" required>
+              <option value="">Select skill...</option>
+              ${skillOptions}
+              ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
+            </select>
+          </div>
+          ${actionHtml}
+          <div class="dc-input">
+            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" max="60" value="${so.dc}">
+          </div>
+          <div class="secret-checkbox">
+            <input type="checkbox" name="option-${this.optionCount}-secret-${soIdx}" id="option-${this.optionCount}-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
+            <label for="option-${this.optionCount}-secret-${soIdx}" title="Secret roll (GM only)">
+              <i class="fas fa-eye-slash"></i>
+            </label>
+          </div>
+          ${soIdx > 0 ? '<button type="button" class="skill-dc-row-remove" data-action="removeSkill"><i class="fas fa-times"></i></button>' : ''}
+        </div>
+      `;
+    }).join('');
+
+    newOption.innerHTML = `
+      <div class="challenge-option-header">
+        <span class="challenge-option-title">Option ${this.optionCount + 1}</span>
+        ${this.optionCount > 0 ? '<button type="button" class="challenge-option-remove" data-action="removeOption"><i class="fas fa-times"></i> Remove</button>' : ''}
+      </div>
+      <div class="challenge-option-fields">
+        <div class="challenge-option-field">
+          <label>Skills & DCs</label>
+          <div class="skills-list" data-option-index="${this.optionCount}">
+            ${skillRowsHtml}
+          </div>
+          <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="${this.optionCount}">
+            <i class="fas fa-plus"></i> Add Skill
+          </button>
+        </div>
+        <div class="challenge-option-field">
+          <label>Description</label>
+          <textarea name="option-${this.optionCount}-desc">${optData.description}</textarea>
+        </div>
+      </div>
+    `;
+
+    optionsList.appendChild(newOption);
+
+    // Set skill and action values
+    optData.skillOptions.forEach((so, soIdx) => {
+      const skillSelect = newOption.querySelector(`[name="option-${this.optionCount}-skill-${soIdx}"]`);
+      if (skillSelect) skillSelect.value = so.skill;
+
+      if (so.action && context.isPF2e) {
+        const skillOption = skillSelect.selectedOptions[0];
+        if (skillOption?.dataset.actions) {
+          const actions = JSON.parse(skillOption.dataset.actions);
+          const actionDropdown = newOption.querySelector(`[name="option-${this.optionCount}-action-${soIdx}"]`);
+          if (actionDropdown && actions.length > 0) {
+            actionDropdown.innerHTML = '<option value="">No action</option>' +
+              actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
+            actionDropdown.value = so.action;
+          }
+        }
+      }
+    });
+
+    this.skillCounts.set(this.optionCount, optData.skillOptions.length);
   }
 
   _attachSkillChangeHandlers() {
@@ -98,12 +223,24 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const state = game.storyframe.stateManager.getState();
     const loreSkills = await this._getLoreSkills(state);
 
+    // If in edit mode, load template data
+    let initialData = null;
+    if (this.editMode && this.templateData) {
+      initialData = {
+        name: this.templateData.name,
+        image: this.templateData.image,
+        options: this.templateData.options,
+      };
+    }
+
     return {
       skills,
       loreSkills,
       hasLoreSkills: loreSkills.length > 0,
       isPF2e: currentSystem === 'pf2e',
-      hasInitialOption: true,
+      hasInitialOption: !this.editMode,
+      editMode: this.editMode,
+      initialData,
     };
   }
 
@@ -186,8 +323,25 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    // Save to library if checkbox checked
-    if (formData.saveToLibrary) {
+    // Save to library or update existing
+    if (this.editMode && this.templateId) {
+      // Update existing template
+      const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+      const index = savedChallenges.findIndex(c => c.id === this.templateId);
+      if (index !== -1) {
+        savedChallenges[index] = {
+          id: this.templateId,
+          name: challengeData.name,
+          image: challengeData.image,
+          options: challengeData.options,
+          createdAt: savedChallenges[index].createdAt,
+          updatedAt: Date.now(),
+        };
+        await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+        ui.notifications.info(`Updated "${challengeData.name}" in library`);
+      }
+    } else if (formData.saveToLibrary) {
+      // Save new template
       const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
       const template = {
         id: foundry.utils.randomID(),
