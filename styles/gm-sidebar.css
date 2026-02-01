@@ -1304,6 +1304,11 @@
   cursor: pointer;
   transition: all var(--sf-transition-base);
   text-align: center;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 }
 
 .journal-skill-btn:hover {
@@ -1315,6 +1320,22 @@
 
 .journal-skill-btn:active {
   transform: translateY(0);
+}
+
+.journal-skill-btn.in-view {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.5), rgba(94, 129, 172, 0.35));
+  border-color: var(--sf-accent-primary);
+  box-shadow: 0 0 8px rgba(94, 129, 172, 0.4);
+}
+
+.journal-skill-btn .dc-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sf-accent-primary);
+  background: rgba(0, 0, 0, 0.3);
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1;
 }
 
 /* Journal Images Inline */

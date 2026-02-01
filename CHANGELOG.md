@@ -5,7 +5,169 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.2.0] - 2026-02-01
+## [1.4.0] - 2026-02-01
+
+### Added
+
+#### Player Sidebar System (Major Refactor)
+- **Separate Player Sidebar** - Dedicated drawer for challenges and pending rolls
+  - Positions alongside player viewer as attached drawer
+  - Auto-opens/closes with player viewer
+  - Auto-hides when no content (empty challenges and rolls)
+  - 340x600px default size
+  - Tracks parent viewer movement
+- **Player Viewer Simplified** - Now shows only speaker gallery
+  - Full width for speakers (no more cramped layout)
+  - Clean, focused interface
+  - Challenges and rolls moved to sidebar
+- **Collapsible Sections** - Both sections independently toggleable
+  - Pending Rolls section (collapsible, default expanded)
+  - Challenge section (collapsible, default expanded)
+  - Full height for pending rolls when no challenge
+  - Smooth collapse animations
+- **Compact Grid Layouts** - Maximum space efficiency
+  - Grid: ~3 buttons per row (90px min width)
+  - Vertical stack: Icon → Skill Name → DC badge
+  - 54px min height per button
+  - Fits 4x more content than previous design
+  - 9-10px fonts for skill names
+  - Pending rolls: Gold dice icon
+  - Challenges: Blue scroll icon
+- **Action Names** - Shows skill actions in pending rolls
+  - Displays as "Skill (Action)" in micro font
+  - 8px font, 80% opacity
+  - Example: "Diplomacy (Demoralize)"
+
+#### Create Challenge from Selection
+- **Quick Create** - Magic wand button in Challenges section
+- **Text Selection** - Select journal text with skill checks
+- **Auto-Parse** - Extracts all inline checks from HTML
+- **Name Prompt** - Dialog to name the challenge
+- **Auto-Save** - Saves directly to challenge library
+- **Clean Descriptions** - Removes DC text patterns
+- **Skill Mapping** - Converts full names to proper slugs
+
+#### Journal Check Features
+- **Scroll Highlighting** - Real-time viewport detection
+  - Skill buttons glow when checks visible in journal
+  - DC values in popup glow when visible
+  - IntersectionObserver with multiple thresholds
+  - Tracks scroll position across journal pages
+- **DC Popup Highlighting** - Visible DCs glow in popup
+  - Brighter background for in-view DCs
+  - Accent border and box shadow
+  - Maintains highlight on hover
+- **Alphabetical Sorting** - Journal checks sorted A-Z
+- **MetaMorphic Support** - Works with custom journal sheets
+  - PFS adventures fully supported
+  - Detects `.journal-entry-pages` container
+  - Parses checks across all pages
+  - Compatible with Kingmaker and other custom sheets
+
+### Fixed
+
+#### Performance & Rendering
+- **Scroll Position Preservation** - No more jumping to top
+  - Manual save/restore on all renders
+  - MutationObserver for DOM changes
+  - Multiple retry strategies (RAF + timeouts)
+  - Works for speaker changes, PC selection, presets
+- **Eliminated Re-renders** - Direct DOM updates
+  - PC selection: Toggle classes directly
+  - Speaker changes: Update only when speaker changes
+  - DC presets: DOM manipulation instead of render
+  - Select all: Updates all participants directly
+  - 80%+ reduction in re-render frequency
+
+#### Skill System Fixes
+- **Skill Validation** - Prevents invalid skill requests
+  - Checks if each PC has the requested skill
+  - Skips PCs without the skill with warning
+  - Proper slug mapping (soc → society, per → perception)
+  - Handles lore skills correctly
+- **Crafting Actions** - Added missing PF2e actions
+  - craft, repair, identify-alchemy
+  - Now execute properly in player viewer
+- **Lore Skill Lookup** - Fixed "skill not found" errors
+  - Checks `actor.system.skills` for lore skills
+  - Proper key format matching (politics-lore)
+  - Fallback logic for skill location
+
+#### Pending Roll Management
+- **Secret Roll Cleanup** - Automatic removal for blind rolls
+  - Regular rolls: Stay on cancel (retry)
+  - Secret rolls: Remove when action fails/returns null
+  - Successful rolls: Always removed
+- **Action Fallback** - Failed actions fall back to basic roll
+  - Ensures roll always executes
+  - Pending roll always gets submitted/removed
+  - Better reliability for Seek, Demoralize, etc.
+
+#### Layout & Positioning
+- **DC Preset Popup** - Fixed broken positioning
+  - Restructured HTML: `.preset-selector` wraps input and dropdown
+  - Dropdown appears in correct location below button
+- **Journal Actor Images** - Changed to fit mode
+  - `object-fit: contain` instead of `cover`
+  - Full image visible without cropping
+- **Challenge Section** - Now scrollable
+  - `max-height: 50vh` with `overflow-y: auto`
+  - Both challenge and pending rolls scroll independently
+  - Scroll position preserved during renders
+
+#### Bug Fixes
+- **Static Method Calls** - Fixed `_onAddAllPCs` context
+  - Proper `.call(this)` usage in inheritance chain
+  - D&D 5e and base class both fixed
+- **Selection Count** - Updates immediately on PC selection
+  - Inline DOM updates for count display
+  - Select all button icon/tooltip updates
+  - Request bar ready state updates
+- **Text Wrapping** - Fixed cutoff in grid buttons
+  - Increased min-width: 70px → 90px
+  - Font size: 9px → 10px
+  - `word-break: break-word` with `hyphens: auto`
+  - Buttons taller to accommodate wrapping (54px)
+
+### Changed
+
+#### Size & Spacing Adjustments
+- **Sidebar Dimensions** - Optimized for content
+  - Player sidebar: 340px wide, 600px tall
+  - Grid buttons: 90px min width, 54px min height
+- **Compact Spacing** - Reduced padding throughout
+  - Section padding: 8px
+  - Button gaps: 3-4px
+  - Actor groups: 8px padding
+  - Option groups: 8px padding
+- **Font Size Reductions** - Better content density
+  - Headers: 11px
+  - Skill names: 10px
+  - Descriptions: 11px
+  - DC badges: 9-10px
+  - Action names: 8px
+  - Line heights: 1.1-1.2
+
+#### Visual Refinements
+- **Avatar Sizes** - Smaller for compact design
+  - Player sidebar: 24px
+  - Challenge header: 32px
+- **Section Headers** - Unified styling
+  - Consistent padding and typography
+  - Hover effects on collapsible headers
+  - Chevron rotation on collapse
+
+### Technical
+
+- **ESLint Config** - Added `FormDataExtended` to globals
+- **Module Registration** - Player sidebar CSS and lifecycle
+- **State Management** - Player sidebar integrated in state updates
+- **Socket Manager** - Renders player sidebar on state changes
+- **Lifecycle Hooks** - `renderPlayerViewerApp`, `closePlayerViewerApp`
+- **System Adapter** - Skill name resolution in player sidebar
+- **Intersection Observer** - Cleanup on sidebar close
+
+## [1.3.0] - 2026-02-01
 
 ### Added
 

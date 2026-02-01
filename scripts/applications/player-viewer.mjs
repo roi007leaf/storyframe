@@ -142,7 +142,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/player-viewer.hbs',
-      scrollable: ['.speaker-gallery', '.sidebar-content'],
+      scrollable: ['.speaker-gallery', '.sidebar-content', '.challenge-options'],
     },
   };
 
@@ -567,6 +567,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       // Check if roll was successful (not cancelled)
       if (!roll) {
+        // Roll was cancelled - leave pending roll for retry
+        // Exception: For secret rolls, still remove pending roll as GM handles it
+        if (request.isSecretRoll) {
+          await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+        }
         return;
       }
 
@@ -588,6 +593,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error('Failed to execute roll');
+      // Leave pending roll on error - player can retry
     }
   }
 
