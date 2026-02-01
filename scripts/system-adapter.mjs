@@ -149,6 +149,7 @@ const PF2E_SKILLS = {
     actions: [
       { slug: 'seek', name: 'Seek' },
       { slug: 'sense-direction', name: 'Sense Direction' },
+      { slug: 'sense-motive', name: 'Sense Motive' },
     ],
   },
   acr: {

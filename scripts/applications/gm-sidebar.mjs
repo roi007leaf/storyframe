@@ -95,6 +95,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Track active speaker for change detection
     this._lastActiveSpeaker = null;
 
+    // Track visible journal checks for highlighting
+    this._visibleChecks = new Map(); // skill -> Set of DCs
+
     // Parent reference (set externally when attaching)
     this.parentInterface = null;
   }
@@ -512,12 +515,24 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   /**
    * Get journal content element (helper)
+   * Returns the container with all journal content for check parsing
    */
   _getJournalContent() {
     const element = this.parentInterface.element instanceof HTMLElement
       ? this.parentInterface.element
       : (this.parentInterface.element[0] || this.parentInterface.element);
-    return element.querySelector('.journal-page-content');
+
+    // Try multiple selectors to support different journal sheet types
+    // For multi-page journals (MetaMorphic), get the pages container
+    const pagesContainer = element.querySelector('.journal-entry-pages');
+    if (pagesContainer) return pagesContainer;
+
+    // For single-page journals, get the content directly
+    const pageContent = element.querySelector('.journal-page-content');
+    if (pageContent) return pageContent;
+
+    // Fallback to entry content
+    return element.querySelector('.journal-entry-content');
   }
 
   /**
@@ -560,7 +575,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       grouped[skill].checks.push(check);
     });
 
-    return Object.values(grouped);
+    // Sort groups alphabetically by skill name (A-Z)
+    return Object.values(grouped).sort((a, b) =>
+      a.skillName.localeCompare(b.skillName)
+    );
   }
 
   /**
@@ -692,6 +710,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this._attachImageContextMenu();
     this._attachSkillActionContextMenu();
     this._attachPlayerWindowsContextMenu();
+    this._setupJournalCheckHighlighting();
 
     // Position as drawer (parent should already be set by _attachSidebarToSheet)
     if (!this._stateRestored) {
@@ -1158,6 +1177,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Stop tracking parent movements
     this._stopTrackingParent();
 
+    // Clean up IntersectionObserver
+    if (this._checkObserver) {
+      this._checkObserver.disconnect();
+      this._checkObserver = null;
+    }
+
     // Save visibility state
     await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
 
@@ -1242,6 +1267,99 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   async _prepareContextSystemSpecific() {
     return {};
+  }
+
+  /**
+   * Setup IntersectionObserver to highlight journal check buttons when checks are in view
+   */
+  _setupJournalCheckHighlighting() {
+    // Clean up existing observer
+    if (this._checkObserver) {
+      this._checkObserver.disconnect();
+      this._checkObserver = null;
+    }
+
+    if (!this.parentInterface?.element) return;
+
+    // Get the journal's scrollable container
+    const parentElement = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
+
+    // Find the scrollable content area (the part that actually scrolls)
+    const scrollContainer = parentElement.querySelector('.journal-entry-pages') ||
+                           parentElement.querySelector('.journal-entry-content') ||
+                           parentElement.querySelector('.scrollable');
+
+    if (!scrollContainer) return;
+
+    // Get all inline check elements (PF2e format)
+    const checkElements = scrollContainer.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
+    if (checkElements.length === 0) return;
+
+    // Track which skills are in view and their DCs
+    const visibleChecks = new Map(); // skill -> Set of DCs
+
+    // Create observer - use the scroll container as root
+    this._checkObserver = new IntersectionObserver(
+      (entries) => {
+        let changed = false;
+
+        entries.forEach((entry) => {
+          const skillName = entry.target.dataset.pf2Check;
+          const dc = entry.target.dataset.pf2Dc;
+          if (!skillName || !dc) return;
+
+          // Normalize skill name to match button data-skill format
+          const normalizedSkill = skillName.toLowerCase();
+
+          if (entry.isIntersecting) {
+            // Add skill and DC to visible set
+            if (!visibleChecks.has(normalizedSkill)) {
+              visibleChecks.set(normalizedSkill, new Set());
+            }
+            if (!visibleChecks.get(normalizedSkill).has(dc)) {
+              visibleChecks.get(normalizedSkill).add(dc);
+              changed = true;
+            }
+          } else {
+            // Remove DC from visible set
+            if (visibleChecks.has(normalizedSkill)) {
+              visibleChecks.get(normalizedSkill).delete(dc);
+              if (visibleChecks.get(normalizedSkill).size === 0) {
+                visibleChecks.delete(normalizedSkill);
+              }
+              changed = true;
+            }
+          }
+        });
+
+        // Update button highlights (DC highlighting happens in popup)
+        if (changed && this.element) {
+          // Store visible checks on instance for popup highlighting
+          this._visibleChecks = new Map(visibleChecks);
+
+          // Update button highlight state
+          const buttons = this.element.querySelectorAll('.journal-skill-btn');
+          buttons.forEach((btn) => {
+            const skillName = btn.dataset.skill?.toLowerCase();
+            if (skillName && visibleChecks.has(skillName)) {
+              btn.classList.add('in-view');
+            } else {
+              btn.classList.remove('in-view');
+            }
+          });
+        }
+      },
+      {
+        root: scrollContainer,
+        rootMargin: '0px',
+        threshold: [0, 0.25, 0.5, 0.75, 1.0],
+      }
+    );
+
+    // Observe all check elements
+    checkElements.forEach((el) => this._checkObserver.observe(el));
   }
 
   async _requestSkillCheck(skillSlug, participantIds, actionSlug = null) {
@@ -1500,11 +1618,36 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       participantElement.setAttribute('aria-selected', 'true');
     }
 
-    // Update select all checkbox state
-    this._updateSelectAllCheckbox();
+    // Update UI elements directly
+    const state = game.storyframe.stateManager.getState();
+    const totalParticipants = state?.participants?.length || 0;
+    const selectedCount = this.selectedParticipants.size;
+    const allSelected = totalParticipants > 0 && selectedCount === totalParticipants;
 
-    // Note: Journal checks filtering will update on next natural render
-    // This avoids scroll jump while maintaining functionality
+    // Update count display
+    const countDisplay = this.element.querySelector('.selection-info .count');
+    if (countDisplay) {
+      countDisplay.textContent = `${selectedCount}/${totalParticipants}`;
+      countDisplay.setAttribute('aria-label', `${selectedCount} of ${totalParticipants} selected`);
+    }
+
+    // Update selection-info class
+    const selectionInfo = this.element.querySelector('.selection-info');
+    if (selectionInfo) {
+      selectionInfo.classList.toggle('has-selection', selectedCount > 0);
+    }
+
+    // Update select all button
+    const selectAllBtn = this.element.querySelector('[data-action="toggleSelectAll"] i');
+    if (selectAllBtn) {
+      selectAllBtn.className = allSelected ? 'far fa-square' : 'fas fa-check-double';
+    }
+
+    // Update check-request-bar ready state
+    const requestBar = this.element.querySelector('.check-request-bar');
+    if (requestBar) {
+      requestBar.classList.toggle('ready', selectedCount > 0 && this.currentDC);
+    }
   }
 
   static async _onRemoveParticipant(event, target) {
@@ -1545,18 +1688,59 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   /**
-   * Update the select all checkbox state based on current selection
+   * Update the select all checkbox and count display based on current selection
    */
   static _updateSelectAllCheckbox() {
-    const checkbox = this.element.querySelector('#select-all-checkbox');
-    if (!checkbox) return;
+    if (!this.element) return;
 
     const state = game.storyframe.stateManager.getState();
     const totalParticipants = state?.participants?.length || 0;
     const selectedCount = this.selectedParticipants.size;
+    const allSelected = totalParticipants > 0 && selectedCount === totalParticipants;
 
-    checkbox.checked = totalParticipants > 0 && selectedCount === totalParticipants;
-    checkbox.indeterminate = selectedCount > 0 && selectedCount < totalParticipants;
+    // Update count display
+    const countDisplay = this.element.querySelector('.selection-info .count');
+    if (countDisplay) {
+      countDisplay.textContent = `${selectedCount}/${totalParticipants}`;
+      countDisplay.setAttribute('aria-label', `${selectedCount} of ${totalParticipants} selected`);
+    }
+
+    // Update selection-info class
+    const selectionInfo = this.element.querySelector('.selection-info');
+    if (selectionInfo) {
+      if (selectedCount > 0) {
+        selectionInfo.classList.add('has-selection');
+      } else {
+        selectionInfo.classList.remove('has-selection');
+      }
+    }
+
+    // Update select all button icon and tooltip
+    const selectAllBtn = this.element.querySelector('[data-action="toggleSelectAll"]');
+    if (selectAllBtn) {
+      const icon = selectAllBtn.querySelector('i');
+      if (icon) {
+        if (allSelected) {
+          icon.className = 'far fa-square';
+        } else {
+          icon.className = 'fas fa-check-double';
+        }
+      }
+
+      const tooltip = allSelected ? 'Deselect all' : 'Select all';
+      selectAllBtn.setAttribute('data-tooltip', tooltip);
+      selectAllBtn.setAttribute('aria-label', tooltip);
+    }
+
+    // Update check-request-bar ready state
+    const requestBar = this.element.querySelector('.check-request-bar');
+    if (requestBar) {
+      if (selectedCount > 0 && this.currentDC) {
+        requestBar.classList.add('ready');
+      } else {
+        requestBar.classList.remove('ready');
+      }
+    }
   }
 
   static async _onRequestSkill(_event, target) {
@@ -2375,7 +2559,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
-  static async _onShowCheckDCsPopup(event, target) {
+  static async _onShowCheckDCsPopup(_event, target) {
     const skillName = target.dataset.skill;
 
     // Find all checks for this skill from context
@@ -2384,6 +2568,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     if (!skillGroup?.checks?.length) return;
 
+    // Get visible DCs for this skill
+    const normalizedSkill = skillName.toLowerCase();
+    const visibleDCs = this._visibleChecks?.get(normalizedSkill) || new Set();
+
     // Create popup menu
     const menu = document.createElement('div');
     menu.className = 'storyframe-dc-popup';
@@ -2391,15 +2579,18 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     menu.innerHTML = `
       <div class="dc-popup-header">${skillName}</div>
       <div class="dc-popup-items">
-        ${skillGroup.checks.map((check) => `
+        ${skillGroup.checks.map((check) => {
+          const isVisible = visibleDCs.has(String(check.dc));
+          return `
           <button type="button"
-                  class="dc-option"
+                  class="dc-option ${isVisible ? 'in-view' : ''}"
                   data-dc="${check.dc}"
                   data-skill="${check.skillName}"
                   data-tooltip="${check.label}">
             ${check.dc}
           </button>
-        `).join('')}
+        `;
+        }).join('')}
       </div>
     `;
 
@@ -2442,19 +2633,22 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       padding: 8px;
     `;
 
-    // Style DC buttons
+    // Style DC buttons with highlighting for visible checks
     menu.querySelectorAll('.dc-option').forEach((btn) => {
+      const isVisible = btn.classList.contains('in-view');
+
       btn.style.cssText = `
         padding: 12px;
-        background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
-        border: 1px solid rgba(94, 129, 172, 0.4);
+        background: ${isVisible ? 'linear-gradient(135deg, rgba(94, 129, 172, 0.6), rgba(94, 129, 172, 0.45))' : 'linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15))'};
+        border: 1px solid ${isVisible ? 'var(--sf-accent-primary)' : 'rgba(94, 129, 172, 0.4)'};
         border-radius: 6px;
-        color: var(--sf-accent-primary, #5e81ac);
+        color: ${isVisible ? '#fff' : 'var(--sf-accent-primary, #5e81ac)'};
         cursor: pointer;
         font-size: 1.4em;
         font-weight: 700;
         font-family: var(--font-mono, monospace);
         transition: all 0.15s ease;
+        box-shadow: ${isVisible ? '0 0 12px rgba(94, 129, 172, 0.6), inset 0 0 20px rgba(94, 129, 172, 0.2)' : 'none'};
       `;
 
       btn.addEventListener('mouseenter', () => {
@@ -2463,7 +2657,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       });
 
       btn.addEventListener('mouseleave', () => {
-        btn.style.background = 'linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15))';
+        btn.style.background = isVisible ? 'linear-gradient(135deg, rgba(94, 129, 172, 0.6), rgba(94, 129, 172, 0.45))' : 'linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15))';
         btn.style.transform = 'scale(1)';
       });
 

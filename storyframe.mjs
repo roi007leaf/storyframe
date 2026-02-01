@@ -1,4 +1,5 @@
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
+import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
 
@@ -27,6 +28,7 @@ Hooks.once('init', () => {
       stateManager: null,
       socketManager: null,
       gmSidebar: null,
+      playerSidebar: null,
     };
   }
 
@@ -297,9 +299,11 @@ Hooks.once('ready', async () => {
     }
   }
 
-  // Initialize player viewer for non-GM users (but don't auto-open)
+  // Initialize player viewer and sidebar for non-GM users (but don't auto-open)
   if (!game.user.isGM) {
     game.storyframe.playerViewer = new PlayerViewerApp();
+    game.storyframe.playerSidebar = new PlayerSidebarApp();
+    game.storyframe.playerSidebar.parentViewer = game.storyframe.playerViewer;
   }
 });
 
@@ -669,3 +673,23 @@ function _updateAllJournalToggleButtons() {
     _updateToggleButtonState(journal, html);
   }
 }
+
+// Hook: Manage player sidebar lifecycle with player viewer
+Hooks.on('renderPlayerViewerApp', (viewer) => {
+  if (!game.user.isGM && game.storyframe?.playerSidebar) {
+    const sidebar = game.storyframe.playerSidebar;
+    sidebar.parentViewer = viewer;
+
+    if (!sidebar.rendered) {
+      sidebar.render(true);
+    } else {
+      sidebar._positionAsDrawer(3);
+    }
+  }
+});
+
+Hooks.on('closePlayerViewerApp', () => {
+  if (!game.user.isGM && game.storyframe?.playerSidebar?.rendered) {
+    game.storyframe.playerSidebar.close();
+  }
+});

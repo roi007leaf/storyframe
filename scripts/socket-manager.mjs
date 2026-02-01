@@ -234,6 +234,7 @@ export class SocketManager {
       // Trigger UI re-render
       game.storyframe.gmApp?.render();
       game.storyframe.playerApp?.render();
+      game.storyframe.playerSidebar?.render();
     }
   }
 
@@ -296,11 +297,14 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(_requestData) {
-    // Trigger UI update on player viewer
-    if (game.storyframe.playerApp) {
+    // Trigger UI update on player sidebar (where rolls are displayed)
+    if (game.storyframe.playerSidebar) {
+      game.storyframe.playerSidebar.render();
+    } else if (game.storyframe.playerApp) {
+      // Fallback for compatibility
       game.storyframe.playerApp.showRollPrompt(_requestData);
     } else {
-      console.warn(`${MODULE_ID} | playerApp not initialized for roll prompt`);
+      console.warn(`${MODULE_ID} | playerApp/playerSidebar not initialized for roll prompt`);
     }
   }
 
@@ -312,6 +316,7 @@ export class SocketManager {
     // Update local UI displays
     game.storyframe.gmApp?.render();
     game.storyframe.playerApp?.render();
+    game.storyframe.playerSidebar?.render();
   }
 
   /**

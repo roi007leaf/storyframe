@@ -1,90 +1,20 @@
 <div class="player-viewer-container">
-  <div class="main-content">
-    <div class="speaker-gallery layout-{{layout}}" role="list" aria-label="NPCs">
-      {{#if empty}}
-        <div class="empty-state compact" role="status">
-          <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-          <span>Waiting for GM...</span>
-        </div>
-      {{else}}
-        {{#each speakers}}
-          <div class="speaker-item {{#if (eq this.id ../activeSpeakerId)}}active{{/if}}"
-               role="listitem"
-               data-tooltip="{{this.name}}"
-               aria-current="{{#if (eq this.id ../activeSpeakerId)}}true{{/if}}">
-            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-            <span class="speaker-name">{{this.name}}</span>
-          </div>
-        {{/each}}
-      {{/if}}
-    </div>
-  </div>
-
-  {{#if (or actorRollGroups.length activeChallenge)}}
-  <aside class="rolls-sidebar">
-    {{#if activeChallenge}}
-    <div class="challenge-section">
-      <div class="challenge-header">
-        {{#if activeChallenge.image}}
-        <img src="{{activeChallenge.image}}" alt="{{activeChallenge.name}}" class="challenge-image" loading="lazy">
-        {{/if}}
-        <h3>{{activeChallenge.name}}</h3>
+  <div class="speaker-gallery layout-{{layout}}" role="list" aria-label="NPCs">
+    {{#if empty}}
+      <div class="empty-state compact" role="status">
+        <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+        <span>Waiting for GM...</span>
       </div>
-      <div class="challenge-options">
-        {{#each activeChallenge.options}}
-        <div class="challenge-option-group">
-          <div class="option-description">{{this.description}}</div>
-          <div class="option-skills-list">
-            {{#each this.skillOptionsDisplay}}
-            <button type="button"
-                    class="challenge-skill-btn"
-                    data-action="selectChallengeOption"
-                    data-option-id="{{../id}}"
-                    data-skill="{{this.skill}}"
-                    data-dc="{{this.dc}}"
-                    data-action-slug="{{this.action}}"
-                    aria-label="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
-              <span class="skill-name">{{this.skillName}}{{#if this.action}} <em>({{this.action}})</em>{{/if}}</span>
-              {{#if this.showDC}}<span class="dc-badge">DC {{this.dc}}</span>{{/if}}
-            </button>
-            {{/each}}
-          </div>
-        </div>
-        {{/each}}
-      </div>
-    </div>
-    {{/if}}
-    {{#if actorRollGroups.length}}
-    <div class="sidebar-header">
-      <h3>Pending Rolls</h3>
-    </div>
-    <div class="sidebar-content">{{/if}}
-      {{#each actorRollGroups}}
-        <div class="actor-roll-group">
-          <div class="actor-header">
-            <img src="{{this.actorImg}}" alt="{{this.actorName}}" loading="lazy" class="actor-avatar">
-            <span class="actor-name">{{this.actorName}}</span>
-          </div>
-          <div class="roll-list">
-            {{#each this.rolls}}
-              <div class="roll-item">
-                <div class="roll-info">
-                  <div class="skill-name">{{this.skillName}}{{#if this.actionName}} - {{this.actionName}}{{/if}}</div>
-                  {{#if this.dc}}<div class="dc-badge">DC {{this.dc}}</div>{{/if}}
-                </div>
-                <button type="button"
-                        class="roll-btn"
-                        data-action="executeRoll"
-                        data-request-id="{{this.id}}"
-                        aria-label="Roll {{this.skillName}} check">
-                  <i class="fas fa-dice-d20" aria-hidden="true"></i>
-                </button>
-              </div>
-            {{/each}}
-          </div>
+    {{else}}
+      {{#each speakers}}
+        <div class="speaker-item {{#if (eq this.id ../activeSpeakerId)}}active{{/if}}"
+             role="listitem"
+             data-tooltip="{{this.name}}"
+             aria-current="{{#if (eq this.id ../activeSpeakerId)}}true{{/if}}">
+          <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+          <span class="speaker-name">{{this.name}}</span>
         </div>
       {{/each}}
-    {{#if actorRollGroups.length}}</div>{{/if}}
-  </aside>
-  {{/if}}
+    {{/if}}
+  </div>
 </div>

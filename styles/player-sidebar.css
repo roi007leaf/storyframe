@@ -1,0 +1,293 @@
+/* Player Sidebar Container */
+.player-sidebar-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* Challenge Section */
+.player-sidebar .challenge-section {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(94, 129, 172, 0.2);
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.08), rgba(94, 129, 172, 0.04));
+  min-height: 0;
+  max-height: 50%;
+}
+
+.player-sidebar .challenge-section .section-header {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.2), rgba(94, 129, 172, 0.12));
+  border-bottom: 1px solid rgba(94, 129, 172, 0.3);
+}
+
+.player-sidebar .challenge-section .challenge-image-small {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sf-radius-md);
+  object-fit: cover;
+  border: 2px solid rgba(94, 129, 172, 0.4);
+  flex-shrink: 0;
+}
+
+.player-sidebar .challenge-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-md);
+  padding: var(--sf-space-md);
+}
+
+.player-sidebar .section-content.challenge-options {
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  min-height: 0;
+}
+
+.player-sidebar .challenge-option-group {
+  background: rgba(94, 129, 172, 0.08);
+  border: 1px solid rgba(94, 129, 172, 0.2);
+  border-radius: var(--sf-radius-md);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.player-sidebar .challenge-option-group .option-description {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  line-height: 1.2;
+  margin-bottom: 4px;
+}
+
+.player-sidebar .option-skills-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 4px;
+}
+
+.player-sidebar .challenge-btn-grid {
+  padding: 5px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: var(--sf-radius-md);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 54px;
+  color: var(--sf-text-primary);
+}
+
+.player-sidebar .challenge-btn-grid:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.4), rgba(94, 129, 172, 0.3));
+  border-color: var(--sf-accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(94, 129, 172, 0.4);
+}
+
+.player-sidebar .challenge-btn-grid i {
+  font-size: 16px;
+  color: var(--sf-accent-primary);
+}
+
+.player-sidebar .challenge-btn-grid .skill-name-short {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Pending Rolls Section */
+.player-sidebar .pending-rolls-section {
+  flex: 1 1 50%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.08), rgba(235, 203, 139, 0.04));
+  min-height: 0;
+  max-height: 50%;
+}
+
+/* Full height when no challenge */
+.player-sidebar .pending-rolls-section.full-height {
+  flex: 1;
+  max-height: 100%;
+}
+
+.player-sidebar .section-content.pending-rolls-content {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.player-sidebar .section-header {
+  padding: var(--sf-space-md);
+  background: rgba(235, 203, 139, 0.15);
+  border-bottom: 1px solid rgba(235, 203, 139, 0.25);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.player-sidebar .section-header.collapsible {
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.player-sidebar .section-header.collapsible:hover {
+  background: rgba(235, 203, 139, 0.25);
+}
+
+.player-sidebar .section-header h3 {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--sf-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.player-sidebar .section-header i {
+  transition: transform 0.2s;
+  color: var(--sf-text-secondary);
+}
+
+.player-sidebar .section-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--sf-space-sm);
+  min-height: 0;
+  scroll-behavior: smooth;
+  transition: max-height 0.3s ease-out, opacity 0.3s ease-out, padding 0.3s ease-out;
+}
+
+.player-sidebar .section-content.collapsed {
+  max-height: 0 !important;
+  padding: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.player-sidebar .section-header.collapsible:has(+ .section-content.collapsed) i {
+  transform: rotate(180deg);
+}
+
+/* Actor Roll Group */
+.player-sidebar .actor-roll-group {
+  background: var(--sf-surface-primary);
+  border-radius: var(--sf-radius-lg);
+  border: 1px solid rgba(235, 203, 139, 0.2);
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.player-sidebar .actor-roll-group:last-child {
+  margin-bottom: 0;
+}
+
+.player-sidebar .actor-header-compact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.player-sidebar .actor-avatar-small {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid rgba(235, 203, 139, 0.4);
+  flex-shrink: 0;
+}
+
+.player-sidebar .actor-name {
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--sf-text-primary);
+}
+
+.player-sidebar .rolls-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 4px;
+}
+
+.player-sidebar .roll-btn-grid {
+  padding: 5px;
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.25), rgba(235, 203, 139, 0.15));
+  border: 1px solid rgba(235, 203, 139, 0.4);
+  border-radius: var(--sf-radius-md);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 54px;
+  color: var(--sf-text-primary);
+}
+
+.player-sidebar .roll-btn-grid:hover {
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.4), rgba(235, 203, 139, 0.3));
+  border-color: var(--sf-accent-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 3px 8px rgba(235, 203, 139, 0.4);
+}
+
+.player-sidebar .roll-btn-grid i {
+  font-size: 16px;
+  color: var(--sf-accent-primary);
+}
+
+.player-sidebar .roll-btn-grid .skill-name-short {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+.player-sidebar .action-name-micro {
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+.player-sidebar .dc-badge-grid {
+  padding: 1px 4px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 2px;
+  font-size: 9px;
+  font-weight: 700;
+  color: var(--sf-accent-primary);
+}
+
+/* Inline DC badge for compact layouts */
+.player-sidebar .dc-badge-inline {
+  padding: 2px 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sf-accent-primary);
+  flex-shrink: 0;
+}
