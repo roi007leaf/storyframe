@@ -1,8 +1,8 @@
 {
   "id": "storyframe",
   "title": "Storyframe",
-  "description": "GM journal reader with synchronized speaker portraits for players",
-  "version": "1.0.3",
+  "description": "Journal-integrated speaker and skill check manager with synchronized player portraits",
+  "version": "2.0.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -19,8 +19,8 @@
   ],
   "styles": [
     "styles/design-tokens.css",
-    "styles/gm-interface.css",
     "styles/gm-sidebar.css",
+    "styles/dc-presets.css",
     "styles/player-viewer.css"
   ],
   "socket": true,
