@@ -1,6 +1,5 @@
 import { StateManager } from './scripts/state-manager.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
-import { GMInterfaceApp } from './scripts/applications/gm-interface.mjs';
 import { GMSidebarApp } from './scripts/applications/gm-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 
@@ -29,7 +28,6 @@ Hooks.once('init', () => {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null,
       gmSidebar: null,
     };
   }
@@ -150,23 +148,23 @@ Hooks.once('init', () => {
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
     name: 'Toggle StoryFrame',
-    hint: 'Show or hide the StoryFrame window',
+    hint: 'Show or hide the StoryFrame sidebar',
     editable: [{ key: 'KeyS', modifiers: ['Control', 'Shift'] }],
     onDown: () => {
       if (game.user.isGM) {
-        // Toggle GM interface and sidebar together
-        if (!game.storyframe?.gmApp) {
-          game.storyframe.gmApp = new GMInterfaceApp();
-        }
-        if (!game.storyframe?.gmSidebar) {
-          game.storyframe.gmSidebar = new GMSidebarApp();
-        }
-        if (game.storyframe.gmApp.rendered) {
-          game.storyframe.gmApp.close();
-          game.storyframe.gmSidebar.close();
+        // Find an open journal sheet
+        const openJournal = Object.values(ui.windows).find(
+          (app) =>
+            app instanceof foundry.applications.sheets.journal.JournalEntrySheet &&
+            app.rendered,
+        );
+
+        if (openJournal) {
+          // Toggle sidebar for the open journal
+          _toggleSidebarForSheet(openJournal);
         } else {
-          game.storyframe.gmApp.render(true);
-          game.storyframe.gmSidebar.render(true);
+          // No journal open - inform user
+          ui.notifications.info('Open a journal to use StoryFrame');
         }
       } else {
         // Toggle player viewer
@@ -201,7 +199,6 @@ Hooks.once('socketlib.ready', () => {
     game.storyframe = {
       stateManager: null,
       socketManager: null,
-      gmApp: null,
       gmSidebar: null,
     };
   }
@@ -221,28 +218,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
 
   // v13: tools is an object, not array - use property assignment
   if (!controls.tokens.tools) controls.tokens.tools = {};
-
-  // GM button (GM only)
-  if (game.user?.isGM) {
-    controls.tokens.tools.storyframe = {
-      name: 'storyframe',
-      title: 'StoryFrame',
-      icon: 'fas fa-book-open',
-      visible: true,
-      onClick: () => {
-        if (!game.storyframe?.gmApp) {
-          game.storyframe.gmApp = new GMInterfaceApp();
-        }
-        if (!game.storyframe?.gmSidebar) {
-          game.storyframe.gmSidebar = new GMSidebarApp();
-        }
-        game.storyframe.gmApp.render(true);
-        game.storyframe.gmSidebar.render(true);
-      },
-      button: true,
-    };
-    console.log(`${MODULE_ID} | Added GM button`);
-  }
 
   // Player button (non-GM only)
   if (!game.user?.isGM) {
