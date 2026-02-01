@@ -1,6 +1,6 @@
-import { StateManager } from './scripts/state-manager.mjs';
-import { SocketManager } from './scripts/socket-manager.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
+import { SocketManager } from './scripts/socket-manager.mjs';
+import { StateManager } from './scripts/state-manager.mjs';
 
 // Module constants
 const MODULE_ID = 'storyframe';
@@ -119,6 +119,13 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'dcPresets', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.register(MODULE_ID, 'challengeLibrary', {
     scope: 'world',
     config: false,
     type: Array,
@@ -269,12 +276,6 @@ Hooks.once('ready', async () => {
     }
 
     await game.settings.set(MODULE_ID, 'moduleVersion', currentVersion);
-
-    ui.notifications.info(
-      'StoryFrame 2.0: Now integrated with Foundry journals! Open a journal, then click the toggle button in the header to manage speakers.',
-      { permanent: true },
-    );
-
   }
 
   // Migration: Add stealth to quick skills if missing (added in later update)
@@ -442,6 +443,54 @@ Hooks.on('renderJournalEntrySheet5e', async (sheet, html) => {
   _updateToggleButtonState(sheet, element);
 });
 
+// Hook: MetaMorphic journal sheet (custom sheet type)
+Hooks.on('renderMetaMorphicJournalEntrySheet', async (sheet, html) => {
+  if (!game.user.isGM) return;
+
+  // Get the actual element - handle jQuery, arrays, and raw elements
+  let element;
+  if (Array.isArray(html)) {
+    element = html[0];
+  } else if (html instanceof HTMLElement) {
+    element = html;
+  } else if (html?.jquery) {
+    element = html[0];
+  } else {
+    element = sheet.element;
+  }
+
+  // Ensure we have an HTMLElement
+  if (element?.jquery) {
+    element = element[0];
+  }
+
+  // Inject toggle button into header
+  _injectSidebarToggleButton(sheet, element);
+
+  // Enrich checks in journal content
+  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+  const contentArea =
+    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  if (contentArea) {
+    enrichChecks(contentArea);
+  }
+
+  // Auto-open sidebar if setting enabled
+  const sidebar = game.storyframe.gmSidebar;
+  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
+
+  if (autoOpen && !sidebar?.rendered) {
+    _attachSidebarToSheet(sheet);
+  }
+
+  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
+  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
+    sidebar.render();
+  }
+
+  _updateToggleButtonState(sheet, element);
+});
+
 // Hook: closeJournalSheet (handle sidebar reattachment)
 Hooks.on('closeJournalSheet', async (sheet, _html) => {
   if (!game.user.isGM) return;
@@ -454,7 +503,8 @@ Hooks.on('closeJournalSheet', async (sheet, _html) => {
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
       (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-       app.constructor.name === 'JournalEntrySheet5e') &&
+        app.constructor.name === 'JournalEntrySheet5e' ||
+        app.constructor.name === 'MetaMorphicJournalEntrySheet') &&
       app !== sheet &&
       app.rendered,
   );
@@ -485,7 +535,7 @@ Hooks.on('closeJournalEntrySheet5e', async (sheet, _html) => {
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
       (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-       app.constructor.name === 'JournalEntrySheet5e') &&
+        app.constructor.name === 'JournalEntrySheet5e') &&
       app !== sheet &&
       app.rendered,
   );
@@ -534,8 +584,8 @@ function _injectSidebarToggleButton(sheet, html) {
 
   // Insert before close button (try multiple selectors for different systems)
   const closeBtn = header.querySelector('.close') ||
-                   header.querySelector('[data-action="close"]') ||
-                   header.querySelector('.header-control[aria-label*="Close"]');
+    header.querySelector('[data-action="close"]') ||
+    header.querySelector('.header-control[aria-label*="Close"]');
 
 
   if (closeBtn) {

@@ -50,6 +50,128 @@
   max-height: 100%;
 }
 
+/* Challenge Section */
+.storyframe.player-viewer .challenge-section {
+  padding: var(--sf-space-md);
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.08));
+  border-bottom: 2px solid rgba(94, 129, 172, 0.3);
+  flex-shrink: 0;
+}
+
+.storyframe.player-viewer .challenge-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+  margin-bottom: var(--sf-space-md);
+}
+
+.storyframe.player-viewer .challenge-header .challenge-image {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--sf-radius-md);
+  object-fit: cover;
+  border: 2px solid rgba(94, 129, 172, 0.4);
+  box-shadow: var(--sf-shadow-sm);
+}
+
+.storyframe.player-viewer .challenge-header h3 {
+  margin: 0;
+  font-size: var(--sf-font-md);
+  font-weight: 700;
+  color: var(--sf-text-primary);
+  flex: 1;
+}
+
+.storyframe.player-viewer .challenge-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-md);
+}
+
+.storyframe.player-viewer .challenge-option-group {
+  background: rgba(94, 129, 172, 0.08);
+  border: 1px solid rgba(94, 129, 172, 0.2);
+  border-radius: var(--sf-radius-md);
+  padding: var(--sf-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-sm);
+}
+
+.storyframe.player-viewer .challenge-option-group .option-description {
+  font-size: var(--sf-font-sm);
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  line-height: 1.4;
+  margin-bottom: var(--sf-space-xs);
+}
+
+.storyframe.player-viewer .option-skills-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-xs);
+}
+
+.storyframe.player-viewer .challenge-skill-btn {
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  background: var(--sf-surface-primary);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: var(--sf-radius-sm);
+  cursor: pointer;
+  transition: all var(--sf-transition-fast) var(--sf-ease-out);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sf-space-sm);
+}
+
+.storyframe.player-viewer .challenge-skill-btn:hover {
+  background: rgba(94, 129, 172, 0.15);
+  border-color: rgba(94, 129, 172, 0.5);
+  transform: translateX(2px);
+  box-shadow: var(--sf-shadow-sm);
+}
+
+.storyframe.player-viewer .challenge-skill-btn:active {
+  transform: translateX(0);
+  box-shadow: none;
+}
+
+.storyframe.player-viewer .challenge-skill-btn .skill-name {
+  font-size: var(--sf-font-sm);
+  font-weight: 500;
+  color: var(--sf-text-primary);
+  flex: 1;
+}
+
+.storyframe.player-viewer .challenge-skill-btn .dc-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(94, 129, 172, 0.25);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: var(--sf-radius-sm);
+  font-size: var(--sf-font-xs);
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--sf-accent-primary);
+}
+
+.storyframe.player-viewer .challenge-skill-btn.secret {
+  background: rgba(76, 86, 106, 0.15);
+  border-color: rgba(76, 86, 106, 0.4);
+}
+
+.storyframe.player-viewer .challenge-skill-btn.secret:hover {
+  background: rgba(76, 86, 106, 0.25);
+  border-color: rgba(76, 86, 106, 0.5);
+}
+
+.storyframe.player-viewer .challenge-skill-btn .secret-icon {
+  font-size: 12px;
+  color: #888;
+  margin-right: 4px;
+}
+
 .storyframe.player-viewer .sidebar-header {
   padding: var(--sf-space-md);
   background: rgba(235, 203, 139, 0.15);

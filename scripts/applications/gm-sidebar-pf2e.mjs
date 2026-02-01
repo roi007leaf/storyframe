@@ -1,8 +1,6 @@
 import { GMSidebarAppBase } from './gm-sidebar.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 
-const MODULE_ID = 'storyframe';
-
 /**
  * PF2e-specific GM Sidebar implementation
  */
@@ -67,6 +65,42 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
         name: loreName,
         isLore: true,
       }));
+  }
+
+  /**
+   * Get available skills from selected participants (PF2e specific)
+   * Returns a Set of skill slugs (lowercase) that at least one selected PC has
+   */
+  static async _getAvailableSkills(state, selectedParticipants) {
+    if (!selectedParticipants?.size) return new Set();
+    if (!state?.participants?.length) return new Set();
+
+    const availableSkills = new Set();
+
+    // Get all standard PF2e skills
+    const systemSkills = SystemAdapter.getSkills();
+
+    for (const participantId of selectedParticipants) {
+      const participant = state.participants.find((p) => p.id === participantId);
+      if (!participant) continue;
+
+      const actor = await fromUuid(participant.actorUuid);
+      if (!actor?.system?.skills) continue;
+
+      // Add all skills this actor has
+      for (const [key] of Object.entries(actor.system.skills)) {
+        // Standard skills - check if they exist in the system skills
+        if (systemSkills[key]) {
+          availableSkills.add(key.toLowerCase());
+        }
+        // Lore skills - use the key as-is (already in "politics-lore" format)
+        if (key.includes('-lore')) {
+          availableSkills.add(key.toLowerCase());
+        }
+      }
+    }
+
+    return availableSkills;
   }
 
   /**
@@ -188,5 +222,56 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     }
 
     ui.notifications.info(`Added ${partyMembers.length} party member(s)`);
+  }
+
+  /**
+   * Check if an actor has a specific skill (PF2e specific)
+   * @param {Actor} actor - The actor to check
+   * @param {string} skillSlug - The skill slug to check for (short form like 'soc')
+   * @returns {Promise<boolean>} True if the actor has the skill
+   */
+  async _actorHasSkill(actor, skillSlug) {
+    if (!actor?.system?.skills) return false;
+
+    // Map short skill slugs to full PF2e skill slugs
+    const PF2E_SKILL_SLUG_MAP = {
+      per: 'perception', // Special case - uses actor.perception not actor.skills
+      acr: 'acrobatics',
+      arc: 'arcana',
+      ath: 'athletics',
+      cra: 'crafting',
+      dec: 'deception',
+      dip: 'diplomacy',
+      itm: 'intimidation',
+      med: 'medicine',
+      nat: 'nature',
+      occ: 'occultism',
+      prf: 'performance',
+      rel: 'religion',
+      soc: 'society',
+      ste: 'stealth',
+      sur: 'survival',
+      thi: 'thievery',
+    };
+
+    // Map short slug to full slug
+    const fullSlug = PF2E_SKILL_SLUG_MAP[skillSlug] || skillSlug;
+
+    // Check if it's perception (special case)
+    if (fullSlug === 'perception' && actor.perception) {
+      return true;
+    }
+
+    // Check standard skills using full slug
+    if (actor.system.skills[fullSlug]) {
+      return true;
+    }
+
+    // Check lore skills (skillSlug might already be "politics-lore" format)
+    if (skillSlug.includes('-lore') && actor.system.skills[skillSlug]) {
+      return true;
+    }
+
+    return false;
   }
 }

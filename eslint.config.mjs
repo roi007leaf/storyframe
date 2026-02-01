@@ -27,6 +27,7 @@ export default [
         TextEditor: 'readonly',
         FilePicker: 'readonly',
         fromUuid: 'readonly',
+        FormDataExtended: 'readonly',
         $: 'readonly',
       },
       ecmaVersion: 'latest',

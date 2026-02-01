@@ -1,6 +1,8 @@
 const MODULE_ID = 'storyframe';
 
 import * as SystemAdapter from '../system-adapter.mjs';
+import { ChallengeBuilderDialog } from './challenge-builder.mjs';
+import { ChallengeLibraryDialog } from './challenge-library.mjs';
 
 /**
  * GM Sidebar for StoryFrame
@@ -33,6 +35,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       toggleNPCsPanel: GMSidebarAppBase._onToggleNPCsPanel,
       toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
       toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
+      toggleChallengesPanel: GMSidebarAppBase._onToggleChallengesPanel,
       addAllPCs: GMSidebarAppBase._onAddAllPCs,
       addPartyPCs: GMSidebarAppBase._onAddPartyPCs,
       toggleParticipantSelection: GMSidebarAppBase._onToggleParticipantSelection,
@@ -55,13 +58,17 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       showCheckDCsPopup: GMSidebarAppBase._onShowCheckDCsPopup,
       setImageAsSpeaker: GMSidebarAppBase._onSetImageAsSpeaker,
       setActorAsSpeaker: GMSidebarAppBase._onSetActorAsSpeaker,
+      presentChallenge: GMSidebarAppBase._onPresentChallenge,
+      clearChallenge: GMSidebarAppBase._onClearChallenge,
+      manageChallengeLibrary: GMSidebarAppBase._onManageChallengeLibrary,
+      createChallengeFromSelection: GMSidebarAppBase._onCreateChallengeFromSelection,
     },
   };
 
   static PARTS = {
     content: {
       template: 'modules/storyframe/templates/gm-sidebar.hbs',
-      scrollable: ['.speaker-gallery', '.panel-content'],
+      scrollable: ['.gm-sidebar-container', '.speaker-gallery', '.panel-content'],
     },
   };
 
@@ -80,9 +87,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.npcsPanelCollapsed = false;
     this.journalChecksPanelCollapsed = false;
     this.journalImagesPanelCollapsed = true; // Collapsed by default
+    this.challengesPanelCollapsed = false;
     this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
+
+    // Track active speaker for change detection
+    this._lastActiveSpeaker = null;
 
     // Parent reference (set externally when attaching)
     this.parentInterface = null;
@@ -203,6 +214,132 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
+  /**
+   * Override render to preserve scroll position and handle speaker-only updates
+   */
+  async _render(force, options) {
+    // Check if this is a speaker-only update that we can handle without re-rendering
+    if (this._handleSpeakerUpdate()) {
+      return;
+    }
+
+    // Save scroll positions before render
+    const scrollPositions = this._saveScrollPositions();
+
+    // Perform render
+    await super._render(force, options);
+
+    // Update tracked active speaker after render
+    const state = game.storyframe.stateManager?.getState();
+    if (state) {
+      this._lastActiveSpeaker = state.activeSpeaker;
+    }
+
+    // Restore scroll positions after render with multiple attempts to ensure it works
+    if (scrollPositions) {
+      this._restoreScrollPositions(scrollPositions);
+    }
+  }
+
+  /**
+   * Check if this render is just for a speaker change and handle it directly
+   * @returns {boolean} True if the update was handled without re-rendering
+   */
+  _handleSpeakerUpdate() {
+    if (!this.element) return false;
+
+    const state = game.storyframe.stateManager.getState();
+    if (!state) return false;
+
+    // Check if only the active speaker changed
+    const currentActiveSpeaker = this._lastActiveSpeaker;
+    const newActiveSpeaker = state.activeSpeaker;
+
+    if (currentActiveSpeaker !== newActiveSpeaker) {
+      // Update speaker UI directly
+      const speakers = this.element.querySelectorAll('[data-speaker-id]');
+      speakers.forEach((speaker) => {
+        const speakerId = speaker.dataset.speakerId;
+        const isActive = speakerId === newActiveSpeaker;
+
+        if (isActive) {
+          speaker.classList.add('active');
+          speaker.setAttribute('aria-selected', 'true');
+        } else {
+          speaker.classList.remove('active');
+          speaker.setAttribute('aria-selected', 'false');
+        }
+      });
+
+      // Update our cached value
+      this._lastActiveSpeaker = newActiveSpeaker;
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Save scroll positions of scrollable containers
+   */
+  _saveScrollPositions() {
+    if (!this.element) return null;
+
+    const positions = {};
+    const container = this.element.querySelector('.gm-sidebar-container');
+    if (container) {
+      positions.main = container.scrollTop;
+    }
+
+    return positions;
+  }
+
+  /**
+   * Restore scroll positions of scrollable containers
+   * Uses multiple timing approaches and mutation observer to ensure it works
+   */
+  _restoreScrollPositions(positions) {
+    if (!this.element || !positions) return;
+
+    const restore = () => {
+      const container = this.element?.querySelector('.gm-sidebar-container');
+      if (container && positions.main !== undefined && container.scrollTop !== positions.main) {
+        container.scrollTop = positions.main;
+        return true;
+      }
+      return false;
+    };
+
+    // Try immediate restore
+    restore();
+
+    // Try after animation frame
+    requestAnimationFrame(() => restore());
+
+    // Try with small delays
+    setTimeout(() => restore(), 0);
+    setTimeout(() => restore(), 10);
+    setTimeout(() => restore(), 50);
+
+    // Also set up a mutation observer to restore on DOM changes
+    const container = this.element?.querySelector('.gm-sidebar-container');
+    if (container && positions.main !== undefined) {
+      const observer = new MutationObserver(() => {
+        if (restore()) {
+          observer.disconnect();
+        }
+      });
+
+      observer.observe(container, {
+        childList: true,
+        subtree: true,
+      });
+
+      // Disconnect after 500ms to avoid memory leaks
+      setTimeout(() => observer.disconnect(), 500);
+    }
+  }
+
   async _prepareContext(_options) {
     // Detect system info (needed throughout the method)
     const currentSystem = SystemAdapter.detectSystem();
@@ -210,7 +347,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
 
     // Extract checks, images, and actors from parent journal
-    const journalCheckGroups = this._extractJournalChecks();
+    let journalCheckGroups = this._extractJournalChecks();
     const journalImages = this._extractJournalImages();
     const journalActors = this._extractJournalActors();
     const hasJournalChecks = journalCheckGroups.length > 0;
@@ -306,9 +443,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
 
-    // Get system-specific DC options and difficulty adjustments
+    // Get system-specific DC options
     const dcOptions = SystemAdapter.getDCOptions();
-    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
     // Get system-specific context (override in subclass)
     const systemContext = await this._prepareContextSystemSpecific();
@@ -317,6 +453,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Load DC presets
     const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
     const dcPresets = allPresets.filter((p) => !p.system || p.system === currentSystem);
+
+    // Active challenge
+    const activeChallenge = state?.activeChallenge || null;
+    const hasActiveChallenge = activeChallenge !== null;
 
     return {
       speakers,
@@ -339,6 +479,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       npcsPanelCollapsed: this.npcsPanelCollapsed,
       journalChecksPanelCollapsed: this.journalChecksPanelCollapsed,
       journalImagesPanelCollapsed: this.journalImagesPanelCollapsed,
+      challengesPanelCollapsed: this.challengesPanelCollapsed,
       currentSystem,
       dcOptions,
       isPF2e: currentSystem === 'pf2e',
@@ -350,6 +491,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasJournalImages: journalImages.length > 0,
       journalActors,
       hasJournalActors: journalActors.length > 0,
+      activeChallenge,
+      hasActiveChallenge,
     };
   }
 
@@ -1043,6 +1186,16 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return [];
   }
 
+  /**
+   * Get available skills from selected participants (system-specific - override in subclass)
+   * @param {Object} state - Game state
+   * @param {Set} selectedParticipants - Set of selected participant IDs
+   * @returns {Promise<Set<string>>} Set of available skill slugs (lowercase)
+   */
+  static async _getAvailableSkills(_state, _selectedParticipants) {
+    return new Set();
+  }
+
   _getSkillName(slug) {
     const skills = SystemAdapter.getSkills();
     const skill = skills[slug];
@@ -1101,10 +1254,21 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     let sentCount = 0;
     let offlineCount = 0;
+    let missingSkillCount = 0;
 
     for (const participantId of participantIds) {
       const participant = state.participants.find((p) => p.id === participantId);
       if (!participant) continue;
+
+      // Validate that the participant has this skill
+      const actor = await fromUuid(participant.actorUuid);
+      if (actor) {
+        const hasSkill = await this._actorHasSkill(actor, skillSlug);
+        if (!hasSkill) {
+          missingSkillCount++;
+          continue;
+        }
+      }
 
       const user = game.users.get(participant.userId);
       if (!user?.active) {
@@ -1140,6 +1304,20 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (offlineCount > 0) {
       ui.notifications.warn(`${offlineCount} PC(s) offline - skipped`);
     }
+    if (missingSkillCount > 0) {
+      ui.notifications.warn(`${missingSkillCount} PC(s) don't have ${skillName} - skipped`);
+    }
+  }
+
+  /**
+   * Check if an actor has a specific skill (system-specific - override in subclass)
+   * @param {Actor} actor - The actor to check
+   * @param {string} skillSlug - The skill slug to check for
+   * @returns {Promise<boolean>} True if the actor has the skill
+   */
+  async _actorHasSkill(_actor, _skillSlug) {
+    // Base implementation always returns true - subclasses should override
+    return true;
   }
 
   /**
@@ -1267,6 +1445,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.render();
   }
 
+  static async _onToggleChallengesPanel(_event, _target) {
+    this.challengesPanelCollapsed = !this.challengesPanelCollapsed;
+    this.render();
+  }
+
   static async _onAddAllPCs(_event, _target) {
     const pcs = this._getPlayerCharacters();
 
@@ -1297,20 +1480,31 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   static async _onAddPartyPCs(_event, _target) {
     // Default: fall back to adding all PCs
-    return this._onAddAllPCs(_event, _target);
+    return GMSidebarAppBase._onAddAllPCs.call(this, _event, _target);
   }
 
   static async _onToggleParticipantSelection(_event, target) {
-    const participantId = target.closest('[data-participant-id]')?.dataset.participantId;
+    const participantElement = target.closest('[data-participant-id]');
+    const participantId = participantElement?.dataset.participantId;
     if (!participantId) return;
 
-    if (this.selectedParticipants.has(participantId)) {
+    const isSelected = this.selectedParticipants.has(participantId);
+
+    if (isSelected) {
       this.selectedParticipants.delete(participantId);
+      participantElement.classList.remove('selected');
+      participantElement.setAttribute('aria-selected', 'false');
     } else {
       this.selectedParticipants.add(participantId);
+      participantElement.classList.add('selected');
+      participantElement.setAttribute('aria-selected', 'true');
     }
 
-    this.render();
+    // Update select all checkbox state
+    this._updateSelectAllCheckbox();
+
+    // Note: Journal checks filtering will update on next natural render
+    // This avoids scroll jump while maintaining functionality
   }
 
   static async _onRemoveParticipant(event, target) {
@@ -1326,13 +1520,43 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
     const allParticipantIds = (state.participants || []).map((p) => p.id);
 
-    if (this.selectedParticipants.size === allParticipantIds.length) {
-      this.selectedParticipants.clear();
-    } else {
+    const selectAll = this.selectedParticipants.size !== allParticipantIds.length;
+
+    if (selectAll) {
       this.selectedParticipants = new Set(allParticipantIds);
+    } else {
+      this.selectedParticipants.clear();
     }
 
-    this.render();
+    // Update all participant elements
+    const participants = this.element.querySelectorAll('[data-participant-id]');
+    participants.forEach((el) => {
+      if (selectAll) {
+        el.classList.add('selected');
+        el.setAttribute('aria-selected', 'true');
+      } else {
+        el.classList.remove('selected');
+        el.setAttribute('aria-selected', 'false');
+      }
+    });
+
+    // Update checkbox state
+    this._updateSelectAllCheckbox();
+  }
+
+  /**
+   * Update the select all checkbox state based on current selection
+   */
+  static _updateSelectAllCheckbox() {
+    const checkbox = this.element.querySelector('#select-all-checkbox');
+    if (!checkbox) return;
+
+    const state = game.storyframe.stateManager.getState();
+    const totalParticipants = state?.participants?.length || 0;
+    const selectedCount = this.selectedParticipants.size;
+
+    checkbox.checked = totalParticipants > 0 && selectedCount === totalParticipants;
+    checkbox.indeterminate = selectedCount > 0 && selectedCount < totalParticipants;
   }
 
   static async _onRequestSkill(_event, target) {
@@ -1449,7 +1673,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       });
       btn.addEventListener('click', async () => {
         const skillSlug = btn.dataset.skill;
-        const isLore = btn.dataset.isLore === 'true';
         menu.remove();
 
         if (appInstance.selectedParticipants.size === 0) {
@@ -2089,7 +2312,44 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     await game.settings.set(MODULE_ID, 'dcPresets', presets);
 
     input.value = '';
-    this.render();
+
+    // Update DOM directly instead of re-rendering to preserve scroll position
+    const dropdown = this.element.querySelector('.preset-dropdown');
+    let presetList = dropdown?.querySelector('.preset-list');
+
+    // Create preset list if it doesn't exist (first preset)
+    if (!presetList) {
+      const divider = document.createElement('div');
+      divider.className = 'preset-divider';
+      dropdown.appendChild(divider);
+
+      presetList = document.createElement('div');
+      presetList.className = 'preset-list';
+      dropdown.appendChild(presetList);
+    }
+
+    // Create and add new preset item
+    const presetItem = document.createElement('div');
+    presetItem.className = 'preset-item';
+    presetItem.innerHTML = `
+      <button type="button"
+              class="preset-option"
+              data-action="applyPreset"
+              data-preset-id="${preset.id}"
+              data-dc="${preset.dc}"
+              data-tooltip="${preset.name}">
+        ${preset.dc}
+      </button>
+      <button type="button"
+              class="preset-delete-btn"
+              data-action="deletePresetQuick"
+              data-preset-id="${preset.id}"
+              data-tooltip="Delete">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+    presetList.appendChild(presetItem);
+
     ui.notifications.info(`Added DC ${dcValue}`);
   }
 
@@ -2099,7 +2359,20 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const filtered = presets.filter((p) => p.id !== presetId);
 
     await game.settings.set(MODULE_ID, 'dcPresets', filtered);
-    this.render();
+
+    // Update DOM directly instead of re-rendering to preserve scroll position
+    const presetItem = target.closest('.preset-item');
+    if (presetItem) {
+      presetItem.remove();
+
+      // If this was the last preset, remove the divider and list container
+      const presetList = this.element.querySelector('.preset-list');
+      if (presetList && presetList.children.length === 0) {
+        const divider = this.element.querySelector('.preset-divider');
+        if (divider) divider.remove();
+        presetList.remove();
+      }
+    }
   }
 
   static async _onShowCheckDCsPopup(event, target) {
@@ -2133,7 +2406,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Position above button
     const rect = target.getBoundingClientRect();
     document.body.appendChild(menu);
-    const menuRect = menu.getBoundingClientRect();
 
     menu.style.cssText = `
       position: fixed;
@@ -2294,5 +2566,442 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       label: actor.name,
     });
     ui.notifications.info(`Added ${actor.name} as NPC`);
+  }
+
+  static async _onPresentChallenge(_event, _target) {
+    // No participant requirement - challenge is broadcast to all players
+    const builder = new ChallengeBuilderDialog(new Set());
+    builder.render(true);
+  }
+
+  static async _onClearChallenge(_event, _target) {
+    await game.storyframe.socketManager.requestClearActiveChallenge();
+    ui.notifications.info('Challenge cleared');
+  }
+
+  static async _onManageChallengeLibrary(_event, _target) {
+    // No participant requirement
+    const library = new ChallengeLibraryDialog(new Set(), this);
+    library.render(true);
+  }
+
+  /**
+   * Create a challenge from selected journal text
+   */
+  static async _onCreateChallengeFromSelection(_event, _target) {
+    // Get the journal content element
+    const content = this._getJournalContent();
+    if (!content) {
+      ui.notifications.warn('No journal content found');
+      return;
+    }
+
+    // Get selected text from the journal
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      ui.notifications.warn('No text selected in journal');
+      return;
+    }
+
+    // Check if selection is within the journal content
+    const range = selection.getRangeAt(0);
+    if (!content.contains(range.commonAncestorContainer)) {
+      ui.notifications.warn('Selection must be within the journal content');
+      return;
+    }
+
+    // Create a temporary container with the selected HTML
+    const fragment = range.cloneContents();
+    const tempContainer = document.createElement('div');
+    tempContainer.appendChild(fragment);
+
+    // Parse checks from the selected content
+    const checks = this._parseChecksFromContent(tempContainer);
+
+    if (checks.length === 0) {
+      ui.notifications.warn('No skill checks found in selected text');
+      return;
+    }
+
+    // Prompt for challenge name
+    const challengeName = await foundry.applications.api.DialogV2.prompt({
+      window: { title: 'Create Challenge' },
+      content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+      ok: {
+        label: 'Create',
+        callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
+      },
+      rejectClose: false,
+    });
+
+    if (!challengeName) return;
+
+    // Create options from checks - each check becomes an option
+    const options = checks.map((check) => {
+      // Extract description without DC reference
+      let description = check.label || '';
+      // Remove common DC patterns like "DC 15" or "(DC 15)" from description
+      description = description.replace(/\(?\s*DC\s*\d+\s*\)?/gi, '').trim();
+      // If description is empty after cleaning, use skill name
+      if (!description) {
+        description = check.skillName.charAt(0).toUpperCase() + check.skillName.slice(1);
+      }
+
+      // Map skill name to short slug for the challenge system
+      const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
+
+      return {
+        id: foundry.utils.randomID(),
+        description,
+        skillOptions: [{
+          skill: skillSlug || check.skillName,
+          dc: check.dc,
+          action: null,
+          isSecret: false,
+        }],
+      };
+    });
+
+    // Create challenge template
+    const template = {
+      id: foundry.utils.randomID(),
+      name: challengeName,
+      image: null,
+      options,
+      createdAt: Date.now(),
+    };
+
+    // Save to library
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    savedChallenges.push(template);
+    await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+
+    ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+
+    // Clear selection
+    selection.removeAllRanges();
+  }
+
+  static async _onManageChallengeLibraryOLD(_event, _target) {
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+
+    if (savedChallenges.length === 0) {
+      ui.notifications.info('No saved challenges. Create one and check "Save to library"');
+      return;
+    }
+
+    // Build library manager dialog (OLD INLINE VERSION - TO BE DELETED)
+    const challengeCards = savedChallenges.map(c => {
+      const optionsPreview = c.options.map((opt, idx) => {
+        const skillsText = opt.skillOptions.map(so => {
+          const skillName = this._getSkillName(so.skill);
+          return `<span class="skill-dc-pill">${skillName} <strong>DC ${so.dc}</strong></span>`;
+        }).join(' ');
+        return `
+          <div class="lib-option-preview">
+            <div class="opt-num">Option ${idx + 1}</div>
+            <div class="opt-desc">${opt.description}</div>
+            <div class="opt-skills">${skillsText}</div>
+          </div>
+        `;
+      }).join('');
+
+      return `
+        <div class="lib-challenge-card" data-challenge-id="${c.id}">
+          <div class="lib-card-header">
+            <div class="lib-card-title-section">
+              <i class="fas fa-flag-checkered lib-card-icon"></i>
+              <span class="lib-card-title">${c.name}</span>
+            </div>
+            <button type="button" class="lib-delete-btn" data-challenge-id="${c.id}">
+              <i class="fas fa-trash"></i>
+            </button>
+          </div>
+          <div class="lib-card-body">
+            ${optionsPreview}
+          </div>
+          <button type="button" class="lib-present-btn" data-challenge-id="${c.id}">
+            <i class="fas fa-paper-plane"></i> Present to Selected PCs
+          </button>
+        </div>
+      `;
+    }).join('');
+
+    const content = `
+      <style>
+        .lib-manager-content {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          max-height: 520px;
+          overflow-y: auto;
+          padding: 4px;
+        }
+        .lib-manager-content::-webkit-scrollbar { width: 8px; }
+        .lib-manager-content::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); border-radius: 4px; }
+        .lib-manager-content::-webkit-scrollbar-thumb { background: rgba(94, 129, 172, 0.4); border-radius: 4px; }
+        .lib-manager-content::-webkit-scrollbar-thumb:hover { background: rgba(94, 129, 172, 0.6); }
+
+        .lib-challenge-card {
+          background: linear-gradient(135deg, rgba(94, 129, 172, 0.15), rgba(94, 129, 172, 0.08));
+          border: 1px solid rgba(94, 129, 172, 0.35);
+          border-radius: 10px;
+          padding: 16px;
+          box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
+          transition: all 0.3s ease;
+        }
+        .lib-challenge-card:hover {
+          border-color: rgba(94, 129, 172, 0.5);
+          box-shadow: 0 5px 20px rgba(0, 0, 0, 0.35);
+          transform: translateY(-2px);
+        }
+
+        .lib-card-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 14px;
+          padding-bottom: 12px;
+          border-bottom: 2px solid rgba(94, 129, 172, 0.25);
+        }
+
+        .lib-card-title-section {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex: 1;
+        }
+
+        .lib-card-icon {
+          font-size: 18px;
+          color: rgba(94, 129, 172, 0.7);
+          text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .lib-card-title {
+          font-weight: 700;
+          font-size: 16px;
+          color: #e0e0e0;
+          text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+          letter-spacing: 0.02em;
+        }
+
+        .lib-delete-btn {
+          background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
+          border: 1px solid rgba(191, 97, 106, 0.5);
+          color: #bf616a;
+          padding: 7px 12px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 11px;
+          font-weight: 600;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        }
+        .lib-delete-btn:hover {
+          background: linear-gradient(135deg, rgba(191, 97, 106, 0.45), rgba(191, 97, 106, 0.35));
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        .lib-delete-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .lib-delete-btn i { font-size: 10px; }
+
+        .lib-card-body {
+          font-size: 12px;
+          color: #d8dee9;
+          margin-bottom: 12px;
+          line-height: 1.5;
+        }
+
+        .lib-option-preview {
+          margin: 8px 0;
+          padding: 10px 14px;
+          background: rgba(0, 0, 0, 0.3);
+          border-left: 3px solid rgba(94, 129, 172, 0.5);
+          border-radius: 0 6px 6px 0;
+          box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .lib-option-preview:first-child { margin-top: 0; }
+        .lib-option-preview:last-child { margin-bottom: 0; }
+
+        .opt-num {
+          font-size: 10px;
+          font-weight: 700;
+          color: rgba(94, 129, 172, 0.8);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+          margin-bottom: 4px;
+        }
+
+        .opt-desc {
+          font-size: 13px;
+          font-weight: 600;
+          color: #e0e0e0;
+          margin-bottom: 6px;
+          line-height: 1.4;
+        }
+
+        .opt-skills {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          margin-top: 6px;
+        }
+
+        .skill-dc-pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 4px 10px;
+          background: linear-gradient(135deg, rgba(94, 129, 172, 0.25), rgba(94, 129, 172, 0.15));
+          border: 1px solid rgba(94, 129, 172, 0.4);
+          border-radius: 12px;
+          font-size: 11px;
+          color: #a8b5c8;
+          font-weight: 500;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+        .skill-dc-pill strong {
+          color: #5e81ac;
+          font-weight: 700;
+          font-family: monospace;
+        }
+
+        .lib-present-btn {
+          width: 100%;
+          padding: 12px 16px;
+          background: linear-gradient(135deg, rgba(163, 190, 140, 0.35), rgba(163, 190, 140, 0.25));
+          border: 1px solid rgba(163, 190, 140, 0.6);
+          color: #a3be8c;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 700;
+          font-size: 13px;
+          transition: all 0.25s ease;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+        .lib-present-btn:hover {
+          background: linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(163, 190, 140, 0.4));
+          transform: translateY(-2px);
+          box-shadow: 0 5px 16px rgba(0, 0, 0, 0.35);
+        }
+        .lib-present-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+        }
+        .lib-present-btn:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .lib-present-btn:disabled:hover {
+          transform: none;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+        }
+        .lib-present-btn i { font-size: 12px; }
+
+        .lib-empty-state {
+          text-align: center;
+          padding: 60px 40px;
+          color: #888;
+          font-size: 14px;
+        }
+        .lib-empty-state i {
+          font-size: 48px;
+          margin-bottom: 16px;
+          opacity: 0.3;
+        }
+      </style>
+      <div class="lib-manager-content">
+        ${challengeCards}
+      </div>
+    `;
+
+    const libDialog = new foundry.applications.api.DialogV2({
+      window: { title: 'Challenge Library' },
+      content,
+      position: { width: 480 },
+      buttons: [{
+        action: 'close',
+        label: 'Close',
+        default: true,
+      }],
+      render: (_event, html) => {
+        // Delete challenge
+        html.querySelectorAll('.lib-delete-btn').forEach(btn => {
+          btn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            const challengeId = btn.dataset.challengeId;
+
+            const confirmed = await foundry.applications.api.DialogV2.confirm({
+              window: { title: 'Delete Challenge' },
+              content: '<p>Delete this challenge from library?</p>',
+              yes: { label: 'Delete' },
+              no: { label: 'Cancel' },
+              rejectClose: false,
+            });
+
+            if (confirmed) {
+              const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+              const filtered = savedChallenges.filter(c => c.id !== challengeId);
+              await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
+              btn.closest('.lib-challenge-card').remove();
+              ui.notifications.info('Challenge deleted');
+
+              // Close dialog if no more challenges
+              if (filtered.length === 0) {
+                libDialog.close();
+              }
+            }
+          });
+        });
+
+        // Present challenge
+        html.querySelectorAll('.lib-present-btn').forEach(btn => {
+          const hasSelection = this.selectedParticipants.size > 0;
+          btn.disabled = !hasSelection;
+
+          if (!hasSelection) {
+            btn.title = 'Select PCs first';
+          }
+
+          btn.addEventListener('click', async () => {
+            const challengeId = btn.dataset.challengeId;
+            const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+            const template = savedChallenges.find(c => c.id === challengeId);
+
+            if (!template) return;
+
+            // Create challenge data from template
+            const challengeData = {
+              id: foundry.utils.randomID(),
+              name: template.name,
+              image: template.image,
+              selectedParticipants: Array.from(this.selectedParticipants),
+              options: template.options,
+            };
+
+            await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
+            ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size} PC(s)`);
+            libDialog.close();
+          });
+        });
+      },
+    });
+
+    await libDialog.render(true);
   }
 }

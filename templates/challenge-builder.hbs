@@ -1,0 +1,91 @@
+<form class="challenge-builder-form">
+  <div class="challenge-dialog-content">
+    <label>
+      Challenge Name
+      <input type="text" name="challengeName" placeholder="e.g., Reinforce Camp" value="{{#if initialData}}{{initialData.name}}{{/if}}" required autofocus>
+    </label>
+
+    <label>
+      Challenge Image (optional)
+      <input type="text" name="challengeImage" placeholder="path/to/image.png" value="{{#if initialData}}{{initialData.image}}{{/if}}">
+      <button type="button" class="challenge-pick-image" data-action="pickImage">
+        <i class="fas fa-image"></i> Pick Image
+      </button>
+    </label>
+
+    {{#unless editMode}}
+    <div class="save-checkbox-wrapper">
+      <input type="checkbox" name="saveToLibrary" id="save-to-library">
+      <label for="save-to-library">Save this challenge to library</label>
+    </div>
+    {{/unless}}
+
+    <div class="options-section-label">Challenge Options</div>
+    <div class="challenge-options-list">
+      {{#if hasInitialOption}}
+      <div class="challenge-option-card" data-option-index="0">
+        <div class="challenge-option-header">
+          <span class="challenge-option-title">Option 1</span>
+        </div>
+        <div class="challenge-option-fields">
+          <div class="challenge-option-field">
+            <label>Skills & DCs</label>
+            <div class="skills-list" data-option-index="0">
+              <div class="skill-dc-row" data-skill-index="0">
+                <div class="skill-select">
+                  <select name="option-0-skill-0" class="skill-dropdown" data-skill-index="0" required>
+                    <option value="">Select skill...</option>
+                    {{#each skills}}
+                    <option value="{{this.slug}}" data-actions="{{json this.actions}}">{{this.name}}</option>
+                    {{/each}}
+                    {{#if hasLoreSkills}}
+                    <optgroup label="Lore Skills">
+                      {{#each loreSkills}}
+                      <option value="{{this.slug}}">{{this.name}}</option>
+                      {{/each}}
+                    </optgroup>
+                    {{/if}}
+                  </select>
+                </div>
+                {{#if isPF2e}}
+                <div class="action-select" style="display: none;">
+                  <select name="option-0-action-0" class="action-dropdown">
+                    <option value="">No action</option>
+                  </select>
+                </div>
+                {{/if}}
+                <div class="dc-input">
+                  <input type="number" name="option-0-dc-0" min="1" max="600" placeholder="DC">
+                </div>
+                <div class="secret-checkbox">
+                  <input type="checkbox" name="option-0-secret-0" id="option-0-secret-0" data-tooltip=""="Secret roll (GM only)">
+                  <label for="option-0-secret-0" data-tooltip="Secret roll (GM only)">
+                    <i class="fas fa-eye-slash"></i>
+                  </label>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="0">
+              <i class="fas fa-plus"></i> Add Skill
+            </button>
+          </div>
+          <div class="challenge-option-field">
+            <label>Description</label>
+            <textarea name="option-0-desc" placeholder="e.g., Fortify the camp defenses with barricades"></textarea>
+          </div>
+        </div>
+      </div>
+      {{/if}}
+    </div>
+
+    <button type="button" class="challenge-add-option" data-action="addOption">
+      <i class="fas fa-plus"></i> Add Another Option
+    </button>
+  </div>
+
+  <footer class="form-footer">
+    <button type="button" class="submit-btn" data-action="submit">
+      <i class="fas fa-paper-plane"></i> {{#if editMode}}Update & Present{{else}}Present Challenge{{/if}}
+    </button>
+  </footer>
+</form>
