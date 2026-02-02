@@ -534,9 +534,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
             if (!skill) {
               ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
-              if (request.isSecretRoll) {
-                await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
-              }
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -702,9 +699,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
             if (!skill) {
               ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
-              if (request.isSecretRoll) {
-                await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
-              }
               return;
             }
             roll = await skill.roll(rollOptions);

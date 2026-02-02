@@ -1,5 +1,3 @@
-const MODULE_ID = 'storyframe';
-
 import * as SystemAdapter from '../system-adapter.mjs';
 
 /**

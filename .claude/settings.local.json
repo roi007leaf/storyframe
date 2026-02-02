@@ -9,7 +9,8 @@
       "Skill(gsd:add-phase:*)",
       "Bash(npm view:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
-      "Bash(npx get-shit-done-cc:*)"
+      "Bash(npx get-shit-done-cc:*)",
+      "Bash(npm install)"
     ]
   }
 }

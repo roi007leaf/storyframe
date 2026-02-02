@@ -695,7 +695,7 @@ Hooks.on('closePlayerViewerApp', () => {
 });
 
 // Hook: updateSetting - rerender GM sidebar when challenge library changes
-Hooks.on('updateSetting', (setting, value, _options, _userId) => {
+Hooks.on('updateSetting', (setting, _value, _options, _userId) => {
   if (setting.key === 'storyframe.challengeLibrary' && game.user.isGM) {
     if (game.storyframe?.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.render();
@@ -704,7 +704,7 @@ Hooks.on('updateSetting', (setting, value, _options, _userId) => {
 });
 
 // Hook: closeCheckModifiersDialog - detect if roll was made or cancelled
-Hooks.on('closeCheckModifiersDialog', async (dialog, html) => {
+Hooks.on('closeCheckModifiersDialog', async (_dialog, _html) => {
   // Only on player side
   if (game.user.isGM) return;
   if (!window._storyframeCurrentBlindRoll) return;

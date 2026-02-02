@@ -2,7 +2,6 @@ const MODULE_ID = 'storyframe';
 
 import * as SystemAdapter from '../system-adapter.mjs';
 import { ChallengeBuilderDialog } from './challenge-builder.mjs';
-import { ChallengeLibraryDialog } from './challenge-library.mjs';
 
 /**
  * GM Sidebar for StoryFrame
