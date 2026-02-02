@@ -124,7 +124,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     id: 'storyframe-player-viewer',
     classes: ['storyframe', 'player-viewer'],
     window: {
-      title: 'StoryFrame',
+      title: 'StoryFrame Player Viewer',
       resizable: true,
       minimizable: true,
       icon: 'fas fa-book-open',
@@ -473,12 +473,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const participant = state.participants?.find((p) => p.id === request.participantId);
     if (!participant) {
       ui.notifications.error('Participant not found');
+      if (request.isSecretRoll) {
+        await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+      }
       return;
     }
 
     const actor = await fromUuid(participant.actorUuid);
     if (!actor) {
       ui.notifications.error('Actor not found');
+      if (request.isSecretRoll) {
+        await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+      }
       return;
     }
 
@@ -498,6 +504,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Add blind roll mode if secret
       if (request.isSecretRoll) {
         rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        // Store info so createChatMessage hook can detect and notify GM
+        window._storyframeCurrentBlindRoll = {
+          requestId: requestId,
+          actorId: actor.id,
+        };
       }
 
       if (currentSystem === 'pf2e') {
@@ -523,6 +534,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
             if (!skill) {
               ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
+              if (request.isSecretRoll) {
+                await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+              }
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -562,16 +576,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
         ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        if (request.isSecretRoll) {
+          await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+        }
         return;
       }
 
       // Check if roll was successful (not cancelled)
       if (!roll) {
-        // Roll was cancelled - leave pending roll for retry
-        // Exception: For secret rolls, still remove pending roll as GM handles it
-        if (request.isSecretRoll) {
-          await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
-        }
+        // For blind rolls, closeCheckModifiersDialog hook will handle notification
+        // Don't clear blind roll info - let the hook determine if rolled or cancelled
         return;
       }
 
@@ -588,12 +602,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         chatMessageId: roll.message?.id || null,
       };
 
+      console.log(`${MODULE_ID} | Submitting roll result to GM:`, result);
       // Submit result to GM via socket
       await game.storyframe.socketManager.requestSubmitRollResult(result);
+      console.log(`${MODULE_ID} | Roll result submitted successfully:`, requestId);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error('Failed to execute roll');
       // Leave pending roll on error - player can retry
+      // Exception: For secret rolls, remove pending roll as GM handles it
+      if (request.isSecretRoll) {
+        await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+      }
     }
   }
 
@@ -604,8 +624,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    */
   static async _onSelectChallengeOption(_event, target) {
     const skillSlug = target.dataset.skill;
-    const dc = parseInt(target.dataset.dc);
+    const dc = target.dataset.dc ? parseInt(target.dataset.dc) : null;
     const actionSlug = target.dataset.actionSlug || null;
+    const isSecret = target.dataset.isSecret === 'true';
     const state = game.storyframe.stateManager.getState();
     const challenge = state?.activeChallenge;
 
@@ -614,8 +635,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    if (!skillSlug || !dc) {
-      ui.notifications.error('Invalid skill or DC');
+    if (!skillSlug) {
+      ui.notifications.error('Invalid skill');
       return;
     }
 
@@ -627,8 +648,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Execute roll (with optional action)
-    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc, actionSlug);
+    // Execute roll (with optional action and secret flag)
+    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc, actionSlug, isSecret);
   }
 
   /**
@@ -637,8 +658,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * @param {string} skillSlug - Skill slug
    * @param {number} dc - DC value
    * @param {string|null} actionSlug - Optional action slug (PF2e only)
+   * @param {boolean} isSecret - Whether this is a secret roll (GM only)
    */
-  static async _executeSkillRoll(participant, skillSlug, dc, actionSlug = null) {
+  static async _executeSkillRoll(participant, skillSlug, dc, actionSlug = null, isSecret = false) {
     const actor = await fromUuid(participant.actorUuid);
     if (!actor) {
       ui.notifications.error('Actor not found');
@@ -652,6 +674,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const rollOptions = { skipDialog: false };
     if (dc !== null && dc !== undefined) {
       rollOptions.dc = { value: dc };
+    }
+    // Add blind roll mode if secret
+    if (isSecret) {
+      rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
     }
 
     try {
@@ -676,6 +702,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
             if (!skill) {
               ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
+              if (request.isSecretRoll) {
+                await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+              }
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -775,6 +804,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Add DC if provided
       if (rollOptions.dc) {
         actionOptions.difficultyClass = rollOptions.dc;
+      }
+
+      // Add rollMode if provided (for secret rolls)
+      if (rollOptions.rollMode) {
+        actionOptions.rollMode = rollOptions.rollMode;
       }
 
       // Execute the action - returns an array of results

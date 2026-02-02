@@ -1,70 +1,107 @@
 <div class="player-sidebar-container">
-  {{#if actorRollGroups.length}}
-  <section class="pending-rolls-section {{#unless activeChallenge}}full-height{{/unless}}">
-    <div class="section-header collapsible" data-action="togglePendingRolls">
-      <h3>Pending Rolls</h3>
-      <i class="fas fa-chevron-up" aria-hidden="true"></i>
-    </div>
-    <div class="section-content pending-rolls-content {{#if pendingRollsCollapsed}}collapsed{{/if}}">
-      {{#each actorRollGroups}}
-        <div class="actor-roll-group">
-          <div class="actor-header-compact">
-            <img src="{{this.actorImg}}" alt="{{this.actorName}}" loading="lazy" class="actor-avatar-small">
-            <span class="actor-name">{{this.actorName}}</span>
-          </div>
-          <div class="rolls-grid">
-            {{#each this.rolls}}
-              <button type="button"
-                      class="roll-btn-grid"
-                      data-action="executeRoll"
-                      data-request-id="{{this.id}}"
-                      data-tooltip="Roll {{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}}"
-                      aria-label="Roll {{this.skillName}} check">
-                <i class="fas fa-dice-d20" aria-hidden="true"></i>
-                <span class="skill-name-short">{{this.skillName}}{{#if this.actionName}}<span class="action-name-micro"> ({{this.actionName}})</span>{{/if}}</span>
-                {{#if this.dc}}<span class="dc-badge-grid">{{this.dc}}</span>{{/if}}
-              </button>
-            {{/each}}
-          </div>
-        </div>
-      {{/each}}
-    </div>
-  </section>
-  {{/if}}
-
-  {{#if activeChallenge}}
-  <section class="challenge-section">
-    <div class="section-header collapsible" data-action="toggleChallenge">
-      {{#if activeChallenge.image}}
-      <img src="{{activeChallenge.image}}" alt="{{activeChallenge.name}}" class="challenge-image-small" loading="lazy">
+  <!-- Tab Navigation -->
+  <div class="tab-navigation">
+    <button type="button"
+            class="tab-btn {{#unless currentTab}}active{{/unless}}{{#if activeChallenge}} {{else}} disabled{{/if}}"
+            data-action="switchTab"
+            data-tab="challenge"
+            {{#unless activeChallenge}}disabled{{/unless}}>
+      <i class="fas fa-scroll" aria-hidden="true"></i>
+      <span>Challenge</span>
+    </button>
+    <button type="button"
+            class="tab-btn {{#if currentTab}}active{{/if}} {{#unless actorRollGroups.length}}disabled{{/unless}}"
+            data-action="switchTab"
+            data-tab="rolls">
+      <i class="fas fa-dice-d20" aria-hidden="true"></i>
+      <span>Rolls</span>
+      {{#if actorRollGroups.length}}
+        <span class="notification-badge">{{totalPendingRolls}}</span>
       {{/if}}
-      <h3>{{activeChallenge.name}}</h3>
-      <i class="fas fa-chevron-up" aria-hidden="true"></i>
-    </div>
-    <div class="section-content challenge-options {{#if challengeCollapsed}}collapsed{{/if}}">
-      {{#each activeChallenge.options}}
-      <div class="challenge-option-group">
-        <div class="option-description">{{this.description}}</div>
-        <div class="option-skills-grid">
-          {{#each this.skillOptionsDisplay}}
-          <button type="button"
-                  class="challenge-btn-grid"
-                  data-action="selectChallengeOption"
-                  data-option-id="{{../id}}"
-                  data-skill="{{this.skill}}"
-                  data-dc="{{this.dc}}"
-                  data-action-slug="{{this.action}}"
-                  data-tooltip="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}"
-                  aria-label="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
-            <i class="fas fa-scroll" aria-hidden="true"></i>
-            <span class="skill-name-short">{{this.skillName}}</span>
-            {{#if this.showDC}}<span class="dc-badge-grid">{{this.dc}}</span>{{/if}}
-          </button>
+    </button>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    {{#if activeChallenge}}
+    <section class="challenge-tab {{#if currentTab}}hidden{{/if}}" data-tab-content="challenge">
+      <div class="tab-scroll-content">
+        <div class="challenge-info">
+          {{#if activeChallenge.image}}
+          <img src="{{activeChallenge.image}}" alt="{{activeChallenge.name}}" class="challenge-image-header" loading="lazy">
+          {{/if}}
+          <h3 class="challenge-title">{{activeChallenge.name}}</h3>
+        </div>
+        <div class="challenge-options-list">
+          {{#each activeChallenge.options}}
+          <div class="challenge-option-group">
+            <div class="option-description">{{this.description}}</div>
+            <div class="option-skills-grid">
+              {{#each this.skillOptionsDisplay}}
+              <button type="button"
+                      class="challenge-btn-grid"
+                      data-action="selectChallengeOption"
+                      data-option-id="{{../id}}"
+                      data-skill="{{this.skill}}"
+                      data-dc="{{this.dc}}"
+                      data-action-slug="{{this.action}}"
+                      data-is-secret="{{this.isSecret}}"
+                      data-tooltip="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.keyboardHint}} (Press {{this.keyboardHint}}){{/if}}"
+                      aria-label="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
+                {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
+                <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
+                <span class="skill-name-short">{{this.skillName}}</span>
+                {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
+              </button>
+              {{/each}}
+            </div>
+          </div>
           {{/each}}
         </div>
       </div>
-      {{/each}}
-    </div>
-  </section>
-  {{/if}}
+    </section>
+    {{/if}}
+
+    {{#if actorRollGroups.length}}
+    <section class="rolls-tab {{#unless currentTab}}hidden{{/unless}}" data-tab-content="rolls">
+      <div class="tab-scroll-content">
+        {{#each actorRollGroups}}
+          <div class="actor-roll-group">
+            <div class="actor-header-compact">
+              <img src="{{this.actorImg}}" alt="{{this.actorName}}" loading="lazy" class="actor-avatar-small">
+              <span class="actor-name">{{this.actorName}}</span>
+            </div>
+            <div class="rolls-grid">
+              {{#each this.rolls}}
+                <button type="button"
+                        class="roll-btn-grid"
+                        data-action="executeRoll"
+                        data-request-id="{{this.id}}"
+                        data-tooltip="Roll {{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}} (Press {{this.keyboardHint}})"
+                        aria-label="Roll {{this.skillName}} check">
+                  {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
+                  <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
+                  <span class="skill-name-short">{{this.skillName}}{{#if this.actionName}}<span class="action-name-micro"> ({{this.actionName}})</span>{{/if}}</span>
+                  {{#if this.dc}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
+                </button>
+              {{/each}}
+            </div>
+          </div>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
+
+    {{#unless activeChallenge}}
+      {{#unless actorRollGroups.length}}
+      <div class="empty-state-sidebar">
+        <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+        <div class="empty-message">
+          <p>No Pending Actions</p>
+          <span class="empty-hint">Waiting for GM to request rolls or present challenges</span>
+        </div>
+      </div>
+      {{/unless}}
+    {{/unless}}
+  </div>
 </div>

@@ -299,21 +299,23 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const action = formData[`option-${idx}-action-${skillIdx}`] || null;
         const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
 
-        if (skill && dc) {
+        // Allow skills without DC (dc is optional)
+        if (skill) {
           skillOptions.push({
             skill,
-            dc: parseInt(dc),
+            dc: dc ? parseInt(dc) : null,
             action,
             isSecret,
           });
         }
       });
 
-      if (skillOptions.length > 0 && description) {
+      // Allow options without description (description is optional)
+      if (skillOptions.length > 0) {
         challengeData.options.push({
           id: foundry.utils.randomID(),
           skillOptions,
-          description,
+          description: description || '',
         });
       }
     });

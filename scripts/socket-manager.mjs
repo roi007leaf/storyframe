@@ -31,6 +31,9 @@ export class SocketManager {
     // Register challenge handlers
     this.socket.register('setActiveChallenge', this._handleSetActiveChallenge);
     this.socket.register('clearActiveChallenge', this._handleClearActiveChallenge);
+
+    // Register blind roll notification handler
+    this.socket.register('notifyBlindRoll', this._handleNotifyBlindRoll);
   }
 
   // --- Public API (call from any client) ---
@@ -135,6 +138,14 @@ export class SocketManager {
    */
   async requestSubmitRollResult(result) {
     return await this.socket.executeAsGM('submitRollResult', result);
+  }
+
+  /**
+   * Notify GM that a blind roll was just executed.
+   * @param {Object} data - { requestId, actorId, timestamp }
+   */
+  async notifyBlindRollExecuted(data) {
+    return await this.socket.executeAsGM('notifyBlindRoll', data);
   }
 
   /**
@@ -369,5 +380,14 @@ export class SocketManager {
    */
   async _handleClearActiveChallenge() {
     await game.storyframe.stateManager?.clearActiveChallenge();
+  }
+
+  /**
+   * Handler: Notify GM that a blind roll was executed.
+   * Runs on GM client.
+   * Directly removes the pending roll.
+   */
+  async _handleNotifyBlindRoll(data) {
+    await game.storyframe.stateManager?.removePendingRoll(data.requestId);
   }
 }

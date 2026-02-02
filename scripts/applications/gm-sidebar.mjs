@@ -31,11 +31,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       clearSpeaker: GMSidebarAppBase._onClearSpeaker,
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
       clearAllParticipants: GMSidebarAppBase._onClearAllParticipants,
-      togglePCsPanel: GMSidebarAppBase._onTogglePCsPanel,
-      toggleNPCsPanel: GMSidebarAppBase._onToggleNPCsPanel,
+      switchTab: GMSidebarAppBase._onSwitchTab,
+      toggleSecretRoll: GMSidebarAppBase._onToggleSecretRoll,
       toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
       toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
-      toggleChallengesPanel: GMSidebarAppBase._onToggleChallengesPanel,
       addAllPCs: GMSidebarAppBase._onAddAllPCs,
       addPartyPCs: GMSidebarAppBase._onAddPartyPCs,
       toggleParticipantSelection: GMSidebarAppBase._onToggleParticipantSelection,
@@ -60,7 +59,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       setActorAsSpeaker: GMSidebarAppBase._onSetActorAsSpeaker,
       presentChallenge: GMSidebarAppBase._onPresentChallenge,
       clearChallenge: GMSidebarAppBase._onClearChallenge,
-      manageChallengeLibrary: GMSidebarAppBase._onManageChallengeLibrary,
+      presentSavedChallenge: GMSidebarAppBase._onPresentSavedChallenge,
+      editChallenge: GMSidebarAppBase._onEditChallenge,
+      deleteChallenge: GMSidebarAppBase._onDeleteChallenge,
       createChallengeFromSelection: GMSidebarAppBase._onCreateChallengeFromSelection,
     },
   };
@@ -82,15 +83,17 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     super(options);
     this._stateRestored = false;
 
-    // Panel state (progressive disclosure - less important sections collapsed)
-    this.pcsPanelCollapsed = false;
-    this.npcsPanelCollapsed = false;
+    // Tab state: 'npcs', 'pcs', 'challenges'
+    this.currentTab = 'pcs'; // Default to PCs tab (most used)
+
+    // Sub-panel state within PCs tab
     this.journalChecksPanelCollapsed = false;
     this.journalImagesPanelCollapsed = true; // Collapsed by default
-    this.challengesPanelCollapsed = false;
+
     this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
+    this.secretRollEnabled = false; // Secret roll toggle state
 
     // Track active speaker for change detection
     this._lastActiveSpeaker = null;
@@ -438,13 +441,43 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       slug,
       name: this._getSkillName(slug),
       shortName: this._getSkillShortName(slug),
+      icon: this._getSkillIcon(slug),
     }));
+
+    // Categorize skills
+    const skillCategories = {
+      physical: ['acr', 'ath'],
+      mental: ['arc', 'nat', 'occ', 'rel'],
+      social: ['dec', 'dip', 'itm', 'prf', 'soc'],
+      perception: ['per'],
+      utility: ['cra', 'med', 'ste', 'sur', 'thi'],
+    };
+
+    const categorizedSkills = {
+      physicalSkills: this._mapSkillsWithAvailability(skillCategories.physical, quickButtonSkills),
+      mentalSkills: this._mapSkillsWithAvailability(skillCategories.mental, quickButtonSkills),
+      socialSkills: this._mapSkillsWithAvailability(skillCategories.social, quickButtonSkills),
+      perceptionSkills: this._mapSkillsWithAvailability(skillCategories.perception, quickButtonSkills),
+      utilitySkills: this._mapSkillsWithAvailability(skillCategories.utility, quickButtonSkills),
+    };
 
     // Get lore skills from participants
     const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
 
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
+
+    // Get selected participant data for avatar display
+    const selectedParticipantData = participants
+      .filter(p => this.selectedParticipants.has(p.id))
+      .map(p => ({
+        id: p.id,
+        name: p.name,
+        img: p.img,
+      }));
+
+    console.log('Context - selectedParticipants:', Array.from(this.selectedParticipants));
+    console.log('Context - selectedParticipantData:', selectedParticipantData);
 
     // Get system-specific DC options
     const dcOptions = SystemAdapter.getDCOptions();
@@ -461,6 +494,37 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const activeChallenge = state?.activeChallenge || null;
     const hasActiveChallenge = activeChallenge !== null;
 
+    // Load and enrich saved challenges for library
+    const savedChallengesRaw = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    const savedChallenges = savedChallengesRaw.map(c => {
+      const optionsPreview = c.options.map((opt, idx) => {
+        const skillOptions = opt.skillOptions.map(so => {
+          const skillName = this._getSkillName(so.skill);
+          const actionName = so.action ? this._getActionName(so.skill, so.action) : null;
+          return {
+            skillName,
+            actionName,
+            dc: so.dc,
+            isSecret: so.isSecret || false,
+            displayText: actionName ? `${skillName} (${actionName})` : skillName,
+          };
+        });
+
+        return {
+          index: idx + 1,
+          description: opt.description,
+          skillOptions,
+        };
+      });
+
+      return {
+        id: c.id,
+        name: c.name,
+        image: c.image,
+        options: optionsPreview,
+      };
+    });
+
     return {
       speakers,
       activeSpeaker: state.activeSpeaker,
@@ -469,6 +533,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasParticipants: participants.length > 0,
       selectedCount,
       allSelected,
+      hasSelection: selectedCount > 0,
+      selectedParticipantData,
       currentDC: this.currentDC,
       partyLevel,
       calculatedDC,
@@ -476,13 +542,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       difficultyOptions,
       pendingRolls,
       quickButtonSkills,
+      ...categorizedSkills,
       loreSkills,
       hasLoreSkills: loreSkills.length > 0,
-      pcsPanelCollapsed: this.pcsPanelCollapsed,
-      npcsPanelCollapsed: this.npcsPanelCollapsed,
+      currentTab: this.currentTab,
+      secretRollEnabled: this.secretRollEnabled || false,
       journalChecksPanelCollapsed: this.journalChecksPanelCollapsed,
       journalImagesPanelCollapsed: this.journalImagesPanelCollapsed,
-      challengesPanelCollapsed: this.challengesPanelCollapsed,
       currentSystem,
       dcOptions,
       isPF2e: currentSystem === 'pf2e',
@@ -496,6 +562,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasJournalActors: journalActors.length > 0,
       activeChallenge,
       hasActiveChallenge,
+      savedChallenges,
+      hasSavedChallenges: savedChallenges.length > 0,
     };
   }
 
@@ -1238,6 +1306,43 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return SystemAdapter.getSkillShortName(slug);
   }
 
+  _getSkillIcon(slug) {
+    const iconMap = {
+      // PF2e skills
+      per: 'fa-eye',
+      acr: 'fa-person-running',
+      arc: 'fa-wand-sparkles',
+      ath: 'fa-dumbbell',
+      cra: 'fa-hammer',
+      dec: 'fa-mask',
+      dip: 'fa-handshake',
+      itm: 'fa-fist-raised',
+      med: 'fa-kit-medical',
+      nat: 'fa-leaf',
+      occ: 'fa-book-skull',
+      prf: 'fa-music',
+      rel: 'fa-cross',
+      soc: 'fa-users',
+      ste: 'fa-user-secret',
+      sur: 'fa-compass',
+      thi: 'fa-hand-holding',
+      // D&D 5e additional
+      ani: 'fa-paw',
+      his: 'fa-scroll',
+      ins: 'fa-lightbulb',
+      inv: 'fa-search',
+      prc: 'fa-eye',
+      slt: 'fa-hand-sparkles',
+    };
+    return iconMap[slug] || 'fa-dice-d20';
+  }
+
+  _mapSkillsWithAvailability(categorySlugs, allSkills) {
+    return categorySlugs
+      .map(slug => allSkills.find(s => s.slug === slug))
+      .filter(Boolean);
+  }
+
   async _resolveParticipantName(participant) {
     const actor = await fromUuid(participant.actorUuid);
     return actor?.name || 'Unknown';
@@ -1366,9 +1471,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
     if (!state) return;
 
-    // Check if secret roll is enabled
-    const secretCheckbox = this.element.querySelector('#secret-roll-checkbox');
-    const isSecretRoll = secretCheckbox?.checked || false;
+    // Check if secret roll is enabled (toggle button or action with secret trait)
+    let isSecretRoll = this.secretRollEnabled || false;
+
+    // Auto-detect actions with secret trait in PF2e
+    if (!isSecretRoll && actionSlug && game.pf2e) {
+      isSecretRoll = await this._actionHasSecretTrait(actionSlug);
+    }
 
     let sentCount = 0;
     let offlineCount = 0;
@@ -1425,6 +1534,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (missingSkillCount > 0) {
       ui.notifications.warn(`${missingSkillCount} PC(s) don't have ${skillName} - skipped`);
     }
+
+    // Clear selection after sending rolls
+    this.selectedParticipants.clear();
+    this.render();
   }
 
   /**
@@ -1436,6 +1549,37 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _actorHasSkill(_actor, _skillSlug) {
     // Base implementation always returns true - subclasses should override
     return true;
+  }
+
+  /**
+   * Check if an action has the secret trait (makes it a blind GM roll)
+   * @param {string} actionSlug - The action slug to check
+   * @returns {Promise<boolean>} True if action has secret trait
+   */
+  async _actionHasSecretTrait(actionSlug) {
+    if (!game.pf2e?.actions) return false;
+
+    try {
+      // Search the actions compendium for this action
+      const pack = game.packs.get('pf2e.actionspf2e');
+      if (!pack) return false;
+
+      // Convert slug to title case for searching (e.g., 'seek' -> 'Seek')
+      const actionName = actionSlug.split('-').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+
+      // Search by name
+      const actionItem = pack.index.find(i => i.name.toLowerCase() === actionName.toLowerCase());
+      if (!actionItem) return false;
+
+      // Get full document to check traits
+      const doc = await pack.getDocument(actionItem._id);
+      return doc?.system?.traits?.value?.includes('secret') || false;
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Error checking action traits:`, error);
+      return false;
+    }
   }
 
   /**
@@ -1543,13 +1687,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
-  static async _onTogglePCsPanel(_event, _target) {
-    this.pcsPanelCollapsed = !this.pcsPanelCollapsed;
+  static async _onSwitchTab(_event, target) {
+    const tab = target.dataset.tab;
+    this.currentTab = tab;
     this.render();
   }
 
-  static async _onToggleNPCsPanel(_event, _target) {
-    this.npcsPanelCollapsed = !this.npcsPanelCollapsed;
+  static async _onToggleSecretRoll(_event, _target) {
+    this.secretRollEnabled = !this.secretRollEnabled;
     this.render();
   }
 
@@ -1560,11 +1705,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onToggleJournalImagesPanel(_event, _target) {
     this.journalImagesPanelCollapsed = !this.journalImagesPanelCollapsed;
-    this.render();
-  }
-
-  static async _onToggleChallengesPanel(_event, _target) {
-    this.challengesPanelCollapsed = !this.challengesPanelCollapsed;
     this.render();
   }
 
@@ -1648,6 +1788,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (requestBar) {
       requestBar.classList.toggle('ready', selectedCount > 0 && this.currentDC);
     }
+
+    // Re-render to update avatar display
+    this.render();
   }
 
   static async _onRemoveParticipant(event, target) {
@@ -1683,8 +1826,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       }
     });
 
-    // Update checkbox state
-    this._updateSelectAllCheckbox();
+    // Re-render to update avatar display
+    console.log('Select all - selected participants:', Array.from(this.selectedParticipants));
+    this.render();
   }
 
   /**
@@ -2581,13 +2725,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       <div class="dc-popup-items">
         ${skillGroup.checks.map((check) => {
           const isVisible = visibleDCs.has(String(check.dc));
+          const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
           return `
           <button type="button"
                   class="dc-option ${isVisible ? 'in-view' : ''}"
                   data-dc="${check.dc}"
                   data-skill="${check.skillName}"
-                  data-tooltip="${check.label}">
-            ${check.dc}
+                  data-is-secret="${check.isSecret || false}"
+                  data-tooltip="${check.label}${check.isSecret ? ' (Secret)' : ''}">
+            ${check.dc}${secretIcon}
           </button>
         `;
         }).join('')}
@@ -2664,12 +2810,17 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       btn.addEventListener('click', async () => {
         const dc = parseInt(btn.dataset.dc);
         const skill = btn.dataset.skill;
+        const isSecret = btn.dataset.isSecret === 'true';
         menu.remove();
 
         // Set DC and request check
         this.currentDC = dc;
         const dcInput = this.element.querySelector('#dc-input');
         if (dcInput) dcInput.value = dc;
+
+        // Set secret toggle if this is a secret check
+        this.secretRollEnabled = isSecret;
+        this.render();
 
         if (this.selectedParticipants.size > 0) {
           const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
@@ -2773,10 +2924,70 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     ui.notifications.info('Challenge cleared');
   }
 
-  static async _onManageChallengeLibrary(_event, _target) {
-    // No participant requirement
-    const library = new ChallengeLibraryDialog(new Set(), this);
-    library.render(true);
+  static async _onPresentSavedChallenge(_event, target) {
+    const challengeId = target.dataset.challengeId;
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    const template = savedChallenges.find(c => c.id === challengeId);
+
+    if (!template) {
+      ui.notifications.error('Challenge not found');
+      return;
+    }
+
+    // Create challenge data from template
+    const challengeData = {
+      id: foundry.utils.randomID(),
+      name: template.name,
+      image: template.image,
+      selectedParticipants: [], // Broadcast to all players
+      options: template.options,
+    };
+
+    await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
+    ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
+  }
+
+  static async _onEditChallenge(_event, target) {
+    const challengeId = target.dataset.challengeId;
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    const template = savedChallenges.find(c => c.id === challengeId);
+
+    if (!template) {
+      ui.notifications.error('Challenge not found');
+      return;
+    }
+
+    // Import ChallengeBuilderDialog
+    const { ChallengeBuilderDialog } = await import('./challenge-builder.mjs');
+
+    // Open builder in edit mode
+    const builder = new ChallengeBuilderDialog(new Set(), {
+      editMode: true,
+      templateId: challengeId,
+      templateData: template,
+    });
+    builder.render(true);
+  }
+
+  static async _onDeleteChallenge(_event, target) {
+    const challengeId = target.dataset.challengeId;
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Delete Challenge' },
+      content: '<p>Delete this challenge from library?</p>',
+      yes: { label: 'Delete' },
+      no: { label: 'Cancel' },
+      rejectClose: false,
+    });
+
+    if (!confirmed) return;
+
+    const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+    const filtered = savedChallenges.filter(c => c.id !== challengeId);
+    await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
+
+    ui.notifications.info('Challenge deleted from library');
+    this.render();
   }
 
   /**
@@ -2851,7 +3062,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           skill: skillSlug || check.skillName,
           dc: check.dc,
           action: null,
-          isSecret: false,
+          isSecret: check.isSecret || false,
         }],
       };
     });
@@ -2871,6 +3082,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
 
     ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+
+    // Rerender to show new challenge in library
+    this.render();
 
     // Clear selection
     selection.removeAllRanges();

@@ -693,3 +693,44 @@ Hooks.on('closePlayerViewerApp', () => {
     game.storyframe.playerSidebar.close();
   }
 });
+
+// Hook: updateSetting - rerender GM sidebar when challenge library changes
+Hooks.on('updateSetting', (setting, value, _options, _userId) => {
+  if (setting.key === 'storyframe.challengeLibrary' && game.user.isGM) {
+    if (game.storyframe?.gmSidebar?.rendered) {
+      game.storyframe.gmSidebar.render();
+    }
+  }
+});
+
+// Hook: closeCheckModifiersDialog - detect if roll was made or cancelled
+Hooks.on('closeCheckModifiersDialog', async (dialog, html) => {
+  // Only on player side
+  if (game.user.isGM) return;
+  if (!window._storyframeCurrentBlindRoll) return;
+
+  // Wait for chat message to be created
+  setTimeout(async () => {
+    if (!window._storyframeCurrentBlindRoll) return;
+
+    const { requestId, actorId } = window._storyframeCurrentBlindRoll;
+
+    // Check if a blind chat message was created in the last second from this actor
+    const recentMessage = game.messages.contents.reverse().find((msg) => {
+      const timeDiff = Date.now() - msg.timestamp;
+      return timeDiff < 1000 &&
+             msg.speaker?.actor === actorId &&
+             (msg.whisper?.length > 0 || msg.blind);
+    });
+
+    if (recentMessage) {
+      await game.storyframe.socketManager.notifyBlindRollExecuted({
+        requestId,
+        actorId,
+        timestamp: Date.now(),
+      });
+    }
+
+    window._storyframeCurrentBlindRoll = null;
+  }, 100);
+});

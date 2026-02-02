@@ -14,7 +14,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     id: 'storyframe-player-sidebar',
     classes: ['storyframe', 'player-sidebar', 'drawer'],
     window: {
-      title: 'Storyframe',
+      title: 'Storyframe Player Sidebar',
       icon: 'fas fa-dice-d20',
       resizable: false,
       minimizable: false,
@@ -26,8 +26,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     actions: {
       executeRoll: PlayerSidebarApp._onExecuteRoll,
       selectChallengeOption: PlayerSidebarApp._onSelectChallengeOption,
-      toggleChallenge: PlayerSidebarApp._onToggleChallenge,
-      togglePendingRolls: PlayerSidebarApp._onTogglePendingRolls,
+      switchTab: PlayerSidebarApp._onSwitchTab,
     },
   };
 
@@ -47,9 +46,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   constructor(options = {}) {
     super(options);
 
-    // Panel state
-    this.challengeCollapsed = false;
-    this.pendingRollsCollapsed = false;
+    // Tab state: null = challenge tab, 'rolls' = rolls tab
+    // Default to rolls tab if there are pending rolls, else challenge
+    this.currentTab = null;
 
     // Parent reference (set externally when attaching)
     this.parentViewer = null;
@@ -119,7 +118,8 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return {
         actorRollGroups: [],
         activeChallenge: null,
-        pendingRollsCollapsed: this.pendingRollsCollapsed,
+        currentTab: this.currentTab,
+        totalPendingRolls: 0,
       };
     }
 
@@ -152,18 +152,70 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return slug.toUpperCase();
     };
 
+    // Get skill icon helper
+    const getSkillIcon = (slug) => {
+      const iconMap = {
+        // PF2e skills
+        per: 'fa-eye',
+        acr: 'fa-person-running',
+        arc: 'fa-wand-sparkles',
+        ath: 'fa-dumbbell',
+        cra: 'fa-hammer',
+        dec: 'fa-mask',
+        dip: 'fa-handshake',
+        itm: 'fa-fist-raised',
+        med: 'fa-kit-medical',
+        nat: 'fa-leaf',
+        occ: 'fa-book-skull',
+        prf: 'fa-music',
+        rel: 'fa-cross',
+        soc: 'fa-users',
+        ste: 'fa-user-secret',
+        sur: 'fa-compass',
+        thi: 'fa-hand-holding',
+        // D&D 5e additional
+        ani: 'fa-paw',
+        his: 'fa-scroll',
+        ins: 'fa-lightbulb',
+        inv: 'fa-search',
+        prc: 'fa-eye',
+        slt: 'fa-hand-sparkles',
+      };
+      return iconMap[slug] || 'fa-dice-d20';
+    };
+
+    // Get DC difficulty helper
+    const getDCDifficulty = (dc) => {
+      if (!dc) return 'moderate';
+      if (dc <= 10) return 'trivial';
+      if (dc <= 15) return 'low';
+      if (dc <= 20) return 'moderate';
+      if (dc <= 30) return 'high';
+      return 'extreme';
+    };
+
     // Active challenge
     let activeChallenge = null;
     if (state?.activeChallenge && myParticipants.length > 0) {
+      // Add keyboard hints to first 9 challenge skills
+      let skillIndex = 0;
       const enrichedOptions = state.activeChallenge.options.map(opt => ({
         ...opt,
-        skillOptionsDisplay: opt.skillOptions.map(so => ({
-          ...so,
-          skillName: getSkillName(so.skill),
-          dc: so.dc,
-          action: so.action || null,
-          showDC: showDCs,
-        })),
+        skillOptionsDisplay: opt.skillOptions.map(so => {
+          const hint = skillIndex < 9 ? (skillIndex + 1).toString() : null;
+          skillIndex++;
+          return {
+            ...so,
+            skillName: getSkillName(so.skill),
+            skillIcon: getSkillIcon(so.skill),
+            dc: so.dc,
+            dcDifficulty: getDCDifficulty(so.dc),
+            action: so.action || null,
+            isSecret: so.isSecret || false,
+            showDC: showDCs,
+            keyboardHint: hint,
+          };
+        }),
       }));
 
       activeChallenge = {
@@ -185,8 +237,10 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
             return {
               ...roll,
               skillName: getSkillName(roll.skillSlug),
+              skillIcon: getSkillIcon(roll.skillSlug),
               actionName: roll.actionSlug || null,
               dc: showDCs ? roll.dc : null,
+              dcDifficulty: getDCDifficulty(roll.dc),
               actorName: actor?.name || 'Unknown',
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
               actorId: participant?.actorUuid || 'unknown',
@@ -208,13 +262,32 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       }, {});
 
       actorRollGroups = Object.values(groupedByActor);
+
+      // Add keyboard hints to first 9 rolls
+      let rollIndex = 0;
+      for (const group of actorRollGroups) {
+        for (const roll of group.rolls) {
+          if (rollIndex < 9) {
+            roll.keyboardHint = (rollIndex + 1).toString();
+          }
+          rollIndex++;
+        }
+      }
     }
+
+    // Auto-switch to rolls tab only on first render if there are pending rolls
+    if (actorRollGroups.length > 0 && this.currentTab === null && !activeChallenge && !this._hasInitialized) {
+      this.currentTab = 'rolls';
+      this._hasInitialized = true;
+    }
+
+    const totalPendingRolls = actorRollGroups.reduce((sum, group) => sum + group.rolls.length, 0);
 
     return {
       actorRollGroups,
       activeChallenge,
-      challengeCollapsed: this.challengeCollapsed,
-      pendingRollsCollapsed: this.pendingRollsCollapsed,
+      currentTab: this.currentTab,
+      totalPendingRolls,
     };
   }
 
@@ -233,10 +306,70 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       this._positionAsDrawer(3);
       this._startTrackingParent();
     }
+
+    // Add keyboard shortcuts
+    this._setupKeyboardShortcuts();
+  }
+
+  /**
+   * Setup keyboard shortcuts for quick actions
+   */
+  _setupKeyboardShortcuts() {
+    if (this._keyHandler) return; // Already setup
+
+    this._keyHandler = (event) => {
+      // Ignore if typing in input field
+      if (event.target.matches('input, textarea')) return;
+
+      // Number keys 1-9 trigger buttons based on active tab
+      if (event.key >= '1' && event.key <= '9') {
+        const index = parseInt(event.key) - 1;
+
+        // If on challenge tab, trigger challenge buttons
+        if (this.currentTab === null) {
+          const challengeButtons = this.element.querySelectorAll('.challenge-btn-grid');
+          if (challengeButtons[index]) {
+            challengeButtons[index].click();
+            event.preventDefault();
+          }
+        } else {
+          // On rolls tab, trigger roll buttons
+          const rollButtons = this.element.querySelectorAll('.roll-btn-grid');
+          if (rollButtons[index]) {
+            rollButtons[index].click();
+            event.preventDefault();
+          }
+        }
+      }
+
+      // Tab key switches between tabs
+      if (event.key === 'Tab' && !event.shiftKey) {
+        event.preventDefault();
+        if (this.currentTab === null) {
+          this.currentTab = 'rolls';
+        } else {
+          this.currentTab = null;
+        }
+        this.render();
+      }
+
+      // Escape closes sidebar
+      if (event.key === 'Escape') {
+        this.close();
+        event.preventDefault();
+      }
+    };
+
+    document.addEventListener('keydown', this._keyHandler);
   }
 
   async _onClose(_options) {
     this._stopTrackingParent();
+    // Remove keyboard handler
+    if (this._keyHandler) {
+      document.removeEventListener('keydown', this._keyHandler);
+      this._keyHandler = null;
+    }
     return super._onClose(_options);
   }
 
@@ -254,9 +387,18 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return;
     }
 
-    // Import and call the player viewer's execute roll logic
-    const { PlayerViewerApp } = await import('./player-viewer.mjs');
-    await PlayerViewerApp._onExecuteRoll(_event, target);
+    // Add rolling animation
+    target.classList.add('rolling');
+
+    try {
+      // Import and call the player viewer's execute roll logic
+      const { PlayerViewerApp } = await import('./player-viewer.mjs');
+      await PlayerViewerApp._onExecuteRoll(_event, target);
+    } finally {
+      // Remove rolling class immediately after attempt
+      // Animation is 400ms, but we need button clickable right away if cancelled
+      target.classList.remove('rolling');
+    }
   }
 
   static async _onSelectChallengeOption(_event, target) {
@@ -265,13 +407,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     await PlayerViewerApp._onSelectChallengeOption(_event, target);
   }
 
-  static async _onToggleChallenge(_event, _target) {
-    this.challengeCollapsed = !this.challengeCollapsed;
-    this.render();
-  }
-
-  static async _onTogglePendingRolls(_event, _target) {
-    this.pendingRollsCollapsed = !this.pendingRollsCollapsed;
+  static async _onSwitchTab(_event, target) {
+    const tab = target.dataset.tab;
+    this.currentTab = tab === 'challenge' ? null : 'rolls';
     this.render();
   }
 }
