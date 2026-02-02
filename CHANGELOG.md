@@ -9,7 +9,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-#### Player Sidebar System (Major Refactor)
+- **GM Sidebar Tabbed Layout** - Reorganized into three dedicated tabs
+  - NPCs tab: Speaker gallery with journal images and actors
+  - PCs tab: Participant management with skill buttons and DC controls
+  - Challenges tab: Challenge library with create and present options
+  - Cleaner navigation, focused content per tab
+  - Auto-hide empty sections, show only relevant controls
+- **Player Sidebar Tabbed Layout** - Separate tabs for challenges and rolls
+  - Challenge tab: Active challenge with skill options grid
+  - Rolls tab: Pending rolls grouped by actor
+  - Keyboard shortcuts (1-9) for quick roll execution
+  - Tab key to switch between tabs, Escape to close
+  - Auto-switch to rolls tab when no challenge active
+
+### Changed
+
+- **GM Sidebar PC Grid** - Made sticky like DC and level controls
+  - PC grid now in sticky controls bar for constant visibility
+  - Removed selected avatars display section
+  - Replaced with simple "Select All/Deselect" button
+  - Cleaner, more compact layout
+- **DC Controls Layout** - Level and difficulty selector moved to same row as secret button
+  - Single row for all controls: Select All, DC input, Level/Difficulty, Secret
+  - More compact, efficient use of space
+
+### Fixed
+
+- **Challenge Skill Rolls** - Allow optional DC values
+  - Skills in challenges no longer require DC to be set
+  - Validation now only requires skill, DC is optional
+  - Fixes "Invalid skill or DC" error for challenges without DC
+- **Challenge Keyboard Hints** - Fixed positioning on skill buttons
+  - Added `position: relative` to challenge buttons
+  - Keyboard hints now appear on buttons instead of challenge title
+
+  ### Player Sidebar System (Major Refactor)
+
 - **Separate Player Sidebar** - Dedicated drawer for challenges and pending rolls
   - Positions alongside player viewer as attached drawer
   - Auto-opens/closes with player viewer
@@ -39,6 +74,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Example: "Diplomacy (Demoralize)"
 
 #### Create Challenge from Selection
+
 - **Quick Create** - Magic wand button in Challenges section
 - **Text Selection** - Select journal text with skill checks
 - **Auto-Parse** - Extracts all inline checks from HTML
@@ -48,6 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Skill Mapping** - Converts full names to proper slugs
 
 #### Journal Check Features
+
 - **Scroll Highlighting** - Real-time viewport detection
   - Skill buttons glow when checks visible in journal
   - DC values in popup glow when visible
@@ -67,6 +104,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 #### Performance & Rendering
+
 - **Scroll Position Preservation** - No more jumping to top
   - Manual save/restore on all renders
   - MutationObserver for DOM changes
@@ -80,6 +118,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 80%+ reduction in re-render frequency
 
 #### Skill System Fixes
+
 - **Skill Validation** - Prevents invalid skill requests
   - Checks if each PC has the requested skill
   - Skips PCs without the skill with warning
@@ -94,6 +133,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fallback logic for skill location
 
 #### Pending Roll Management
+
 - **Secret Roll Cleanup** - Automatic removal for blind rolls
   - Regular rolls: Stay on cancel (retry)
   - Secret rolls: Remove when action fails/returns null
@@ -104,6 +144,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Better reliability for Seek, Demoralize, etc.
 
 #### Layout & Positioning
+
 - **DC Preset Popup** - Fixed broken positioning
   - Restructured HTML: `.preset-selector` wraps input and dropdown
   - Dropdown appears in correct location below button
@@ -116,6 +157,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Scroll position preserved during renders
 
 #### Bug Fixes
+
 - **Static Method Calls** - Fixed `_onAddAllPCs` context
   - Proper `.call(this)` usage in inheritance chain
   - D&D 5e and base class both fixed
@@ -132,6 +174,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 #### Size & Spacing Adjustments
+
 - **Sidebar Dimensions** - Optimized for content
   - Player sidebar: 340px wide, 600px tall
   - Grid buttons: 90px min width, 54px min height
@@ -149,6 +192,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Line heights: 1.1-1.2
 
 #### Visual Refinements
+
 - **Avatar Sizes** - Smaller for compact design
   - Player sidebar: 24px
   - Challenge header: 32px
@@ -172,6 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Multi-Option Challenge System
+
 - **Present Challenge** - GM broadcasts multi-option skill challenges to all players
   - Proper ApplicationV2 dialog class with dedicated template and CSS
   - Card-based builder with name, optional image, and multiple options
@@ -211,6 +256,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Journal Content Integration
+
 - **Journal Images Gallery** - All images in journal automatically appear in NPC panel
   - Grid layout with compact square thumbnails (50px)
   - Click to add image as NPC speaker with custom name prompt
@@ -224,17 +270,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Filters out actors already added as speakers, loot actors, and hazards
 
 #### Skill Check Enhancements
+
 - **Secret Rolls** - New checkbox in DC controls for GM-only rolls (blind mode)
 - **System-Specific Skill Menus** - Three-dots and gear menus now show correct skills per system
 - **D&D 5e Inline Checks** - Auto-detects `[[/check skill dc=15]]` and `[[/save ability dc=12]]` syntax
 
 #### UI Enhancements
+
 - **PC hover border** - PCs now show accent border on hover for better interactivity
 - **Compact galleries** - Journal images/actors use 50px grid for more items per row
 - **Cleaner UI** - Removed + icons from journal images for simpler appearance
 - **DC dropdown fix** - Click events no longer auto-close dropdowns
 
 ### Changed
+
 - **Major Refactor**: System-specific implementations
   - Created `GMSidebarAppBase` abstract class with common functionality
   - Created `GMSidebarAppPF2e` subclass for PF2e-specific features
@@ -248,6 +297,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Player viewer control** - Right-click TV icon closes viewers for all players
 
 ### Fixed
+
 - D&D 5e check detection now parses `<span class="roll-link-group">` correctly
 - D&D 5e rolls now evaluate success/failure with `config.target` DC
 - D&D 5e actor links (@UUID format) now detected in journal
@@ -256,6 +306,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Journal actor filtering now correctly uses UUID comparison
 
 ### Removed
+
 - Debug console.log statements throughout codebase
 - Hardcoded system-specific logic from base class
 
