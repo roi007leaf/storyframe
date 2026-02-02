@@ -26,6 +26,7 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
           label: label || ability,
           skillName: ability.toLowerCase(),
           dc: parseInt(dc),
+          isSecret: false, // D&D 5e doesn't have inline secret trait support
           id: foundry.utils.randomID(),
         });
       }
@@ -42,6 +43,7 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
           label: label || `${ability.toUpperCase()} Save`,
           skillName: ability.toLowerCase(),
           dc: parseInt(dc),
+          isSecret: false, // D&D 5e doesn't have inline secret trait support
           id: foundry.utils.randomID(),
         });
       }

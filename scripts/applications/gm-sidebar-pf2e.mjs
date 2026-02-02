@@ -5,6 +5,12 @@ import * as SystemAdapter from '../system-adapter.mjs';
  * PF2e-specific GM Sidebar implementation
  */
 export class GMSidebarAppPF2e extends GMSidebarAppBase {
+  static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
+    actions: {
+      addPartyPCs: GMSidebarAppPF2e._onAddPartyPCs,
+    },
+  }, { inplace: false });
+
   /**
    * Parse PF2e inline checks from journal content
    */
@@ -17,6 +23,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     checkElements.forEach((checkEl) => {
       const dc = checkEl.dataset.pf2Dc;
       const type = checkEl.dataset.pf2Check;
+      const traits = checkEl.dataset.pf2Traits || '';
       const labelSpan = checkEl.querySelector('.label');
       const label = labelSpan ? labelSpan.textContent.trim() : checkEl.textContent.trim();
 
@@ -25,6 +32,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
           label,
           skillName: type,
           dc: parseInt(dc),
+          isSecret: traits.toLowerCase().includes('secret'),
           id: foundry.utils.randomID(),
         });
       }
@@ -201,10 +209,24 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       return;
     }
 
-    const partyMembers = party.members || [];
+    const memberRefs = party.system.details.members || [];
+
+    if (memberRefs.length === 0) {
+      ui.notifications.warn('No members in party');
+      return;
+    }
+
+    // Resolve member references to actual actors
+    const partyMembers = [];
+    for (const memberRef of memberRefs) {
+      const actor = await fromUuid(memberRef.uuid);
+      if (actor) {
+        partyMembers.push(actor);
+      }
+    }
 
     if (partyMembers.length === 0) {
-      ui.notifications.warn('No members in party');
+      ui.notifications.warn('No valid members in party');
       return;
     }
 

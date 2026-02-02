@@ -1,117 +1,123 @@
 <div class="gm-sidebar-container">
-  <!-- NPCs Section -->
-  <section class="npcs-section {{#if npcsPanelCollapsed}}collapsed{{/if}}" aria-labelledby="npcs-heading">
-    <div class="section-header">
-      <div class="section-header-left collapsible"
-           data-action="toggleNPCsPanel"
-           role="button"
-           tabindex="0"
-           aria-expanded="{{#unless npcsPanelCollapsed}}true{{else}}false{{/unless}}"
-           aria-controls="npcs-panel-content">
-        <h3 id="npcs-heading">NPCs</h3>
-        <i class="fas fa-chevron-up" aria-hidden="true"></i>
-      </div>
-      <div class="section-actions">
-        <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
-          <i class="fas fa-plus" aria-hidden="true"></i>
-        </button>
+  <!-- Tab Navigation -->
+  <div class="tab-navigation">
+    <button type="button"
+            class="tab-btn {{#if (eq currentTab 'npcs')}}active{{/if}}"
+            data-action="switchTab"
+            data-tab="npcs">
+      <i class="fas fa-masks-theater" aria-hidden="true"></i>
+      <span>NPCs</span>
+    </button>
+    <button type="button"
+            class="tab-btn {{#if (eq currentTab 'pcs')}}active{{/if}}"
+            data-action="switchTab"
+            data-tab="pcs">
+      <i class="fas fa-users" aria-hidden="true"></i>
+      <span>PCs</span>
+    </button>
+    <button type="button"
+            class="tab-btn {{#if (eq currentTab 'challenges')}}active{{/if}}"
+            data-action="switchTab"
+            data-tab="challenges">
+      <i class="fas fa-tasks" aria-hidden="true"></i>
+      <span>Challenges</span>
+    </button>
+  </div>
+
+  <!-- Tab Content -->
+  <div class="tab-content">
+    <!-- NPCs Tab -->
+    <section class="npcs-tab {{#unless (eq currentTab 'npcs')}}hidden{{/unless}}" data-tab-content="npcs" aria-labelledby="npcs-heading">
+      <div class="tab-scroll-content">
+        <div class="tab-header-actions">
+          <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
+            <i class="fas fa-plus" aria-hidden="true"></i>
+          </button>
+          {{#if hasSpeakers}}
+          <button type="button" data-action="clearSpeaker" data-tooltip="Clear active NPC" aria-label="Deselect active NPC">
+            <i class="fas fa-user-slash" aria-hidden="true"></i>
+          </button>
+          <button type="button" data-action="clearAllSpeakers" data-tooltip="Clear all NPCs" aria-label="Remove all NPCs">
+            <i class="fas fa-trash" aria-hidden="true"></i>
+          </button>
+          {{/if}}
+        </div>
+
+        <div class="speaker-gallery" role="list" aria-label="NPC speakers">
         {{#if hasSpeakers}}
-        <button type="button" data-action="clearSpeaker" data-tooltip="Clear active NPC" aria-label="Deselect active NPC">
-          <i class="fas fa-user-slash" aria-hidden="true"></i>
-        </button>
-        <button type="button" data-action="clearAllSpeakers" data-tooltip="Clear all NPCs" aria-label="Remove all NPCs">
-          <i class="fas fa-trash" aria-hidden="true"></i>
-        </button>
+          {{#each speakers}}
+            <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
+                 data-action="setSpeaker"
+                 data-speaker-id="{{this.id}}"
+                 data-tooltip="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
+                 role="listitem"
+                 tabindex="0"
+                 aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
+              <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+              <div class="speaker-name">{{this.name}}</div>
+              <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="Remove {{this.name}}" aria-label="Remove {{this.name}}">
+                <i class="fas fa-times" aria-hidden="true"></i>
+              </button>
+            </div>
+          {{/each}}
+        {{else}}
+          <div class="empty-state compact" role="status">
+            <i class="fas fa-user-plus" aria-hidden="true"></i>
+            <span>Drag actors here</span>
+          </div>
+        {{/if}}
+        </div>
+
+        {{#if hasJournalImages}}
+        <div class="journal-images-inline">
+          <div class="section-divider">
+            <span>Journal Images</span>
+          </div>
+          <div class="journal-images-gallery">
+          {{#each journalImages}}
+            <div class="journal-image-item"
+                 data-action="setImageAsSpeaker"
+                 data-image-id="{{this.id}}"
+                 data-image-src="{{this.src}}"
+                 data-tooltip="Click to add {{this.alt}} as NPC">
+              <div class="journal-image-item-thumb">
+                <img src="{{this.src}}" alt="{{this.alt}}" loading="lazy">
+              </div>
+              <span class="journal-image-label">{{this.alt}}</span>
+              <i class="fas fa-plus journal-image-add-icon"></i>
+            </div>
+          {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if hasJournalActors}}
+        <div class="journal-actors-inline">
+          <div class="section-divider">
+            <span>Journal Actors</span>
+          </div>
+          <div class="journal-actors-gallery">
+          {{#each journalActors}}
+            <div class="journal-actor-item"
+                 data-action="setActorAsSpeaker"
+                 data-actor-id="{{this.id}}"
+                 data-tooltip="Click to add {{this.name}} as NPC">
+              <div class="journal-actor-item-thumb">
+                <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+              </div>
+              <span class="journal-actor-label">{{this.name}}</span>
+              <i class="fas fa-plus journal-actor-add-icon"></i>
+            </div>
+          {{/each}}
+          </div>
+        </div>
         {{/if}}
       </div>
-    </div>
+    </section>
 
-    <div class="panel-content" id="npcs-panel-content">
-      <div class="speaker-gallery" role="list" aria-label="NPC speakers">
-      {{#if hasSpeakers}}
-        {{#each speakers}}
-          <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
-               data-action="setSpeaker"
-               data-speaker-id="{{this.id}}"
-               data-tooltip="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
-               role="listitem"
-               tabindex="0"
-               aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
-            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-            <div class="speaker-name">{{this.name}}</div>
-            <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="Remove {{this.name}}" aria-label="Remove {{this.name}}">
-              <i class="fas fa-times" aria-hidden="true"></i>
-            </button>
-          </div>
-        {{/each}}
-      {{else}}
-        <div class="empty-state compact" role="status">
-          <i class="fas fa-user-plus" aria-hidden="true"></i>
-          <span>Drag actors here</span>
-        </div>
-      {{/if}}
-      </div>
-
-      {{#if hasJournalImages}}
-      <div class="journal-images-inline">
-        <div class="section-divider">
-          <span>Journal Images</span>
-        </div>
-        <div class="journal-images-gallery">
-        {{#each journalImages}}
-          <div class="journal-image-item"
-               data-action="setImageAsSpeaker"
-               data-image-id="{{this.id}}"
-               data-image-src="{{this.src}}"
-               data-tooltip="Click to add {{this.alt}} as NPC">
-            <div class="journal-image-item-thumb">
-              <img src="{{this.src}}" alt="{{this.alt}}" loading="lazy">
-            </div>
-            <span class="journal-image-label">{{this.alt}}</span>
-            <i class="fas fa-plus journal-image-add-icon"></i>
-          </div>
-        {{/each}}
-        </div>
-      </div>
-      {{/if}}
-
-      {{#if hasJournalActors}}
-      <div class="journal-actors-inline">
-        <div class="section-divider">
-          <span>Journal Actors</span>
-        </div>
-        <div class="journal-actors-gallery">
-        {{#each journalActors}}
-          <div class="journal-actor-item"
-               data-action="setActorAsSpeaker"
-               data-actor-id="{{this.id}}"
-               data-tooltip="Click to add {{this.name}} as NPC">
-            <div class="journal-actor-item-thumb">
-              <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-            </div>
-            <span class="journal-actor-label">{{this.name}}</span>
-            <i class="fas fa-plus journal-actor-add-icon"></i>
-          </div>
-        {{/each}}
-        </div>
-      </div>
-      {{/if}}
-    </div>
-  </section>
-
-  <!-- PCs Section -->
-  <section class="pcs-section {{#if pcsPanelCollapsed}}collapsed{{/if}}" aria-labelledby="pcs-heading">
-    <div class="section-header">
-      <div class="section-header-left collapsible"
-           data-action="togglePCsPanel"
-           role="button"
-           tabindex="0"
-           aria-expanded="{{#unless pcsPanelCollapsed}}true{{else}}false{{/unless}}"
-           aria-controls="pcs-panel-content">
-        <h3 id="pcs-heading">PCs</h3>
-        <i class="fas fa-chevron-up" aria-hidden="true"></i>
-      </div>
-      <div class="section-actions">
+    <!-- PCs Tab -->
+    <section class="pcs-tab {{#unless (eq currentTab 'pcs')}}hidden{{/unless}}" data-tab-content="pcs" aria-labelledby="pcs-heading">
+      <div class="tab-header-actions">
         <button type="button" data-action="addPartyPCs" data-tooltip="Add party members" aria-label="Add all party members">
           <i class="fas fa-user-group" aria-hidden="true"></i>
         </button>
@@ -126,12 +132,14 @@
           <i class="fas fa-trash" aria-hidden="true"></i>
         </button>
         {{/if}}
+        <button type="button" class="" data-action="openSkillConfig" data-tooltip="Configure Quick Skills" aria-label="Configure quick skill buttons">
+          <i class="fas fa-cog" aria-hidden="true"></i>
+        </button>
       </div>
-    </div>
 
-    <div class="panel-content" id="pcs-panel-content">
-      <div class="participant-portraits" data-drop-zone="participant" role="list" aria-label="Player characters">
-        {{#if hasParticipants}}
+      {{#if hasParticipants}}
+      <div class="dc-controls-bar" role="toolbar" aria-label="DC controls">
+        <div class="participant-portraits participant-portraits-sticky" data-drop-zone="participant" role="list" aria-label="Player characters">
           {{#each participants}}
             <div class="participant-token {{#if this.selected}}selected{{/if}}"
                  data-action="toggleParticipantSelection"
@@ -150,132 +158,205 @@
               </button>
             </div>
           {{/each}}
-        {{else}}
-          <div class="empty-state compact" role="status">
-            <i class="fas fa-user-plus" aria-hidden="true"></i>
-            <span>Use buttons above to add PCs</span>
-          </div>
-        {{/if}}
-      </div>
-
-      {{#if hasParticipants}}
-      <div class="check-request-bar {{#if (and (gt selectedCount 0) currentDC)}}ready{{/if}}" role="toolbar" aria-label="Skill check controls">
-        <div class="bar-top">
-          <div class="selection-info {{#if (gt selectedCount 0)}}has-selection{{/if}}">
-            <span class="count" aria-label="{{selectedCount}} of {{participants.length}} selected">{{selectedCount}}/{{participants.length}}</span>
-            <button type="button" data-action="toggleSelectAll" class="link-btn" data-tooltip="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
-              <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
-            </button>
-          </div>
-
-          <div class="dc-controls-wrapper">
-            {{#if isPF2e}}
-              {{#if partyLevel}}
-              <div class="difficulty-selector compact">
-                <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
-                <select id="difficulty-select" aria-label="Difficulty by level">
-                  {{#each difficultyOptions}}
-                    <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-                  {{/each}}
-                </select>
-              </div>
-              {{/if}}
-            {{else if isDND5e}}
-              <div class="difficulty-selector dnd5e compact">
-                <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
-                  {{#each dcOptions}}
-                    <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
-                  {{/each}}
-                </select>
-              </div>
-            {{/if}}
-
-            <div class="preset-selector">
-              <div class="dc-input-group">
-                <label class="dc-label" for="dc-input">DC</label>
-                <input type="number"
-                       id="dc-input"
-                       class="dc-input"
-                       value="{{currentDC}}"
-                       min="1"
-                       max="60"
-                       placeholder="--"
-                       aria-label="Difficulty class">
-                <button type="button"
-                        class="preset-btn"
-                        data-action="togglePresetDropdown"
-                        data-tooltip="DC Presets">
-                  <i class="fas fa-bookmark"></i>
-                </button>
-              </div>
-
-              <div class="preset-dropdown" style="display: none;">
-                <div class="preset-add-form">
-                  <input type="number"
-                         id="new-preset-dc"
-                         class="preset-dc-input"
-                         placeholder="Add DC"
-                         min="1"
-                         max="60">
-                  <button type="button"
-                          class="preset-add-btn"
-                          data-action="addPresetQuick"
-                          data-tooltip="Add preset">
-                    <i class="fas fa-plus"></i>
-                  </button>
-                </div>
-                {{#if dcPresets.length}}
-                <div class="preset-divider"></div>
-                <div class="preset-list">
-                  {{#each dcPresets}}
-                    <div class="preset-item">
-                      <button type="button"
-                              class="preset-option"
-                              data-action="applyPreset"
-                              data-preset-id="{{this.id}}"
-                              data-dc="{{this.dc}}"
-                              data-tooltip="{{this.name}}">
-                        {{this.dc}}
-                      </button>
-                      <button type="button"
-                              class="preset-delete-btn"
-                              data-action="deletePresetQuick"
-                              data-preset-id="{{this.id}}"
-                              data-tooltip="Delete">
-                        <i class="fas fa-times"></i>
-                      </button>
-                    </div>
-                  {{/each}}
-                </div>
-                {{/if}}
-              </div>
-            </div>
-
-            <label class="secret-roll-toggle" data-tooltip="GM Only Roll">
-              <input type="checkbox" id="secret-roll-checkbox">
-              <i class="fas fa-eye-slash"></i>
-              <span>Secret</span>
-            </label>
-          </div>
         </div>
 
-        <div class="skill-actions" role="group" aria-label="Quick skill buttons">
-          {{#each quickButtonSkills}}
-            <button type="button"
-                    class="skill-btn"
-                    data-action="requestSkill"
-                    data-skill="{{this.slug}}"
-                    data-tooltip="{{this.name}}"
-                    aria-label="Request {{this.name}} check">
-              {{this.shortName}}
-            </button>
-          {{/each}}
-          <button type="button" class="skill-btn more" data-action="openSkillMenu" data-tooltip="All Skills" aria-label="Show all skills menu">
-            <i class="fas fa-ellipsis-h" aria-hidden="true"></i>
+        <div class="dc-controls-row">
+          <button type="button" data-action="toggleSelectAll" class="select-all-btn" data-tooltip="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
+            <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
+            <span>{{#if allSelected}}Deselect{{else}}Select All{{/if}}</span>
           </button>
-          <button type="button" class="skill-btn config" data-action="openSkillConfig" data-tooltip="Configure Quick Skills" aria-label="Configure quick skill buttons">
-            <i class="fas fa-cog" aria-hidden="true"></i>
+
+          <div class="preset-selector">
+            <div class="dc-input-group">
+              <label class="dc-label" for="dc-input">DC</label>
+              <input type="number"
+                     id="dc-input"
+                     class="dc-input"
+                     value="{{currentDC}}"
+                     min="1"
+                     max="60"
+                     placeholder="--"
+                     aria-label="Difficulty class">
+              <button type="button"
+                      class="preset-btn"
+                      data-action="togglePresetDropdown"
+                      data-tooltip="DC Presets">
+                <i class="fas fa-bookmark"></i>
+              </button>
+            </div>
+
+            <div class="preset-dropdown" style="display: none;">
+              <div class="preset-add-form">
+                <input type="number"
+                       id="new-preset-dc"
+                       class="preset-dc-input"
+                       placeholder="Add DC"
+                       min="1"
+                       max="60">
+                <button type="button"
+                        class="preset-add-btn"
+                        data-action="addPresetQuick"
+                        data-tooltip="Add preset">
+                  <i class="fas fa-plus"></i>
+                </button>
+              </div>
+              {{#if dcPresets.length}}
+              <div class="preset-divider"></div>
+              <div class="preset-list">
+                {{#each dcPresets}}
+                  <div class="preset-item">
+                    <button type="button"
+                            class="preset-option"
+                            data-action="applyPreset"
+                            data-preset-id="{{this.id}}"
+                            data-dc="{{this.dc}}"
+                            data-tooltip="{{this.name}}">
+                      {{this.dc}}
+                    </button>
+                    <button type="button"
+                            class="preset-delete-btn"
+                            data-action="deletePresetQuick"
+                            data-preset-id="{{this.id}}"
+                            data-tooltip="Delete">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                {{/each}}
+              </div>
+              {{/if}}
+            </div>
+          </div>
+
+          {{#if isPF2e}}
+            {{#if partyLevel}}
+            <div class="difficulty-selector compact">
+              <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
+              <select id="difficulty-select" aria-label="Difficulty by level">
+                {{#each difficultyOptions}}
+                  <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+            {{/if}}
+          {{else if isDND5e}}
+            <div class="difficulty-selector dnd5e compact">
+              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+                {{#each dcOptions}}
+                  <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
+                {{/each}}
+              </select>
+            </div>
+          {{/if}}
+
+          <button type="button"
+                  class="secret-roll-btn {{#if secretRollEnabled}}active{{/if}}"
+                  data-action="toggleSecretRoll"
+                  data-tooltip="GM Only Roll"
+                  aria-label="Toggle secret roll"
+                  aria-pressed="{{#if secretRollEnabled}}true{{else}}false{{/if}}">
+            <i class="fas fa-eye-slash" aria-hidden="true"></i>
           </button>
+        </div>
+      </div>
+      {{/if}}
+
+      <div class="tab-scroll-content">
+        {{#if hasParticipants}}
+        <div class="skill-categories" role="group" aria-label="Skill buttons by category">
+          <div class="skill-category">
+            <span class="category-label">Physical</span>
+            <div class="category-skills">
+              {{#each physicalSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="skill-category">
+            <span class="category-label">Mental</span>
+            <div class="category-skills">
+              {{#each mentalSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="skill-category">
+            <span class="category-label">Social</span>
+            <div class="category-skills">
+              {{#each socialSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="skill-category">
+            <span class="category-label">Perception</span>
+            <div class="category-skills">
+              {{#each perceptionSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+
+          <div class="skill-category">
+            <span class="category-label">Utility</span>
+            <div class="category-skills">
+              {{#each utilitySkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
         </div>
 
         {{#if hasLoreSkills}}
@@ -318,30 +399,74 @@
           </div>
         </div>
         {{/if}}
+        {{/if}}
       </div>
-      {{/if}}
-    </div>
-  </section>
+    </section>
 
-  <!-- Challenges Section -->
-  <section class="challenges-section" aria-labelledby="challenges-heading">
-    <div class="section-header">
-      <div class="section-header-left">
-        <h3 id="challenges-heading">Challenges</h3>
-      </div>
-      <div class="section-actions">
-        <button type="button" data-action="createChallengeFromSelection" data-tooltip="Create from Selection" aria-label="Create challenge from selected journal text">
-          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
-        </button>
-        <button type="button" data-action="manageChallengeLibrary" data-tooltip="Challenge Library" aria-label="Manage saved challenges">
-          <i class="fas fa-folder-open" aria-hidden="true"></i>
-        </button>
+    <!-- Challenges Tab -->
+    <section class="challenges-tab {{#unless (eq currentTab 'challenges')}}hidden{{/unless}}" data-tab-content="challenges" aria-labelledby="challenges-heading">
+      <div class="tab-header-actions">
         <button type="button" data-action="presentChallenge" data-tooltip="Present Challenge" aria-label="Present multi-option challenge to all players">
           <i class="fas fa-tasks" aria-hidden="true"></i>
         </button>
+        <button type="button" data-action="createChallengeFromSelection" data-tooltip="Create from Selection" aria-label="Create challenge from selected journal text">
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
+        </button>
       </div>
-    </div>
-  </section>
+      <div class="tab-scroll-content">
+        {{#if hasSavedChallenges}}
+          {{#each savedChallenges}}
+          <div class="lib-challenge-card" data-challenge-id="{{this.id}}">
+            <div class="lib-card-header">
+              <div class="lib-card-title-section">
+                <i class="fas fa-flag-checkered lib-card-icon"></i>
+                <span class="lib-card-title">{{this.name}}</span>
+              </div>
+              <div class="lib-card-actions">
+                <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="Edit challenge">
+                  <i class="fas fa-edit"></i>
+                </button>
+                <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="Delete challenge">
+                  <i class="fas fa-trash"></i>
+                </button>
+              </div>
+            </div>
+
+            <div class="lib-card-body">
+              {{#each this.options}}
+              <div class="lib-option-preview">
+                <div class="opt-num">Option {{this.index}}</div>
+                <div class="opt-desc">{{this.description}}</div>
+                <div class="opt-skills">
+                  {{#each this.skillOptions}}
+                  <span class="skill-dc-pill">
+                    {{this.displayText}} <strong>DC {{this.dc}}</strong>
+                    {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
+                  </span>
+                  {{/each}}
+                </div>
+              </div>
+              {{/each}}
+            </div>
+
+            <button type="button"
+                    class="lib-present-btn"
+                    data-action="presentSavedChallenge"
+                    data-challenge-id="{{this.id}}">
+              <i class="fas fa-paper-plane"></i> Present to All Players
+            </button>
+          </div>
+          {{/each}}
+        {{else}}
+          <div class="lib-empty-state">
+            <i class="fas fa-folder-open"></i>
+            <p>No saved challenges</p>
+            <p class="hint">Create a challenge and check "Save to library"</p>
+          </div>
+        {{/if}}
+      </div>
+    </section>
+  </div>
 
   <!-- Pending Rolls Indicator -->
   {{#if pendingRolls.length}}
