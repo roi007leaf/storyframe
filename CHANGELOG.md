@@ -73,7 +73,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 8px font, 80% opacity
   - Example: "Diplomacy (Demoralize)"
 
-#### Create Challenge from Selection
+### Create Challenge from Selection
 
 - **Quick Create** - Magic wand button in Challenges section
 - **Text Selection** - Select journal text with skill checks
@@ -83,7 +83,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Clean Descriptions** - Removes DC text patterns
 - **Skill Mapping** - Converts full names to proper slugs
 
-#### Journal Check Features
+### Journal Check Features
 
 - **Scroll Highlighting** - Real-time viewport detection
   - Skill buttons glow when checks visible in journal
@@ -103,7 +103,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-#### Performance & Rendering
+### Performance & Rendering
 
 - **Scroll Position Preservation** - No more jumping to top
   - Manual save/restore on all renders
@@ -117,7 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Select all: Updates all participants directly
   - 80%+ reduction in re-render frequency
 
-#### Skill System Fixes
+### Skill System Fixes
 
 - **Skill Validation** - Prevents invalid skill requests
   - Checks if each PC has the requested skill
@@ -132,7 +132,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Proper key format matching (politics-lore)
   - Fallback logic for skill location
 
-#### Pending Roll Management
+### Pending Roll Management
 
 - **Secret Roll Cleanup** - Automatic removal for blind rolls
   - Regular rolls: Stay on cancel (retry)
@@ -143,7 +143,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Pending roll always gets submitted/removed
   - Better reliability for Seek, Demoralize, etc.
 
-#### Layout & Positioning
+### Layout & Positioning
 
 - **DC Preset Popup** - Fixed broken positioning
   - Restructured HTML: `.preset-selector` wraps input and dropdown
@@ -156,7 +156,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Both challenge and pending rolls scroll independently
   - Scroll position preserved during renders
 
-#### Bug Fixes
+### Bug Fixes
 
 - **Static Method Calls** - Fixed `_onAddAllPCs` context
   - Proper `.call(this)` usage in inheritance chain
@@ -173,7 +173,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-#### Size & Spacing Adjustments
+### Size & Spacing Adjustments
 
 - **Sidebar Dimensions** - Optimized for content
   - Player sidebar: 340px wide, 600px tall
@@ -191,7 +191,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Action names: 8px
   - Line heights: 1.1-1.2
 
-#### Visual Refinements
+### Visual Refinements
 
 - **Avatar Sizes** - Smaller for compact design
   - Player sidebar: 24px
