@@ -83,7 +83,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this._stateRestored = false;
 
     // Tab state: 'npcs', 'pcs', 'challenges'
-    this.currentTab = 'pcs'; // Default to PCs tab (most used)
+    this.currentTab = 'npcs'; // Default to NPCs tab
 
     // Sub-panel state within PCs tab
     this.journalChecksPanelCollapsed = false;
@@ -661,6 +661,25 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   /**
    * Extract images from parent journal content
    */
+  /**
+   * Normalize an image path for comparison by extracting just the path portion.
+   * Handles both relative paths (modules/foo/bar.webp) and absolute URLs (http://localhost/modules/foo/bar.webp).
+   * @param {string} path - The image path or URL
+   * @returns {string} - Normalized path for comparison
+   */
+  _normalizeImagePath(path) {
+    if (!path) return '';
+    try {
+      // If it's a full URL, extract pathname
+      const url = new URL(path, window.location.origin);
+      // Remove leading slash for consistent comparison
+      return url.pathname.replace(/^\//, '');
+    } catch {
+      // If URL parsing fails, just clean up the path
+      return path.replace(/^\//, '');
+    }
+  }
+
   _extractJournalImages() {
     if (!this.parentInterface?.element) return [];
 
@@ -668,30 +687,35 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const element = this.parentInterface.element instanceof HTMLElement
       ? this.parentInterface.element
       : (this.parentInterface.element[0] || this.parentInterface.element);
-    const content = element.querySelector('.journal-page-content');
-    if (!content) return [];
 
-    // Get current speakers to filter out
+    // Get ALL page content elements (supports multi-page view)
+    const contentElements = element.querySelectorAll('.journal-page-content');
+    if (contentElements.length === 0) return [];
+
+    // Get current speakers to filter out (normalize paths for comparison)
     const state = game.storyframe.stateManager.getState();
     const speakerImages = new Set();
     if (state?.speakers) {
       state.speakers.forEach((speaker) => {
-        if (speaker.imagePath) speakerImages.add(speaker.imagePath);
+        if (speaker.imagePath) speakerImages.add(this._normalizeImagePath(speaker.imagePath));
       });
     }
 
     const images = [];
-    const imgElements = content.querySelectorAll('img');
 
-
-    imgElements.forEach((img) => {
-      if (img.src && !img.src.includes('icons/svg/mystery-man') && !speakerImages.has(img.src)) {
-        images.push({
-          src: img.src,
-          alt: img.alt || 'Image',
-          id: foundry.utils.randomID(),
-        });
-      }
+    // Query images from ALL page content elements
+    contentElements.forEach((content) => {
+      const imgElements = content.querySelectorAll('img');
+      imgElements.forEach((img) => {
+        const normalizedSrc = this._normalizeImagePath(img.src);
+        if (img.src && !img.src.includes('icons/svg/mystery-man') && !speakerImages.has(normalizedSrc)) {
+          images.push({
+            src: img.src,
+            alt: img.alt || 'Image',
+            id: foundry.utils.randomID(),
+          });
+        }
+      });
     });
 
     // Remove duplicates by src
@@ -707,6 +731,17 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return unique;
   }
 
+  /**
+   * Extract actor ID from a UUID string.
+   * Handles both "Actor.id" and "Compendium.module.pack.Actor.id" formats.
+   * @param {string} uuid - The UUID string
+   * @returns {string|null} - The actor ID or null if not found
+   */
+  _extractActorIdFromUuid(uuid) {
+    if (!uuid || !uuid.includes('Actor.')) return null;
+    return uuid.split('Actor.')[1]?.split('.')[0] || null;
+  }
+
   _extractJournalActors() {
     if (!this.parentInterface?.element) return [];
 
@@ -714,46 +749,54 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const element = this.parentInterface.element instanceof HTMLElement
       ? this.parentInterface.element
       : (this.parentInterface.element[0] || this.parentInterface.element);
-    const content = element.querySelector('.journal-page-content');
-    if (!content) return [];
 
-    // Get current speakers to filter out
+    // Get ALL page content elements (supports multi-page view)
+    const contentElements = element.querySelectorAll('.journal-page-content');
+    if (contentElements.length === 0) return [];
+
+    // Get current speakers to filter out (extract actor IDs for comparison)
+    // This handles UUID format mismatches (e.g., "Actor.id" vs "Compendium.xxx.Actor.id")
     const state = game.storyframe.stateManager.getState();
-    const speakerUuids = new Set();
+    const speakerActorIds = new Set();
     if (state?.speakers) {
       state.speakers.forEach((speaker) => {
-        if (speaker.actorUuid) speakerUuids.add(speaker.actorUuid);
+        if (speaker.actorUuid) {
+          const actorId = this._extractActorIdFromUuid(speaker.actorUuid);
+          if (actorId) speakerActorIds.add(actorId);
+        }
       });
     }
 
     const actors = [];
 
-    // Find all content links that reference actors
-    // Handles both @Actor[id] and @UUID[Actor.id] formats
-    const actorLinks = content.querySelectorAll('a.content-link[data-uuid^="Actor."], a.content-link[data-uuid*="Actor."]');
+    // Query actor links from ALL page content elements
+    contentElements.forEach((content) => {
+      // Find all content links that reference actors
+      // Handles both @Actor[id] and @UUID[Actor.id] formats
+      const actorLinks = content.querySelectorAll('a.content-link[data-uuid^="Actor."], a.content-link[data-uuid*="Actor."]');
 
-    actorLinks.forEach((link) => {
-      const uuid = link.dataset.uuid;
+      actorLinks.forEach((link) => {
+        const uuid = link.dataset.uuid;
 
-      // Extract actor ID from UUID (handles both "Actor.id" and full UUIDs)
-      const actorId = uuid.includes('Actor.')
-        ? uuid.split('Actor.')[1].split('.')[0]
-        : null;
+        // Extract actor ID from UUID (handles both "Actor.id" and full UUIDs)
+        const actorId = this._extractActorIdFromUuid(uuid);
 
-      if (!actorId) return;
+        if (!actorId) return;
 
-      const actorName = link.textContent || 'Unknown';
+        const actorName = link.textContent || 'Unknown';
 
-      if (!speakerUuids.has(uuid)) {
-        const actor = game.actors.get(actorId);
-        if (actor && actor.type !== 'loot' && actor.type !== 'hazard') {
-          actors.push({
-            id: actorId,
-            name: actorName,
-            img: actor.img,
-          });
+        // Compare by actor ID to handle UUID format mismatches
+        if (!speakerActorIds.has(actorId)) {
+          const actor = game.actors.get(actorId);
+          if (actor && actor.type !== 'loot' && actor.type !== 'hazard') {
+            actors.push({
+              id: actorId,
+              name: actorName,
+              img: actor.img,
+            });
+          }
         }
-      }
+      });
     });
 
     // Remove duplicates by id
@@ -778,6 +821,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this._attachSkillActionContextMenu();
     this._attachPlayerWindowsContextMenu();
     this._setupJournalCheckHighlighting();
+    this._setupJournalContentObserver();
 
     // Position as drawer (parent should already be set by _attachSidebarToSheet)
     if (!this._stateRestored) {
@@ -789,6 +833,79 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       // On subsequent renders, re-position as drawer
       this._positionAsDrawer(0);
     }
+  }
+
+  /**
+   * Setup MutationObserver to detect when new journal pages load (multi-page journals)
+   * and trigger a re-render to pick up new images/actors
+   */
+  _setupJournalContentObserver() {
+    // Clean up existing observer
+    if (this._journalContentObserver) {
+      this._journalContentObserver.disconnect();
+      this._journalContentObserver = null;
+    }
+    if (this._journalContentDebounce) {
+      clearTimeout(this._journalContentDebounce);
+      this._journalContentDebounce = null;
+    }
+
+    if (!this.parentInterface?.element) return;
+
+    const parentElement = this.parentInterface.element instanceof HTMLElement
+      ? this.parentInterface.element
+      : (this.parentInterface.element[0] || this.parentInterface.element);
+
+    // Watch the journal pages container for new content
+    const pagesContainer = parentElement.querySelector('.journal-entry-pages') ||
+                          parentElement.querySelector('.journal-entry-content') ||
+                          parentElement;
+
+    if (!pagesContainer) return;
+
+    // Track how many page content elements we've seen
+    let lastPageCount = parentElement.querySelectorAll('.journal-page-content').length;
+
+    this._journalContentObserver = new MutationObserver((mutations) => {
+      // Check if any new .journal-page-content elements were added
+      let hasNewPages = false;
+      for (const mutation of mutations) {
+        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              if (node.classList?.contains('journal-page-content') ||
+                  node.querySelector?.('.journal-page-content')) {
+                hasNewPages = true;
+                break;
+              }
+            }
+          }
+        }
+        if (hasNewPages) break;
+      }
+
+      // Also check if page count increased (covers nested additions)
+      const currentPageCount = parentElement.querySelectorAll('.journal-page-content').length;
+      if (currentPageCount > lastPageCount) {
+        hasNewPages = true;
+        lastPageCount = currentPageCount;
+      }
+
+      if (hasNewPages) {
+        // Debounce re-render to avoid multiple rapid updates
+        if (this._journalContentDebounce) {
+          clearTimeout(this._journalContentDebounce);
+        }
+        this._journalContentDebounce = setTimeout(() => {
+          this.render();
+        }, 150);
+      }
+    });
+
+    this._journalContentObserver.observe(pagesContainer, {
+      childList: true,
+      subtree: true,
+    });
   }
 
   /**
@@ -1244,10 +1361,25 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Stop tracking parent movements
     this._stopTrackingParent();
 
-    // Clean up IntersectionObserver
+    // Clean up IntersectionObserver and timeout
     if (this._checkObserver) {
       this._checkObserver.disconnect();
       this._checkObserver = null;
+    }
+    if (this._scrollCheckTimeout) {
+      clearTimeout(this._scrollCheckTimeout);
+      this._scrollCheckTimeout = null;
+    }
+    this._visibleChecksMap = null;
+
+    // Clean up journal content observer
+    if (this._journalContentObserver) {
+      this._journalContentObserver.disconnect();
+      this._journalContentObserver = null;
+    }
+    if (this._journalContentDebounce) {
+      clearTimeout(this._journalContentDebounce);
+      this._journalContentDebounce = null;
     }
 
     // Save visibility state
@@ -1377,10 +1509,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    * Setup IntersectionObserver to highlight journal check buttons when checks are in view
    */
   _setupJournalCheckHighlighting() {
-    // Clean up existing observer
+    // Clean up existing observer and scroll listener
     if (this._checkObserver) {
       this._checkObserver.disconnect();
       this._checkObserver = null;
+    }
+    if (this._scrollCheckTimeout) {
+      clearTimeout(this._scrollCheckTimeout);
+      this._scrollCheckTimeout = null;
     }
 
     if (!this.parentInterface?.element) return;
@@ -1391,9 +1527,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       : (this.parentInterface.element[0] || this.parentInterface.element);
 
     // Find the scrollable content area (the part that actually scrolls)
+    // Try multiple selectors for different journal sheet types
     const scrollContainer = parentElement.querySelector('.journal-entry-pages') ||
                            parentElement.querySelector('.journal-entry-content') ||
-                           parentElement.querySelector('.scrollable');
+                           parentElement.querySelector('.scrollable') ||
+                           parentElement.querySelector('.journal-page-content')?.parentElement;
 
     if (!scrollContainer) return;
 
@@ -1401,10 +1539,29 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const checkElements = scrollContainer.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
     if (checkElements.length === 0) return;
 
-    // Track which skills are in view and their DCs
-    const visibleChecks = new Map(); // skill -> Set of DCs
+    // Initialize visible checks Map on instance (persists across callbacks)
+    this._visibleChecksMap = new Map(); // skill -> Set of DCs
 
-    // Create observer - use the scroll container as root
+    // Helper to update button highlights
+    const updateButtonHighlights = () => {
+      if (!this.element) return;
+
+      // Store for popup highlighting
+      this._visibleChecks = new Map(this._visibleChecksMap);
+
+      // Update button highlight state
+      const buttons = this.element.querySelectorAll('.journal-skill-btn');
+      buttons.forEach((btn) => {
+        const skillName = btn.dataset.skill?.toLowerCase();
+        if (skillName && this._visibleChecksMap.has(skillName)) {
+          btn.classList.add('in-view');
+        } else {
+          btn.classList.remove('in-view');
+        }
+      });
+    };
+
+    // Create observer with a small buffer to reduce edge flickering
     this._checkObserver = new IntersectionObserver(
       (entries) => {
         let changed = false;
@@ -1419,51 +1576,88 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
           if (entry.isIntersecting) {
             // Add skill and DC to visible set
-            if (!visibleChecks.has(normalizedSkill)) {
-              visibleChecks.set(normalizedSkill, new Set());
+            if (!this._visibleChecksMap.has(normalizedSkill)) {
+              this._visibleChecksMap.set(normalizedSkill, new Set());
             }
-            if (!visibleChecks.get(normalizedSkill).has(dc)) {
-              visibleChecks.get(normalizedSkill).add(dc);
+            if (!this._visibleChecksMap.get(normalizedSkill).has(dc)) {
+              this._visibleChecksMap.get(normalizedSkill).add(dc);
               changed = true;
             }
           } else {
             // Remove DC from visible set
-            if (visibleChecks.has(normalizedSkill)) {
-              visibleChecks.get(normalizedSkill).delete(dc);
-              if (visibleChecks.get(normalizedSkill).size === 0) {
-                visibleChecks.delete(normalizedSkill);
+            if (this._visibleChecksMap.has(normalizedSkill)) {
+              this._visibleChecksMap.get(normalizedSkill).delete(dc);
+              if (this._visibleChecksMap.get(normalizedSkill).size === 0) {
+                this._visibleChecksMap.delete(normalizedSkill);
               }
               changed = true;
             }
           }
         });
 
-        // Update button highlights (DC highlighting happens in popup)
-        if (changed && this.element) {
-          // Store visible checks on instance for popup highlighting
-          this._visibleChecks = new Map(visibleChecks);
-
-          // Update button highlight state
-          const buttons = this.element.querySelectorAll('.journal-skill-btn');
-          buttons.forEach((btn) => {
-            const skillName = btn.dataset.skill?.toLowerCase();
-            if (skillName && visibleChecks.has(skillName)) {
-              btn.classList.add('in-view');
-            } else {
-              btn.classList.remove('in-view');
-            }
-          });
+        // Update button highlights if anything changed
+        if (changed) {
+          updateButtonHighlights();
         }
       },
       {
         root: scrollContainer,
-        rootMargin: '0px',
-        threshold: [0, 0.25, 0.5, 0.75, 1.0],
+        // Small buffer to reduce flickering at viewport edges
+        rootMargin: '10px 0px',
+        threshold: [0, 0.1, 0.5, 1.0],
       }
     );
 
     // Observe all check elements
     checkElements.forEach((el) => this._checkObserver.observe(el));
+
+    // Force an initial highlight update after a short delay to ensure DOM is stable
+    // This catches cases where the observer's initial callback fires before layout is complete
+    this._scrollCheckTimeout = setTimeout(() => {
+      this._forceCheckVisibility(scrollContainer, checkElements, updateButtonHighlights);
+    }, 100);
+  }
+
+  /**
+   * Force a manual visibility check as a fallback when IntersectionObserver might miss updates
+   */
+  _forceCheckVisibility(scrollContainer, checkElements, updateCallback) {
+    if (!scrollContainer || !checkElements || !this._visibleChecksMap) return;
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+
+    checkElements.forEach((el) => {
+      const skillName = el.dataset.pf2Check;
+      const dc = el.dataset.pf2Dc;
+      if (!skillName || !dc) return;
+
+      const normalizedSkill = skillName.toLowerCase();
+      const elRect = el.getBoundingClientRect();
+
+      // Check if element is visible within the scroll container (with small buffer)
+      const isVisible = elRect.top < containerRect.bottom + 10 &&
+                       elRect.bottom > containerRect.top - 10 &&
+                       elRect.left < containerRect.right &&
+                       elRect.right > containerRect.left;
+
+      if (isVisible) {
+        if (!this._visibleChecksMap.has(normalizedSkill)) {
+          this._visibleChecksMap.set(normalizedSkill, new Set());
+        }
+        this._visibleChecksMap.get(normalizedSkill).add(dc);
+      } else {
+        if (this._visibleChecksMap.has(normalizedSkill)) {
+          this._visibleChecksMap.get(normalizedSkill).delete(dc);
+          if (this._visibleChecksMap.get(normalizedSkill).size === 0) {
+            this._visibleChecksMap.delete(normalizedSkill);
+          }
+        }
+      }
+    });
+
+    // Always call updateCallback on force check - this ensures buttons are updated
+    // even if the IntersectionObserver already populated the map
+    updateCallback();
   }
 
   async _requestSkillCheck(skillSlug, participantIds, actionSlug = null) {

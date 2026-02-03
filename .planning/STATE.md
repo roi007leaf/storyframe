@@ -9,7 +9,7 @@ See: .planning/PROJECT.md (updated 2026-01-29)
 
 ## Current Position
 
-Phase: 6 of 6 (PC Participants & PF2e Check Rolls)
+Phase: 6 of 8 (PC Participants & PF2e Check Rolls)
 Plan: 3 of 4
 Status: In progress
 Last activity: 2026-01-30 — Completed 06-03-PLAN.md (player roll prompts & execution)
@@ -152,6 +152,12 @@ None yet.
   - GM can define PC conversation participants
   - Request PF2e system check rolls from participants
   - Player check roll prompts and result visibility
+
+- Phase 8 added: Skill UI & Batch Roll Requests
+  - UI improvements (hide empty headers, skill grouping, ordering)
+  - Batch roll requests (multi-PC skill aggregation, atomic requests)
+  - Per-skill proficiency filtering (not global)
+  - Challenge management (uniqueness constraint, concurrent challenges)
 
 ## Session Continuity
 

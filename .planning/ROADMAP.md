@@ -19,6 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 5: Journal Integration & UI Polish** - CSS scraper, edit button, drag-drop fix, design improvements
 - [ ] **Phase 6: PC Participants & PF2e Check Rolls** - GM defines PC participants, request check rolls from PCs
 - [ ] **Phase 7: Premium Journal CSS Scraper** - Fix CSS filtering and namespacing for premium modules
+- [ ] **Phase 8: Skill UI & Batch Roll Requests** - UI improvements, batch rolls, per-skill proficiency, challenge management
 
 ## Phase Details
 
@@ -142,10 +143,30 @@ Plans:
 - [ ] 07-01-PLAN.md — CSS filtering refactor with hybrid URL + keyword approach and selective namespacing
 - [ ] 07-02-PLAN.md — Cache persistence, extraction reliability, and visual verification
 
+### Phase 8: Skill UI & Batch Roll Requests
+**Goal**: Polished skill interface with intelligent grouping, batch roll requests, per-skill proficiency filtering, and robust challenge management
+**Depends on**: Phase 7
+**Success Criteria** (what must be TRUE):
+  1. Empty skill category headers are hidden (no layout space occupied)
+  2. Skills grouped correctly: Stealth/Thievery in Physical, Mental renamed to Magical, Perception in Utility
+  3. Display order preserved: Journal Checks → Lore Skills → Quick Skill Buttons
+  4. Multi-PC selection aggregates all skills; each player prompted only with skills they possess
+  5. GM can select multiple skills for batch roll request (one atomic request, not persistent challenge)
+  6. Each skill supports optional per-skill proficiency filter (not global filter)
+  7. Only one active challenge per unique name (duplicates blocked or refreshed)
+  8. Multiple different named challenges can be active simultaneously
+  9. Challenge headers are collapsible/expandable independently
+  10. Grid density targets 4 skills per row (except Social category)
+**Plans**: 0 plans
+
+Plans:
+
+- [ ] TBD (run /gsd:plan-phase 8 to break down)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -156,3 +177,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7
 | 5. Journal Integration & UI Polish | 0/3 | Ready | - |
 | 6. PC Participants & PF2e Check Rolls | 0/4 | Ready | - |
 | 7. Premium Journal CSS Scraper | 0/2 | Ready | - |
+| 8. Skill UI & Batch Roll Requests | 0/0 | Ready | - |
