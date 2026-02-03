@@ -24,7 +24,8 @@
     "styles/player-viewer.css",
     "styles/player-sidebar.css",
     "styles/challenge-builder.css",
-    "styles/challenge-library.css"
+    "styles/challenge-library.css",
+    "styles/roll-request-dialog.css"
   ],
   "socket": true,
   "relationships": {

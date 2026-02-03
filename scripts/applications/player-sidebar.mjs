@@ -25,6 +25,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       executeRoll: PlayerSidebarApp._onExecuteRoll,
       selectChallengeOption: PlayerSidebarApp._onSelectChallengeOption,
       switchTab: PlayerSidebarApp._onSwitchTab,
+      toggleChallengeCollapse: PlayerSidebarApp._onToggleChallengeCollapse,
     },
   };
 
@@ -47,6 +48,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     // Tab state: null = challenge tab, 'rolls' = rolls tab
     // Default to rolls tab if there are pending rolls, else challenge
     this.currentTab = null;
+
+    // Track collapsed state for multiple challenges
+    this.collapsedChallenges = new Map();  // challengeId -> boolean
 
     // Parent reference (set externally when attaching)
     this.parentViewer = null;
@@ -192,35 +196,77 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return 'extreme';
     };
 
-    // Active challenge
-    let activeChallenge = null;
-    if (state?.activeChallenge && myParticipants.length > 0) {
-      // Add keyboard hints to first 9 challenge skills
-      let skillIndex = 0;
-      const enrichedOptions = state.activeChallenge.options.map(opt => ({
-        ...opt,
-        skillOptionsDisplay: opt.skillOptions.map(so => {
-          const hint = skillIndex < 9 ? (skillIndex + 1).toString() : null;
-          skillIndex++;
-          return {
-            ...so,
-            skillName: getSkillName(so.skill),
-            skillIcon: getSkillIcon(so.skill),
-            dc: so.dc,
-            dcDifficulty: getDCDifficulty(so.dc),
-            action: so.action || null,
-            isSecret: so.isSecret || false,
-            showDC: showDCs,
-            keyboardHint: hint,
-          };
-        }),
-      }));
+    // Active challenges (multi-challenge support)
+    let activeChallenges = [];
+    if (state?.activeChallenges && myParticipants.length > 0) {
+      // Get system-specific GM sidebar class for proficiency checking (once)
+      let GMSidebar;
+      if (game.system.id === 'pf2e') {
+        const { GMSidebarAppPF2e } = await import('./gm-sidebar-pf2e.mjs');
+        GMSidebar = GMSidebarAppPF2e;
+      } else if (game.system.id === 'dnd5e') {
+        const { GMSidebarAppDND5e } = await import('./gm-sidebar-dnd5e.mjs');
+        GMSidebar = GMSidebarAppDND5e;
+      } else {
+        const { GMSidebarAppBase } = await import('./gm-sidebar.mjs');
+        GMSidebar = GMSidebarAppBase;
+      }
 
-      activeChallenge = {
-        ...state.activeChallenge,
-        options: enrichedOptions,
-      };
+      // Add keyboard hints to first 9 challenge skills across all challenges
+      let skillIndex = 0;
+
+      activeChallenges = await Promise.all(state.activeChallenges.map(async challenge => {
+        const enrichedOptions = await Promise.all(challenge.options.map(async opt => ({
+          ...opt,
+          skillOptionsDisplay: await Promise.all(opt.skillOptions.map(async so => {
+            const hint = skillIndex < 9 ? (skillIndex + 1).toString() : null;
+            skillIndex++;
+
+            // Check if player meets proficiency requirement
+            let canRoll = true;
+            if (so.minProficiency && so.minProficiency > 0) {
+              // Check proficiency for this player's participant(s)
+              canRoll = false;
+
+              for (const p of myParticipants) {
+                const actor = await fromUuid(p.actorUuid);
+                if (!actor) continue;
+
+                const rank = await GMSidebar._getActorProficiencyRank(actor, so.skill);
+                if (rank >= so.minProficiency) {
+                  canRoll = true;
+                  break;
+                }
+              }
+            }
+
+            return {
+              ...so,
+              skillName: getSkillName(so.skill),
+              skillIcon: getSkillIcon(so.skill),
+              dc: so.dc,
+              dcDifficulty: getDCDifficulty(so.dc),
+              action: so.action || null,
+              isSecret: so.isSecret || false,
+              showDC: showDCs,
+              keyboardHint: hint,
+              canRoll,
+              minProficiency: so.minProficiency || 0,
+            };
+          })),
+        })));
+
+        return {
+          ...challenge,
+          options: enrichedOptions,
+          collapsed: this.collapsedChallenges.get(challenge.id) ?? false,
+        };
+      }));
     }
+
+    // Backward compatibility
+    const activeChallenge = activeChallenges[0] || null;
+    const hasActiveChallenges = activeChallenges.length > 0;
 
     // Group pending rolls by actor
     let actorRollGroups = [];
@@ -274,7 +320,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     }
 
     // Auto-switch to rolls tab only on first render if there are pending rolls
-    if (actorRollGroups.length > 0 && this.currentTab === null && !activeChallenge && !this._hasInitialized) {
+    if (actorRollGroups.length > 0 && this.currentTab === null && !hasActiveChallenges && !this._hasInitialized) {
       this.currentTab = 'rolls';
       this._hasInitialized = true;
     }
@@ -283,7 +329,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
     return {
       actorRollGroups,
+      activeChallenges,
       activeChallenge,
+      hasActiveChallenges,
       currentTab: this.currentTab,
       totalPendingRolls,
     };
@@ -293,7 +341,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     super._onRender(context, _options);
 
     // Auto-close if no content to show
-    const hasContent = context.activeChallenge || context.actorRollGroups.length > 0;
+    const hasContent = context.hasActiveChallenges || context.actorRollGroups.length > 0;
     if (!hasContent && this.rendered) {
       this.close();
       return;
@@ -408,6 +456,15 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   static async _onSwitchTab(_event, target) {
     const tab = target.dataset.tab;
     this.currentTab = tab === 'challenge' ? null : 'rolls';
+    this.render();
+  }
+
+  static async _onToggleChallengeCollapse(_event, target) {
+    const challengeId = target.closest('[data-challenge-id]')?.dataset.challengeId;
+    if (!challengeId) return;
+
+    const currentState = this.collapsedChallenges.get(challengeId) || false;
+    this.collapsedChallenges.set(challengeId, !currentState);
     this.render();
   }
 }

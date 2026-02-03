@@ -108,6 +108,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         </div>
       ` : '';
 
+      const minProficiency = so.minProficiency || 0;
+
       return `
         <div class="skill-dc-row" data-skill-index="${soIdx}">
           <div class="skill-select">
@@ -119,7 +121,21 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           </div>
           ${actionHtml}
           <div class="dc-input">
-            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" max="60" value="${so.dc}">
+            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="DC">
+          </div>
+          <div class="proficiency-select">
+            <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
+              <option value="0" ${minProficiency === 0 ? 'selected' : ''}>Any</option>
+              ${context.isPF2e ? `
+              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>Trained</option>
+              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>Expert</option>
+              <option value="3" ${minProficiency === 3 ? 'selected' : ''}>Master</option>
+              <option value="4" ${minProficiency === 4 ? 'selected' : ''}>Legendary</option>
+              ` : `
+              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>Proficient</option>
+              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>Expertise</option>
+              `}
+            </select>
           </div>
           <div class="secret-checkbox">
             <input type="checkbox" name="option-${this.optionCount}-secret-${soIdx}" id="option-${this.optionCount}-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
@@ -134,22 +150,18 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <span class="challenge-option-title">Option ${this.optionCount + 1}</span>
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optData.name || `Option ${this.optionCount + 1}`}" placeholder="Option name...">
         ${this.optionCount > 0 ? '<button type="button" class="challenge-option-remove" data-action="removeOption"><i class="fas fa-times"></i> Remove</button>' : ''}
       </div>
       <div class="challenge-option-fields">
         <div class="challenge-option-field">
-          <label>Skills & DCs</label>
+          <label>Skills</label>
           <div class="skills-list" data-option-index="${this.optionCount}">
             ${skillRowsHtml}
           </div>
           <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="${this.optionCount}">
             <i class="fas fa-plus"></i> Add Skill
           </button>
-        </div>
-        <div class="challenge-option-field">
-          <label>Description</label>
-          <textarea name="option-${this.optionCount}-desc">${optData.description}</textarea>
         </div>
       </div>
     `;
@@ -213,7 +225,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
   async _prepareContext(_options) {
     const currentSystem = SystemAdapter.detectSystem();
     const systemSkills = SystemAdapter.getSkills();
-    const skills = Object.entries(systemSkills).map(([slug, skill]) => ({
+    let skills = Object.entries(systemSkills).map(([slug, skill]) => ({
       slug,
       name: skill.name,
       actions: skill.actions || [],
@@ -287,7 +299,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const optionCards = this.element.querySelectorAll('.challenge-option-card');
     optionCards.forEach((card) => {
       const idx = card.dataset.optionIndex;
-      const description = formData[`option-${idx}-desc`] || '';
+      const name = formData[`option-${idx}-name`] || `Option ${parseInt(idx) + 1}`;
 
       // Parse skill-DC pairs (with optional actions)
       const skillOptions = [];
@@ -298,6 +310,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const dc = formData[`option-${idx}-dc-${skillIdx}`];
         const action = formData[`option-${idx}-action-${skillIdx}`] || null;
         const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
+        const minProficiency = formData[`option-${idx}-proficiency-${skillIdx}`];
 
         // Allow skills without DC (dc is optional)
         if (skill) {
@@ -306,16 +319,16 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
             dc: dc ? parseInt(dc) : null,
             action,
             isSecret,
+            minProficiency: minProficiency ? parseInt(minProficiency) : 0,
           });
         }
       });
 
-      // Allow options without description (description is optional)
       if (skillOptions.length > 0) {
         challengeData.options.push({
           id: foundry.utils.randomID(),
+          name,
           skillOptions,
-          description: description || '',
         });
       }
     });
@@ -357,9 +370,30 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       ui.notifications.info(`Saved "${challengeData.name}" to library`);
     }
 
-    // Present challenge
-    await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
-    ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size} PC(s)`);
+    // Present challenge (multi-challenge support)
+    // If editing and a challenge with this name exists, remove it first
+    if (this.editMode) {
+      const state = game.storyframe.stateManager.getState();
+      const existingChallenge = state?.activeChallenges?.find(c => c.name.toLowerCase() === challengeData.name.toLowerCase());
+
+      if (existingChallenge) {
+        // Remove the old version before adding the updated one
+        await game.storyframe.socketManager.requestRemoveChallenge(existingChallenge.id);
+      }
+    }
+
+    const success = await game.storyframe.socketManager.requestAddChallenge(challengeData);
+
+    if (!success) {
+      ui.notifications.error(`A challenge named "${challengeData.name}" is already active. Please use a different name or clear the existing challenge.`);
+      return;  // Keep dialog open for user to fix
+    }
+
+    if (this.editMode) {
+      ui.notifications.info(`Challenge "${challengeData.name}" updated and presented to ${this.selectedParticipants.size || 'all'} PC(s)`);
+    } else {
+      ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size || 'all'} PC(s)`);
+    }
 
     this.close();
   }
@@ -414,7 +448,21 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       </div>
       ` : ''}
       <div class="dc-input">
-        <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" max="60" placeholder="DC" required>
+        <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" placeholder="DC" required>
+      </div>
+      <div class="proficiency-select">
+        <select name="option-${optionIdx}-proficiency-${skillCount}" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
+          <option value="0">Any</option>
+          ${isPF2e ? `
+          <option value="1">Trained</option>
+          <option value="2">Expert</option>
+          <option value="3">Master</option>
+          <option value="4">Legendary</option>
+          ` : `
+          <option value="1">Proficient</option>
+          <option value="2">Expertise</option>
+          `}
+        </select>
       </div>
       <div class="secret-checkbox">
         <input type="checkbox" name="option-${optionIdx}-secret-${skillCount}" id="option-${optionIdx}-secret-${skillCount}" data-tooltip="Secret roll (GM only)">
@@ -487,14 +535,14 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     newOption.dataset.optionIndex = this.optionCount;
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <span class="challenge-option-title">Option ${this.optionCount + 1}</span>
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="Option ${this.optionCount + 1}" placeholder="Option name...">
         <button type="button" class="challenge-option-remove" data-action="removeOption">
           <i class="fas fa-times"></i> Remove
         </button>
       </div>
       <div class="challenge-option-fields">
         <div class="challenge-option-field">
-          <label>Skills & DCs</label>
+          <label>Skills</label>
           <div class="skills-list" data-option-index="${this.optionCount}">
             <div class="skill-dc-row" data-skill-index="0">
               <div class="skill-select">
@@ -512,17 +560,33 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               </div>
               ` : ''}
               <div class="dc-input">
-                <input type="number" name="option-${this.optionCount}-dc-0" min="1" max="60" placeholder="DC" required>
+                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="DC" required>
+              </div>
+              <div class="proficiency-select">
+                <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
+                  <option value="0">Any</option>
+                  ${context.isPF2e ? `
+                  <option value="1">Trained</option>
+                  <option value="2">Expert</option>
+                  <option value="3">Master</option>
+                  <option value="4">Legendary</option>
+                  ` : `
+                  <option value="1">Proficient</option>
+                  <option value="2">Expertise</option>
+                  `}
+                </select>
+              </div>
+              <div class="secret-checkbox">
+                <input type="checkbox" name="option-${this.optionCount}-secret-0" id="option-${this.optionCount}-secret-0">
+                <label for="option-${this.optionCount}-secret-0" data-tooltip="Secret roll (GM only)">
+                  <i class="fas fa-eye-slash"></i>
+                </label>
               </div>
             </div>
           </div>
           <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="${this.optionCount}">
             <i class="fas fa-plus"></i> Add Skill
           </button>
-        </div>
-        <div class="challenge-option-field">
-          <label>Description</label>
-          <textarea name="option-${this.optionCount}-desc" placeholder="e.g., Fortify the camp defenses with barricades" required></textarea>
         </div>
       </div>
     `;
@@ -547,7 +611,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       optionCard.remove();
       // Renumber
       optionsList.querySelectorAll('.challenge-option-card').forEach((card, idx) => {
-        card.querySelector('.challenge-option-title').textContent = `Option ${idx + 1}`;
+        card.querySelector('.option-name-input').value = `Option ${idx + 1}`;
       });
     } else {
       ui.notifications.warn('Must have at least one option');

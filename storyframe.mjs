@@ -1,5 +1,5 @@
-import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
+import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
 
@@ -164,44 +164,6 @@ Hooks.once('init', () => {
       // Re-render GM sidebar if open
       game.storyframe.gmSidebar?.render();
     },
-  });
-
-  // Register keybindings
-  game.keybindings.register(MODULE_ID, 'toggleStoryFrame', {
-    name: 'Toggle StoryFrame',
-    hint: 'Show or hide the StoryFrame sidebar',
-    editable: [{ key: 'KeyS', modifiers: ['Control', 'Shift'] }],
-    onDown: () => {
-      if (game.user.isGM) {
-        // Find an open journal sheet
-        const openJournal = Object.values(ui.windows).find(
-          (app) =>
-            app instanceof foundry.applications.sheets.journal.JournalEntrySheet &&
-            app.rendered,
-        );
-
-        if (openJournal) {
-          // Toggle sidebar for the open journal
-          _toggleSidebarForSheet(openJournal);
-        } else {
-          // No journal open - inform user
-          ui.notifications.info('Open a journal to use StoryFrame');
-        }
-      } else {
-        // Toggle player viewer
-        if (!game.storyframe?.playerViewer) {
-          game.storyframe.playerViewer = new PlayerViewerApp();
-        }
-        if (game.storyframe.playerViewer.rendered) {
-          game.storyframe.playerViewer.close();
-        } else {
-          game.storyframe.playerViewer.render(true);
-        }
-      }
-      return true; // Consume the event
-    },
-    restricted: false, // Available to all users
-    precedence: CONST.KEYBINDING_PRECEDENCE.NORMAL,
   });
 });
 
@@ -719,8 +681,8 @@ Hooks.on('closeCheckModifiersDialog', async (_dialog, _html) => {
     const recentMessage = game.messages.contents.reverse().find((msg) => {
       const timeDiff = Date.now() - msg.timestamp;
       return timeDiff < 1000 &&
-             msg.speaker?.actor === actorId &&
-             (msg.whisper?.length > 0 || msg.blind);
+        msg.speaker?.actor === actorId &&
+        (msg.whisper?.length > 0 || msg.blind);
     });
 
     if (recentMessage) {

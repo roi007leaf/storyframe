@@ -151,6 +151,69 @@
   margin: 0;
 }
 
+/* Proficiency Filter */
+.storyframe.challenge-builder .proficiency-filter-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 14px;
+  background: linear-gradient(135deg, rgba(235, 203, 139, 0.15), rgba(235, 203, 139, 0.08));
+  border: 1px solid rgba(235, 203, 139, 0.3);
+  border-radius: 8px;
+}
+
+.storyframe.challenge-builder .proficiency-filter-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  margin: 0;
+}
+
+.storyframe.challenge-builder .proficiency-filter-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #ebcb8b;
+  cursor: pointer;
+}
+
+.storyframe.challenge-builder .proficiency-filter-label span {
+  font-weight: 600;
+  font-size: 13px;
+  color: #ebcb8b;
+  cursor: pointer;
+}
+
+.storyframe.challenge-builder .proficiency-level-select {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-left: 28px;
+}
+
+.storyframe.challenge-builder .proficiency-level-select label {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(235, 203, 139, 0.9);
+  margin: 0;
+}
+
+.storyframe.challenge-builder .proficiency-level-select select {
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(235, 203, 139, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.storyframe.challenge-builder .proficiency-level-select select:hover {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(235, 203, 139, 0.6);
+}
+
 /* Options Section Label */
 .storyframe.challenge-builder .options-section-label {
   font-weight: 700;
@@ -196,12 +259,31 @@
   border-bottom: 2px solid rgba(94, 129, 172, 0.25);
 }
 
-.storyframe.challenge-builder .challenge-option-title {
+.storyframe.challenge-builder .option-name-input {
   font-weight: 700;
   font-size: 13px;
   color: #5e81ac;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 4px 8px;
+  border-radius: 4px;
+  flex: 1;
+  transition: all 0.2s ease;
+}
+
+.storyframe.challenge-builder .option-name-input:hover {
+  background: rgba(94, 129, 172, 0.1);
+  border-color: rgba(94, 129, 172, 0.2);
+}
+
+.storyframe.challenge-builder .option-name-input:focus {
+  background: rgba(0, 0, 0, 0.4);
+  border-color: rgba(94, 129, 172, 0.6);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.15);
+  text-transform: none;
 }
 
 .storyframe.challenge-builder .challenge-option-fields {
