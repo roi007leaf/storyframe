@@ -1,0 +1,259 @@
+/* Roll Request Dialog */
+.storyframe.roll-request-dialog-app {
+  background: var(--sf-surface-primary);
+  border: 2px solid var(--sf-border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.roll-request-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-height: 300px;
+  max-height: 600px;
+}
+
+/* Content */
+.roll-request-dialog .dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sf-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-lg);
+}
+
+/* Checks Summary */
+.roll-request-dialog .checks-summary h3 {
+  margin: 0 0 var(--sf-space-sm) 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+}
+
+.roll-request-dialog .checks-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-xs);
+}
+
+.roll-request-dialog .check-item {
+  background: var(--sf-surface-secondary);
+  border: 1px solid var(--sf-border-secondary);
+  border-radius: 6px;
+  padding: var(--sf-space-sm) var(--sf-space-md);
+}
+
+.roll-request-dialog .check-info {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+}
+
+.roll-request-dialog .check-info i {
+  font-size: 14px;
+  color: var(--sf-accent-primary);
+  width: 16px;
+  text-align: center;
+}
+
+.roll-request-dialog .check-skill {
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  flex: 1;
+}
+
+.roll-request-dialog .check-dc {
+  background: var(--sf-accent-warning);
+  color: #2e3440;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.roll-request-dialog .check-secret-badge {
+  background: rgba(191, 97, 106, 0.2);
+  color: var(--sf-accent-danger);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid rgba(191, 97, 106, 0.3);
+}
+
+.roll-request-dialog .check-secret-badge i {
+  font-size: 10px;
+  width: auto;
+}
+
+/* Participants Selection */
+.roll-request-dialog .participants-selection h3 {
+  margin: 0 0 var(--sf-space-sm) 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+}
+
+.roll-request-dialog .participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--sf-space-sm);
+  max-height: 240px;
+  overflow-y: auto;
+  padding: 2px;
+}
+
+.roll-request-dialog .participant-card {
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+  display: block;
+}
+
+.roll-request-dialog .participant-card input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.roll-request-dialog .participant-content {
+  background: var(--sf-surface-secondary);
+  border: 2px solid var(--sf-border-secondary);
+  border-radius: 6px;
+  padding: var(--sf-space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sf-space-xs);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.roll-request-dialog .participant-card:hover .participant-content {
+  border-color: var(--sf-accent-primary);
+  background: var(--sf-surface-hover);
+}
+
+.roll-request-dialog .participant-card input:checked ~ .participant-content {
+  background: rgba(94, 129, 172, 0.15);
+  border-color: var(--sf-accent-primary);
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.2);
+}
+
+.roll-request-dialog .participant-content img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--sf-border-primary);
+  object-fit: cover;
+}
+
+.roll-request-dialog .participant-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.roll-request-dialog .check-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 16px;
+  color: var(--sf-accent-success);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.roll-request-dialog .participant-card input:checked ~ .participant-content .check-icon {
+  opacity: 1;
+}
+
+/* Footer */
+.roll-request-dialog .dialog-footer {
+  display: flex;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-md);
+  background: var(--sf-surface-secondary);
+  border-top: 1px solid var(--sf-border-secondary);
+  border-radius: 0 0 6px 6px;
+}
+
+.roll-request-dialog .dialog-footer button {
+  flex: 1;
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-xs);
+  transition: all 0.2s ease;
+}
+
+.roll-request-dialog .cancel-btn {
+  background: var(--sf-surface-primary);
+  color: var(--sf-text-primary);
+  border: 1px solid var(--sf-border-primary);
+}
+
+.roll-request-dialog .cancel-btn:hover {
+  background: var(--sf-surface-hover);
+  border-color: var(--sf-accent-danger);
+  color: var(--sf-accent-danger);
+}
+
+.roll-request-dialog .submit-btn {
+  background: linear-gradient(135deg, var(--sf-accent-primary) 0%, rgba(94, 129, 172, 0.9) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.roll-request-dialog .submit-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.9) 0%, var(--sf-accent-primary) 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.roll-request-dialog .submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Scrollbar styling */
+.roll-request-dialog .participants-grid::-webkit-scrollbar,
+.roll-request-dialog .dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.roll-request-dialog .participants-grid::-webkit-scrollbar-track,
+.roll-request-dialog .dialog-content::-webkit-scrollbar-track {
+  background: var(--sf-surface-secondary);
+  border-radius: 4px;
+}
+
+.roll-request-dialog .participants-grid::-webkit-scrollbar-thumb,
+.roll-request-dialog .dialog-content::-webkit-scrollbar-thumb {
+  background: var(--sf-border-primary);
+  border-radius: 4px;
+}
+
+.roll-request-dialog .participants-grid::-webkit-scrollbar-thumb:hover,
+.roll-request-dialog .dialog-content::-webkit-scrollbar-thumb:hover {
+  background: var(--sf-accent-primary);
+}

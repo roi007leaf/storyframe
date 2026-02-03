@@ -2,12 +2,15 @@
   <!-- Tab Navigation -->
   <div class="tab-navigation">
     <button type="button"
-            class="tab-btn {{#unless currentTab}}active{{/unless}}{{#if activeChallenge}} {{else}} disabled{{/if}}"
+            class="tab-btn {{#unless currentTab}}active{{/unless}}{{#if hasActiveChallenges}} {{else}} disabled{{/if}}"
             data-action="switchTab"
             data-tab="challenge"
-            {{#unless activeChallenge}}disabled{{/unless}}>
+            {{#unless hasActiveChallenges}}disabled{{/unless}}>
       <i class="fas fa-scroll" aria-hidden="true"></i>
-      <span>Challenge</span>
+      <span>Challenges</span>
+      {{#if activeChallenges.length}}
+        <span class="notification-badge-challenges">{{activeChallenges.length}}</span>
+      {{/if}}
     </button>
     <button type="button"
             class="tab-btn {{#if currentTab}}active{{/if}} {{#unless actorRollGroups.length}}disabled{{/unless}}"
@@ -16,48 +19,64 @@
       <i class="fas fa-dice-d20" aria-hidden="true"></i>
       <span>Rolls</span>
       {{#if actorRollGroups.length}}
-        <span class="notification-badge">{{totalPendingRolls}}</span>
+        <span class="notification-badge-rolls">{{totalPendingRolls}}</span>
       {{/if}}
     </button>
   </div>
 
   <!-- Tab Content -->
   <div class="tab-content">
-    {{#if activeChallenge}}
+    {{#if hasActiveChallenges}}
     <section class="challenge-tab {{#if currentTab}}hidden{{/if}}" data-tab-content="challenge">
       <div class="tab-scroll-content">
-        <div class="challenge-info">
-          {{#if activeChallenge.image}}
-          <img src="{{activeChallenge.image}}" alt="{{activeChallenge.name}}" class="challenge-image-header" loading="lazy">
-          {{/if}}
-          <h3 class="challenge-title">{{activeChallenge.name}}</h3>
-        </div>
-        <div class="challenge-options-list">
-          {{#each activeChallenge.options}}
-          <div class="challenge-option-group">
-            <div class="option-description">{{this.description}}</div>
-            <div class="option-skills-grid">
-              {{#each this.skillOptionsDisplay}}
-              <button type="button"
-                      class="challenge-btn-grid"
-                      data-action="selectChallengeOption"
-                      data-option-id="{{../id}}"
-                      data-skill="{{this.skill}}"
-                      data-dc="{{this.dc}}"
-                      data-action-slug="{{this.action}}"
-                      data-is-secret="{{this.isSecret}}"
-                      data-tooltip="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.keyboardHint}} (Press {{this.keyboardHint}}){{/if}}"
-                      aria-label="Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}">
-                {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
-                <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
-                <span class="skill-name-short">{{this.skillName}}</span>
-                {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
-              </button>
+        {{#each activeChallenges}}
+        <div class="player-challenge-card {{#if this.collapsed}}collapsed{{/if}}" data-challenge-id="{{this.id}}">
+          <div class="player-challenge-header"
+               data-action="toggleChallengeCollapse"
+               role="button"
+               tabindex="0"
+               aria-expanded="{{#unless this.collapsed}}true{{else}}false{{/unless}}">
+            <i class="fas fa-chevron-{{#if this.collapsed}}right{{else}}down{{/if}} collapse-icon" aria-hidden="true"></i>
+            {{#if this.image}}
+            <img src="{{this.image}}" alt="{{this.name}}" class="challenge-image-small" loading="lazy">
+            {{/if}}
+            <h3 class="challenge-title-compact">{{this.name}}</h3>
+          </div>
+
+          {{#unless this.collapsed}}
+          <div class="player-challenge-content">
+            <div class="challenge-options-list">
+              {{#each this.options}}
+              <div class="challenge-option-group">
+                <div class="option-description">{{this.description}}</div>
+                <div class="option-skills-grid">
+                  {{#each this.skillOptionsDisplay}}
+                  <button type="button"
+                          class="challenge-btn-grid {{#unless this.canRoll}}proficiency-locked{{/unless}}"
+                          data-action="selectChallengeOption"
+                          data-option-id="{{../id}}"
+                          data-skill="{{this.skill}}"
+                          data-dc="{{this.dc}}"
+                          data-action-slug="{{this.action}}"
+                          data-is-secret="{{this.isSecret}}"
+                          {{#unless this.canRoll}}disabled{{/unless}}
+                          data-tooltip="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.keyboardHint}} (Press {{this.keyboardHint}}){{/if}}{{else}}Insufficient proficiency{{/if}}"
+                          aria-label="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}{{else}}Locked - insufficient proficiency{{/if}}">
+                    {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
+                    {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
+                    <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
+                    <span class="skill-name-short">{{this.skillName}}</span>
+                    {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
+                  </button>
+                  {{/each}}
+                </div>
+              </div>
               {{/each}}
             </div>
           </div>
-          {{/each}}
+          {{/unless}}
         </div>
+        {{/each}}
       </div>
     </section>
     {{/if}}
@@ -92,7 +111,7 @@
     </section>
     {{/if}}
 
-    {{#unless activeChallenge}}
+    {{#unless hasActiveChallenges}}
       {{#unless actorRollGroups.length}}
       <div class="empty-state-sidebar">
         <i class="fas fa-hourglass-half" aria-hidden="true"></i>

@@ -40,6 +40,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       removeParticipant: GMSidebarAppBase._onRemoveParticipant,
       toggleSelectAll: GMSidebarAppBase._onToggleSelectAll,
       requestSkill: GMSidebarAppBase._onRequestSkill,
+      sendBatch: GMSidebarAppBase._onSendBatch,
       openSkillMenu: GMSidebarAppBase._onOpenSkillMenu,
       openSkillConfig: GMSidebarAppBase._onOpenSkillConfig,
       setDCSelect: GMSidebarAppBase._onSetDCSelect,
@@ -48,6 +49,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       openPlayerWindows: GMSidebarAppBase._onOpenPlayerWindows,
       closePlayerWindows: GMSidebarAppBase._onClosePlayerWindows,
       showPendingRolls: GMSidebarAppBase._onShowPendingRolls,
+      showActiveChallenges: GMSidebarAppBase._onShowActiveChallenges,
       togglePresetDropdown: GMSidebarAppBase._onTogglePresetDropdown,
       applyPreset: GMSidebarAppBase._onApplyPreset,
       addPresetQuick: GMSidebarAppBase._onAddPresetQuick,
@@ -58,10 +60,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       setActorAsSpeaker: GMSidebarAppBase._onSetActorAsSpeaker,
       presentChallenge: GMSidebarAppBase._onPresentChallenge,
       clearChallenge: GMSidebarAppBase._onClearChallenge,
+      removeChallenge: GMSidebarAppBase._onRemoveChallenge,
+      clearAllChallenges: GMSidebarAppBase._onClearAllChallenges,
+      toggleChallengeCollapse: GMSidebarAppBase._onToggleChallengeCollapse,
+      toggleLibraryChallengeCollapse: GMSidebarAppBase._onToggleLibraryChallengeCollapse,
       presentSavedChallenge: GMSidebarAppBase._onPresentSavedChallenge,
       editChallenge: GMSidebarAppBase._onEditChallenge,
       deleteChallenge: GMSidebarAppBase._onDeleteChallenge,
       createChallengeFromSelection: GMSidebarAppBase._onCreateChallengeFromSelection,
+      requestRollsFromSelection: GMSidebarAppBase._onRequestRollsFromSelection,
     },
   };
 
@@ -99,6 +106,19 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Track visible journal checks for highlighting
     this._visibleChecks = new Map(); // skill -> Set of DCs
+
+    // Track collapsed state for active challenges
+    this.collapsedChallenges = new Map();  // challengeId -> boolean
+
+    // Track collapsed state for library challenges
+    this.collapsedLibraryChallenges = new Map();  // challengeId -> boolean
+
+    // Track pending rolls grouping mode
+    this.pendingRollsGroupMode = 'actor';  // 'actor' or 'skill'
+
+    // Batch skill selection (shift+click)
+    this.batchedSkills = new Set();  // Set of skill slugs
+    this._shiftKeyDown = false;
 
     // Parent reference (set externally when attaching)
     this.parentInterface = null;
@@ -445,19 +465,17 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Categorize skills
     const skillCategories = {
-      physical: ['acr', 'ath'],
-      mental: ['arc', 'nat', 'occ', 'rel'],
+      physical: ['acr', 'ath', 'ste', 'thi'],
+      magical: ['arc', 'nat', 'occ', 'rel'],
       social: ['dec', 'dip', 'itm', 'prf', 'soc'],
-      perception: ['per'],
-      utility: ['cra', 'med', 'ste', 'sur', 'thi'],
+      utility: ['cra', 'med', 'per', 'sur'],
     };
 
     const categorizedSkills = {
-      physicalSkills: this._mapSkillsWithAvailability(skillCategories.physical, quickButtonSkills),
-      mentalSkills: this._mapSkillsWithAvailability(skillCategories.mental, quickButtonSkills),
-      socialSkills: this._mapSkillsWithAvailability(skillCategories.social, quickButtonSkills),
-      perceptionSkills: this._mapSkillsWithAvailability(skillCategories.perception, quickButtonSkills),
-      utilitySkills: this._mapSkillsWithAvailability(skillCategories.utility, quickButtonSkills),
+      physicalSkills: await this._mapSkillsWithProficiency(skillCategories.physical, quickButtonSkills, participants),
+      magicalSkills: await this._mapSkillsWithProficiency(skillCategories.magical, quickButtonSkills, participants),
+      socialSkills: await this._mapSkillsWithProficiency(skillCategories.social, quickButtonSkills, participants),
+      utilitySkills: await this._mapSkillsWithProficiency(skillCategories.utility, quickButtonSkills, participants),
     };
 
     // Get lore skills from participants
@@ -489,9 +507,31 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
     const dcPresets = allPresets.filter((p) => !p.system || p.system === currentSystem);
 
-    // Active challenge
-    const activeChallenge = state?.activeChallenge || null;
-    const hasActiveChallenge = activeChallenge !== null;
+    // Active challenges (multi-challenge support)
+    const activeChallenges = (state?.activeChallenges || []).map(c => ({
+      ...c,
+      collapsed: this.collapsedChallenges.get(c.id) || false,
+      options: c.options.map(opt => ({
+        ...opt,
+        skillOptions: opt.skillOptions.map(so => {
+          const skillName = this._getSkillName(so.skill);
+          const actionName = so.action ? this._getActionName(so.skill, so.action) : null;
+          const displayText = actionName ? `${skillName} (${actionName})` : skillName;
+          return {
+            ...so,
+            skillName,
+            actionName,
+            displayText,
+            isSecret: so.isSecret || false,
+            minProficiency: so.minProficiency || 0
+          };
+        })
+      }))
+    }));
+
+    // Backward compatibility
+    const activeChallenge = activeChallenges[0] || null;
+    const hasActiveChallenge = activeChallenges.length > 0;
 
     // Load and enrich saved challenges for library
     const savedChallengesRaw = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
@@ -521,6 +561,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         name: c.name,
         image: c.image,
         options: optionsPreview,
+        collapsed: this.collapsedLibraryChallenges.get(c.id) || false,
       };
     });
 
@@ -530,6 +571,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasSpeakers: speakers.length > 0,
       participants,
       hasParticipants: participants.length > 0,
+      totalParticipants: participants.length,
       selectedCount,
       allSelected,
       hasSelection: selectedCount > 0,
@@ -559,6 +601,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasJournalImages: journalImages.length > 0,
       journalActors,
       hasJournalActors: journalActors.length > 0,
+      activeChallenges,
       activeChallenge,
       hasActiveChallenge,
       savedChallenges,
@@ -820,6 +863,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this._attachImageContextMenu();
     this._attachSkillActionContextMenu();
     this._attachPlayerWindowsContextMenu();
+    this._attachKeyboardHandlers();
     this._setupJournalCheckHighlighting();
     this._setupJournalContentObserver();
 
@@ -858,8 +902,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Watch the journal pages container for new content
     const pagesContainer = parentElement.querySelector('.journal-entry-pages') ||
-                          parentElement.querySelector('.journal-entry-content') ||
-                          parentElement;
+      parentElement.querySelector('.journal-entry-content') ||
+      parentElement;
 
     if (!pagesContainer) return;
 
@@ -874,7 +918,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           for (const node of mutation.addedNodes) {
             if (node.nodeType === Node.ELEMENT_NODE) {
               if (node.classList?.contains('journal-page-content') ||
-                  node.querySelector?.('.journal-page-content')) {
+                node.querySelector?.('.journal-page-content')) {
                 hasNewPages = true;
                 break;
               }
@@ -925,6 +969,26 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         true,
       );
     }
+  }
+
+  /**
+   * Attach keyboard handlers for batch skill selection
+   */
+  _attachKeyboardHandlers() {
+    // Remove existing handlers if any
+    if (this._keyupHandler) {
+      document.removeEventListener('keyup', this._keyupHandler);
+    }
+
+    // Create bound handler for shift key tracking
+    this._keyupHandler = async (e) => {
+      // Track shift key state (no auto-send, use Send Batch button instead)
+      if (e.key === 'Shift' && this._shiftKeyDown) {
+        this._shiftKeyDown = false;
+      }
+    };
+
+    document.addEventListener('keyup', this._keyupHandler);
   }
 
   _attachDCHandlers() {
@@ -1382,6 +1446,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       this._journalContentDebounce = null;
     }
 
+    // Clean up keyboard handler
+    if (this._keyupHandler) {
+      document.removeEventListener('keyup', this._keyupHandler);
+      this._keyupHandler = null;
+    }
+
     // Save visibility state
     await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
 
@@ -1468,6 +1538,39 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return iconMap[slug] || 'fa-dice-d20';
   }
 
+  /**
+   * Map skills with proficiency information.
+   * @param {Array} categorySlugs - Skill slugs in category
+   * @param {Array} allSkills - All configured skills
+   * @param {Array} participants - Current participants
+   * @returns {Promise<Array>} Skills with proficiency data
+   */
+  async _mapSkillsWithProficiency(categorySlugs, allSkills, participants) {
+    const mapped = categorySlugs
+      .map(slug => allSkills.find(s => s.slug === slug))
+      .filter(Boolean);
+
+    return mapped;
+  }
+
+  /**
+   * Count how many participants are proficient in a skill.
+   * @param {string} skillSlug - Skill slug
+   * @param {Array} participants - Participant data
+   * @returns {Promise<number>} Count of proficient participants
+   */
+
+  /**
+   * Check if actor is proficient in skill (system-specific - override in subclass).
+   * @param {Actor} actor - Actor to check
+   * @param {string} skillSlug - Skill slug
+   * @returns {Promise<boolean>} True if proficient
+   */
+  static async _isActorProficientInSkill(_actor, _skillSlug) {
+    // Base implementation - override in subclasses
+    return false;
+  }
+
   _mapSkillsWithAvailability(categorySlugs, allSkills) {
     return categorySlugs
       .map(slug => allSkills.find(s => s.slug === slug))
@@ -1529,9 +1632,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Find the scrollable content area (the part that actually scrolls)
     // Try multiple selectors for different journal sheet types
     const scrollContainer = parentElement.querySelector('.journal-entry-pages') ||
-                           parentElement.querySelector('.journal-entry-content') ||
-                           parentElement.querySelector('.scrollable') ||
-                           parentElement.querySelector('.journal-page-content')?.parentElement;
+      parentElement.querySelector('.journal-entry-content') ||
+      parentElement.querySelector('.scrollable') ||
+      parentElement.querySelector('.journal-page-content')?.parentElement;
 
     if (!scrollContainer) return;
 
@@ -1636,9 +1739,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
       // Check if element is visible within the scroll container (with small buffer)
       const isVisible = elRect.top < containerRect.bottom + 10 &&
-                       elRect.bottom > containerRect.top - 10 &&
-                       elRect.left < containerRect.right &&
-                       elRect.right > containerRect.left;
+        elRect.bottom > containerRect.top - 10 &&
+        elRect.left < containerRect.right &&
+        elRect.right > containerRect.left;
 
       if (isVisible) {
         if (!this._visibleChecksMap.has(normalizedSkill)) {
@@ -1660,9 +1763,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     updateCallback();
   }
 
-  async _requestSkillCheck(skillSlug, participantIds, actionSlug = null) {
+  async _requestSkillCheck(skillSlug, participantIds, actionSlug = null, suppressNotifications = false) {
     const state = game.storyframe.stateManager.getState();
-    if (!state) return;
+    if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
     // Check if secret roll is enabled (toggle button or action with secret trait)
     let isSecretRoll = this.secretRollEnabled || false;
@@ -1675,6 +1778,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     let sentCount = 0;
     let offlineCount = 0;
     let missingSkillCount = 0;
+    const sentIds = new Set();
+    const offlineIds = new Set();
+    const missingIds = new Set();
+    const offlineNames = new Set();
+    const missingNames = new Set();
 
     for (const participantId of participantIds) {
       const participant = state.participants.find((p) => p.id === participantId);
@@ -1686,6 +1794,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         const hasSkill = await this._actorHasSkill(actor, skillSlug);
         if (!hasSkill) {
           missingSkillCount++;
+          missingIds.add(participantId);
+          missingNames.add(actor.name);
           continue;
         }
       }
@@ -1693,6 +1803,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       const user = game.users.get(participant.userId);
       if (!user?.active) {
         offlineCount++;
+        offlineIds.add(participantId);
+        if (actor) {
+          offlineNames.add(actor.name);
+        }
         continue;
       }
 
@@ -1712,25 +1826,32 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       await game.storyframe.socketManager.requestAddPendingRoll(request);
       await game.storyframe.socketManager.triggerSkillCheckOnPlayer(participant.userId, request);
       sentCount++;
+      sentIds.add(participantId);
     }
 
     const skillName = this._getSkillName(skillSlug);
     const actionName = actionSlug ? this._getActionName(skillSlug, actionSlug) : null;
     const checkName = actionName ? `${skillName} (${actionName})` : skillName;
 
-    if (sentCount > 0) {
-      ui.notifications.info(`Requested ${checkName} check from ${sentCount} PC(s)`);
-    }
-    if (offlineCount > 0) {
-      ui.notifications.warn(`${offlineCount} PC(s) offline - skipped`);
-    }
-    if (missingSkillCount > 0) {
-      ui.notifications.warn(`${missingSkillCount} PC(s) don't have ${skillName} - skipped`);
+    if (!suppressNotifications) {
+      if (sentCount > 0) {
+        ui.notifications.info(`Requested ${checkName} check from ${sentCount} PC(s)`);
+      }
+      if (offlineCount > 0) {
+        const names = Array.from(offlineNames).join(', ');
+        ui.notifications.warn(`${names} offline - skipped`);
+      }
+      if (missingSkillCount > 0) {
+        const names = Array.from(missingNames).join(', ');
+        ui.notifications.warn(`${names} don't have ${skillName} - skipped`);
+      }
+
+      // Clear selection after sending rolls
+      this.selectedParticipants.clear();
+      this.render();
     }
 
-    // Clear selection after sending rolls
-    this.selectedParticipants.clear();
-    this.render();
+    return { sentCount, offlineCount, missingSkillCount, sentIds, offlineIds, missingIds, offlineNames, missingNames };
   }
 
   /**
@@ -2084,12 +2205,166 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const skillSlug = target.dataset.skill;
     if (!skillSlug) return;
 
+    // Shift+click adds to batch selection
+    if (_event.shiftKey) {
+      // Require PC selection for batch mode
+      if (this.selectedParticipants.size === 0) {
+        ui.notifications.warn('Select PCs first to use batch selection');
+        return;
+      }
+
+      this._shiftKeyDown = true;
+
+      if (this.batchedSkills.has(skillSlug)) {
+        // Remove from batch if already selected
+        this.batchedSkills.delete(skillSlug);
+      } else {
+        // Add to batch
+        this.batchedSkills.add(skillSlug);
+      }
+
+      // Update visual highlighting
+      this._updateBatchHighlights();
+      return;
+    }
+
+    // Normal click: send single skill
+    if (this.selectedParticipants.size === 0) {
+      ui.notifications.warn('No PCs selected');
+      return;
+    }
+    await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+  }
+
+  static async _onSendBatch(_event, _target) {
+    if (this.batchedSkills.size === 0) return;
+
     if (this.selectedParticipants.size === 0) {
       ui.notifications.warn('No PCs selected');
       return;
     }
 
-    await this._requestSkillCheck(skillSlug, Array.from(this.selectedParticipants));
+    await this._sendBatchSkillCheck();
+  }
+
+  /**
+   * Update visual highlights for batched skills
+   */
+  _updateBatchHighlights() {
+    // Remove all existing batch highlights from regular skills
+    this.element.querySelectorAll('.skill-btn-wrapper.batched').forEach(wrapper => {
+      wrapper.classList.remove('batched');
+    });
+
+    // Remove all existing batch highlights from lore skills
+    this.element.querySelectorAll('.lore-skill-wrapper.batched').forEach(wrapper => {
+      wrapper.classList.remove('batched');
+    });
+
+    // Add batch highlight to selected skills
+    this.batchedSkills.forEach(skillSlug => {
+      // Try regular skills first
+      let wrapper = this.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
+
+      // If not found, try lore skills
+      if (!wrapper) {
+        wrapper = this.element.querySelector(`.skill-btn.lore[data-skill="${skillSlug}"]`)?.closest('.lore-skill-wrapper');
+      }
+
+      if (wrapper) {
+        wrapper.classList.add('batched');
+      }
+    });
+
+    // Update send batch button visibility and count
+    const sendBatchBtn = this.element.querySelector('.send-batch-btn');
+    if (sendBatchBtn) {
+      const batchCount = this.batchedSkills.size;
+      const countSpan = sendBatchBtn.querySelector('.batch-count');
+
+      if (batchCount > 0) {
+        sendBatchBtn.style.display = '';
+        if (countSpan) {
+          countSpan.textContent = batchCount;
+        }
+      } else {
+        sendBatchBtn.style.display = 'none';
+      }
+    }
+  }
+
+  /**
+   * Send batch skill check request
+   */
+  async _sendBatchSkillCheck() {
+    if (this.selectedParticipants.size === 0) {
+      ui.notifications.warn('No PCs selected');
+      return;
+    }
+
+    if (this.batchedSkills.size === 0) {
+      return;
+    }
+
+    const participantIds = Array.from(this.selectedParticipants);
+    const skillSlugs = Array.from(this.batchedSkills);
+
+    // Track unique participant IDs and names across all skills
+    const uniqueSentIds = new Set();
+    const uniqueOfflineIds = new Set();
+    const uniqueMissingIds = new Set();
+    const uniqueOfflineNames = new Set();
+    const participantMissingSkills = new Map(); // participantName -> Set of skill names
+
+    // Get system skills for name lookup
+    const systemSkills = SystemAdapter.getSkills();
+
+    // Send request for each skill (suppress individual notifications)
+    for (const skillSlug of skillSlugs) {
+      const result = await this._requestSkillCheck(skillSlug, participantIds, null, true);
+
+      // Add unique participant IDs and names to sets
+      result.sentIds.forEach(id => uniqueSentIds.add(id));
+      result.offlineIds.forEach(id => uniqueOfflineIds.add(id));
+      result.missingIds.forEach(id => uniqueMissingIds.add(id));
+      result.offlineNames.forEach(name => uniqueOfflineNames.add(name));
+
+      // Track which skills each participant is missing
+      result.missingNames.forEach(name => {
+        if (!participantMissingSkills.has(name)) {
+          participantMissingSkills.set(name, new Set());
+        }
+        const skillName = systemSkills[skillSlug]?.name || skillSlug;
+        participantMissingSkills.get(name).add(skillName);
+      });
+    }
+
+    // Clear batch selection
+    this.batchedSkills.clear();
+    this._updateBatchHighlights();
+
+    // Clear selection and render
+    this.selectedParticipants.clear();
+    this.render();
+
+    // Show single aggregated notification with unique participant names
+    if (uniqueSentIds.size > 0) {
+      ui.notifications.info(`Requested ${skillSlugs.length} skill check(s) from ${uniqueSentIds.size} PC(s)`, { permanent: false });
+    }
+    if (uniqueOfflineNames.size > 0) {
+      const names = Array.from(uniqueOfflineNames).join(', ');
+      const notification = ui.notifications.warn(`${names} offline - skipped`, { permanent: true });
+      setTimeout(() => notification.remove(), 15000); // Show for 7 seconds
+    }
+    if (participantMissingSkills.size > 0) {
+      // Build message showing each participant and their missing skills
+      const messages = Array.from(participantMissingSkills.entries()).map(([name, skills]) => {
+        const skillList = Array.from(skills).join(', ');
+        return `${name} (missing ${skillList})`;
+      });
+      const notification = ui.notifications.warn(`${messages.join('; ')} - skipped`, { permanent: true });
+      setTimeout(() => notification.remove(), 15000); // Show for 7 seconds
+    }
   }
 
   static async _onOpenSkillMenu(_event, target) {
@@ -2516,12 +2791,22 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         const actor = participant ? await fromUuid(participant.actorUuid) : null;
         return {
           ...r,
+          participantId: r.participantId,
           participantName: actor?.name || 'Unknown',
+          participantImg: actor?.img || 'icons/svg/mystery-man.svg',
           skillName: this._getSkillName(r.skillSlug),
           actionName: r.actionSlug ? this._getActionName(r.skillSlug, r.actionSlug) : null,
         };
       }),
     );
+
+    // Group data based on current mode
+    let groupedData;
+    if (this.pendingRollsGroupMode === 'actor') {
+      groupedData = this._groupPendingRollsByActor(rollsData);
+    } else {
+      groupedData = this._groupPendingRollsBySkill(rollsData);
+    }
 
     // Remove existing popup if any
     document.querySelector('.storyframe-pending-rolls-popup')?.remove();
@@ -2530,32 +2815,24 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const popup = document.createElement('div');
     popup.className = 'storyframe-pending-rolls-popup';
 
-    const rollsHtml = rollsData
-      .map(
-        (roll) => `
-      <div class="pending-roll-item" data-request-id="${roll.id}">
-        <div class="roll-info">
-          <span class="participant-name">${roll.participantName}</span>
-          <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
-          ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
-        </div>
-        <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}" data-tooltip="Cancel request">
-          <i class="fas fa-times"></i>
-        </button>
-      </div>
-    `,
-      )
-      .join('');
+    // Generate grouped HTML
+    const groupsHtml = this._renderPendingRollsGroups(groupedData, this.pendingRollsGroupMode);
 
     popup.innerHTML = `
       <div class="popup-header">
         <span class="popup-title">Pending Rolls (${rollsData.length})</span>
-        <button type="button" class="popup-close" aria-label="Close">
-          <i class="fas fa-times"></i>
-        </button>
+        <div class="popup-header-actions">
+          <button type="button" class="group-toggle-btn" data-mode="${this.pendingRollsGroupMode}" aria-label="Toggle grouping">
+            <i class="fas fa-${this.pendingRollsGroupMode === 'actor' ? 'users' : 'list'}"></i>
+            <span>${this.pendingRollsGroupMode === 'actor' ? 'By PC' : 'By Skill'}</span>
+          </button>
+          <button type="button" class="popup-close" aria-label="Close">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
       </div>
       <div class="popup-body">
-        ${rollsHtml}
+        ${groupsHtml}
       </div>
       <div class="popup-footer">
         <button type="button" class="cancel-all-btn">Cancel All</button>
@@ -2577,10 +2854,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       overflow: hidden;
     `;
 
-    // Position near the indicator
+    // Position to bottom-left of the button
     const rect = target.getBoundingClientRect();
-    popup.style.bottom = `${window.innerHeight - rect.top + 8}px`;
-    popup.style.right = `${window.innerWidth - rect.right}px`;
+    popup.style.top = `${rect.bottom + 8}px`;
+    popup.style.left = `${rect.left}px`;
 
     // Style header
     const header = popup.querySelector('.popup-header');
@@ -2599,6 +2876,43 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       font-weight: 700;
       color: #ffffff;
     `;
+
+    const headerActions = popup.querySelector('.popup-header-actions');
+    headerActions.style.cssText = `
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    `;
+
+    // Style group toggle button
+    const toggleBtn = popup.querySelector('.group-toggle-btn');
+    toggleBtn.style.cssText = `
+      background: rgba(94, 129, 172, 0.2);
+      border: 1px solid rgba(94, 129, 172, 0.4);
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      transition: all 0.15s;
+    `;
+
+    toggleBtn.addEventListener('mouseenter', () => {
+      toggleBtn.style.background = 'rgba(94, 129, 172, 0.3)';
+    });
+    toggleBtn.addEventListener('mouseleave', () => {
+      toggleBtn.style.background = 'rgba(94, 129, 172, 0.2)';
+    });
+
+    // Toggle handler
+    toggleBtn.addEventListener('click', () => {
+      this.pendingRollsGroupMode = this.pendingRollsGroupMode === 'actor' ? 'skill' : 'actor';
+      this.constructor._onShowPendingRolls.call(this, _event, target);
+    });
 
     const closeBtn = popup.querySelector('.popup-close');
     closeBtn.style.cssText = `
@@ -2619,37 +2933,113 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       padding: 8px;
     `;
 
+    // Style roll groups
+    popup.querySelectorAll('.pending-roll-group').forEach((group) => {
+      group.style.cssText = `
+        margin-bottom: 12px;
+      `;
+
+      const header = group.querySelector('.group-header');
+      if (header) {
+        header.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 12px;
+          background: rgba(94, 129, 172, 0.15);
+          border-radius: 8px 8px 0 0;
+          margin-bottom: 4px;
+        `;
+
+        const avatar = header.querySelector('.group-avatar');
+        if (avatar) {
+          avatar.style.cssText = `
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            object-fit: cover;
+          `;
+        }
+
+        const groupName = header.querySelector('.group-name');
+        if (groupName) {
+          groupName.style.cssText = `
+            flex: 1;
+            font-size: 12px;
+            font-weight: 700;
+            color: #ffffff;
+          `;
+        }
+
+        const count = header.querySelector('.group-count');
+        if (count) {
+          count.style.cssText = `
+            font-size: 10px;
+            color: #aaa;
+            background: rgba(0,0,0,0.3);
+            padding: 2px 6px;
+            border-radius: 10px;
+          `;
+        }
+      }
+
+      const items = group.querySelector('.group-items');
+      if (items) {
+        items.style.cssText = `
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        `;
+      }
+    });
+
     // Style roll items
     popup.querySelectorAll('.pending-roll-item').forEach((item) => {
       item.style.cssText = `
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 10px 12px;
+        padding: 8px 12px;
         background: rgba(0,0,0,0.2);
-        border-radius: 8px;
-        margin-bottom: 6px;
+        border-radius: 6px;
       `;
 
       const info = item.querySelector('.roll-info');
-      info.style.cssText = `
-        display: flex;
-        flex-direction: column;
-        gap: 2px;
-      `;
+      if (info) {
+        info.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex: 1;
+        `;
+      }
 
       const name = item.querySelector('.participant-name');
-      name.style.cssText = `
-        font-size: 13px;
-        font-weight: 600;
-        color: #ffffff;
-      `;
+      if (name) {
+        name.style.cssText = `
+          font-size: 12px;
+          font-weight: 600;
+          color: #ffffff;
+        `;
+      }
 
       const skill = item.querySelector('.skill-name');
-      skill.style.cssText = `
-        font-size: 11px;
-        color: #aaa;
-      `;
+      if (skill) {
+        skill.style.cssText = `
+          font-size: 12px;
+          color: #e0e0e0;
+        `;
+      }
+
+      const avatar = item.querySelector('.participant-avatar-small');
+      if (avatar) {
+        avatar.style.cssText = `
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          object-fit: cover;
+        `;
+      }
 
       const dcBadge = item.querySelector('.dc-badge');
       if (dcBadge) {
@@ -2657,27 +3047,31 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           font-size: 10px;
           color: #5e81ac;
           font-weight: 600;
+          margin-left: auto;
+          margin-right: 8px;
         `;
       }
 
       const cancelBtn = item.querySelector('.cancel-roll-btn');
-      cancelBtn.style.cssText = `
-        background: transparent;
-        border: none;
-        color: #888;
-        cursor: pointer;
-        padding: 6px 8px;
-        border-radius: 4px;
-        transition: all 0.15s;
-      `;
-      cancelBtn.addEventListener('mouseenter', () => {
-        cancelBtn.style.background = 'rgba(255,100,100,0.2)';
-        cancelBtn.style.color = '#ff6b6b';
-      });
-      cancelBtn.addEventListener('mouseleave', () => {
-        cancelBtn.style.background = 'transparent';
-        cancelBtn.style.color = '#888';
-      });
+      if (cancelBtn) {
+        cancelBtn.style.cssText = `
+          background: transparent;
+          border: none;
+          color: #888;
+          cursor: pointer;
+          padding: 6px 8px;
+          border-radius: 4px;
+          transition: all 0.15s;
+        `;
+        cancelBtn.addEventListener('mouseenter', () => {
+          cancelBtn.style.background = 'rgba(255,100,100,0.2)';
+          cancelBtn.style.color = '#ff6b6b';
+        });
+        cancelBtn.addEventListener('mouseleave', () => {
+          cancelBtn.style.background = 'transparent';
+          cancelBtn.style.color = '#888';
+        });
+      }
     });
 
     // Style footer
@@ -2766,13 +3160,787 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Adjust position if off-screen
     const popupRect = popup.getBoundingClientRect();
+    if (popupRect.right > window.innerWidth - 10) {
+      popup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+    }
+    if (popupRect.bottom > window.innerHeight - 10) {
+      popup.style.top = `${rect.top - popupRect.height - 8}px`;
+    }
     if (popupRect.left < 10) {
-      popup.style.right = 'auto';
       popup.style.left = '10px';
     }
     if (popupRect.top < 10) {
-      popup.style.bottom = 'auto';
       popup.style.top = '10px';
+    }
+  }
+
+  /**
+   * Show active challenges popup.
+   */
+  static async _onShowActiveChallenges(_event, target) {
+    const state = game.storyframe.stateManager.getState();
+    const activeChallenges = state?.activeChallenges || [];
+
+    if (activeChallenges.length === 0) {
+      ui.notifications.info('No active challenges');
+      return;
+    }
+
+    // Remove existing popup if any
+    document.querySelector('.storyframe-challenges-popup')?.remove();
+
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'storyframe-challenges-popup';
+
+    // Generate challenges HTML
+    const challengesHtml = activeChallenges.map(challenge => `
+      <div class="challenge-item" data-challenge-id="${challenge.id}">
+        <div class="challenge-item-header">
+          ${challenge.image ? `<img src="${challenge.image}" alt="${challenge.name}" class="challenge-thumb" />` : '<i class="fas fa-flag-checkered challenge-icon"></i>'}
+          <div class="challenge-info">
+            <div class="challenge-name">${challenge.name}</div>
+            <div class="challenge-meta">${challenge.options.length} option(s)</div>
+          </div>
+          <button type="button" class="clear-challenge-btn" data-challenge-id="${challenge.id}" aria-label="Clear ${challenge.name}">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+
+    popup.innerHTML = `
+      <div class="popup-header">
+        <span class="popup-title">Active Challenges (${activeChallenges.length})</span>
+        <button type="button" class="popup-close" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="popup-body">
+        ${challengesHtml}
+      </div>
+      <div class="popup-footer">
+        <button type="button" class="clear-all-btn">Clear All</button>
+      </div>
+    `;
+
+    // Style the popup
+    popup.style.cssText = `
+      position: fixed;
+      z-index: 10001;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 360px;
+      max-height: 500px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `;
+
+    // Position to bottom-left of the button
+    const rect = target.getBoundingClientRect();
+    popup.style.top = `${rect.bottom + 8}px`;
+    popup.style.left = `${rect.left}px`;
+
+    // Style header
+    const header = popup.querySelector('.popup-header');
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    const title = popup.querySelector('.popup-title');
+    title.style.cssText = `
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    `;
+
+    const closeBtn = popup.querySelector('.popup-close');
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    `;
+
+    // Style body
+    const body = popup.querySelector('.popup-body');
+    body.style.cssText = `
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px;
+    `;
+
+    // Style challenge items
+    popup.querySelectorAll('.challenge-item').forEach((item) => {
+      item.style.cssText = `
+        background: rgba(94, 129, 172, 0.12);
+        border: 1px solid rgba(94, 129, 172, 0.3);
+        border-radius: 8px;
+        margin-bottom: 8px;
+        transition: all 0.15s;
+      `;
+
+      item.addEventListener('mouseenter', () => {
+        item.style.background = 'rgba(94, 129, 172, 0.18)';
+        item.style.borderColor = 'rgba(94, 129, 172, 0.4)';
+      });
+      item.addEventListener('mouseleave', () => {
+        item.style.background = 'rgba(94, 129, 172, 0.12)';
+        item.style.borderColor = 'rgba(94, 129, 172, 0.3)';
+      });
+
+      const itemHeader = item.querySelector('.challenge-item-header');
+      if (itemHeader) {
+        itemHeader.style.cssText = `
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px;
+        `;
+      }
+
+      const thumb = item.querySelector('.challenge-thumb');
+      if (thumb) {
+        thumb.style.cssText = `
+          width: 48px;
+          height: 48px;
+          border-radius: 6px;
+          object-fit: cover;
+          border: 2px solid rgba(94, 129, 172, 0.4);
+          flex-shrink: 0;
+        `;
+      }
+
+      const icon = item.querySelector('.challenge-icon');
+      if (icon) {
+        icon.style.cssText = `
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 24px;
+          color: rgba(94, 129, 172, 0.6);
+          flex-shrink: 0;
+        `;
+      }
+
+      const info = item.querySelector('.challenge-info');
+      if (info) {
+        info.style.cssText = `
+          flex: 1;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        `;
+      }
+
+      const name = item.querySelector('.challenge-name');
+      if (name) {
+        name.style.cssText = `
+          font-size: 13px;
+          font-weight: 700;
+          color: #ffffff;
+          line-height: 1.3;
+        `;
+      }
+
+      const meta = item.querySelector('.challenge-meta');
+      if (meta) {
+        meta.style.cssText = `
+          font-size: 11px;
+          color: #aaa;
+        `;
+      }
+
+      const clearBtn = item.querySelector('.clear-challenge-btn');
+      if (clearBtn) {
+        clearBtn.style.cssText = `
+          background: transparent;
+          border: 1px solid transparent;
+          color: #888;
+          cursor: pointer;
+          padding: 8px 10px;
+          border-radius: 6px;
+          transition: all 0.15s;
+          flex-shrink: 0;
+        `;
+        clearBtn.addEventListener('mouseenter', () => {
+          clearBtn.style.background = 'rgba(191, 97, 106, 0.2)';
+          clearBtn.style.borderColor = 'rgba(191, 97, 106, 0.4)';
+          clearBtn.style.color = '#bf616a';
+        });
+        clearBtn.addEventListener('mouseleave', () => {
+          clearBtn.style.background = 'transparent';
+          clearBtn.style.borderColor = 'transparent';
+          clearBtn.style.color = '#888';
+        });
+      }
+    });
+
+    // Style footer
+    const footer = popup.querySelector('.popup-footer');
+    footer.style.cssText = `
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: flex-end;
+    `;
+
+    const clearAllBtn = popup.querySelector('.clear-all-btn');
+    clearAllBtn.style.cssText = `
+      background: rgba(191, 97, 106, 0.2);
+      border: 1px solid rgba(191, 97, 106, 0.3);
+      color: #bf616a;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    `;
+    clearAllBtn.addEventListener('mouseenter', () => {
+      clearAllBtn.style.background = 'rgba(191, 97, 106, 0.3)';
+    });
+    clearAllBtn.addEventListener('mouseleave', () => {
+      clearAllBtn.style.background = 'rgba(191, 97, 106, 0.2)';
+    });
+
+    // Event handlers
+    closeBtn.addEventListener('click', () => popup.remove());
+
+    // Clear individual challenge
+    popup.querySelectorAll('.clear-challenge-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const challengeId = btn.dataset.challengeId;
+
+        await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
+
+        // Remove item from popup
+        const item = btn.closest('.challenge-item');
+        item.remove();
+
+        // Update count in header
+        const remaining = popup.querySelectorAll('.challenge-item').length;
+        title.textContent = `Active Challenges (${remaining})`;
+
+        // Close popup if no more challenges
+        if (remaining === 0) {
+          popup.remove();
+          ui.notifications.info('All challenges cleared');
+        } else {
+          ui.notifications.info('Challenge cleared');
+        }
+      });
+    });
+
+    // Clear all challenges
+    clearAllBtn.addEventListener('click', async () => {
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: 'Clear All Challenges' },
+        content: '<p>Clear all active challenges?</p>',
+        yes: { label: 'Clear All' },
+        no: { label: 'Cancel' },
+        rejectClose: false,
+      });
+
+      if (!confirmed) return;
+
+      await game.storyframe.socketManager.requestClearAllChallenges();
+      popup.remove();
+      ui.notifications.info('All challenges cleared');
+    });
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!popup.contains(e.target) && !target.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+    // Close on escape
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        popup.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(popup);
+
+    // Adjust position if off-screen
+    const popupRect = popup.getBoundingClientRect();
+    if (popupRect.right > window.innerWidth - 10) {
+      popup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+    }
+    if (popupRect.bottom > window.innerHeight - 10) {
+      popup.style.top = `${rect.top - popupRect.height - 8}px`;
+    }
+    if (popupRect.left < 10) {
+      popup.style.left = '10px';
+    }
+    if (popupRect.top < 10) {
+      popup.style.top = '10px';
+    }
+  }
+
+  /**
+   * Show proficiency filter popup for a skill.
+   */
+  static async _onShowProficiencyFilter(_event, target, skillSlug) {
+    const state = game.storyframe.stateManager.getState();
+    const participants = state?.participants || [];
+
+    if (participants.length === 0) {
+      ui.notifications.warn('No participants to filter');
+      return;
+    }
+
+    // Get proficiency levels for this skill from all participants
+    const proficiencyData = await this.constructor._getProficiencyDistribution(skillSlug, participants);
+
+    // Remove existing popup if any
+    document.querySelector('.storyframe-proficiency-popup')?.remove();
+
+    // Create popup
+    const popup = document.createElement('div');
+    popup.className = 'storyframe-proficiency-popup';
+
+    // Get current filter for this skill
+    const currentFilter = this.activeSkillFilters.get(skillSlug) || new Set();
+
+    // Generate proficiency options HTML
+    const optionsHtml = proficiencyData.levels.map(level => {
+      const isSelected = currentFilter.has(level.rank);
+      return `
+        <label class="proficiency-option ${isSelected ? 'selected' : ''}">
+          <input type="checkbox"
+                 data-rank="${level.rank}"
+                 ${isSelected ? 'checked' : ''} />
+          <span class="proficiency-label">
+            <span class="proficiency-name">${level.name}</span>
+            <span class="proficiency-count">${level.count} PC${level.count !== 1 ? 's' : ''}</span>
+          </span>
+        </label>
+      `;
+    }).join('');
+
+    popup.innerHTML = `
+      <div class="popup-header">
+        <span class="popup-title">Filter ${proficiencyData.skillName}</span>
+        <button type="button" class="popup-close" aria-label="Close">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div class="popup-body">
+        <div class="proficiency-options">
+          ${optionsHtml}
+        </div>
+      </div>
+      <div class="popup-footer">
+        <button type="button" class="clear-filter-btn">Clear Filter</button>
+        <button type="button" class="apply-filter-btn">Apply</button>
+      </div>
+    `;
+
+    // Style the popup
+    popup.style.cssText = `
+      position: fixed;
+      z-index: 10001;
+      background: #1a1a2e;
+      border: 1px solid #3d3d5c;
+      border-radius: 12px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      width: 280px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    `;
+
+    // Position near the skill button
+    const rect = target.getBoundingClientRect();
+    popup.style.top = `${rect.bottom + 8}px`;
+    popup.style.left = `${rect.left}px`;
+
+    // Style header
+    const header = popup.querySelector('.popup-header');
+    header.style.cssText = `
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    `;
+
+    const title = popup.querySelector('.popup-title');
+    title.style.cssText = `
+      font-size: 13px;
+      font-weight: 700;
+      color: #ffffff;
+    `;
+
+    const closeBtn = popup.querySelector('.popup-close');
+    closeBtn.style.cssText = `
+      background: transparent;
+      border: none;
+      color: #888;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.15s;
+    `;
+
+    // Style body
+    const body = popup.querySelector('.popup-body');
+    body.style.cssText = `
+      padding: 16px;
+    `;
+
+    const optionsContainer = popup.querySelector('.proficiency-options');
+    optionsContainer.style.cssText = `
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    `;
+
+    // Style proficiency options
+    popup.querySelectorAll('.proficiency-option').forEach((option) => {
+      option.style.cssText = `
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: rgba(94, 129, 172, 0.12);
+        border: 2px solid rgba(94, 129, 172, 0.25);
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.15s;
+      `;
+
+      option.addEventListener('mouseenter', () => {
+        if (!option.classList.contains('selected')) {
+          option.style.background = 'rgba(94, 129, 172, 0.18)';
+          option.style.borderColor = 'rgba(94, 129, 172, 0.35)';
+        }
+      });
+      option.addEventListener('mouseleave', () => {
+        if (!option.classList.contains('selected')) {
+          option.style.background = 'rgba(94, 129, 172, 0.12)';
+          option.style.borderColor = 'rgba(94, 129, 172, 0.25)';
+        }
+      });
+
+      const checkbox = option.querySelector('input');
+      checkbox.style.cssText = `
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      `;
+
+      const label = option.querySelector('.proficiency-label');
+      label.style.cssText = `
+        flex: 1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      `;
+
+      const name = option.querySelector('.proficiency-name');
+      name.style.cssText = `
+        font-size: 13px;
+        font-weight: 600;
+        color: #ffffff;
+      `;
+
+      const count = option.querySelector('.proficiency-count');
+      count.style.cssText = `
+        font-size: 11px;
+        color: #aaa;
+      `;
+
+      // Update style when selected
+      if (option.classList.contains('selected')) {
+        option.style.background = 'rgba(94, 129, 172, 0.3)';
+        option.style.borderColor = 'rgba(94, 129, 172, 0.6)';
+      }
+
+      // Handle checkbox change
+      checkbox.addEventListener('change', () => {
+        if (checkbox.checked) {
+          option.classList.add('selected');
+          option.style.background = 'rgba(94, 129, 172, 0.3)';
+          option.style.borderColor = 'rgba(94, 129, 172, 0.6)';
+        } else {
+          option.classList.remove('selected');
+          option.style.background = 'rgba(94, 129, 172, 0.12)';
+          option.style.borderColor = 'rgba(94, 129, 172, 0.25)';
+        }
+      });
+
+      // Click label to toggle checkbox
+      option.addEventListener('click', (e) => {
+        if (e.target !== checkbox) {
+          checkbox.checked = !checkbox.checked;
+          checkbox.dispatchEvent(new Event('change'));
+        }
+      });
+    });
+
+    // Style footer
+    const footer = popup.querySelector('.popup-footer');
+    footer.style.cssText = `
+      padding: 12px 16px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    `;
+
+    const clearBtn = popup.querySelector('.clear-filter-btn');
+    clearBtn.style.cssText = `
+      background: rgba(191, 97, 106, 0.2);
+      border: 1px solid rgba(191, 97, 106, 0.3);
+      color: #bf616a;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    `;
+
+    const applyBtn = popup.querySelector('.apply-filter-btn');
+    applyBtn.style.cssText = `
+      background: rgba(94, 129, 172, 0.3);
+      border: 1px solid rgba(94, 129, 172, 0.4);
+      color: #5e81ac;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    `;
+
+    // Event handlers
+    closeBtn.addEventListener('click', () => popup.remove());
+
+    clearBtn.addEventListener('click', () => {
+      this.activeSkillFilters.delete(skillSlug);
+      this._applySkillFilters();
+      this.render();
+      popup.remove();
+    });
+
+    applyBtn.addEventListener('click', () => {
+      // Collect selected proficiency levels
+      const selectedRanks = new Set();
+      popup.querySelectorAll('.proficiency-option input:checked').forEach((checkbox) => {
+        selectedRanks.add(parseInt(checkbox.dataset.rank));
+      });
+
+      // Update filter
+      if (selectedRanks.size > 0) {
+        this.activeSkillFilters.set(skillSlug, selectedRanks);
+      } else {
+        this.activeSkillFilters.delete(skillSlug);
+      }
+
+      this._applySkillFilters();
+      this.render();
+      popup.remove();
+    });
+
+    // Close on click outside
+    const closeHandler = (e) => {
+      if (!popup.contains(e.target) && !target.contains(e.target)) {
+        popup.remove();
+        document.removeEventListener('click', closeHandler);
+      }
+    };
+    setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+    // Close on escape
+    const escHandler = (e) => {
+      if (e.key === 'Escape') {
+        popup.remove();
+        document.removeEventListener('keydown', escHandler);
+      }
+    };
+    document.addEventListener('keydown', escHandler);
+
+    document.body.appendChild(popup);
+
+    // Adjust position if off-screen
+    const popupRect = popup.getBoundingClientRect();
+    if (popupRect.right > window.innerWidth - 10) {
+      popup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+    }
+    if (popupRect.bottom > window.innerHeight - 10) {
+      popup.style.top = `${window.innerHeight - popupRect.height - 10}px`;
+    }
+  }
+
+  /**
+   * Get proficiency distribution for a skill across participants.
+   */
+  static async _getProficiencyDistribution(skillSlug, participants) {
+    const systemSkills = SystemAdapter.getSkills();
+    const skillName = systemSkills[skillSlug]?.name || skillSlug;
+
+    // Determine system and proficiency levels
+    const isPF2e = game.system.id === 'pf2e';
+    const levels = isPF2e
+      ? [
+        { rank: 0, name: 'Untrained', count: 0 },
+        { rank: 1, name: 'Trained', count: 0 },
+        { rank: 2, name: 'Expert', count: 0 },
+        { rank: 3, name: 'Master', count: 0 },
+        { rank: 4, name: 'Legendary', count: 0 },
+      ]
+      : [
+        { rank: 0, name: 'Not Proficient', count: 0 },
+        { rank: 1, name: 'Proficient', count: 0 },
+        { rank: 2, name: 'Expertise', count: 0 },
+      ];
+
+    // Count participants at each level
+    for (const participant of participants) {
+      const actor = await fromUuid(participant.actorUuid);
+      if (!actor) continue;
+
+      const rank = await this._getActorProficiencyRank(actor, skillSlug);
+      const level = levels.find(l => l.rank === rank);
+      if (level) level.count++;
+    }
+
+    return {
+      skillName,
+      levels: levels.filter(l => l.count > 0), // Only show levels with participants
+    };
+  }
+
+  /**
+   * Get proficiency rank for an actor in a skill.
+   * Returns: 0 (untrained/none), 1 (trained/proficient), 2 (expert/expertise), 3 (master), 4 (legendary)
+   */
+  static async _getActorProficiencyRank(actor, skillSlug) {
+    // Delegate to system-specific implementation
+    return 0; // Base implementation, overridden in subclasses
+  }
+
+  /**
+   * Group pending rolls by actor.
+   */
+  _groupPendingRollsByActor(rollsData) {
+    const grouped = {};
+
+    rollsData.forEach(roll => {
+      if (!grouped[roll.participantId]) {
+        grouped[roll.participantId] = {
+          id: roll.participantId,
+          name: roll.participantName,
+          img: roll.participantImg || 'icons/svg/mystery-man.svg',
+          rolls: [],
+        };
+      }
+      grouped[roll.participantId].rolls.push(roll);
+    });
+
+    return Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  /**
+   * Group pending rolls by skill.
+   */
+  _groupPendingRollsBySkill(rollsData) {
+    const grouped = {};
+
+    rollsData.forEach(roll => {
+      const skillKey = roll.skillName + (roll.actionName ? ` (${roll.actionName})` : '');
+      if (!grouped[skillKey]) {
+        grouped[skillKey] = {
+          skillName: roll.skillName,
+          actionName: roll.actionName,
+          displayName: skillKey,
+          rolls: [],
+        };
+      }
+      grouped[skillKey].rolls.push(roll);
+    });
+
+    return Object.values(grouped).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  }
+
+  /**
+   * Render grouped pending rolls HTML.
+   */
+  _renderPendingRollsGroups(groups, mode) {
+    if (mode === 'actor') {
+      // Group by PC: show PC avatar + name header, skill names in items
+      return groups.map(group => `
+        <div class="pending-roll-group">
+          <div class="group-header">
+            <img src="${group.img}" alt="${group.name}" class="group-avatar" />
+            <span class="group-name">${group.name}</span>
+            <span class="group-count">${group.rolls.length}</span>
+          </div>
+          <div class="group-items">
+            ${group.rolls.map(roll => `
+              <div class="pending-roll-item" data-request-id="${roll.id}">
+                <div class="roll-info">
+                  <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
+                  ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                </div>
+                <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+    } else {
+      // Group by Skill: show skill name header, PC avatars in items
+      return groups.map(group => `
+        <div class="pending-roll-group">
+          <div class="group-header skill-group-header">
+            <i class="fas fa-dice-d20"></i>
+            <span class="group-name">${group.displayName}</span>
+            <span class="group-count">${group.rolls.length}</span>
+          </div>
+          <div class="group-items">
+            ${group.rolls.map(roll => `
+              <div class="pending-roll-item" data-request-id="${roll.id}">
+                <div class="roll-info">
+                  <img src="${roll.participantImg || 'icons/svg/mystery-man.svg'}" alt="${roll.participantName}" class="participant-avatar-small" />
+                  <span class="participant-name">${roll.participantName}</span>
+                  ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                </div>
+                <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
     }
   }
 
@@ -2917,9 +4085,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       <div class="dc-popup-header">${skillName}</div>
       <div class="dc-popup-items">
         ${skillGroup.checks.map((check) => {
-          const isVisible = visibleDCs.has(String(check.dc));
-          const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
-          return `
+      const isVisible = visibleDCs.has(String(check.dc));
+      const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
+      return `
           <button type="button"
                   class="dc-option ${isVisible ? 'in-view' : ''}"
                   data-dc="${check.dc}"
@@ -2929,7 +4097,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
             ${check.dc}${secretIcon}
           </button>
         `;
-        }).join('')}
+    }).join('')}
       </div>
     `;
 
@@ -3112,9 +4280,58 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     builder.render(true);
   }
 
-  static async _onClearChallenge(_event, _target) {
-    await game.storyframe.socketManager.requestClearActiveChallenge();
+  static async _onClearChallenge(_event, target) {
+    // Support both old behavior (clear all) and new behavior (clear specific)
+    const challengeId = target?.dataset?.challengeId;
+
+    if (challengeId) {
+      await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
+      ui.notifications.info('Challenge cleared');
+    } else {
+      await game.storyframe.socketManager.requestClearActiveChallenge();
+      ui.notifications.info('All challenges cleared');
+    }
+  }
+
+  static async _onRemoveChallenge(_event, target) {
+    const challengeId = target.dataset.challengeId;
+    if (!challengeId) return;
+
+    await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
     ui.notifications.info('Challenge cleared');
+  }
+
+  static async _onClearAllChallenges(_event, _target) {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Clear All Challenges' },
+      content: '<p>Clear all active challenges?</p>',
+      yes: { label: 'Clear All' },
+      no: { label: 'Cancel' },
+      rejectClose: false,
+    });
+
+    if (!confirmed) return;
+
+    await game.storyframe.socketManager.requestClearAllChallenges();
+    ui.notifications.info('All challenges cleared');
+  }
+
+  static async _onToggleChallengeCollapse(_event, target) {
+    const challengeId = target.closest('[data-challenge-id]')?.dataset.challengeId;
+    if (!challengeId) return;
+
+    const currentState = this.collapsedChallenges.get(challengeId) || false;
+    this.collapsedChallenges.set(challengeId, !currentState);
+    this.render();
+  }
+
+  static async _onToggleLibraryChallengeCollapse(_event, target) {
+    const challengeId = target.closest('[data-challenge-id]')?.dataset.challengeId;
+    if (!challengeId) return;
+
+    const currentState = this.collapsedLibraryChallenges.get(challengeId) || false;
+    this.collapsedLibraryChallenges.set(challengeId, !currentState);
+    this.render();
   }
 
   static async _onPresentSavedChallenge(_event, target) {
@@ -3136,7 +4353,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       options: template.options,
     };
 
-    await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
+    const success = await game.storyframe.socketManager.requestAddChallenge(challengeData);
+
+    if (!success) {
+      ui.notifications.error(`A challenge named "${challengeData.name}" is already active. Clear it first or rename this challenge.`);
+      return;
+    }
+
     ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
   }
 
@@ -3277,6 +4500,99 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
 
     // Rerender to show new challenge in library
+    this.render();
+
+    // Clear selection
+    selection.removeAllRanges();
+  }
+
+  /**
+   * Request rolls from selected journal text
+   */
+  static async _onRequestRollsFromSelection(_event, _target) {
+    // Get the journal content element
+    const content = this._getJournalContent();
+    if (!content) {
+      ui.notifications.warn('No journal content found');
+      return;
+    }
+
+    // Get selected text from the journal
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) {
+      ui.notifications.warn('No text selected in journal');
+      return;
+    }
+
+    // Check if selection is within the journal content
+    const range = selection.getRangeAt(0);
+    if (!content.contains(range.commonAncestorContainer)) {
+      ui.notifications.warn('Selection must be within the journal content');
+      return;
+    }
+
+    // Create a temporary container with the selected HTML
+    const fragment = range.cloneContents();
+    const tempContainer = document.createElement('div');
+    tempContainer.appendChild(fragment);
+
+    // Parse checks from the selected content
+    const checks = this._parseChecksFromContent(tempContainer);
+
+    if (checks.length === 0) {
+      ui.notifications.warn('No skill checks found in selected text');
+      return;
+    }
+
+    // Get current participants
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants || state.participants.length === 0) {
+      ui.notifications.warn('No participants added. Add PCs first.');
+      return;
+    }
+
+    // Enrich participants with actor data
+    const enrichedParticipants = await Promise.all(
+      state.participants.map(async (p) => {
+        const actor = await fromUuid(p.actorUuid);
+        return {
+          id: p.id,
+          name: actor?.name || p.name || 'Unknown',
+          img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
+        };
+      }),
+    );
+
+    // Import and show the roll request dialog
+    const { RollRequestDialog } = await import('./roll-request-dialog.mjs');
+    const dialog = new RollRequestDialog(checks, enrichedParticipants);
+    dialog.render(true);
+
+    const result = await dialog.wait();
+
+    if (!result || result.length === 0) {
+      return;
+    }
+
+    // Send roll requests for each check
+    for (const check of checks) {
+      // Map skill name to slug using SystemAdapter
+      const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase();
+
+      // Set DC
+      this.currentDC = check.dc;
+      const dcInput = this.element.querySelector('#dc-input');
+      if (dcInput) dcInput.value = check.dc;
+
+      // Set secret roll toggle
+      this.secretRollEnabled = check.isSecret;
+
+      // Send request
+      await this._requestSkillCheck(skillSlug, result, null, false);
+    }
+
+    // Reset secret toggle
+    this.secretRollEnabled = false;
     this.render();
 
     // Clear selection

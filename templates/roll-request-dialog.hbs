@@ -1,0 +1,51 @@
+<form class="roll-request-dialog">
+  <div class="dialog-content">
+    <section class="checks-summary">
+      <h3>Found {{checks.length}} check(s):</h3>
+      <ul class="checks-list">
+        {{#each checks}}
+        <li class="check-item">
+          <div class="check-info">
+            <i class="fas {{this.skillIcon}}"></i>
+            <span class="check-skill">{{this.skillName}}</span>
+            <span class="check-dc">DC {{this.dc}}</span>
+            {{#if this.isSecret}}
+            <span class="check-secret-badge">
+              <i class="fas fa-eye-slash"></i>
+              Secret
+            </span>
+            {{/if}}
+          </div>
+        </li>
+        {{/each}}
+      </ul>
+    </section>
+
+    <section class="participants-selection">
+      <h3>Select PCs to request rolls from:</h3>
+      <div class="participants-grid">
+        {{#each participants}}
+        <label class="participant-card">
+          <input type="checkbox" name="participant" value="{{this.id}}">
+          <div class="participant-content">
+            <img src="{{this.img}}" alt="{{this.name}}">
+            <span class="participant-name">{{this.name}}</span>
+            <i class="fas fa-check-circle check-icon"></i>
+          </div>
+        </label>
+        {{/each}}
+      </div>
+    </section>
+  </div>
+
+  <footer class="dialog-footer">
+    <button type="button" class="cancel-btn" data-action="cancel">
+      <i class="fas fa-times"></i>
+      Cancel
+    </button>
+    <button type="submit" class="submit-btn" data-action="submit">
+      <i class="fas fa-paper-plane"></i>
+      Send Roll Requests
+    </button>
+  </footer>
+</form>

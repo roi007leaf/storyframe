@@ -46,7 +46,7 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
   static async _onCreatePreset(_event, _target) {
     const dcValue = await foundry.applications.api.DialogV2.prompt({
       window: { title: 'Add DC Preset' },
-      content: '<input type="number" name="dc" min="1" max="60" placeholder="Enter DC value" autofocus>',
+      content: '<input type="number" name="dc" min="1" placeholder="Enter DC value" autofocus>',
       ok: {
         label: 'Add',
         callback: (event, button, _dialog) => parseInt(button.form.elements.dc.value),

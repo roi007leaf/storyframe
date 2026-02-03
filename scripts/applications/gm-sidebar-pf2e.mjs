@@ -43,34 +43,35 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
 
   /**
    * Get lore skills from participants (PF2e specific)
-   * Only returns lore skills when exactly 1 participant is selected
+   * Returns lore skills from all selected participants
    */
   static async _getLoreSkills(state, selectedParticipants) {
-    // Only show lore skills when exactly 1 PC is selected
-    if (selectedParticipants?.size !== 1) return [];
+    if (!selectedParticipants?.size) return [];
     if (!state?.participants?.length) return [];
 
-    const selectedId = Array.from(selectedParticipants)[0];
-    const participant = state.participants.find((p) => p.id === selectedId);
-    if (!participant) return [];
+    const lores = new Map(); // Use Map to store key->label pairs
 
-    const actor = await fromUuid(participant.actorUuid);
-    if (!actor?.system?.skills) return [];
+    // Collect lore skills from all selected participants
+    for (const participantId of selectedParticipants) {
+      const participant = state.participants.find((p) => p.id === participantId);
+      if (!participant) continue;
 
-    const lores = new Set();
+      const actor = await fromUuid(participant.actorUuid);
+      if (!actor?.skills) continue;
 
-    // PF2e stores lore skills with keys containing "-lore"
-    for (const [key, skill] of Object.entries(actor.system.skills)) {
-      if (key.includes('-lore') && skill.label) {
-        lores.add(skill.label);
+      // PF2e stores lore skills with keys containing "-lore"
+      for (const [key, skill] of Object.entries(actor.skills)) {
+        if (key.includes('-lore') && skill.label) {
+          lores.set(key, skill.label); // Store actual key from PF2e
+        }
       }
     }
 
-    return Array.from(lores)
-      .sort()
-      .map((loreName) => ({
-        slug: loreName.toLowerCase().replace(/\s+/g, '-'),
-        name: loreName,
+    return Array.from(lores.entries())
+      .sort((a, b) => a[1].localeCompare(b[1])) // Sort by label
+      .map(([key, label]) => ({
+        slug: key, // Use the actual PF2e skill key (e.g., "academia-lore")
+        name: label, // Use the display label (e.g., "Academia Lore")
         isLore: true,
       }));
   }
@@ -93,10 +94,10 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       if (!participant) continue;
 
       const actor = await fromUuid(participant.actorUuid);
-      if (!actor?.system?.skills) continue;
+      if (!actor?.skills) continue;
 
       // Add all skills this actor has
-      for (const [key] of Object.entries(actor.system.skills)) {
+      for (const [key] of Object.entries(actor.skills)) {
         // Standard skills - check if they exist in the system skills
         if (systemSkills[key]) {
           availableSkills.add(key.toLowerCase());
@@ -109,6 +110,99 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     }
 
     return availableSkills;
+  }
+
+  /**
+   * Check PF2e actor proficiency (rank > 0 means trained or better).
+   */
+  static async _isActorProficientInSkill(actor, skillSlug) {
+    if (!actor?.skills) return false;
+
+    // Handle perception separately
+    if (skillSlug === 'per') {
+      return actor.perception?.rank > 0;
+    }
+
+    // Map short slugs to full PF2e skill names
+    const skillMap = {
+      acr: 'acrobatics',
+      arc: 'arcana',
+      ath: 'athletics',
+      cra: 'crafting',
+      dec: 'deception',
+      dip: 'diplomacy',
+      itm: 'intimidation',
+      med: 'medicine',
+      nat: 'nature',
+      occ: 'occultism',
+      prf: 'performance',
+      rel: 'religion',
+      soc: 'society',
+      ste: 'stealth',
+      sur: 'survival',
+      thi: 'thievery',
+    };
+
+    const fullSlug = skillMap[skillSlug] || skillSlug;
+
+    // Standard skills
+    const skill = actor.skills[fullSlug];
+    if (skill?.rank > 0) return true;
+
+    // Lore skills (if slug contains '-lore')
+    if (skillSlug.includes('-lore')) {
+      const loreSkill = actor.skills[skillSlug];
+      return loreSkill?.rank > 0;
+    }
+
+    return false;
+  }
+
+  /**
+   * Get PF2e actor proficiency rank (0-4).
+   * 0 = Untrained, 1 = Trained, 2 = Expert, 3 = Master, 4 = Legendary
+   */
+  static async _getActorProficiencyRank(actor, skillSlug) {
+    if (!actor?.skills) return 0;
+
+    // Handle perception separately
+    if (skillSlug === 'per') {
+      return actor.perception?.rank ?? 0;
+    }
+
+    // Map short slugs to full PF2e skill names
+    const skillMap = {
+      acr: 'acrobatics',
+      arc: 'arcana',
+      ath: 'athletics',
+      cra: 'crafting',
+      dec: 'deception',
+      dip: 'diplomacy',
+      itm: 'intimidation',
+      med: 'medicine',
+      nat: 'nature',
+      occ: 'occultism',
+      prf: 'performance',
+      rel: 'religion',
+      soc: 'society',
+      ste: 'stealth',
+      sur: 'survival',
+      thi: 'thievery',
+    };
+
+    const fullSlug = skillMap[skillSlug] || skillSlug;
+
+    // Standard skills
+    const skill = actor.skills[fullSlug];
+    if (skill) return skill.rank ?? 0;
+
+    // Lore skills (if slug contains '-lore')
+    if (skillSlug.includes('-lore')) {
+      const loreSkill = actor.skills[skillSlug];
+      return loreSkill?.rank ?? 0;
+    }
+
+    return 0;
   }
 
   /**
@@ -253,7 +347,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
    * @returns {Promise<boolean>} True if the actor has the skill
    */
   async _actorHasSkill(actor, skillSlug) {
-    if (!actor?.system?.skills) return false;
+    if (!actor?.skills) return false;
 
     // Map short skill slugs to full PF2e skill slugs
     const PF2E_SKILL_SLUG_MAP = {
@@ -285,12 +379,12 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     }
 
     // Check standard skills using full slug
-    if (actor.system.skills[fullSlug]) {
+    if (actor.skills[fullSlug]) {
       return true;
     }
 
     // Check lore skills (skillSlug might already be "politics-lore" format)
-    if (skillSlug.includes('-lore') && actor.system.skills[skillSlug]) {
+    if (skillSlug.includes('-lore') && actor.skills[skillSlug]) {
       return true;
     }
 

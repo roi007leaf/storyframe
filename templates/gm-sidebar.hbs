@@ -14,6 +14,9 @@
             data-tab="pcs">
       <i class="fas fa-users" aria-hidden="true"></i>
       <span>PCs</span>
+      {{#if pendingRolls.length}}
+      <span class="tab-badge" data-count="{{pendingRolls.length}}">{{pendingRolls.length}}</span>
+      {{/if}}
     </button>
     <button type="button"
             class="tab-btn {{#if (eq currentTab 'challenges')}}active{{/if}}"
@@ -21,6 +24,9 @@
             data-tab="challenges">
       <i class="fas fa-tasks" aria-hidden="true"></i>
       <span>Challenges</span>
+      {{#if hasActiveChallenge}}
+      <span class="tab-badge active-badge">{{activeChallenges.length}}</span>
+      {{/if}}
     </button>
   </div>
 
@@ -118,6 +124,11 @@
     <!-- PCs Tab -->
     <section class="pcs-tab {{#unless (eq currentTab 'pcs')}}hidden{{/unless}}" data-tab-content="pcs" aria-labelledby="pcs-heading">
       <div class="tab-header-actions">
+        {{#if pendingRolls.length}}
+        <button type="button" class="pending-rolls-btn" data-action="showPendingRolls" data-tooltip="{{pendingRolls.length}} pending roll(s)" aria-label="View pending rolls">
+          <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+        </button>
+        {{/if}}
         <button type="button" data-action="addPartyPCs" data-tooltip="Add party members" aria-label="Add all party members">
           <i class="fas fa-user-group" aria-hidden="true"></i>
         </button>
@@ -134,6 +145,9 @@
         {{/if}}
         <button type="button" class="" data-action="openSkillConfig" data-tooltip="Configure Quick Skills" aria-label="Configure quick skill buttons">
           <i class="fas fa-cog" aria-hidden="true"></i>
+        </button>
+        <button type="button" data-action="requestRollsFromSelection" data-tooltip="Request Rolls from Selection" aria-label="Parse inline checks from selected text and request rolls">
+          <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </button>
       </div>
 
@@ -174,7 +188,6 @@
                      class="dc-input"
                      value="{{currentDC}}"
                      min="1"
-                     max="60"
                      placeholder="--"
                      aria-label="Difficulty class">
               <button type="button"
@@ -191,8 +204,7 @@
                        id="new-preset-dc"
                        class="preset-dc-input"
                        placeholder="Add DC"
-                       min="1"
-                       max="60">
+                       min="1">
                 <button type="button"
                         class="preset-add-btn"
                         data-action="addPresetQuick"
@@ -256,130 +268,22 @@
                   aria-pressed="{{#if secretRollEnabled}}true{{else}}false{{/if}}">
             <i class="fas fa-eye-slash" aria-hidden="true"></i>
           </button>
+
+          <button type="button"
+                  class="send-batch-btn"
+                  data-action="sendBatch"
+                  data-tooltip="Send batched skill checks"
+                  aria-label="Send batch"
+                  style="display: none;">
+            <i class="fas fa-paper-plane" aria-hidden="true"></i>
+            <span class="batch-count">0</span>
+          </button>
         </div>
       </div>
       {{/if}}
 
       <div class="tab-scroll-content">
         {{#if hasParticipants}}
-        <div class="skill-categories" role="group" aria-label="Skill buttons by category">
-          <div class="skill-category">
-            <span class="category-label">Physical</span>
-            <div class="category-skills">
-              {{#each physicalSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-
-          <div class="skill-category">
-            <span class="category-label">Mental</span>
-            <div class="category-skills">
-              {{#each mentalSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-
-          <div class="skill-category">
-            <span class="category-label">Social</span>
-            <div class="category-skills">
-              {{#each socialSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-
-          <div class="skill-category">
-            <span class="category-label">Perception</span>
-            <div class="category-skills">
-              {{#each perceptionSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-
-          <div class="skill-category">
-            <span class="category-label">Utility</span>
-            <div class="category-skills">
-              {{#each utilitySkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-        </div>
-
-        {{#if hasLoreSkills}}
-        <div class="lore-skills-section">
-          <div class="lore-header">
-            <i class="fas fa-book"></i>
-            <span>Lore Skills</span>
-          </div>
-          <div class="lore-skills-grid">
-            {{#each loreSkills}}
-              <button type="button"
-                      class="skill-btn lore"
-                      data-action="requestSkill"
-                      data-skill="{{this.slug}}"
-                      data-tooltip="{{this.name}}"
-                      aria-label="Request {{this.name}} check">
-                {{this.name}}
-              </button>
-            {{/each}}
-          </div>
-        </div>
-        {{/if}}
-
         {{#if hasJournalChecks}}
         <div class="journal-checks-inline">
           <div class="section-divider">
@@ -399,6 +303,115 @@
           </div>
         </div>
         {{/if}}
+
+        {{#if hasLoreSkills}}
+        <div class="lore-skills-section">
+          <div class="lore-header">
+            <i class="fas fa-book"></i>
+            <span>Lore Skills</span>
+          </div>
+          <div class="lore-skills-grid">
+            {{#each loreSkills}}
+              <div class="lore-skill-wrapper">
+                <button type="button"
+                        class="skill-btn lore"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  {{this.name}}
+                </button>
+              </div>
+            {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
+        <div class="skill-categories" role="group" aria-label="Skill buttons by category">
+          {{#if physicalSkills.length}}
+          <div class="skill-category">
+            <span class="category-label">Physical</span>
+            <div class="category-skills">
+              {{#each physicalSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if magicalSkills.length}}
+          <div class="skill-category">
+            <span class="category-label">Magical</span>
+            <div class="category-skills">
+              {{#each magicalSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if socialSkills.length}}
+          <div class="skill-category">
+            <span class="category-label">Social</span>
+            <div class="category-skills">
+              {{#each socialSkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
+
+          {{#if utilitySkills.length}}
+          <div class="skill-category">
+            <span class="category-label">Utility</span>
+            <div class="category-skills">
+              {{#each utilitySkills}}
+              <div class="skill-btn-wrapper">
+                <button type="button"
+                        class="skill-btn"
+                        data-action="requestSkill"
+                        data-skill="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="Request {{this.name}} check">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
+        </div>
         {{/if}}
       </div>
     </section>
@@ -406,6 +419,11 @@
     <!-- Challenges Tab -->
     <section class="challenges-tab {{#unless (eq currentTab 'challenges')}}hidden{{/unless}}" data-tab-content="challenges" aria-labelledby="challenges-heading">
       <div class="tab-header-actions">
+        {{#if hasActiveChallenge}}
+        <button type="button" class="active-challenges-btn" data-action="showActiveChallenges" data-tooltip="{{activeChallenges.length}} active challenge(s)" aria-label="View active challenges">
+          <i class="fas fa-flag-checkered" aria-hidden="true"></i>
+        </button>
+        {{/if}}
         <button type="button" data-action="presentChallenge" data-tooltip="Present Challenge" aria-label="Present multi-option challenge to all players">
           <i class="fas fa-tasks" aria-hidden="true"></i>
         </button>
@@ -416,8 +434,13 @@
       <div class="tab-scroll-content">
         {{#if hasSavedChallenges}}
           {{#each savedChallenges}}
-          <div class="lib-challenge-card" data-challenge-id="{{this.id}}">
-            <div class="lib-card-header">
+          <div class="lib-challenge-card {{#if this.collapsed}}collapsed{{/if}}" data-challenge-id="{{this.id}}">
+            <div class="lib-card-header"
+                 data-action="toggleLibraryChallengeCollapse"
+                 role="button"
+                 tabindex="0"
+                 aria-expanded="{{#unless this.collapsed}}true{{else}}false{{/unless}}">
+              <i class="fas fa-chevron-{{#if this.collapsed}}right{{else}}down{{/if}} collapse-icon" aria-hidden="true"></i>
               <div class="lib-card-title-section">
                 <i class="fas fa-flag-checkered lib-card-icon"></i>
                 <span class="lib-card-title">{{this.name}}</span>
@@ -432,6 +455,7 @@
               </div>
             </div>
 
+            {{#unless this.collapsed}}
             <div class="lib-card-body">
               {{#each this.options}}
               <div class="lib-option-preview">
@@ -455,6 +479,7 @@
                     data-challenge-id="{{this.id}}">
               <i class="fas fa-paper-plane"></i> Present to All Players
             </button>
+            {{/unless}}
           </div>
           {{/each}}
         {{else}}
@@ -467,20 +492,4 @@
       </div>
     </section>
   </div>
-
-  <!-- Pending Rolls Indicator -->
-  {{#if pendingRolls.length}}
-  <div class="pending-rolls-indicator" data-action="showPendingRolls" data-tooltip="{{pendingRolls.length}} pending roll(s) - click to manage" role="button" tabindex="0" aria-label="{{pendingRolls.length}} pending rolls, click to view">
-    <i class="fas fa-hourglass-half" aria-hidden="true"></i>
-    <span class="pending-count">{{pendingRolls.length}}</span>
-  </div>
-  {{/if}}
-
-  <!-- Active Challenge Indicator -->
-  {{#if hasActiveChallenge}}
-  <div class="active-challenge-indicator" data-action="clearChallenge" data-tooltip="{{activeChallenge.name}} - click to clear" role="button" tabindex="0" aria-label="Active challenge: {{activeChallenge.name}}, click to clear">
-    <i class="fas fa-tasks" aria-hidden="true"></i>
-    <span class="challenge-name">{{activeChallenge.name}}</span>
-  </div>
-  {{/if}}
 </div>

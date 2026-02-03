@@ -31,6 +31,9 @@ export class SocketManager {
     // Register challenge handlers
     this.socket.register('setActiveChallenge', this._handleSetActiveChallenge);
     this.socket.register('clearActiveChallenge', this._handleClearActiveChallenge);
+    this.socket.register('addActiveChallenge', this._handleAddActiveChallenge);
+    this.socket.register('removeActiveChallenge', this._handleRemoveActiveChallenge);
+    this.socket.register('clearAllChallenges', this._handleClearAllChallenges);
 
     // Register blind roll notification handler
     this.socket.register('notifyBlindRoll', this._handleNotifyBlindRoll);
@@ -184,6 +187,7 @@ export class SocketManager {
 
   /**
    * Request GM to set active challenge.
+   * @deprecated Use requestAddChallenge for multi-challenge support
    * @param {Object} challengeData - Challenge data
    */
   async requestSetActiveChallenge(challengeData) {
@@ -191,10 +195,35 @@ export class SocketManager {
   }
 
   /**
-   * Request GM to clear active challenge.
+   * Request GM to add an active challenge (supports multiple concurrent).
+   * @param {Object} challengeData - Challenge data
+   * @returns {boolean} True if added, false if duplicate name exists
+   */
+  async requestAddChallenge(challengeData) {
+    return await this.socket.executeAsGM('addActiveChallenge', challengeData);
+  }
+
+  /**
+   * Request GM to remove a specific active challenge.
+   * @param {string} challengeId - Challenge ID to remove
+   */
+  async requestRemoveChallenge(challengeId) {
+    return await this.socket.executeAsGM('removeActiveChallenge', challengeId);
+  }
+
+  /**
+   * Request GM to clear active challenge (backward compat).
+   * @deprecated Use requestRemoveChallenge or requestClearAllChallenges
    */
   async requestClearActiveChallenge() {
     return await this.socket.executeAsGM('clearActiveChallenge');
+  }
+
+  /**
+   * Request GM to clear all active challenges.
+   */
+  async requestClearAllChallenges() {
+    return await this.socket.executeAsGM('clearAllChallenges');
   }
 
   // --- Handlers (execute on GM client) ---
@@ -367,7 +396,8 @@ export class SocketManager {
   // --- Challenge Handlers ---
 
   /**
-   * Handler: Set active challenge.
+   * Handler: Set active challenge (backward compat).
+   * @deprecated
    * Runs on GM client.
    */
   async _handleSetActiveChallenge(challengeData) {
@@ -375,11 +405,37 @@ export class SocketManager {
   }
 
   /**
-   * Handler: Clear active challenge.
+   * Handler: Add active challenge.
+   * Runs on GM client.
+   * @returns {boolean} Success status
+   */
+  async _handleAddActiveChallenge(challengeData) {
+    return await game.storyframe.stateManager?.addActiveChallenge(challengeData);
+  }
+
+  /**
+   * Handler: Remove active challenge.
+   * Runs on GM client.
+   */
+  async _handleRemoveActiveChallenge(challengeId) {
+    await game.storyframe.stateManager?.removeActiveChallenge(challengeId);
+  }
+
+  /**
+   * Handler: Clear active challenge (backward compat).
+   * @deprecated
    * Runs on GM client.
    */
   async _handleClearActiveChallenge() {
     await game.storyframe.stateManager?.clearActiveChallenge();
+  }
+
+  /**
+   * Handler: Clear all challenges.
+   * Runs on GM client.
+   */
+  async _handleClearAllChallenges() {
+    await game.storyframe.stateManager?.clearAllChallenges();
   }
 
   /**

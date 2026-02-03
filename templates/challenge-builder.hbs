@@ -25,11 +25,11 @@
       {{#if hasInitialOption}}
       <div class="challenge-option-card" data-option-index="0">
         <div class="challenge-option-header">
-          <span class="challenge-option-title">Option 1</span>
+          <input type="text" name="option-0-name" class="option-name-input" value="Option 1" placeholder="Option name...">
         </div>
         <div class="challenge-option-fields">
           <div class="challenge-option-field">
-            <label>Skills & DCs</label>
+            <label>Skills</label>
             <div class="skills-list" data-option-index="0">
               <div class="skill-dc-row" data-skill-index="0">
                 <div class="skill-select">
@@ -55,7 +55,21 @@
                 </div>
                 {{/if}}
                 <div class="dc-input">
-                  <input type="number" name="option-0-dc-0" min="1" max="600" placeholder="DC">
+                  <input type="number" name="option-0-dc-0" min="1" placeholder="DC">
+                </div>
+                <div class="proficiency-select">
+                  <select name="option-0-proficiency-0" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
+                    <option value="0">Any</option>
+                    {{#if isPF2e}}
+                    <option value="1">Trained</option>
+                    <option value="2">Expert</option>
+                    <option value="3">Master</option>
+                    <option value="4">Legendary</option>
+                    {{else}}
+                    <option value="1">Proficient</option>
+                    <option value="2">Expertise</option>
+                    {{/if}}
+                  </select>
                 </div>
                 <div class="secret-checkbox">
                   <input type="checkbox" name="option-0-secret-0" id="option-0-secret-0" data-tooltip=""="Secret roll (GM only)">
@@ -68,10 +82,6 @@
             <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="0">
               <i class="fas fa-plus"></i> Add Skill
             </button>
-          </div>
-          <div class="challenge-option-field">
-            <label>Description</label>
-            <textarea name="option-0-desc" placeholder="e.g., Fortify the camp defenses with barricades"></textarea>
           </div>
         </div>
       </div>

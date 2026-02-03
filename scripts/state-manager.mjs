@@ -1,12 +1,12 @@
 const MODULE_ID = 'storyframe';
 const FLAG_KEY = 'data';
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 
 /**
  * Manages speaker state persistence in Scene flags.
  * State structure:
  * {
- *   version: 3,
+ *   version: 4,
  *   activeJournal: string|null,  // JournalEntry UUID
  *   activeSpeaker: string|null,  // Speaker ID
  *   speakers: [{
@@ -39,9 +39,9 @@ const SCHEMA_VERSION = 3;
  *     timestamp: number,
  *     chatMessageId: string|null
  *   }],
- *   activeChallenge: {    // Multi-option challenge
+ *   activeChallenges: [{  // Multiple concurrent challenges (unique by name)
  *     id: string,
- *     name: string,
+ *     name: string,       // UNIQUE identifier
  *     image: string|null,
  *     selectedParticipants: [string],  // Participant IDs
  *     options: [{
@@ -51,8 +51,9 @@ const SCHEMA_VERSION = 3;
  *         dc: number
  *       }],
  *       description: string
- *     }]
- *   } | null
+ *     }],
+ *     createdAt: number   // Timestamp for ordering
+ *   }]
  * }
  */
 export class StateManager {
@@ -360,7 +361,79 @@ export class StateManager {
   // --- Challenge Management ---
 
   /**
+   * Add an active challenge (supports multiple concurrent challenges).
+   * @param {Object} challengeData - Challenge data with options
+   * @returns {boolean} True if added, false if name already exists
+   */
+  async addActiveChallenge(challengeData) {
+    if (!this.state) return false;
+
+    const scene = game.scenes.current;
+    if (!scene) return false;
+
+    // Validate name uniqueness (case-insensitive)
+    const existingNames = this.state.activeChallenges.map(c => c.name.toLowerCase());
+    if (existingNames.includes(challengeData.name.toLowerCase())) {
+      return false;  // Caller should show error notification
+    }
+
+    // Add timestamp for chronological ordering
+    const challengeWithTimestamp = {
+      ...challengeData,
+      createdAt: Date.now()
+    };
+
+    this.state.activeChallenges.push(challengeWithTimestamp);
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+    return true;
+  }
+
+  /**
+   * Remove an active challenge by ID.
+   * @param {string} challengeId - ID of challenge to remove
+   */
+  async removeActiveChallenge(challengeId) {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.activeChallenges = this.state.activeChallenges.filter(
+      c => c.id !== challengeId
+    );
+
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+  }
+
+  /**
+   * Get a specific active challenge by ID.
+   * @param {string} challengeId - Challenge ID
+   * @returns {Object|null} Challenge data or null
+   */
+  getActiveChallenge(challengeId) {
+    if (!this.state?.activeChallenges) return null;
+    return this.state.activeChallenges.find(c => c.id === challengeId) || null;
+  }
+
+  /**
+   * Clear all active challenges.
+   */
+  async clearAllChallenges() {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.activeChallenges = [];
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+  }
+
+  /**
    * Set active challenge and persist.
+   * @deprecated Use addActiveChallenge instead. This method clears all existing challenges.
    * @param {Object} challengeData - Challenge data with options
    */
   async setActiveChallenge(challengeData) {
@@ -369,13 +442,19 @@ export class StateManager {
     const scene = game.scenes.current;
     if (!scene) return;
 
-    this.state.activeChallenge = challengeData;
+    // Clear existing and add the new one (backward compatible behavior)
+    this.state.activeChallenges = [{
+      ...challengeData,
+      createdAt: Date.now()
+    }];
+
     await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
     this._broadcast();
   }
 
   /**
    * Clear active challenge and persist.
+   * @deprecated Use removeActiveChallenge or clearAllChallenges instead.
    */
   async clearActiveChallenge() {
     if (!this.state) return;
@@ -383,7 +462,7 @@ export class StateManager {
     const scene = game.scenes.current;
     if (!scene) return;
 
-    this.state.activeChallenge = null;
+    this.state.activeChallenges = [];
     await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
     this._broadcast();
   }
@@ -410,7 +489,7 @@ export class StateManager {
       participants: [],
       pendingRolls: [],
       rollHistory: [],
-      activeChallenge: null,
+      activeChallenges: [],
     };
   }
 
@@ -431,6 +510,25 @@ export class StateManager {
     // Migration: v2 -> v3 (add activeChallenge)
     if (oldData.version === 2) {
       oldData.activeChallenge = null;
+    }
+
+    // Migration: v3 -> v4 (convert activeChallenge to activeChallenges array)
+    if (oldData.version === 3) {
+      try {
+        if (oldData.activeChallenge) {
+          // Preserve existing challenge with timestamp
+          oldData.activeChallenges = [{
+            ...oldData.activeChallenge,
+            createdAt: Date.now()
+          }];
+        } else {
+          oldData.activeChallenges = [];
+        }
+        delete oldData.activeChallenge;
+      } catch (error) {
+        console.error(`${MODULE_ID} | Migration v3->v4 failed:`, error);
+        oldData.activeChallenges = [];  // Safe fallback
+      }
     }
 
     oldData.version = SCHEMA_VERSION;

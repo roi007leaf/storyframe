@@ -165,4 +165,34 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
 
     return false;
   }
+
+  /**
+   * Check D&D 5e actor proficiency.
+   */
+  static async _isActorProficientInSkill(actor, skillSlug) {
+    if (!actor?.system?.skills) return false;
+
+    const skill = actor.system.skills[skillSlug];
+    // In 5e, proficiency is indicated by value > 0 (where value is the proficiency multiplier: 0, 0.5, 1, 2)
+    return skill?.value > 0;
+  }
+
+  /**
+   * Get D&D 5e actor proficiency rank (0-2).
+   * 0 = Not Proficient, 1 = Proficient, 2 = Expertise
+   * Note: Half proficiency (0.5) is treated as rank 1
+   */
+  static async _getActorProficiencyRank(actor, skillSlug) {
+    if (!actor?.system?.skills) return 0;
+
+    const skill = actor.system.skills[skillSlug];
+    if (!skill) return 0;
+
+    const value = skill.value ?? 0;
+
+    // Map proficiency value to rank
+    if (value >= 2) return 2; // Expertise
+    if (value > 0) return 1;  // Proficient (includes half proficiency)
+    return 0; // Not proficient
+  }
 }
