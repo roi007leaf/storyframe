@@ -173,6 +173,11 @@ Hooks.once('socketlib.ready', () => {
   }
 
   game.storyframe.socketManager = new SocketManager();
+
+  // Initialize StateManager with SocketManager
+  if (game.storyframe.stateManager) {
+    game.storyframe.stateManager.initialize(game.storyframe.socketManager);
+  }
 });
 
 // Hook: getSceneControlButtons (register buttons)
