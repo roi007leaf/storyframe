@@ -1,106 +1,14 @@
 import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
-
-// Map short skill slugs to full PF2e skill slugs
-const PF2E_SKILL_SLUG_MAP = {
-  per: 'perception', // Special case - uses actor.perception not actor.skills
-  acr: 'acrobatics',
-  arc: 'arcana',
-  ath: 'athletics',
-  cra: 'crafting',
-  dec: 'deception',
-  dip: 'diplomacy',
-  itm: 'intimidation',
-  med: 'medicine',
-  nat: 'nature',
-  occ: 'occultism',
-  prf: 'performance',
-  rel: 'religion',
-  soc: 'society',
-  ste: 'stealth',
-  sur: 'survival',
-  thi: 'thievery',
-};
-
-// Map short skill slugs to D&D 5e skill slugs
-const DND5E_SKILL_SLUG_MAP = {
-  acr: 'acr', // Acrobatics
-  ani: 'ani', // Animal Handling
-  arc: 'arc', // Arcana
-  ath: 'ath', // Athletics
-  dec: 'dec', // Deception
-  his: 'his', // History
-  ins: 'ins', // Insight
-  itm: 'itm', // Intimidation
-  inv: 'inv', // Investigation
-  med: 'med', // Medicine
-  nat: 'nat', // Nature
-  prc: 'prc', // Perception
-  prf: 'prf', // Performance
-  per: 'per', // Persuasion
-  rel: 'rel', // Religion
-  slt: 'slt', // Sleight of Hand
-  ste: 'ste', // Stealth
-  sur: 'sur', // Survival
-};
+import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
+import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
+import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
   const system = SystemAdapter.detectSystem();
   return system === 'dnd5e' ? DND5E_SKILL_SLUG_MAP : PF2E_SKILL_SLUG_MAP;
 }
-
-// Map action slugs to PF2e action identifiers
-const ACTION_DISPLAY_NAMES = {
-  seek: 'Seek',
-  'sense-direction': 'Sense Direction',
-  balance: 'Balance',
-  'tumble-through': 'Tumble Through',
-  'maneuver-in-flight': 'Maneuver in Flight',
-  squeeze: 'Squeeze',
-  'recall-knowledge': 'Recall Knowledge',
-  'decipher-writing': 'Decipher Writing',
-  'identify-magic': 'Identify Magic',
-  'learn-spell': 'Learn a Spell',
-  climb: 'Climb',
-  'force-open': 'Force Open',
-  grapple: 'Grapple',
-  'high-jump': 'High Jump',
-  'long-jump': 'Long Jump',
-  shove: 'Shove',
-  swim: 'Swim',
-  trip: 'Trip',
-  disarm: 'Disarm',
-  repair: 'Repair',
-  craft: 'Craft',
-  'identify-alchemy': 'Identify Alchemy',
-  'create-a-diversion': 'Create a Diversion',
-  impersonate: 'Impersonate',
-  lie: 'Lie',
-  feint: 'Feint',
-  'gather-information': 'Gather Information',
-  'make-an-impression': 'Make an Impression',
-  request: 'Request',
-  coerce: 'Coerce',
-  demoralize: 'Demoralize',
-  'administer-first-aid': 'Administer First Aid',
-  'treat-disease': 'Treat Disease',
-  'treat-poison': 'Treat Poison',
-  'treat-wounds': 'Treat Wounds',
-  'command-an-animal': 'Command an Animal',
-  perform: 'Perform',
-  'create-forgery': 'Create Forgery',
-  subsist: 'Subsist',
-  'conceal-an-object': 'Conceal an Object',
-  hide: 'Hide',
-  sneak: 'Sneak',
-  track: 'Track',
-  'cover-tracks': 'Cover Tracks',
-  'palm-an-object': 'Palm an Object',
-  steal: 'Steal',
-  'pick-a-lock': 'Pick a Lock',
-  'disable-device': 'Disable Device',
-};
 
 // Inline validatePosition
 function validatePosition(saved) {
@@ -224,7 +132,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             return {
               ...roll,
               skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
-              actionName: roll.actionSlug ? ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
+              actionName: roll.actionSlug ? PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
               dc: showDCs ? roll.dc : null,
               actorName: actor?.name || 'Unknown',
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
