@@ -89,6 +89,7 @@ export class StateManager {
    * @param {Array} speakers - New speakers array
    */
   async updateSpeakers(speakers) {
+    if (!this.speakerManager) return;
     return await this.speakerManager.updateSpeakers(speakers);
   }
 
@@ -97,6 +98,7 @@ export class StateManager {
    * @param {string|null} speakerId - Speaker ID or null for narration
    */
   async setActiveSpeaker(speakerId) {
+    if (!this.speakerManager) return;
     return await this.speakerManager.setActiveSpeaker(speakerId);
   }
 
@@ -106,6 +108,7 @@ export class StateManager {
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
   async addSpeaker({ actorUuid = null, imagePath = null, label }) {
+    if (!this.speakerManager) return;
     return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label });
   }
 
@@ -114,6 +117,7 @@ export class StateManager {
    * @param {string} speakerId - Speaker ID to remove
    */
   async removeSpeaker(speakerId) {
+    if (!this.speakerManager) return;
     return await this.speakerManager.removeSpeaker(speakerId);
   }
 
@@ -124,6 +128,7 @@ export class StateManager {
    * @returns {Object} { img, name }
    */
   async resolveSpeaker(speaker) {
+    if (!this.speakerManager) return { img: null, name: 'Unknown' };
     return await this.speakerManager.resolveSpeaker(speaker);
   }
 
@@ -135,6 +140,7 @@ export class StateManager {
    * @returns {Object} Created participant with ID, or existing participant if duplicate
    */
   async addParticipant({ actorUuid, userId }) {
+    if (!this.participantManager) return;
     return await this.participantManager.addParticipant({ actorUuid, userId });
   }
 
@@ -143,6 +149,7 @@ export class StateManager {
    * @param {string} participantId
    */
   async removeParticipant(participantId) {
+    if (!this.participantManager) return;
     return await this.participantManager.removeParticipant(participantId);
   }
 
@@ -150,6 +157,7 @@ export class StateManager {
    * Clear all participants.
    */
   async clearAllParticipants() {
+    if (!this.participantManager) return;
     return await this.participantManager.clearAllParticipants();
   }
 
@@ -160,6 +168,7 @@ export class StateManager {
    * @param {Object} rollRequest - { id, participantId, skillSlug, dc, timestamp }
    */
   async addPendingRoll(rollRequest) {
+    if (!this.rollTracker) return;
     return await this.rollTracker.addPendingRoll(rollRequest);
   }
 
@@ -168,6 +177,7 @@ export class StateManager {
    * @param {string} requestId
    */
   async removePendingRoll(requestId) {
+    if (!this.rollTracker) return;
     return await this.rollTracker.removePendingRoll(requestId);
   }
 
@@ -176,6 +186,7 @@ export class StateManager {
    * @param {string} participantId
    */
   async clearPendingRollsForParticipant(participantId) {
+    if (!this.rollTracker) return;
     return await this.rollTracker.clearPendingRollsForParticipant(participantId);
   }
 
@@ -183,6 +194,7 @@ export class StateManager {
    * Clear all pending rolls (for scene change).
    */
   async clearPendingRolls() {
+    if (!this.rollTracker) return;
     return await this.rollTracker.clearPendingRolls();
   }
 
@@ -192,6 +204,7 @@ export class StateManager {
    * @param {Object} result - { requestId, participantId, skillSlug, total, degreeOfSuccess, timestamp, chatMessageId }
    */
   async addRollResult(result) {
+    if (!this.rollTracker) return;
     return await this.rollTracker.addRollResult(result);
   }
 
@@ -199,6 +212,7 @@ export class StateManager {
    * Clear roll history (for scene change).
    */
   async clearRollHistory() {
+    if (!this.rollTracker) return;
     return await this.rollTracker.clearRollHistory();
   }
 
@@ -210,6 +224,7 @@ export class StateManager {
    * @returns {boolean} True if added, false if name already exists
    */
   async addActiveChallenge(challengeData) {
+    if (!this.challengeManager) return false;
     return await this.challengeManager.addActiveChallenge(challengeData);
   }
 
@@ -218,6 +233,7 @@ export class StateManager {
    * @param {string} challengeId - ID of challenge to remove
    */
   async removeActiveChallenge(challengeId) {
+    if (!this.challengeManager) return;
     return await this.challengeManager.removeActiveChallenge(challengeId);
   }
 
@@ -227,6 +243,7 @@ export class StateManager {
    * @returns {Object|null} Challenge data or null
    */
   getActiveChallenge(challengeId) {
+    if (!this.challengeManager) return null;
     return this.challengeManager.getActiveChallenge(challengeId);
   }
 
@@ -234,6 +251,7 @@ export class StateManager {
    * Clear all active challenges.
    */
   async clearAllChallenges() {
+    if (!this.challengeManager) return;
     return await this.challengeManager.clearAllChallenges();
   }
 
@@ -243,6 +261,7 @@ export class StateManager {
    * @param {Object} challengeData - Challenge data with options
    */
   async setActiveChallenge(challengeData) {
+    if (!this.challengeManager) return;
     return await this.challengeManager.setActiveChallenge(challengeData);
   }
 
@@ -251,6 +270,7 @@ export class StateManager {
    * @deprecated Use removeActiveChallenge or clearAllChallenges instead.
    */
   async clearActiveChallenge() {
+    if (!this.challengeManager) return;
     return await this.challengeManager.clearActiveChallenge();
   }
 

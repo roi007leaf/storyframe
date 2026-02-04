@@ -5,6 +5,7 @@
 
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import * as SkillCheckHandlers from './skill-check-handlers.mjs';
 
 /**
  * Position the drawer adjacent to the parent journal sheet
@@ -200,8 +201,8 @@ export async function onShowPendingRolls(_event, target, sidebar) {
         participantId: r.participantId,
         participantName: actor?.name || 'Unknown',
         participantImg: actor?.img || 'icons/svg/mystery-man.svg',
-        skillName: sidebar._getSkillName(r.skillSlug),
-        actionName: r.actionSlug ? sidebar._getActionName(r.skillSlug, r.actionSlug) : null,
+        skillName: SkillCheckHandlers.getSkillName(r.skillSlug),
+        actionName: r.actionSlug ? SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug) : null,
       };
     }),
   );
@@ -577,11 +578,11 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   const actions = skill?.actions;
 
   if (!actions || actions.length === 0) {
-    ui.notifications.info(`No specific actions for ${sidebar._getSkillName(skillSlug)}`);
+    ui.notifications.info(`No specific actions for ${SkillCheckHandlers.getSkillName(skillSlug)}`);
     return;
   }
 
-  const skillName = sidebar._getSkillName(skillSlug);
+  const skillName = SkillCheckHandlers.getSkillName(skillSlug);
 
   // Remove any existing menu
   document.querySelector('.storyframe-skill-actions-menu')?.remove();

@@ -6,6 +6,7 @@
 import { ChallengeBuilderDialog } from '../../challenge-builder.mjs';
 import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import { extractParentElement } from '../../../utils/element-utils.mjs';
 
 /**
  * Present a new challenge
@@ -441,11 +442,8 @@ export function prepareChallengesContext(sidebar, state) {
  * Get journal content element
  */
 function getJournalContent(sidebar) {
-  if (!sidebar.parentInterface?.element) return null;
-
-  const element = sidebar.parentInterface.element?.closest ?
-    sidebar.parentInterface.element :
-    sidebar.parentInterface.element?.[0] || sidebar.parentInterface.element;
+  const element = extractParentElement(sidebar.parentInterface);
+  if (!element) return null;
 
   // Try multiple selectors for different journal sheet types
   return element.querySelector('.journal-entry-pages') ||

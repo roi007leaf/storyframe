@@ -67,8 +67,7 @@ storyframe/
 │   │   ├── journal-hooks.mjs
 │   │   └── player-viewer-hooks.mjs
 │   ├── socket-manager.mjs
-│   ├── check-enricher.mjs
-│   └── storyframe-editor.mjs
+│   └── check-enricher.mjs
 ```
 
 ---

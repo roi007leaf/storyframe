@@ -1,16 +1,13 @@
 import { MODULE_ID } from '../../constants.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
-import { ChallengeBuilderDialog } from '../challenge-builder.mjs';
-import { extractParentElement } from '../../utils/element-utils.mjs';
-import { findJournalContent } from '../../utils/dom-utils.mjs';
 
 // Import manager modules
-import * as SpeakerHandlers from './managers/speaker-handlers.mjs';
+import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
+import * as DCHandlers from './managers/dc-handlers.mjs';
+import * as JournalHandlers from './managers/journal-handlers.mjs';
 import * as ParticipantHandlers from './managers/participant-handlers.mjs';
 import * as SkillCheckHandlers from './managers/skill-check-handlers.mjs';
-import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
-import * as JournalHandlers from './managers/journal-handlers.mjs';
-import * as DCHandlers from './managers/dc-handlers.mjs';
+import * as SpeakerHandlers from './managers/speaker-handlers.mjs';
 import * as UIHelpers from './managers/ui-helpers.mjs';
 
 /**
@@ -94,6 +91,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   /** @type {Function|null} Bound handler for parent position changes */
   _parentPositionHandler = null;
+
 
   constructor(options = {}) {
     super(options);
@@ -285,7 +283,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     );
 
     // Resolve participants using participant handlers
-    const participants = await ParticipantHandlers.prepareParticipantsContext(this, state);
+    const { participants } = await ParticipantHandlers.prepareParticipantsContext(this, state);
 
     // Pending rolls with names
     const pendingRolls = await Promise.all(

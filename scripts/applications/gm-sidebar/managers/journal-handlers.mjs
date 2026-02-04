@@ -11,13 +11,22 @@ import { findJournalContent } from '../../../utils/dom-utils.mjs';
  * Returns checks grouped by skill
  */
 export function extractJournalChecks(sidebar) {
-  if (!sidebar.parentInterface?.element) return [];
+  if (!sidebar.parentInterface?.element) {
+    console.log('StoryFrame | extractJournalChecks: no parent interface element');
+    return [];
+  }
 
   const content = getJournalContent(sidebar);
-  if (!content) return [];
+  if (!content) {
+    console.log('StoryFrame | extractJournalChecks: no journal content found');
+    return [];
+  }
 
   const checks = sidebar._parseChecksFromContent(content);
-  return groupChecksBySkill(checks);
+  console.log('StoryFrame | extractJournalChecks: found', checks.length, 'checks');
+  const grouped = groupChecksBySkill(checks);
+  console.log('StoryFrame | extractJournalChecks: grouped into', grouped.length, 'groups');
+  return grouped;
 }
 
 /**

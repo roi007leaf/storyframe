@@ -56,8 +56,7 @@ storyframe/
 │   │   ├── dc-preset-manager.mjs  # DC preset management
 │   │   └── roll-request-dialog.mjs # Roll request dialog
 │   ├── socket-manager.mjs         # Socket communication (socketlib)
-│   ├── check-enricher.mjs         # Journal check parsing
-│   └── storyframe-editor.mjs      # Custom journal editor
+│   └── check-enricher.mjs         # Journal check parsing
 ```
 
 ## Architecture Patterns

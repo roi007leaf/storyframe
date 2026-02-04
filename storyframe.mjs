@@ -157,11 +157,20 @@ Hooks.once('init', () => {
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
+  console.log(`${MODULE_ID} | setup hook fired`);
   game.storyframe.stateManager = new StateManager();
+
+  // If socketlib already loaded, initialize now
+  if (game.storyframe.socketManager) {
+    console.log(`${MODULE_ID} | socketlib already ready, initializing managers now`);
+    game.storyframe.stateManager.initialize(game.storyframe.socketManager);
+    game.storyframe.initialized = true;
+  }
 });
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
+  console.log(`${MODULE_ID} | socketlib.ready hook fired`);
 
   // Defensive: socketlib.ready can fire before init in v13
   if (!game.storyframe) {
@@ -177,6 +186,10 @@ Hooks.once('socketlib.ready', () => {
   // Initialize StateManager with SocketManager
   if (game.storyframe.stateManager) {
     game.storyframe.stateManager.initialize(game.storyframe.socketManager);
+    game.storyframe.initialized = true;
+    console.log(`${MODULE_ID} | Managers initialized via socketlib.ready`);
+  } else {
+    console.warn(`${MODULE_ID} | StateManager not available in socketlib.ready`);
   }
 });
 
@@ -215,7 +228,32 @@ Hooks.once('ready', async () => {
     console.error(`${MODULE_ID} | StateManager not initialized`);
     return;
   }
+
+  // Wait for socketlib initialization if needed
+  if (!game.storyframe.initialized) {
+    console.warn(`${MODULE_ID} | Waiting for socketlib initialization...`);
+    const maxWait = 5000; // 5 second timeout
+    const startTime = Date.now();
+    await new Promise((resolve) => {
+      const checkInit = setInterval(() => {
+        if (game.storyframe.initialized) {
+          clearInterval(checkInit);
+          console.log(`${MODULE_ID} | Initialization complete`);
+          resolve();
+        } else if (Date.now() - startTime > maxWait) {
+          clearInterval(checkInit);
+          console.error(`${MODULE_ID} | Initialization timeout - proceeding anyway`);
+          resolve(); // Continue anyway
+        }
+      }, 100);
+    });
+  } else {
+    console.log(`${MODULE_ID} | Already initialized`);
+  }
+
+  console.log(`${MODULE_ID} | Loading state...`);
   await game.storyframe.stateManager.load();
+  console.log(`${MODULE_ID} | State loaded:`, game.storyframe.stateManager.getState());
 
   // Migration: Detect and perform migration from 1.x to 2.x
   const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');
@@ -265,7 +303,7 @@ Hooks.once('ready', async () => {
 // Hook: canvasReady (scene change - clear pending rolls)
 Hooks.on('canvasReady', () => {
   // Clear pending rolls on scene change
-  if (game.user.isGM && game.storyframe.stateManager) {
+  if (game.user.isGM && game.storyframe.stateManager?.rollTracker) {
     game.storyframe.stateManager.clearPendingRolls();
   }
 });

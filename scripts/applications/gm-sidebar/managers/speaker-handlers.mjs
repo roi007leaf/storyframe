@@ -142,9 +142,15 @@ export function extractJournalImages(sidebar) {
   if (!sidebar.parentInterface?.element) return [];
 
   // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-  const element = sidebar.parentInterface.element?.closest ?
-    sidebar.parentInterface.element :
-    sidebar.parentInterface.element?.[0] || sidebar.parentInterface.element;
+  let element = sidebar.parentInterface.element;
+
+  // If it's jQuery or array-like, get first element
+  if (element?.[0] instanceof HTMLElement) {
+    element = element[0];
+  }
+
+  // Validate we have a DOM element
+  if (!(element instanceof HTMLElement) || !element.querySelectorAll) return [];
 
   // Get ALL page content elements (supports multi-page view)
   const contentElements = element.querySelectorAll('.journal-page-content');
@@ -196,9 +202,15 @@ export function extractJournalActors(sidebar) {
   if (!sidebar.parentInterface?.element) return [];
 
   // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-  const element = sidebar.parentInterface.element?.closest ?
-    sidebar.parentInterface.element :
-    sidebar.parentInterface.element?.[0] || sidebar.parentInterface.element;
+  let element = sidebar.parentInterface.element;
+
+  // If it's jQuery or array-like, get first element
+  if (element?.[0] instanceof HTMLElement) {
+    element = element[0];
+  }
+
+  // Validate we have a DOM element
+  if (!(element instanceof HTMLElement) || !element.querySelectorAll) return [];
 
   // Get ALL page content elements (supports multi-page view)
   const contentElements = element.querySelectorAll('.journal-page-content');
