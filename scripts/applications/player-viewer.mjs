@@ -1,5 +1,4 @@
-const MODULE_ID = 'storyframe';
-
+import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
 
 // Map short skill slugs to full PF2e skill slugs

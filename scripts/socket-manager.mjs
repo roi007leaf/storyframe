@@ -1,4 +1,4 @@
-const MODULE_ID = 'storyframe';
+import { MODULE_ID } from './constants.mjs';
 
 /**
  * Manages socket communication using socketlib.

@@ -1,23 +1,11 @@
+import { MODULE_ID } from './scripts/constants.mjs';
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
-
-// Module constants
-const MODULE_ID = 'storyframe';
-
-/**
- * Validate window position to ensure it's visible on screen
- * Clamps to visible screen bounds
- */
-export function validatePosition(saved) {
-  return {
-    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
-    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
-    width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
-    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight)),
-  };
-}
+import { validatePosition } from './scripts/utils/validation-utils.mjs';
+import { extractElement } from './scripts/utils/element-utils.mjs';
+import { findJournalContent, findCloseButton } from './scripts/utils/dom-utils.mjs';
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
@@ -318,29 +306,14 @@ Hooks.on('renderJournalSheet', async (sheet, html) => {
   if (!game.user.isGM) return;
 
   // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
+  const element = extractElement(html, sheet);
 
   // Inject toggle button into header
   _injectSidebarToggleButton(sheet, element);
 
   // Enrich checks in journal content
   const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  const contentArea = findJournalContent(element);
   if (contentArea) {
     enrichChecks(contentArea);
   }
@@ -366,29 +339,14 @@ Hooks.on('renderJournalEntrySheet5e', async (sheet, html) => {
   if (!game.user.isGM) return;
 
   // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
+  const element = extractElement(html, sheet);
 
   // Inject toggle button into header
   _injectSidebarToggleButton(sheet, element);
 
   // Enrich checks in journal content
   const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  const contentArea = findJournalContent(element);
   if (contentArea) {
     enrichChecks(contentArea);
   }
@@ -414,29 +372,14 @@ Hooks.on('renderMetaMorphicJournalEntrySheet', async (sheet, html) => {
   if (!game.user.isGM) return;
 
   // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
+  const element = extractElement(html, sheet);
 
   // Inject toggle button into header
   _injectSidebarToggleButton(sheet, element);
 
   // Enrich checks in journal content
   const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
+  const contentArea = findJournalContent(element);
   if (contentArea) {
     enrichChecks(contentArea);
   }
@@ -549,10 +492,7 @@ function _injectSidebarToggleButton(sheet, html) {
   };
 
   // Insert before close button (try multiple selectors for different systems)
-  const closeBtn = header.querySelector('.close') ||
-    header.querySelector('[data-action="close"]') ||
-    header.querySelector('.header-control[aria-label*="Close"]');
-
+  const closeBtn = findCloseButton(header);
 
   if (closeBtn) {
     header.insertBefore(toggleBtn, closeBtn);

@@ -1,4 +1,5 @@
 import * as SystemAdapter from '../system-adapter.mjs';
+import { extractParentElement } from '../utils/element-utils.mjs';
 
 /**
  * Player Sidebar for StoryFrame
@@ -82,9 +83,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   _startTrackingParent() {
     if (!this.parentViewer?.element) return;
 
-    const element = this.parentViewer.element instanceof HTMLElement
-      ? this.parentViewer.element
-      : this.parentViewer.element[0];
+    const element = extractParentElement(this.parentViewer);
 
     this._parentObserver = new MutationObserver((mutations) => {
       if (!this.rendered || !this.parentViewer) return;

@@ -1,7 +1,8 @@
-const MODULE_ID = 'storyframe';
-
+import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 import { ChallengeBuilderDialog } from './challenge-builder.mjs';
+import { extractParentElement } from '../utils/element-utils.mjs';
+import { findJournalContent } from '../utils/dom-utils.mjs';
 
 /**
  * GM Sidebar for StoryFrame
@@ -143,9 +144,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
 
     // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-    const parentEl = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const parentEl = extractParentElement(this.parentInterface);
     const parentRect = parentEl.getBoundingClientRect();
 
     // Check if parent has valid dimensions (not at 0,0 with no size)
@@ -196,9 +195,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
 
     // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-    const element = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const element = extractParentElement(this.parentInterface);
 
     // Create a MutationObserver to watch for style and class changes
     this._parentObserver = new MutationObserver((mutations) => {
@@ -628,21 +625,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    * Returns the container with all journal content for check parsing
    */
   _getJournalContent() {
-    const element = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
-
-    // Try multiple selectors to support different journal sheet types
-    // For multi-page journals (MetaMorphic), get the pages container
-    const pagesContainer = element.querySelector('.journal-entry-pages');
-    if (pagesContainer) return pagesContainer;
-
-    // For single-page journals, get the content directly
-    const pageContent = element.querySelector('.journal-page-content');
-    if (pageContent) return pageContent;
-
-    // Fallback to entry content
-    return element.querySelector('.journal-entry-content');
+    const element = extractParentElement(this.parentInterface);
+    return findJournalContent(element);
   }
 
   /**
@@ -727,9 +711,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (!this.parentInterface?.element) return [];
 
     // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-    const element = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const element = extractParentElement(this.parentInterface);
 
     // Get ALL page content elements (supports multi-page view)
     const contentElements = element.querySelectorAll('.journal-page-content');
@@ -789,9 +771,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (!this.parentInterface?.element) return [];
 
     // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-    const element = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const element = extractParentElement(this.parentInterface);
 
     // Get ALL page content elements (supports multi-page view)
     const contentElements = element.querySelectorAll('.journal-page-content');
@@ -896,9 +876,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     if (!this.parentInterface?.element) return;
 
-    const parentElement = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const parentElement = extractParentElement(this.parentInterface);
 
     // Watch the journal pages container for new content
     const pagesContainer = parentElement.querySelector('.journal-entry-pages') ||
@@ -1625,9 +1603,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (!this.parentInterface?.element) return;
 
     // Get the journal's scrollable container
-    const parentElement = this.parentInterface.element instanceof HTMLElement
-      ? this.parentInterface.element
-      : (this.parentInterface.element[0] || this.parentInterface.element);
+    const parentElement = extractParentElement(this.parentInterface);
 
     // Find the scrollable content area (the part that actually scrolls)
     // Try multiple selectors for different journal sheet types

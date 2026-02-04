@@ -1,6 +1,4 @@
-const MODULE_ID = 'storyframe';
-const FLAG_KEY = 'data';
-const SCHEMA_VERSION = 4;
+import { MODULE_ID, FLAG_KEY, SCHEMA_VERSION } from './constants.mjs';
 
 /**
  * Manages speaker state persistence in Scene flags.
