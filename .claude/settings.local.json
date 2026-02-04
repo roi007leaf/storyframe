@@ -10,7 +10,12 @@
       "Bash(npm view:*)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(npx get-shit-done-cc:*)",
-      "Bash(npm install)"
+      "Bash(npm install)",
+      "Bash(wc:*)",
+      "Bash(dir:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(node --check:*)"
     ]
   }
 }
