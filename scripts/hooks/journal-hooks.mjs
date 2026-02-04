@@ -175,13 +175,13 @@ async function _attachSidebarToSheet(sheet) {
     const system = game.system.id;
 
     if (system === 'pf2e') {
-      const { GMSidebarAppPF2e } = await import('../applications/gm-sidebar-pf2e.mjs');
+      const { GMSidebarAppPF2e } = await import('../applications/gm-sidebar/gm-sidebar-pf2e.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppPF2e();
     } else if (system === 'dnd5e') {
-      const { GMSidebarAppDND5e } = await import('../applications/gm-sidebar-dnd5e.mjs');
+      const { GMSidebarAppDND5e } = await import('../applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppDND5e();
     } else {
-      const { GMSidebarAppBase } = await import('../applications/gm-sidebar.mjs');
+      const { GMSidebarAppBase } = await import('../applications/gm-sidebar/gm-sidebar-base.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppBase();
     }
   }

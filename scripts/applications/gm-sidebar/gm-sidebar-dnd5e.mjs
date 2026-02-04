@@ -1,4 +1,4 @@
-import { GMSidebarAppBase } from './gm-sidebar.mjs';
+import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 
 /**
  * D&D 5e-specific GM Sidebar implementation

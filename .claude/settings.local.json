@@ -15,7 +15,8 @@
       "Bash(dir:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(node --check:*)"
+      "Bash(node --check:*)",
+      "Bash(timeout 30 tail:*)"
     ]
   }
 }
