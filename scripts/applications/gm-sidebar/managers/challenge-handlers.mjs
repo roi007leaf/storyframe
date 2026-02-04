@@ -71,7 +71,28 @@ export async function onToggleChallengeCollapse(_event, target, sidebar) {
 
   const currentState = sidebar.collapsedChallenges.get(challengeId) || false;
   sidebar.collapsedChallenges.set(challengeId, !currentState);
-  sidebar.render();
+
+  // Update DOM directly
+  const challengeCard = sidebar.element.querySelector(`[data-challenge-id="${challengeId}"]`);
+  if (challengeCard) {
+    if (!currentState) {
+      challengeCard.classList.add('collapsed');
+    } else {
+      challengeCard.classList.remove('collapsed');
+    }
+
+    // Update chevron icon
+    const chevron = challengeCard.querySelector('.collapse-icon');
+    if (chevron) {
+      chevron.className = !currentState ? 'fas fa-chevron-right collapse-icon' : 'fas fa-chevron-down collapse-icon';
+    }
+
+    // Update aria-expanded
+    const header = challengeCard.querySelector('[data-action="toggleChallengeCollapse"]');
+    if (header) {
+      header.setAttribute('aria-expanded', currentState ? 'true' : 'false');
+    }
+  }
 }
 
 /**
@@ -83,7 +104,28 @@ export async function onToggleLibraryChallengeCollapse(_event, target, sidebar) 
 
   const currentState = sidebar.collapsedLibraryChallenges.get(challengeId) || false;
   sidebar.collapsedLibraryChallenges.set(challengeId, !currentState);
-  sidebar.render();
+
+  // Update DOM directly
+  const challengeCard = sidebar.element.querySelector(`.lib-challenge-card[data-challenge-id="${challengeId}"]`);
+  if (challengeCard) {
+    if (!currentState) {
+      challengeCard.classList.add('collapsed');
+    } else {
+      challengeCard.classList.remove('collapsed');
+    }
+
+    // Update chevron icon
+    const chevron = challengeCard.querySelector('.collapse-icon');
+    if (chevron) {
+      chevron.className = !currentState ? 'fas fa-chevron-right collapse-icon' : 'fas fa-chevron-down collapse-icon';
+    }
+
+    // Update aria-expanded
+    const header = challengeCard.querySelector('.lib-card-header');
+    if (header) {
+      header.setAttribute('aria-expanded', currentState ? 'true' : 'false');
+    }
+  }
 }
 
 /**
@@ -161,7 +203,7 @@ export async function onDeleteChallenge(_event, target, sidebar) {
   await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
 
   ui.notifications.info('Challenge deleted from library');
-  sidebar.render();
+  // Note: Setting update triggers updateSetting hook which re-renders sidebar
 }
 
 /**
@@ -246,9 +288,7 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
   await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
 
   ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
-
-  // Rerender to show new challenge in library
-  sidebar.render();
+  // Note: Setting update triggers updateSetting hook which re-renders sidebar
 
   // Clear selection
   selection.removeAllRanges();
@@ -341,7 +381,13 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
 
   // Reset secret toggle
   sidebar.secretRollEnabled = false;
-  sidebar.render();
+
+  // Update secret button directly
+  const secretBtn = sidebar.element.querySelector('.secret-roll-btn');
+  if (secretBtn) {
+    secretBtn.classList.remove('active');
+    secretBtn.setAttribute('aria-pressed', 'false');
+  }
 
   // Clear selection
   selection.removeAllRanges();

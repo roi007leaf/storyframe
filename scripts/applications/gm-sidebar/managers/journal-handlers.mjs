@@ -5,6 +5,7 @@
 
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 import { findJournalContent } from '../../../utils/dom-utils.mjs';
+import * as SystemAdapter from '../../../system-adapter.mjs';
 
 /**
  * Extract checks from parent journal content
@@ -68,10 +69,12 @@ export function groupChecksBySkill(checks) {
   unique.forEach((check) => {
     const skill = check.skillName;
     const skillDisplay = skill.charAt(0).toUpperCase() + skill.slice(1);
+    // Convert skill name to proper slug for batch highlighting
+    const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
     if (!grouped[skill]) {
       grouped[skill] = {
         skillName: skillDisplay,
-        skillSlug: skill,
+        skillSlug: skillSlug,
         checks: [],
       };
     }

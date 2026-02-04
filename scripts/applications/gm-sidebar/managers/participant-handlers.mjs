@@ -89,9 +89,6 @@ export async function onToggleParticipantSelection(_event, target, sidebar) {
   if (requestBar) {
     requestBar.classList.toggle('ready', selectedCount > 0 && sidebar.currentDC);
   }
-
-  // Re-render to update avatar display
-  sidebar.render();
 }
 
 /**
@@ -133,9 +130,8 @@ export async function onToggleSelectAll(_event, _target, sidebar) {
     }
   });
 
-  // Re-render to update avatar display
-  console.log('Select all - selected participants:', Array.from(sidebar.selectedParticipants));
-  sidebar.render();
+  // Update the UI elements to reflect the selection change
+  updateSelectAllCheckbox(sidebar);
 }
 
 /**

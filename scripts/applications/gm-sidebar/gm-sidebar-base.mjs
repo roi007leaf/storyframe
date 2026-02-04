@@ -112,6 +112,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Track active speaker for change detection
     this._lastActiveSpeaker = null;
 
+    // Track speaker/participant lists for change detection
+    this._lastSpeakerIds = [];
+    this._lastParticipantIds = [];
+
     // Track visible journal checks for highlighting
     this._visibleChecks = new Map(); // skill -> Set of DCs
 
@@ -170,10 +174,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Perform render
     await super._render(force, options);
 
-    // Update tracked active speaker after render
+    // Update tracked state after render
     const state = game.storyframe.stateManager?.getState();
     if (state) {
       this._lastActiveSpeaker = state.activeSpeaker;
+      this._lastSpeakerIds = (state.speakers || []).map(s => s.id);
+      this._lastParticipantIds = (state.participants || []).map(p => p.id);
     }
 
     // Restore scroll positions after render with multiple attempts to ensure it works
@@ -183,7 +189,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   /**
-   * Check if this render is just for a speaker change and handle it directly
+   * Check if this render is just for simple state changes and handle them directly
    * @returns {boolean} True if the update was handled without re-rendering
    */
   _handleSpeakerUpdate() {
@@ -192,10 +198,27 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
     if (!state) return false;
 
-    // Check if only the active speaker changed
+    let handledUpdate = false;
+
+    // Get current state IDs
     const currentActiveSpeaker = this._lastActiveSpeaker;
     const newActiveSpeaker = state.activeSpeaker;
+    const currentSpeakerIds = this._lastSpeakerIds;
+    const newSpeakerIds = (state.speakers || []).map(s => s.id);
+    const currentParticipantIds = this._lastParticipantIds;
+    const newParticipantIds = (state.participants || []).map(p => p.id);
 
+    // Check if speakers list changed (additions/removals)
+    const speakersChanged = JSON.stringify(currentSpeakerIds.sort()) !== JSON.stringify(newSpeakerIds.sort());
+    const participantsChanged = JSON.stringify(currentParticipantIds.sort()) !== JSON.stringify(newParticipantIds.sort());
+
+    // If speakers or participants were added/removed, we need to re-render
+    // (DOM creation/removal is too complex to handle manually)
+    if (speakersChanged || participantsChanged) {
+      return false;
+    }
+
+    // Check if only the active speaker changed
     if (currentActiveSpeaker !== newActiveSpeaker) {
       // Update speaker UI directly
       const speakers = this.element.querySelectorAll('[data-speaker-id]');
@@ -219,10 +242,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       });
 
       this._lastActiveSpeaker = newActiveSpeaker;
-      return true;
+      handledUpdate = true;
     }
 
-    return false;
+    return handledUpdate;
   }
 
   /**
@@ -740,7 +763,18 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onToggleSecretRoll(event, target) {
     this.secretRollEnabled = !this.secretRollEnabled;
-    this.render();
+
+    // Update button state directly
+    const secretBtn = this.element.querySelector('.secret-roll-btn');
+    if (secretBtn) {
+      if (this.secretRollEnabled) {
+        secretBtn.classList.add('active');
+        secretBtn.setAttribute('aria-pressed', 'true');
+      } else {
+        secretBtn.classList.remove('active');
+        secretBtn.setAttribute('aria-pressed', 'false');
+      }
+    }
   }
 
   static async _onToggleJournalChecksPanel(event, target) {

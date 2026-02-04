@@ -5,6 +5,7 @@
 
 import * as SystemAdapter from '../../../system-adapter.mjs';
 import { MODULE_ID } from '../../../constants.mjs';
+import * as ParticipantHandlers from './participant-handlers.mjs';
 
 /**
  * Request a skill check (single skill button click)
@@ -176,8 +177,7 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
     }
 
     // Clear selection after sending rolls
-    sidebar.selectedParticipants.clear();
-    sidebar.render();
+    clearParticipantSelection(sidebar);
   }
 
   return { sentCount, offlineCount, missingSkillCount, sentIds, offlineIds, missingIds, offlineNames, missingNames };
@@ -250,9 +250,8 @@ export async function sendBatchSkillCheck(sidebar) {
   sidebar.batchedChecks = [];
   updateBatchHighlights(sidebar);
 
-  // Clear selection and render
-  sidebar.selectedParticipants.clear();
-  sidebar.render();
+  // Clear participant selection
+  clearParticipantSelection(sidebar);
 
   // Show single aggregated notification with unique participant names
   if (uniqueSentIds.size > 0) {
@@ -293,31 +292,67 @@ export function updateBatchHighlights(sidebar) {
     wrapper.classList.remove('batched');
   });
 
-  // Collect skills that have any batched checks
-  const batchedSkills = new Set();
+  // Collect skills by source type
+  const batchedRegularSkills = new Set();
+  const batchedLoreSkills = new Set();
+  const batchedJournalSkills = new Set();
+  const batchedActionSkills = new Set();
+
   sidebar.batchedChecks.forEach(check => {
-    batchedSkills.add(check.skill);
-  });
-
-  // Add batch highlight to all check types
-  batchedSkills.forEach(skillSlug => {
-    // Try regular skills first
-    let wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
-
-    // If not found, try lore skills
-    if (!wrapper) {
-      wrapper = sidebar.element.querySelector(`.skill-btn.lore[data-skill="${skillSlug}"]`)?.closest('.lore-skill-wrapper');
-    }
-
-    // If not found, try journal checks (match by skill name from SystemAdapter)
-    if (!wrapper) {
-      const skills = SystemAdapter.getSkills();
-      const skillName = skills[skillSlug]?.name;
-      if (skillName) {
-        wrapper = sidebar.element.querySelector(`.journal-skill-btn[data-skill="${skillName}"]`)?.closest('.journal-check-wrapper');
+    // Determine source type from checkId
+    if (check.checkId.startsWith('journal:')) {
+      batchedJournalSkills.add(check.skill);
+    } else if (check.checkId.startsWith('action:')) {
+      batchedActionSkills.add(check.skill);
+    } else if (check.checkId.startsWith('skill:')) {
+      // Regular skills and lore skills both use "skill:" prefix
+      // Lore skills have different slugs (e.g., "cooking-lore")
+      if (check.skill.includes('-lore')) {
+        batchedLoreSkills.add(check.skill);
+      } else {
+        batchedRegularSkills.add(check.skill);
       }
     }
+  });
 
+  // Highlight regular skill buttons
+  batchedRegularSkills.forEach(skillSlug => {
+    const wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('batched');
+    }
+  });
+
+  // Highlight lore skill buttons
+  batchedLoreSkills.forEach(skillSlug => {
+    const wrapper = sidebar.element.querySelector(`.skill-btn.lore[data-skill="${skillSlug}"]`)?.closest('.lore-skill-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('batched');
+    }
+  });
+
+  // Highlight journal check buttons
+  const skills = SystemAdapter.getSkills();
+  batchedJournalSkills.forEach(skillSlug => {
+    let skillName = skills[skillSlug]?.name;
+
+    // If not found in system skills, it might be a lore skill or custom skill
+    // Capitalize the slug for matching (e.g., "cooking lore" -> "Cooking Lore")
+    if (!skillName) {
+      skillName = skillSlug.split(' ').map(word =>
+        word.charAt(0).toUpperCase() + word.slice(1)
+      ).join(' ');
+    }
+
+    const wrapper = sidebar.element.querySelector(`.journal-skill-btn[data-skill="${skillName}"]`)?.closest('.journal-check-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('batched');
+    }
+  });
+
+  // Highlight skill action buttons (same as regular for now)
+  batchedActionSkills.forEach(skillSlug => {
+    const wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
     if (wrapper) {
       wrapper.classList.add('batched');
     }
@@ -848,4 +883,22 @@ export async function actionHasSecretTrait(actionSlug) {
     console.warn(`${MODULE_ID} | Error checking action traits:`, error);
     return false;
   }
+}
+
+/**
+ * Clear participant selection without re-rendering
+ */
+function clearParticipantSelection(sidebar) {
+  // Clear the selection set
+  sidebar.selectedParticipants.clear();
+
+  // Update all participant elements to remove selected state
+  const participants = sidebar.element.querySelectorAll('[data-participant-id]');
+  participants.forEach((el) => {
+    el.classList.remove('selected');
+    el.setAttribute('aria-selected', 'false');
+  });
+
+  // Update the UI elements to reflect the cleared selection
+  ParticipantHandlers.updateSelectAllCheckbox(sidebar);
 }
