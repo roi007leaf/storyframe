@@ -3,25 +3,7 @@
  * Auto-detects patterns like "Perception DC 20", "Stealth (Hide) DC 15"
  */
 
-const SKILL_NAME_MAP = {
-  perception: 'per',
-  acrobatics: 'acr',
-  arcana: 'arc',
-  athletics: 'ath',
-  crafting: 'cra',
-  deception: 'dec',
-  diplomacy: 'dip',
-  intimidation: 'itm',
-  medicine: 'med',
-  nature: 'nat',
-  occultism: 'occ',
-  performance: 'prf',
-  religion: 'rel',
-  society: 'soc',
-  stealth: 'ste',
-  survival: 'sur',
-  thievery: 'thi',
-};
+import { getSkillNameMap } from './system-adapter.mjs';
 
 // Pattern: "Perception DC 20" or "Stealth (Hide) DC 15"
 const CHECK_PATTERN = /\b([A-Z][a-z]+)(?:\s*\(([^)]+)\))?\s+DC\s+(\d+)\b/gi;
@@ -64,8 +46,11 @@ export function enrichChecks(element) {
     const text = node.textContent;
     CHECK_PATTERN.lastIndex = 0;
 
+    // Get skill name map for current system
+    const skillNameMap = getSkillNameMap();
+
     const newHTML = text.replace(CHECK_PATTERN, (match, skillName, actionName, dc) => {
-      const skillSlug = SKILL_NAME_MAP[skillName.toLowerCase()];
+      const skillSlug = skillNameMap[skillName.toLowerCase()];
       const checkData = {
         type: 'StoryFrameCheck',
         skillSlug: skillSlug || null,

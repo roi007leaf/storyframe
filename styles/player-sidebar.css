@@ -613,6 +613,5 @@
 }
 
 .player-sidebar .roll-btn-grid.success i::before {
-  content: '\f00c';
   color: rgba(163, 190, 140, 1);
 }

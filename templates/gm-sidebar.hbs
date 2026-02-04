@@ -90,7 +90,6 @@
                 <img src="{{this.src}}" alt="{{this.alt}}" loading="lazy">
               </div>
               <span class="journal-image-label">{{this.alt}}</span>
-              <i class="fas fa-plus journal-image-add-icon"></i>
             </div>
           {{/each}}
           </div>
@@ -112,7 +111,6 @@
                 <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
               </div>
               <span class="journal-actor-label">{{this.name}}</span>
-              <i class="fas fa-plus journal-actor-add-icon"></i>
             </div>
           {{/each}}
           </div>
@@ -252,7 +250,7 @@
             {{/if}}
           {{else if isDND5e}}
             <div class="difficulty-selector dnd5e compact">
-              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+              <select id="dc-select-dnd5e" aria-label="Select difficulty">
                 {{#each dcOptions}}
                   <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
                 {{/each}}
@@ -291,14 +289,16 @@
           </div>
           <div class="journal-checks-grid">
           {{#each journalCheckGroups}}
-            <button type="button"
-                    class="journal-skill-btn"
-                    data-action="showCheckDCsPopup"
-                    data-skill="{{this.skillName}}"
-                    data-tooltip="{{this.skillName}} Checks"
-                    aria-label="{{this.skillName}} Checks">
-              {{this.skillName}}
-            </button>
+            <div class="journal-check-wrapper">
+              <button type="button"
+                      class="journal-skill-btn"
+                      data-action="showCheckDCsPopup"
+                      data-skill="{{this.skillName}}"
+                      data-tooltip="{{this.skillName}} Checks"
+                      aria-label="{{this.skillName}} Checks">
+                {{this.skillName}}
+              </button>
+            </div>
           {{/each}}
           </div>
         </div>

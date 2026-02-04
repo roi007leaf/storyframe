@@ -1,4 +1,5 @@
 import * as SystemAdapter from '../system-adapter.mjs';
+import { extractParentElement } from '../utils/element-utils.mjs';
 
 /**
  * Player Sidebar for StoryFrame
@@ -82,9 +83,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   _startTrackingParent() {
     if (!this.parentViewer?.element) return;
 
-    const element = this.parentViewer.element instanceof HTMLElement
-      ? this.parentViewer.element
-      : this.parentViewer.element[0];
+    const element = extractParentElement(this.parentViewer);
 
     this._parentObserver = new MutationObserver((mutations) => {
       if (!this.rendered || !this.parentViewer) return;
@@ -202,13 +201,13 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       // Get system-specific GM sidebar class for proficiency checking (once)
       let GMSidebar;
       if (game.system.id === 'pf2e') {
-        const { GMSidebarAppPF2e } = await import('./gm-sidebar-pf2e.mjs');
+        const { GMSidebarAppPF2e } = await import('./gm-sidebar/gm-sidebar-pf2e.mjs');
         GMSidebar = GMSidebarAppPF2e;
       } else if (game.system.id === 'dnd5e') {
-        const { GMSidebarAppDND5e } = await import('./gm-sidebar-dnd5e.mjs');
+        const { GMSidebarAppDND5e } = await import('./gm-sidebar/gm-sidebar-dnd5e.mjs');
         GMSidebar = GMSidebarAppDND5e;
       } else {
-        const { GMSidebarAppBase } = await import('./gm-sidebar.mjs');
+        const { GMSidebarAppBase } = await import('./gm-sidebar/gm-sidebar-base.mjs');
         GMSidebar = GMSidebarAppBase;
       }
 

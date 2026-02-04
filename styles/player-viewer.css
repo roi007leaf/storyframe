@@ -507,7 +507,6 @@
 }
 
 .storyframe.player-viewer .empty-state:not(.compact)::before {
-  content: '\f500';
   font-family: 'Font Awesome 6 Free';
   font-weight: 400;
   font-size: 3rem;

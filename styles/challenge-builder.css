@@ -66,14 +66,16 @@
 .storyframe.challenge-builder input[type="number"],
 .storyframe.challenge-builder textarea,
 .storyframe.challenge-builder select {
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid rgba(94, 129, 172, 0.3);
   border-radius: 6px;
   background: rgba(0, 0, 0, 0.4);
   color: #e0e0e0;
   font-size: 14px;
+  line-height: 1.4;
   transition: all 0.2s ease;
   font-family: inherit;
+  text-align: center;
 }
 
 .storyframe.challenge-builder input:focus,
@@ -313,17 +315,17 @@
 }
 
 .storyframe.challenge-builder .skill-dc-row .skill-select {
-  flex: 1;
-  min-width: 140px;
+  flex: 1.2;
+  min-width: 160px;
 }
 
 .storyframe.challenge-builder .skill-dc-row .action-select {
-  flex: 0.8;
-  min-width: 120px;
+  flex: 1;
+  min-width: 150px;
 }
 
 .storyframe.challenge-builder .skill-dc-row .dc-input {
-  width: 80px;
+  width: 90px;
   flex-shrink: 0;
 }
 

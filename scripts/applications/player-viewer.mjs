@@ -1,107 +1,14 @@
-const MODULE_ID = 'storyframe';
-
+import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
-
-// Map short skill slugs to full PF2e skill slugs
-const PF2E_SKILL_SLUG_MAP = {
-  per: 'perception', // Special case - uses actor.perception not actor.skills
-  acr: 'acrobatics',
-  arc: 'arcana',
-  ath: 'athletics',
-  cra: 'crafting',
-  dec: 'deception',
-  dip: 'diplomacy',
-  itm: 'intimidation',
-  med: 'medicine',
-  nat: 'nature',
-  occ: 'occultism',
-  prf: 'performance',
-  rel: 'religion',
-  soc: 'society',
-  ste: 'stealth',
-  sur: 'survival',
-  thi: 'thievery',
-};
-
-// Map short skill slugs to D&D 5e skill slugs
-const DND5E_SKILL_SLUG_MAP = {
-  acr: 'acr', // Acrobatics
-  ani: 'ani', // Animal Handling
-  arc: 'arc', // Arcana
-  ath: 'ath', // Athletics
-  dec: 'dec', // Deception
-  his: 'his', // History
-  ins: 'ins', // Insight
-  itm: 'itm', // Intimidation
-  inv: 'inv', // Investigation
-  med: 'med', // Medicine
-  nat: 'nat', // Nature
-  prc: 'prc', // Perception
-  prf: 'prf', // Performance
-  per: 'per', // Persuasion
-  rel: 'rel', // Religion
-  slt: 'slt', // Sleight of Hand
-  ste: 'ste', // Stealth
-  sur: 'sur', // Survival
-};
+import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
+import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
+import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
   const system = SystemAdapter.detectSystem();
   return system === 'dnd5e' ? DND5E_SKILL_SLUG_MAP : PF2E_SKILL_SLUG_MAP;
 }
-
-// Map action slugs to PF2e action identifiers
-const ACTION_DISPLAY_NAMES = {
-  seek: 'Seek',
-  'sense-direction': 'Sense Direction',
-  balance: 'Balance',
-  'tumble-through': 'Tumble Through',
-  'maneuver-in-flight': 'Maneuver in Flight',
-  squeeze: 'Squeeze',
-  'recall-knowledge': 'Recall Knowledge',
-  'decipher-writing': 'Decipher Writing',
-  'identify-magic': 'Identify Magic',
-  'learn-spell': 'Learn a Spell',
-  climb: 'Climb',
-  'force-open': 'Force Open',
-  grapple: 'Grapple',
-  'high-jump': 'High Jump',
-  'long-jump': 'Long Jump',
-  shove: 'Shove',
-  swim: 'Swim',
-  trip: 'Trip',
-  disarm: 'Disarm',
-  repair: 'Repair',
-  craft: 'Craft',
-  'identify-alchemy': 'Identify Alchemy',
-  'create-a-diversion': 'Create a Diversion',
-  impersonate: 'Impersonate',
-  lie: 'Lie',
-  feint: 'Feint',
-  'gather-information': 'Gather Information',
-  'make-an-impression': 'Make an Impression',
-  request: 'Request',
-  coerce: 'Coerce',
-  demoralize: 'Demoralize',
-  'administer-first-aid': 'Administer First Aid',
-  'treat-disease': 'Treat Disease',
-  'treat-poison': 'Treat Poison',
-  'treat-wounds': 'Treat Wounds',
-  'command-an-animal': 'Command an Animal',
-  perform: 'Perform',
-  'create-forgery': 'Create Forgery',
-  subsist: 'Subsist',
-  'conceal-an-object': 'Conceal an Object',
-  hide: 'Hide',
-  sneak: 'Sneak',
-  track: 'Track',
-  'cover-tracks': 'Cover Tracks',
-  'palm-an-object': 'Palm an Object',
-  steal: 'Steal',
-  'pick-a-lock': 'Pick a Lock',
-  'disable-device': 'Disable Device',
-};
 
 // Inline validatePosition
 function validatePosition(saved) {
@@ -225,7 +132,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             return {
               ...roll,
               skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
-              actionName: roll.actionSlug ? ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
+              actionName: roll.actionSlug ? PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
               dc: showDCs ? roll.dc : null,
               actorName: actor?.name || 'Unknown',
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
@@ -514,11 +421,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       if (currentSystem === 'pf2e') {
         // PF2e: Use action system if actionSlug provided
         if (request.actionSlug && game.pf2e?.actions) {
-          actionExecuted = true;
           roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
+          if (roll) {
+            actionExecuted = true;
+          }
         }
 
-        // PF2e: Basic skill roll if no action
+        // PF2e: Basic skill roll if no action or action failed
         if (!actionExecuted) {
           if (request.skillSlug === 'per') {
             // Perception uses actor.perception.roll()
@@ -679,12 +588,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     try {
       let roll;
+      let actionExecuted = false;
       if (currentSystem === 'pf2e') {
         // Use action if provided, otherwise basic skill roll
         if (actionSlug && game.pf2e?.actions) {
           roll = await PlayerViewerApp._tryExecuteAction(actor, actionSlug, rollOptions);
-          // Don't fall back to basic roll - action handles everything
-        } else {
+          if (roll) {
+            actionExecuted = true;
+          }
+        }
+
+        // Fall back to basic skill roll if action not available or failed
+        if (!actionExecuted) {
           // Basic skill roll
           if (skillSlug === 'per') {
             roll = await actor.perception.roll(rollOptions);
@@ -776,6 +691,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         craft: 'craft',
         repair: 'repair',
         'identify-alchemy': 'identifyAlchemy',
+        'sense-motive': 'senseMotive',
+        squeeze: 'squeeze',
+        'treat-disease': 'treatDisease',
+        'treat-poison': 'treatPoison',
+        'conceal-an-object': 'concealAnObject',
+        reposition: 'reposition',
+        'avoid-notice': 'avoidNotice',
+        'grab-an-edge': 'grabAnEdge',
       };
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
@@ -789,13 +712,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return null;
       }
 
-      // Build action options
+      // Build action options matching @check enricher behavior
+      // PF2e actions handle their own dialogs and traits automatically
       const actionOptions = {
         actors: [actor],
-        skipDialog: false,
       };
 
-      // Add DC if provided
+      // Add DC if provided - use object format to support visibility like @check
       if (rollOptions.dc) {
         actionOptions.difficultyClass = rollOptions.dc;
       }
@@ -803,6 +726,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Add rollMode if provided (for secret rolls)
       if (rollOptions.rollMode) {
         actionOptions.rollMode = rollOptions.rollMode;
+      }
+
+      // Add event parameter to support modifier keys (shift/ctrl/alt for adjustments)
+      if (rollOptions.event) {
+        actionOptions.event = rollOptions.event;
       }
 
       // Execute the action - returns an array of results
@@ -818,7 +746,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return { total: 0, message: results[0].message };
       }
 
-      return null;
+      // If we got here, the action executed but didn't return a roll in expected format
+      // Return truthy value to indicate action was executed (action posts to chat itself)
+      return { executed: true };
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to execute PF2e action ${actionSlug}:`, error);
       return null;

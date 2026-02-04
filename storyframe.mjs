@@ -1,23 +1,10 @@
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
+import { MODULE_ID } from './scripts/constants.mjs';
+import { handleJournalClose, handleJournalRender } from './scripts/hooks/journal-hooks.mjs';
+import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
-
-// Module constants
-const MODULE_ID = 'storyframe';
-
-/**
- * Validate window position to ensure it's visible on screen
- * Clamps to visible screen bounds
- */
-export function validatePosition(saved) {
-  return {
-    top: Math.max(0, Math.min(saved.top || 0, window.innerHeight - 50)),
-    left: Math.max(0, Math.min(saved.left || 0, window.innerWidth - 100)),
-    width: Math.max(200, Math.min(saved.width || 400, window.innerWidth)),
-    height: Math.max(150, Math.min(saved.height || 300, window.innerHeight)),
-  };
-}
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
@@ -165,15 +152,218 @@ Hooks.once('init', () => {
       game.storyframe.gmSidebar?.render();
     },
   });
+
+  // Register keybindings
+  game.keybindings.register(MODULE_ID, 'requestRollFromSelection', {
+    name: 'Request Roll from Journal Selection',
+    hint: 'Select text in a journal containing skill checks and press this key to open the roll request dialog',
+    editable: [],
+    onDown: async () => {
+      if (!game.user.isGM) return false;
+
+      const sidebar = game.storyframe?.gmSidebar;
+      if (!sidebar) {
+        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        return false;
+      }
+
+      // Get selected range from active window
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      const range = selection.getRangeAt(0);
+      if (range.collapsed) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      // Create a temporary container with the selected HTML
+      const fragment = range.cloneContents();
+      const tempContainer = document.createElement('div');
+      tempContainer.appendChild(fragment);
+
+      // Enrich checks in the selected content
+      const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+      enrichChecks(tempContainer);
+
+      // Parse checks from the enriched content
+      const checks = sidebar._parseChecksFromContent(tempContainer);
+
+      if (checks.length === 0) {
+        ui.notifications.warn('No skill checks found in selected text');
+        return false;
+      }
+
+      // Get current participants
+      const state = game.storyframe.stateManager.getState();
+      if (!state?.participants || state.participants.length === 0) {
+        ui.notifications.warn('No participants added. Add PCs first.');
+        return false;
+      }
+
+      // Enrich participants with actor data
+      const enrichedParticipants = await Promise.all(
+        state.participants.map(async (p) => {
+          const actor = await fromUuid(p.actorUuid);
+          return {
+            id: p.id,
+            name: actor?.name || p.name || 'Unknown',
+            img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
+          };
+        }),
+      );
+
+      // Import and show the roll request dialog
+      const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
+      const dialog = new RollRequestDialog(checks, enrichedParticipants);
+      dialog.render(true);
+
+      const result = await dialog.wait();
+
+      if (!result || result.length === 0) {
+        return true;
+      }
+
+      // Import requestSkillCheck function
+      const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
+      const SystemAdapter = await import('./scripts/system-adapter.mjs');
+
+      // Send roll requests for each check
+      for (const check of checks) {
+        // Map skill name to slug using SystemAdapter
+        const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase();
+
+        // Set DC
+        sidebar.currentDC = check.dc;
+        const dcInput = sidebar.element.querySelector('#dc-input');
+        if (dcInput) dcInput.value = check.dc;
+
+        // Set secret roll toggle
+        sidebar.secretRollEnabled = check.isSecret;
+
+        // Send request
+        await requestSkillCheck(sidebar, skillSlug, result, null, false);
+      }
+
+      return true;
+    },
+  });
+
+  game.keybindings.register(MODULE_ID, 'createChallengeFromSelection', {
+    name: 'Create Challenge from Journal Selection',
+    hint: 'Select text in a journal containing skill checks and press this key to create a new challenge',
+    editable: [],
+    onDown: async () => {
+      if (!game.user.isGM) return false;
+
+      const sidebar = game.storyframe?.gmSidebar;
+      if (!sidebar) {
+        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        return false;
+      }
+
+      // Get selected range from active window
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      const range = selection.getRangeAt(0);
+      if (range.collapsed) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      // Create a temporary container with the selected HTML
+      const fragment = range.cloneContents();
+      const tempContainer = document.createElement('div');
+      tempContainer.appendChild(fragment);
+
+      // Enrich checks in the selected content
+      const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+      enrichChecks(tempContainer);
+
+      // Parse checks from the enriched content
+      const checks = sidebar._parseChecksFromContent(tempContainer);
+
+      if (checks.length === 0) {
+        ui.notifications.warn('No skill checks found in selected text');
+        return false;
+      }
+
+      // Prompt for challenge name
+      const challengeName = await foundry.applications.api.DialogV2.prompt({
+        window: { title: 'Create Challenge' },
+        content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+        ok: {
+          label: 'Create',
+          callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
+        },
+        rejectClose: false,
+      });
+
+      if (!challengeName) return true;
+
+      // Import SystemAdapter
+      const SystemAdapter = await import('./scripts/system-adapter.mjs');
+
+      // Create options from checks - each check becomes an option
+      const options = checks.map((check) => {
+        // Map skill name to short slug for the challenge system
+        const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
+
+        return {
+          id: foundry.utils.randomID(),
+          skillOptions: [{
+            skill: skillSlug || check.skillName,
+            dc: check.dc,
+            action: null,
+            isSecret: check.isSecret || false,
+          }],
+        };
+      });
+
+      // Create challenge template
+      const template = {
+        id: foundry.utils.randomID(),
+        name: challengeName,
+        image: null,
+        options,
+        createdAt: Date.now(),
+      };
+
+      // Save to library
+      const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+      savedChallenges.push(template);
+      await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+
+      ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+
+      return true;
+    },
+  });
 });
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
+  console.log(`${MODULE_ID} | setup hook fired`);
   game.storyframe.stateManager = new StateManager();
+
+  // If socketlib already loaded, initialize now
+  if (game.storyframe.socketManager) {
+    console.log(`${MODULE_ID} | socketlib already ready, initializing managers now`);
+    game.storyframe.stateManager.initialize(game.storyframe.socketManager);
+    game.storyframe.initialized = true;
+  }
 });
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
+  console.log(`${MODULE_ID} | socketlib.ready hook fired`);
 
   // Defensive: socketlib.ready can fire before init in v13
   if (!game.storyframe) {
@@ -185,6 +375,15 @@ Hooks.once('socketlib.ready', () => {
   }
 
   game.storyframe.socketManager = new SocketManager();
+
+  // Initialize StateManager with SocketManager
+  if (game.storyframe.stateManager) {
+    game.storyframe.stateManager.initialize(game.storyframe.socketManager);
+    game.storyframe.initialized = true;
+    console.log(`${MODULE_ID} | Managers initialized via socketlib.ready`);
+  } else {
+    console.warn(`${MODULE_ID} | StateManager not available in socketlib.ready`);
+  }
 });
 
 // Hook: getSceneControlButtons (register buttons)
@@ -222,7 +421,32 @@ Hooks.once('ready', async () => {
     console.error(`${MODULE_ID} | StateManager not initialized`);
     return;
   }
+
+  // Wait for socketlib initialization if needed
+  if (!game.storyframe.initialized) {
+    console.warn(`${MODULE_ID} | Waiting for socketlib initialization...`);
+    const maxWait = 5000; // 5 second timeout
+    const startTime = Date.now();
+    await new Promise((resolve) => {
+      const checkInit = setInterval(() => {
+        if (game.storyframe.initialized) {
+          clearInterval(checkInit);
+          console.log(`${MODULE_ID} | Initialization complete`);
+          resolve();
+        } else if (Date.now() - startTime > maxWait) {
+          clearInterval(checkInit);
+          console.error(`${MODULE_ID} | Initialization timeout - proceeding anyway`);
+          resolve(); // Continue anyway
+        }
+      }, 100);
+    });
+  } else {
+    console.log(`${MODULE_ID} | Already initialized`);
+  }
+
+  console.log(`${MODULE_ID} | Loading state...`);
   await game.storyframe.stateManager.load();
+  console.log(`${MODULE_ID} | State loaded:`, game.storyframe.stateManager.getState());
 
   // Migration: Detect and perform migration from 1.x to 2.x
   const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');
@@ -272,7 +496,7 @@ Hooks.once('ready', async () => {
 // Hook: canvasReady (scene change - clear pending rolls)
 Hooks.on('canvasReady', () => {
   // Clear pending rolls on scene change
-  if (game.user.isGM && game.storyframe.stateManager) {
+  if (game.user.isGM && game.storyframe.stateManager?.rollTracker) {
     game.storyframe.stateManager.clearPendingRolls();
   }
 });
@@ -301,360 +525,32 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   if (!game.user.isGM && game.storyframe.playerViewer) {
     const viewer = game.storyframe.playerViewer;
     const hasSpeakers = state?.speakers?.length > 0;
+    const hasPendingRolls = state?.pendingRolls?.length > 0;
+    const hasActiveChallenges = state?.activeChallenges?.length > 0;
+    const hasContent = hasSpeakers || hasPendingRolls || hasActiveChallenges;
 
-    if (hasSpeakers && !viewer.rendered) {
-      viewer.render(true); // Auto-open when first speaker added
-    } else if (!hasSpeakers && viewer.rendered) {
-      viewer.close(); // Close only if NO speakers (not just no active speaker)
+    if (hasContent && !viewer.rendered) {
+      viewer.render(true); // Auto-open when content added
+    } else if (!hasContent && viewer.rendered) {
+      viewer.close(); // Close only if no content
     } else if (viewer.rendered) {
       viewer.render(); // Update display
     }
   }
 });
 
-// Hook: renderJournalSheet (attach sidebar to native journals)
-// Note: Also handles D&D 5e's JournalEntrySheet5e
-Hooks.on('renderJournalSheet', async (sheet, html) => {
-  if (!game.user.isGM) return;
-
-  // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
-
-  // Inject toggle button into header
-  _injectSidebarToggleButton(sheet, element);
-
-  // Enrich checks in journal content
-  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
-  if (contentArea) {
-    enrichChecks(contentArea);
-  }
-
-  // Auto-open sidebar if setting enabled
-  const sidebar = game.storyframe.gmSidebar;
-  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
-
-  if (autoOpen && !sidebar?.rendered) {
-    _attachSidebarToSheet(sheet);
-  }
-
-  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
-  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
-    sidebar.render();
-  }
-
-  _updateToggleButtonState(sheet, element);
-});
-
-// Hook: D&D 5e specific journal sheet
-Hooks.on('renderJournalEntrySheet5e', async (sheet, html) => {
-  if (!game.user.isGM) return;
-
-  // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
-
-  // Inject toggle button into header
-  _injectSidebarToggleButton(sheet, element);
-
-  // Enrich checks in journal content
-  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
-  if (contentArea) {
-    enrichChecks(contentArea);
-  }
-
-  // Auto-open sidebar if setting enabled
-  const sidebar = game.storyframe.gmSidebar;
-  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
-
-  if (autoOpen && !sidebar?.rendered) {
-    _attachSidebarToSheet(sheet);
-  }
-
-  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
-  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
-    sidebar.render();
-  }
-
-  _updateToggleButtonState(sheet, element);
-});
-
-// Hook: MetaMorphic journal sheet (custom sheet type)
-Hooks.on('renderMetaMorphicJournalEntrySheet', async (sheet, html) => {
-  if (!game.user.isGM) return;
-
-  // Get the actual element - handle jQuery, arrays, and raw elements
-  let element;
-  if (Array.isArray(html)) {
-    element = html[0];
-  } else if (html instanceof HTMLElement) {
-    element = html;
-  } else if (html?.jquery) {
-    element = html[0];
-  } else {
-    element = sheet.element;
-  }
-
-  // Ensure we have an HTMLElement
-  if (element?.jquery) {
-    element = element[0];
-  }
-
-  // Inject toggle button into header
-  _injectSidebarToggleButton(sheet, element);
-
-  // Enrich checks in journal content
-  const { enrichChecks } = await import('./scripts/check-enricher.mjs');
-  const contentArea =
-    element.querySelector('.journal-page-content') || element.querySelector('.journal-entry-content');
-  if (contentArea) {
-    enrichChecks(contentArea);
-  }
-
-  // Auto-open sidebar if setting enabled
-  const sidebar = game.storyframe.gmSidebar;
-  const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
-
-  if (autoOpen && !sidebar?.rendered) {
-    _attachSidebarToSheet(sheet);
-  }
-
-  // If sidebar is already open and attached to this sheet, refresh it to show new checks/images
-  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
-    sidebar.render();
-  }
-
-  _updateToggleButtonState(sheet, element);
-});
+// Hook: renderJournalSheet (handle all journal types)
+Hooks.on('renderJournalSheet', handleJournalRender);
+Hooks.on('renderJournalEntrySheet5e', handleJournalRender);
+Hooks.on('renderMetaMorphicJournalEntrySheet', handleJournalRender);
 
 // Hook: closeJournalSheet (handle sidebar reattachment)
-Hooks.on('closeJournalSheet', async (sheet, _html) => {
-  if (!game.user.isGM) return;
-
-  // Handle sidebar reattachment
-  const sidebar = game.storyframe.gmSidebar;
-  if (!sidebar || sidebar.parentInterface !== sheet) return;
-
-  // Find other open journals
-  const openJournals = Object.values(ui.windows).filter(
-    (app) =>
-      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-        app.constructor.name === 'JournalEntrySheet5e' ||
-        app.constructor.name === 'MetaMorphicJournalEntrySheet') &&
-      app !== sheet &&
-      app.rendered,
-  );
-
-  if (openJournals.length > 0) {
-    // Reattach to most recent
-    const newParent = openJournals[openJournals.length - 1];
-    sidebar.parentInterface = newParent;
-    sidebar._stopTrackingParent();
-    sidebar._startTrackingParent();
-    sidebar._positionAsDrawer(3);
-    _updateAllJournalToggleButtons();
-  } else {
-    // No journals left, close sidebar
-    sidebar.close();
-  }
-});
-
-// Hook: D&D 5e close journal sheet
-Hooks.on('closeJournalEntrySheet5e', async (sheet, _html) => {
-  if (!game.user.isGM) return;
-
-  // Handle sidebar reattachment
-  const sidebar = game.storyframe.gmSidebar;
-  if (!sidebar || sidebar.parentInterface !== sheet) return;
-
-  // Find other open journals
-  const openJournals = Object.values(ui.windows).filter(
-    (app) =>
-      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-        app.constructor.name === 'JournalEntrySheet5e') &&
-      app !== sheet &&
-      app.rendered,
-  );
-
-  if (openJournals.length > 0) {
-    // Reattach to most recent
-    const newParent = openJournals[openJournals.length - 1];
-    sidebar.parentInterface = newParent;
-    sidebar._stopTrackingParent();
-    sidebar._startTrackingParent();
-    sidebar._positionAsDrawer(3);
-    _updateAllJournalToggleButtons();
-  } else {
-    // No journals left, close sidebar
-    sidebar.close();
-  }
-});
-
-// Helper: Inject sidebar toggle button into journal header
-function _injectSidebarToggleButton(sheet, html) {
-
-  // V13 journal sheets have buttons directly in .window-header
-  const header = html.querySelector('.window-header');
-
-  if (!header) {
-    console.warn('StoryFrame: Could not find .window-header in journal', html);
-    return;
-  }
-
-  // Don't add if already present
-  if (header.querySelector('.storyframe-sidebar-toggle')) {
-    return;
-  }
-
-  const toggleBtn = document.createElement('a');
-  toggleBtn.className = 'header-button control storyframe-sidebar-toggle';
-  toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
-  toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
-  toggleBtn.innerHTML = '<i class="fas fa-users"></i>';
-
-  toggleBtn.onclick = async (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    await _toggleSidebarForSheet(sheet);
-  };
-
-  // Insert before close button (try multiple selectors for different systems)
-  const closeBtn = header.querySelector('.close') ||
-    header.querySelector('[data-action="close"]') ||
-    header.querySelector('.header-control[aria-label*="Close"]');
-
-
-  if (closeBtn) {
-    header.insertBefore(toggleBtn, closeBtn);
-  } else {
-    header.appendChild(toggleBtn);
-  }
-}
-
-// Helper: Update toggle button state to reflect sidebar visibility
-function _updateToggleButtonState(sheet, html) {
-  const toggleBtn = html.querySelector('.storyframe-sidebar-toggle');
-  if (!toggleBtn) return;
-
-  const sidebar = game.storyframe.gmSidebar;
-  const isVisible = sidebar?.rendered && sidebar.parentInterface === sheet;
-
-  toggleBtn.classList.toggle('active', isVisible);
-  toggleBtn.setAttribute(
-    'data-tooltip',
-    isVisible ? 'Hide StoryFrame Sidebar' : 'Show StoryFrame Sidebar',
-  );
-}
-
-// Helper: Toggle sidebar for a specific journal sheet
-async function _toggleSidebarForSheet(sheet) {
-  const sidebar = game.storyframe.gmSidebar;
-  const isAttachedToThis = sidebar?.rendered && sidebar.parentInterface === sheet;
-
-  if (isAttachedToThis) {
-    await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
-    sidebar.close();
-  } else {
-    await game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
-    _attachSidebarToSheet(sheet);
-  }
-
-  _updateAllJournalToggleButtons();
-}
-
-// Helper: Attach sidebar to a journal sheet
-async function _attachSidebarToSheet(sheet) {
-  if (!game.storyframe.gmSidebar) {
-    // Instantiate correct subclass based on system
-    const system = game.system.id;
-
-    if (system === 'pf2e') {
-      const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar-pf2e.mjs');
-      game.storyframe.gmSidebar = new GMSidebarAppPF2e();
-    } else if (system === 'dnd5e') {
-      const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar-dnd5e.mjs');
-      game.storyframe.gmSidebar = new GMSidebarAppDND5e();
-    } else {
-      const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar.mjs');
-      game.storyframe.gmSidebar = new GMSidebarAppBase();
-    }
-  }
-
-  const sidebar = game.storyframe.gmSidebar;
-  sidebar.parentInterface = sheet;
-  sidebar._stateRestored = false;
-
-  if (!sidebar.rendered) {
-    sidebar.render(true);
-  } else {
-    sidebar._stopTrackingParent();
-    sidebar._startTrackingParent();
-    sidebar._positionAsDrawer(3);
-  }
-}
-
-// Helper: Update all journal toggle buttons to reflect current state
-function _updateAllJournalToggleButtons() {
-  const openJournals = Object.values(ui.windows).filter(
-    (app) =>
-      app instanceof foundry.applications.sheets.journal.JournalEntrySheet && app.rendered,
-  );
-
-  for (const journal of openJournals) {
-    const html = journal.element[0] || journal.element;
-    _updateToggleButtonState(journal, html);
-  }
-}
+Hooks.on('closeJournalSheet', handleJournalClose);
+Hooks.on('closeJournalEntrySheet5e', handleJournalClose);
 
 // Hook: Manage player sidebar lifecycle with player viewer
-Hooks.on('renderPlayerViewerApp', (viewer) => {
-  if (!game.user.isGM && game.storyframe?.playerSidebar) {
-    const sidebar = game.storyframe.playerSidebar;
-    sidebar.parentViewer = viewer;
-
-    if (!sidebar.rendered) {
-      sidebar.render(true);
-    } else {
-      sidebar._positionAsDrawer(3);
-    }
-  }
-});
-
-Hooks.on('closePlayerViewerApp', () => {
-  if (!game.user.isGM && game.storyframe?.playerSidebar?.rendered) {
-    game.storyframe.playerSidebar.close();
-  }
-});
+Hooks.on('renderPlayerViewerApp', handlePlayerViewerRender);
+Hooks.on('closePlayerViewerApp', handlePlayerViewerClose);
 
 // Hook: updateSetting - rerender GM sidebar when challenge library changes
 Hooks.on('updateSetting', (setting, _value, _options, _userId) => {

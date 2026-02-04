@@ -1,129 +1,73 @@
-const MODULE_ID = 'storyframe';
-const FLAG_KEY = 'data';
-const SCHEMA_VERSION = 4;
+import { MODULE_ID, FLAG_KEY } from './constants.mjs';
+import { SpeakerManager } from './state/speaker-manager.mjs';
+import { ParticipantManager } from './state/participant-manager.mjs';
+import { RollTracker } from './state/roll-tracker.mjs';
+import { ChallengeManager } from './state/challenge-manager.mjs';
+import { Persistence } from './state/persistence.mjs';
 
 /**
- * Manages speaker state persistence in Scene flags.
- * State structure:
+ * Orchestrates state management by delegating to domain-specific managers.
+ * Acts as a facade providing backward-compatible API while delegating operations
+ * to specialized managers (SpeakerManager, ParticipantManager, RollTracker, ChallengeManager).
+ *
+ * State structure (managed by domain managers):
  * {
  *   version: 4,
- *   activeJournal: string|null,  // JournalEntry UUID
- *   activeSpeaker: string|null,  // Speaker ID
- *   speakers: [{
- *     id: string,          // Unique ID (foundry.utils.randomID)
- *     actorUuid: string|null,   // Actor UUID for actor-based speakers
- *     imagePath: string|null,   // Direct image path for custom speakers
- *     label: string        // Display name
- *   }],
- *   participants: [{      // PC conversation participants
- *     id: string,          // Unique ID (foundry.utils.randomID)
- *     actorUuid: string,   // Actor UUID
- *     userId: string       // User ID
- *   }],
- *   pendingRolls: [{      // Requested rolls awaiting completion
- *     id: string,          // Request ID
- *     participantId: string,
- *     skillSlug: string,   // PF2e skill slug (e.g., 'diplomacy')
- *     dc: {
- *       value: number,
- *       visibility: string // 'all', 'owner', 'gm'
- *     },
- *     timestamp: number
- *   }],
- *   rollHistory: [{       // Completed roll results
- *     requestId: string,
- *     participantId: string,
- *     skillSlug: string,
- *     total: number,
- *     degreeOfSuccess: string, // 'criticalSuccess', 'success', 'failure', 'criticalFailure'
- *     timestamp: number,
- *     chatMessageId: string|null
- *   }],
- *   activeChallenges: [{  // Multiple concurrent challenges (unique by name)
- *     id: string,
- *     name: string,       // UNIQUE identifier
- *     image: string|null,
- *     selectedParticipants: [string],  // Participant IDs
- *     options: [{
- *       id: string,
- *       skillOptions: [{      // Multiple skill-DC pairs
- *         skill: string,      // Skill slug
- *         dc: number
- *       }],
- *       description: string
- *     }],
- *     createdAt: number   // Timestamp for ordering
- *   }]
+ *   activeJournal: string|null,
+ *   activeSpeaker: string|null,
+ *   speakers: Array,
+ *   participants: Array,
+ *   pendingRolls: Array,
+ *   rollHistory: Array,
+ *   activeChallenges: Array
  * }
  */
 export class StateManager {
   constructor() {
     this.state = null;
+    // Managers initialized in initialize() after socketManager is available
+    this.speakerManager = null;
+    this.participantManager = null;
+    this.rollTracker = null;
+    this.challengeManager = null;
+  }
+
+  /**
+   * Initialize managers with socketManager and state.
+   * Must be called after construction with a valid socketManager.
+   * @param {Object} socketManager - Socket manager instance for broadcasting
+   */
+  initialize(socketManager) {
+    this.speakerManager = new SpeakerManager(socketManager, this.state);
+    this.participantManager = new ParticipantManager(socketManager, this.state);
+    this.rollTracker = new RollTracker(socketManager, this.state);
+    this.challengeManager = new ChallengeManager(socketManager, this.state);
   }
 
   /**
    * Load state from current scene's flags.
    * Creates default state if none exists.
+   * Delegates to Persistence for loading and migration.
    */
   async load() {
-    const scene = game.scenes.current;
-    if (!scene) {
-      console.warn(`${MODULE_ID} | No current scene, cannot load state`);
-      return;
-    }
+    this.state = await Persistence.load();
 
-    let data = scene.getFlag(MODULE_ID, FLAG_KEY);
-
-    if (!data) {
-      // Initialize default structure
-      data = this._createDefaultState();
-      await scene.setFlag(MODULE_ID, FLAG_KEY, data);
-    }
-
-    // Check version and migrate if needed
-    if (data.version !== SCHEMA_VERSION) {
-      data = await this._migrate(data);
-    }
-
-    this.state = data;
+    // Update manager state references
+    if (this.speakerManager) this.speakerManager.state = this.state;
+    if (this.participantManager) this.participantManager.state = this.state;
+    if (this.rollTracker) this.rollTracker.state = this.state;
+    if (this.challengeManager) this.challengeManager.state = this.state;
   }
 
   /**
    * Get current state (synchronous).
+   * Returns the shared state object that all managers reference.
    */
   getState() {
     return this.state;
   }
 
-  /**
-   * Update speakers list and persist.
-   * @param {Array} speakers - New speakers array
-   */
-  async updateSpeakers(speakers) {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    this.state.speakers = speakers;
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
-  }
-
-  /**
-   * Set active speaker and persist.
-   * @param {string|null} speakerId - Speaker ID or null for narration
-   */
-  async setActiveSpeaker(speakerId) {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    this.state.activeSpeaker = speakerId;
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
-  }
+  // --- Speaker Management (delegated to SpeakerManager) ---
 
   /**
    * Set active journal and persist.
@@ -141,38 +85,31 @@ export class StateManager {
   }
 
   /**
+   * Update speakers list and persist.
+   * @param {Array} speakers - New speakers array
+   */
+  async updateSpeakers(speakers) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.updateSpeakers(speakers);
+  }
+
+  /**
+   * Set active speaker and persist.
+   * @param {string|null} speakerId - Speaker ID or null for narration
+   */
+  async setActiveSpeaker(speakerId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.setActiveSpeaker(speakerId);
+  }
+
+  /**
    * Add a speaker to the list.
    * @param {Object} speaker - Speaker data (actorUuid or imagePath, label)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
   async addSpeaker({ actorUuid = null, imagePath = null, label }) {
-    if (!this.state) return null;
-
-    // Check for duplicate by actorUuid or imagePath
-    if (actorUuid) {
-      const existing = this.state.speakers.find((s) => s.actorUuid === actorUuid);
-      if (existing) {
-        ui.notifications.info(`${label || 'NPC'} is already in the list`);
-        return existing;
-      }
-    } else if (imagePath) {
-      const existing = this.state.speakers.find((s) => s.imagePath === imagePath);
-      if (existing) {
-        ui.notifications.info(`${label || 'NPC'} is already in the list`);
-        return existing;
-      }
-    }
-
-    const speaker = {
-      id: foundry.utils.randomID(),
-      actorUuid,
-      imagePath,
-      label,
-    };
-
-    this.state.speakers.push(speaker);
-    await this.updateSpeakers(this.state.speakers);
-    return speaker;
+    if (!this.speakerManager) return;
+    return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label });
   }
 
   /**
@@ -180,16 +117,8 @@ export class StateManager {
    * @param {string} speakerId - Speaker ID to remove
    */
   async removeSpeaker(speakerId) {
-    if (!this.state) return;
-
-    this.state.speakers = this.state.speakers.filter((s) => s.id !== speakerId);
-
-    // Clear active speaker if removed
-    if (this.state.activeSpeaker === speakerId) {
-      this.state.activeSpeaker = null;
-    }
-
-    await this.updateSpeakers(this.state.speakers);
+    if (!this.speakerManager) return;
+    return await this.speakerManager.removeSpeaker(speakerId);
   }
 
   /**
@@ -199,28 +128,11 @@ export class StateManager {
    * @returns {Object} { img, name }
    */
   async resolveSpeaker(speaker) {
-    let img, name;
-
-    if (speaker.actorUuid) {
-      const actor = await fromUuid(speaker.actorUuid);
-      if (actor) {
-        img = actor.img;
-        name = actor.name;
-      } else {
-        // Actor deleted - use fallback
-        img = speaker.imagePath || 'icons/svg/mystery-man.svg';
-        name = speaker.label || 'Unknown';
-      }
-    } else {
-      // Custom image path
-      img = speaker.imagePath || 'icons/svg/mystery-man.svg';
-      name = speaker.label;
-    }
-
-    return { img, name };
+    if (!this.speakerManager) return { img: null, name: 'Unknown' };
+    return await this.speakerManager.resolveSpeaker(speaker);
   }
 
-  // --- Participant Management ---
+  // --- Participant Management (delegated to ParticipantManager) ---
 
   /**
    * Add a participant to the list.
@@ -228,24 +140,8 @@ export class StateManager {
    * @returns {Object} Created participant with ID, or existing participant if duplicate
    */
   async addParticipant({ actorUuid, userId }) {
-    if (!this.state) return null;
-
-    // Check for duplicate by actorUuid
-    const existing = this.state.participants.find((p) => p.actorUuid === actorUuid);
-    if (existing) {
-      return existing; // Return existing instead of adding duplicate
-    }
-
-    const participant = {
-      id: foundry.utils.randomID(),
-      actorUuid,
-      userId,
-    };
-
-    this.state.participants.push(participant);
-    await this._persistState();
-    this._broadcast();
-    return participant;
+    if (!this.participantManager) return;
+    return await this.participantManager.addParticipant({ actorUuid, userId });
   }
 
   /**
@@ -253,42 +149,27 @@ export class StateManager {
    * @param {string} participantId
    */
   async removeParticipant(participantId) {
-    if (!this.state) return;
-
-    this.state.participants = this.state.participants.filter((p) => p.id !== participantId);
-
-    // Clear pending rolls for this participant
-    this.state.pendingRolls = this.state.pendingRolls.filter(
-      (r) => r.participantId !== participantId,
-    );
-
-    await this._persistState();
-    this._broadcast();
+    if (!this.participantManager) return;
+    return await this.participantManager.removeParticipant(participantId);
   }
 
   /**
    * Clear all participants.
    */
   async clearAllParticipants() {
-    if (!this.state) return;
-
-    this.state.participants = [];
-    await this._persistState();
-    this._broadcast();
+    if (!this.participantManager) return;
+    return await this.participantManager.clearAllParticipants();
   }
 
-  // --- Roll Tracking ---
+  // --- Roll Tracking (delegated to RollTracker) ---
 
   /**
    * Add a pending roll request.
    * @param {Object} rollRequest - { id, participantId, skillSlug, dc, timestamp }
    */
   async addPendingRoll(rollRequest) {
-    if (!this.state) return;
-
-    this.state.pendingRolls.push(rollRequest);
-    await this._persistState();
-    this._broadcast();
+    if (!this.rollTracker) return;
+    return await this.rollTracker.addPendingRoll(rollRequest);
   }
 
   /**
@@ -296,11 +177,8 @@ export class StateManager {
    * @param {string} requestId
    */
   async removePendingRoll(requestId) {
-    if (!this.state) return;
-
-    this.state.pendingRolls = this.state.pendingRolls.filter((r) => r.id !== requestId);
-    await this._persistState();
-    this._broadcast();
+    if (!this.rollTracker) return;
+    return await this.rollTracker.removePendingRoll(requestId);
   }
 
   /**
@@ -308,57 +186,37 @@ export class StateManager {
    * @param {string} participantId
    */
   async clearPendingRollsForParticipant(participantId) {
-    if (!this.state) return;
-
-    this.state.pendingRolls = this.state.pendingRolls.filter(
-      (r) => r.participantId !== participantId,
-    );
-    await this._persistState();
-    this._broadcast();
-  }
-
-  /**
-   * Add a roll result to history.
-   * Enforces 50-item limit (FIFO).
-   * @param {Object} result - { requestId, participantId, skillSlug, total, degreeOfSuccess, timestamp, chatMessageId }
-   */
-  async addRollResult(result) {
-    if (!this.state) return;
-
-    this.state.rollHistory.push(result);
-
-    // Enforce 50-item limit (FIFO)
-    if (this.state.rollHistory.length > 50) {
-      this.state.rollHistory.shift();
-    }
-
-    await this._persistState();
-    this._broadcast();
-  }
-
-  /**
-   * Clear roll history (for scene change).
-   */
-  async clearRollHistory() {
-    if (!this.state) return;
-
-    this.state.rollHistory = [];
-    await this._persistState();
-    this._broadcast();
+    if (!this.rollTracker) return;
+    return await this.rollTracker.clearPendingRollsForParticipant(participantId);
   }
 
   /**
    * Clear all pending rolls (for scene change).
    */
   async clearPendingRolls() {
-    if (!this.state) return;
-
-    this.state.pendingRolls = [];
-    await this._persistState();
-    this._broadcast();
+    if (!this.rollTracker) return;
+    return await this.rollTracker.clearPendingRolls();
   }
 
-  // --- Challenge Management ---
+  /**
+   * Add a roll result to history.
+   * Enforces limit (FIFO).
+   * @param {Object} result - { requestId, participantId, skillSlug, total, degreeOfSuccess, timestamp, chatMessageId }
+   */
+  async addRollResult(result) {
+    if (!this.rollTracker) return;
+    return await this.rollTracker.addRollResult(result);
+  }
+
+  /**
+   * Clear roll history (for scene change).
+   */
+  async clearRollHistory() {
+    if (!this.rollTracker) return;
+    return await this.rollTracker.clearRollHistory();
+  }
+
+  // --- Challenge Management (delegated to ChallengeManager) ---
 
   /**
    * Add an active challenge (supports multiple concurrent challenges).
@@ -366,27 +224,8 @@ export class StateManager {
    * @returns {boolean} True if added, false if name already exists
    */
   async addActiveChallenge(challengeData) {
-    if (!this.state) return false;
-
-    const scene = game.scenes.current;
-    if (!scene) return false;
-
-    // Validate name uniqueness (case-insensitive)
-    const existingNames = this.state.activeChallenges.map(c => c.name.toLowerCase());
-    if (existingNames.includes(challengeData.name.toLowerCase())) {
-      return false;  // Caller should show error notification
-    }
-
-    // Add timestamp for chronological ordering
-    const challengeWithTimestamp = {
-      ...challengeData,
-      createdAt: Date.now()
-    };
-
-    this.state.activeChallenges.push(challengeWithTimestamp);
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
-    return true;
+    if (!this.challengeManager) return false;
+    return await this.challengeManager.addActiveChallenge(challengeData);
   }
 
   /**
@@ -394,41 +233,26 @@ export class StateManager {
    * @param {string} challengeId - ID of challenge to remove
    */
   async removeActiveChallenge(challengeId) {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    this.state.activeChallenges = this.state.activeChallenges.filter(
-      c => c.id !== challengeId
-    );
-
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
+    if (!this.challengeManager) return;
+    return await this.challengeManager.removeActiveChallenge(challengeId);
   }
 
   /**
-   * Get a specific active challenge by ID.
+   * Get a specific active challenge by ID (synchronous).
    * @param {string} challengeId - Challenge ID
    * @returns {Object|null} Challenge data or null
    */
   getActiveChallenge(challengeId) {
-    if (!this.state?.activeChallenges) return null;
-    return this.state.activeChallenges.find(c => c.id === challengeId) || null;
+    if (!this.challengeManager) return null;
+    return this.challengeManager.getActiveChallenge(challengeId);
   }
 
   /**
    * Clear all active challenges.
    */
   async clearAllChallenges() {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    this.state.activeChallenges = [];
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
+    if (!this.challengeManager) return;
+    return await this.challengeManager.clearAllChallenges();
   }
 
   /**
@@ -437,19 +261,8 @@ export class StateManager {
    * @param {Object} challengeData - Challenge data with options
    */
   async setActiveChallenge(challengeData) {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    // Clear existing and add the new one (backward compatible behavior)
-    this.state.activeChallenges = [{
-      ...challengeData,
-      createdAt: Date.now()
-    }];
-
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
+    if (!this.challengeManager) return;
+    return await this.challengeManager.setActiveChallenge(challengeData);
   }
 
   /**
@@ -457,92 +270,14 @@ export class StateManager {
    * @deprecated Use removeActiveChallenge or clearAllChallenges instead.
    */
   async clearActiveChallenge() {
-    if (!this.state) return;
-
-    const scene = game.scenes.current;
-    if (!scene) return;
-
-    this.state.activeChallenges = [];
-    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
+    if (!this.challengeManager) return;
+    return await this.challengeManager.clearActiveChallenge();
   }
 
-  /**
-   * Persist state to scene flags.
-   */
-  async _persistState() {
-    const scene = game.scenes.current;
-    if (scene) {
-      await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    }
-  }
-
-  /**
-   * Create default empty state.
-   */
-  _createDefaultState() {
-    return {
-      version: SCHEMA_VERSION,
-      activeJournal: null,
-      activeSpeaker: null,
-      speakers: [],
-      participants: [],
-      pendingRolls: [],
-      rollHistory: [],
-      activeChallenges: [],
-    };
-  }
-
-  /**
-   * Migrate old state to current version.
-   * @param {Object} oldData - Old state data
-   * @returns {Object} Migrated state
-   */
-  async _migrate(oldData) {
-
-    // Migration: v1 -> v2 (add participants, pendingRolls, rollHistory)
-    if (oldData.version === 1) {
-      oldData.participants = [];
-      oldData.pendingRolls = [];
-      oldData.rollHistory = [];
-    }
-
-    // Migration: v2 -> v3 (add activeChallenge)
-    if (oldData.version === 2) {
-      oldData.activeChallenge = null;
-    }
-
-    // Migration: v3 -> v4 (convert activeChallenge to activeChallenges array)
-    if (oldData.version === 3) {
-      try {
-        if (oldData.activeChallenge) {
-          // Preserve existing challenge with timestamp
-          oldData.activeChallenges = [{
-            ...oldData.activeChallenge,
-            createdAt: Date.now()
-          }];
-        } else {
-          oldData.activeChallenges = [];
-        }
-        delete oldData.activeChallenge;
-      } catch (error) {
-        console.error(`${MODULE_ID} | Migration v3->v4 failed:`, error);
-        oldData.activeChallenges = [];  // Safe fallback
-      }
-    }
-
-    oldData.version = SCHEMA_VERSION;
-
-    const scene = game.scenes.current;
-    if (scene) {
-      await scene.setFlag(MODULE_ID, FLAG_KEY, oldData);
-    }
-
-    return oldData;
-  }
 
   /**
    * Notify UI components of state change.
+   * Used by setActiveJournal which doesn't delegate to a manager.
    */
   _broadcast() {
     // ApplicationV2 instances render() when state changes

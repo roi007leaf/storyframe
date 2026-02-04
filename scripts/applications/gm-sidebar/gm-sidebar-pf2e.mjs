@@ -1,5 +1,5 @@
-import { GMSidebarAppBase } from './gm-sidebar.mjs';
-import * as SystemAdapter from '../system-adapter.mjs';
+import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
+import * as SystemAdapter from '../../system-adapter.mjs';
 
 /**
  * PF2e-specific GM Sidebar implementation

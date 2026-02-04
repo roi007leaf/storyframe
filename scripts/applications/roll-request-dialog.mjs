@@ -1,6 +1,5 @@
+import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
-
-const MODULE_ID = 'storyframe';
 
 /**
  * Dialog for requesting rolls from selected journal text
