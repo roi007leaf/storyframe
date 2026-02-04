@@ -8,6 +8,8 @@ import * as SystemAdapter from '../../../system-adapter.mjs';
 
 /**
  * Set DC from select dropdown
+ * Note: This is handled by system-specific classes (_attachSystemDCHandlers)
+ * This function is kept for API compatibility but is not actively used
  */
 export async function onSetDCSelect(_event, target, sidebar) {
   const value = target.value;
@@ -19,11 +21,18 @@ export async function onSetDCSelect(_event, target, sidebar) {
       sidebar.currentDC = dc;
     }
   }
-  sidebar.render();
+
+  // Update DC input directly without re-rendering
+  const dcInput = sidebar.element.querySelector('#dc-input');
+  if (dcInput) {
+    dcInput.value = sidebar.currentDC || '';
+  }
 }
 
 /**
  * Set difficulty level (triggers DC recalculation)
+ * Note: This is handled by system-specific classes (_attachSystemDCHandlers)
+ * This function is kept for API compatibility but is not actively used
  */
 export async function onSetDifficulty(_event, target, sidebar) {
   const difficulty = target.value;
@@ -35,7 +44,11 @@ export async function onSetDifficulty(_event, target, sidebar) {
     sidebar.currentDC = sidebar._calculateDCByLevel(partyLevel, difficulty);
   }
 
-  sidebar.render();
+  // Update DC input directly without re-rendering
+  const dcInput = sidebar.element.querySelector('#dc-input');
+  if (dcInput && sidebar.currentDC !== null) {
+    dcInput.value = sidebar.currentDC;
+  }
 }
 
 /**

@@ -154,7 +154,7 @@
   height: 48px;
   border-radius: 50%;
   border: 2px solid var(--sf-border-primary);
-  object-fit: cover;
+  object-fit: contain;
 }
 
 .roll-request-dialog .participant-name {

@@ -250,7 +250,7 @@
             {{/if}}
           {{else if isDND5e}}
             <div class="difficulty-selector dnd5e compact">
-              <select id="dc-select-dnd5e" data-action="setDCSelect" aria-label="Select difficulty">
+              <select id="dc-select-dnd5e" aria-label="Select difficulty">
                 {{#each dcOptions}}
                   <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
                 {{/each}}
@@ -289,14 +289,16 @@
           </div>
           <div class="journal-checks-grid">
           {{#each journalCheckGroups}}
-            <button type="button"
-                    class="journal-skill-btn"
-                    data-action="showCheckDCsPopup"
-                    data-skill="{{this.skillName}}"
-                    data-tooltip="{{this.skillName}} Checks"
-                    aria-label="{{this.skillName}} Checks">
-              {{this.skillName}}
-            </button>
+            <div class="journal-check-wrapper">
+              <button type="button"
+                      class="journal-skill-btn"
+                      data-action="showCheckDCsPopup"
+                      data-skill="{{this.skillName}}"
+                      data-tooltip="{{this.skillName}} Checks"
+                      aria-label="{{this.skillName}} Checks">
+                {{this.skillName}}
+              </button>
+            </div>
           {{/each}}
           </div>
         </div>

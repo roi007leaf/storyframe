@@ -3,8 +3,8 @@
  * Handles positioning, popups, scroll management, and other UI utilities
  */
 
-import { extractParentElement } from '../../../utils/element-utils.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import { extractParentElement } from '../../../utils/element-utils.mjs';
 import * as SkillCheckHandlers from './skill-check-handlers.mjs';
 
 /**
@@ -246,123 +246,22 @@ export async function onShowPendingRolls(_event, target, sidebar) {
     </div>
   `;
 
-  // Style the popup (see original implementation for full styling)
-  popup.style.cssText = `
-    position: fixed;
-    z-index: 10001;
-    background: #1a1a2e;
-    border: 1px solid #3d3d5c;
-    border-radius: 12px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-    width: 320px;
-    max-height: 400px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  `;
-
-  // Position to bottom-left of the button
+  // Position popup (CSS handles all styling)
   const rect = target.getBoundingClientRect();
   popup.style.top = `${rect.bottom + 8}px`;
   popup.style.left = `${rect.left}px`;
 
-  // Style header, body, items (see original for full styling)
-  const header = popup.querySelector('.popup-header');
-  header.style.cssText = `
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    background: rgba(0,0,0,0.3);
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-  `;
-
+  // Get references to elements for event handlers
   const title = popup.querySelector('.popup-title');
-  title.style.cssText = `
-    font-size: 13px;
-    font-weight: 700;
-    color: #ffffff;
-  `;
-
-  const headerActions = popup.querySelector('.popup-header-actions');
-  headerActions.style.cssText = `
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  `;
-
-  // Style group toggle button
   const toggleBtn = popup.querySelector('.group-toggle-btn');
-  toggleBtn.style.cssText = `
-    background: rgba(94, 129, 172, 0.2);
-    border: 1px solid rgba(94, 129, 172, 0.4);
-    color: #ffffff;
-    padding: 4px 10px;
-    border-radius: 6px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 11px;
-    font-weight: 600;
-    transition: all 0.15s;
-  `;
-
-  toggleBtn.addEventListener('mouseenter', () => {
-    toggleBtn.style.background = 'rgba(94, 129, 172, 0.3)';
-  });
-  toggleBtn.addEventListener('mouseleave', () => {
-    toggleBtn.style.background = 'rgba(94, 129, 172, 0.2)';
-  });
+  const closeBtn = popup.querySelector('.popup-close');
+  const cancelAllBtn = popup.querySelector('.cancel-all-btn');
 
   // Toggle handler
   toggleBtn.addEventListener('click', () => {
     sidebar.pendingRollsGroupMode = sidebar.pendingRollsGroupMode === 'actor' ? 'skill' : 'actor';
     onShowPendingRolls(_event, target, sidebar);
   });
-
-  const closeBtn = popup.querySelector('.popup-close');
-  closeBtn.style.cssText = `
-    background: transparent;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    padding: 4px 8px;
-    border-radius: 4px;
-    transition: all 0.15s;
-  `;
-
-  // Style body
-  const body = popup.querySelector('.popup-body');
-  body.style.cssText = `
-    flex: 1;
-    overflow-y: auto;
-    padding: 8px;
-  `;
-
-  // Style roll groups and items (truncated - see original for full implementation)
-
-  // Style footer
-  const footer = popup.querySelector('.popup-footer');
-  footer.style.cssText = `
-    padding: 12px 16px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    display: flex;
-    justify-content: flex-end;
-  `;
-
-  const cancelAllBtn = popup.querySelector('.cancel-all-btn');
-  cancelAllBtn.style.cssText = `
-    background: rgba(255,100,100,0.2);
-    border: 1px solid rgba(255,100,100,0.3);
-    color: #ff6b6b;
-    padding: 8px 16px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-  `;
 
   // Event handlers
   closeBtn.addEventListener('click', () => popup.remove());
@@ -437,6 +336,150 @@ export async function onShowPendingRolls(_event, target, sidebar) {
 }
 
 /**
+ * Show active challenges popup
+ */
+export async function onShowActiveChallenges(_event, target, sidebar) {
+  const state = game.storyframe.stateManager.getState();
+  const activeChallenges = state?.activeChallenges || [];
+
+  if (activeChallenges.length === 0) {
+    ui.notifications.info('No active challenges');
+    return;
+  }
+
+  // Remove existing popup if any
+  document.querySelector('.storyframe-challenges-popup')?.remove();
+
+  // Create popup
+  const popup = document.createElement('div');
+  popup.className = 'storyframe-challenges-popup';
+
+  const challengesHtml = activeChallenges
+    .map(
+      (challenge) => `
+    <div class="challenge-item" data-challenge-id="${challenge.id}">
+      <div class="challenge-item-header">
+        ${challenge.image ? `<img src="${challenge.image}" alt="${challenge.name}" class="challenge-thumb" />` : '<i class="fas fa-flag-checkered challenge-icon"></i>'}
+        <div class="challenge-info">
+          <div class="challenge-name">${challenge.name || 'Unnamed Challenge'}</div>
+          <div class="challenge-meta">${challenge.options?.length || 0} option(s)</div>
+        </div>
+        <button type="button" class="clear-challenge-btn" data-challenge-id="${challenge.id}" aria-label="Clear ${challenge.name}">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    </div>
+  `,
+    )
+    .join('');
+
+  popup.innerHTML = `
+    <div class="popup-header">
+      <span class="popup-title">Active Challenges (${activeChallenges.length})</span>
+      <button type="button" class="popup-close" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="popup-body">
+      ${challengesHtml}
+    </div>
+    <div class="popup-footer">
+      <button type="button" class="clear-all-btn">Clear All</button>
+    </div>
+  `;
+
+  // Position popup (CSS handles all styling)
+  const rect = target.getBoundingClientRect();
+  popup.style.top = `${rect.bottom + 8}px`;
+  popup.style.left = `${rect.left}px`;
+
+  // Event handlers
+  const closeBtn = popup.querySelector('.popup-close');
+  const title = popup.querySelector('.popup-title');
+  const clearAllBtn = popup.querySelector('.clear-all-btn');
+
+  closeBtn.addEventListener('click', () => popup.remove());
+
+  // Clear individual challenge
+  popup.querySelectorAll('.clear-challenge-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const challengeId = btn.dataset.challengeId;
+
+      await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
+
+      // Remove item from popup
+      const item = btn.closest('.challenge-item');
+      item.remove();
+
+      // Update count in header
+      const remaining = popup.querySelectorAll('.challenge-item').length;
+      title.textContent = `Active Challenges (${remaining})`;
+
+      // Close popup if no more challenges
+      if (remaining === 0) {
+        popup.remove();
+        ui.notifications.info('All challenges cleared');
+      } else {
+        ui.notifications.info('Challenge cleared');
+      }
+    });
+  });
+
+  // Clear all challenges
+  clearAllBtn.addEventListener('click', async () => {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: 'Clear All Challenges' },
+      content: '<p>Clear all active challenges?</p>',
+      yes: { label: 'Clear All' },
+      no: { label: 'Cancel' },
+      rejectClose: false,
+    });
+
+    if (!confirmed) return;
+
+    await game.storyframe.socketManager.requestClearAllChallenges();
+    popup.remove();
+    ui.notifications.info('All challenges cleared');
+  });
+
+  // Close on click outside
+  const closeHandler = (e) => {
+    if (!popup.contains(e.target) && !target.contains(e.target)) {
+      popup.remove();
+      document.removeEventListener('click', closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+  // Close on escape
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      popup.remove();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+
+  document.body.appendChild(popup);
+
+  // Adjust position if off-screen (match pending rolls positioning)
+  const popupRect = popup.getBoundingClientRect();
+  if (popupRect.right > window.innerWidth - 10) {
+    popup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+  }
+  if (popupRect.bottom > window.innerHeight - 10) {
+    popup.style.top = `${rect.top - popupRect.height - 8}px`;
+  }
+  if (popupRect.left < 10) {
+    popup.style.left = '10px';
+  }
+  if (popupRect.top < 10) {
+    popup.style.top = '10px';
+  }
+}
+
+/**
  * Show proficiency filter popup (stub - system-specific implementation)
  */
 export async function onShowProficiencyFilter(_event, target, skillSlug, sidebar) {
@@ -455,24 +498,58 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
   if (!skillGroup?.checks?.length) return;
 
+  // Shift+click: add all checks for this skill to batch
+  if (_event.shiftKey) {
+    if (sidebar.selectedParticipants.size === 0) {
+      ui.notifications.warn('Select PCs first to use batch selection');
+      return;
+    }
+
+    const skillSlug = SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase();
+
+    // Add all checks for this skill to batch
+    skillGroup.checks.forEach((check) => {
+      const checkId = `journal:${skillSlug}:${check.dc}`;
+
+      // Check if already in batch
+      const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
+
+      if (existingIndex === -1) {
+        // Add to batch if not already there
+        sidebar.batchedChecks.push({
+          skill: skillSlug,
+          dc: check.dc,
+          isSecret: check.isSecret || false,
+          actionSlug: null,
+          checkId,
+        });
+      }
+    });
+
+    // Update batch highlights
+    SkillCheckHandlers.updateBatchHighlights(sidebar);
+    return;
+  }
+
   // Get visible DCs for this skill
   const normalizedSkill = skillName.toLowerCase();
   const visibleDCs = sidebar._visibleChecks?.get(normalizedSkill) || new Set();
 
-  // Create popup menu (see original for full implementation)
+  // Create popup menu
   const menu = document.createElement('div');
   menu.className = 'storyframe-dc-popup';
 
   menu.innerHTML = `
     <div class="dc-popup-header">${skillName}</div>
     <div class="dc-popup-items">
-      ${skillGroup.checks.map((check) => {
+      ${skillGroup.checks.map((check, idx) => {
     const isVisible = visibleDCs.has(String(check.dc));
     const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
     return `
         <button type="button"
                 class="dc-option ${isVisible ? 'in-view' : ''}"
                 data-dc="${check.dc}"
+                data-check-index="${idx}"
                 data-skill="${check.skillName}"
                 data-is-secret="${check.isSecret || false}"
                 data-tooltip="${check.label}${check.isSecret ? ' (Secret)' : ''}">
@@ -483,29 +560,50 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     </div>
   `;
 
-  // Position above button
+  // Position above button (CSS handles all styling)
   const rect = target.getBoundingClientRect();
   document.body.appendChild(menu);
 
-  menu.style.cssText = `
-    position: fixed;
-    bottom: ${window.innerHeight - rect.top + 4}px;
-    left: ${rect.left}px;
-    z-index: 10000;
-    background: #1a1a2e;
-    border: 1px solid #3d3d5c;
-    border-radius: 8px;
-    padding: 0;
-    min-width: 100px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-  `;
+  menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
+  menu.style.left = `${rect.left}px`;
 
-  // Style buttons and attach handlers (see original for full implementation)
+  // Attach click handlers to DC buttons with shift-click for global batch
   menu.querySelectorAll('.dc-option').forEach((btn) => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async (e) => {
       const dc = parseInt(btn.dataset.dc);
       const skill = btn.dataset.skill;
       const isSecret = btn.dataset.isSecret === 'true';
+
+      // Shift-click: add to global batch
+      if (e.shiftKey) {
+        const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
+        const checkId = `journal:${skillSlug}:${dc}`;
+
+        // Check if already in global batch
+        const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
+
+        if (existingIndex !== -1) {
+          // Remove from global batch
+          sidebar.batchedChecks.splice(existingIndex, 1);
+          btn.classList.remove('selected');
+        } else {
+          // Add to global batch
+          sidebar.batchedChecks.push({
+            skill: skillSlug,
+            dc,
+            isSecret,
+            actionSlug: null,
+            checkId,
+          });
+          btn.classList.add('selected');
+        }
+
+        // Update batch highlights in sidebar
+        SkillCheckHandlers.updateBatchHighlights(sidebar);
+        return;
+      }
+
+      // Normal click: send single check immediately
       menu.remove();
 
       // Set DC and request check
@@ -515,22 +613,31 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
       // Set secret toggle if this is a secret check
       sidebar.secretRollEnabled = isSecret;
-      sidebar.render();
+      const secretToggle = sidebar.element.querySelector('#secret-roll-toggle');
+      if (secretToggle) secretToggle.checked = isSecret;
 
       if (sidebar.selectedParticipants.size > 0) {
         const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
         if (skillSlug) {
-          await sidebar._requestSkillCheck(skillSlug, Array.from(sidebar.selectedParticipants));
+          await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
         }
       } else {
         ui.notifications.warn('Select PCs first');
       }
     });
+
+    // Mark as selected if already in global batch
+    const skillSlug = SystemAdapter.getSkillSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase();
+    const dc = parseInt(btn.dataset.dc);
+    const checkId = `journal:${skillSlug}:${dc}`;
+    if (sidebar.batchedChecks.some(c => c.checkId === checkId)) {
+      btn.classList.add('selected');
+    }
   });
 
   // Close on click outside
   const closeHandler = (e) => {
-    if (!menu.contains(e.target)) {
+    if (!menu.contains(e.target) && !target.contains(e.target)) {
       menu.remove();
       document.removeEventListener('click', closeHandler);
     }
@@ -558,7 +665,7 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
     const skillSlug = SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase();
 
     if (skillSlug) {
-      await sidebar._requestSkillCheck(skillSlug, Array.from(sidebar.selectedParticipants));
+      await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
     } else {
       ui.notifications.warn(`Unknown skill: ${skillName}`);
     }
@@ -597,27 +704,51 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
     </div>
   `;
 
-  // Position near the click
+  // Position near the click (CSS handles all styling)
   const rect = event.target.getBoundingClientRect();
-  menu.style.cssText = `
-    position: fixed;
-    top: ${rect.bottom + 4}px;
-    left: ${rect.left}px;
-    z-index: 10000;
-    background: #1a1a2e;
-    border: 1px solid #3d3d5c;
-    border-radius: 8px;
-    padding: 0;
-    min-width: 160px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    overflow: hidden;
-  `;
+  menu.style.top = `${rect.bottom + 4}px`;
+  menu.style.left = `${rect.left}px`;
 
-  // Add handlers (see original for full implementation)
+  // Attach click handlers to action buttons with shift+click for batch
   menu.querySelectorAll('.action-option').forEach((btn) => {
-    btn.addEventListener('click', async () => {
+    btn.addEventListener('click', async (e) => {
       const actionSlug = btn.dataset.actionSlug;
       const actionSkill = btn.dataset.skill;
+
+      // Shift-click: add to global batch
+      if (e.shiftKey) {
+        if (sidebar.selectedParticipants.size === 0) {
+          ui.notifications.warn('Select PCs first to use batch selection');
+          return;
+        }
+
+        const checkId = `action:${actionSkill}:${actionSlug}`;
+
+        // Check if already in global batch
+        const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
+
+        if (existingIndex !== -1) {
+          // Remove from global batch
+          sidebar.batchedChecks.splice(existingIndex, 1);
+          btn.classList.remove('selected');
+        } else {
+          // Add to global batch
+          sidebar.batchedChecks.push({
+            skill: actionSkill,
+            dc: null,
+            isSecret: false,
+            actionSlug,
+            checkId,
+          });
+          btn.classList.add('selected');
+        }
+
+        // Update batch highlights in sidebar
+        SkillCheckHandlers.updateBatchHighlights(sidebar);
+        return;
+      }
+
+      // Normal click: send immediately
       menu.remove();
 
       if (sidebar.selectedParticipants.size === 0) {
@@ -626,17 +757,24 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       }
 
       // Request skill check with action context
-      await sidebar._requestSkillCheck(
+      await SkillCheckHandlers.requestSkillCheck(
+        sidebar,
         actionSkill,
         Array.from(sidebar.selectedParticipants),
         actionSlug,
       );
     });
+
+    // Mark as selected if already in global batch
+    const checkId = `action:${btn.dataset.skill}:${btn.dataset.actionSlug}`;
+    if (sidebar.batchedChecks.some(c => c.checkId === checkId)) {
+      btn.classList.add('selected');
+    }
   });
 
   // Close on click outside
   const closeHandler = (e) => {
-    if (!menu.contains(e.target)) {
+    if (!menu.contains(e.target) && !event.target.contains(e.target)) {
       menu.remove();
       document.removeEventListener('click', closeHandler);
     }

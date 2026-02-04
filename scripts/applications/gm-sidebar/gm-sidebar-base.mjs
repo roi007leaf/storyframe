@@ -125,7 +125,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.pendingRollsGroupMode = 'actor';  // 'actor' or 'skill'
 
     // Batch skill selection (shift+click)
-    this.batchedSkills = new Set();  // Set of skill slugs
+    // Array of check objects: { skill: slug, dc: number|null, isSecret: boolean, actionSlug: string|null, checkId: string }
+    this.batchedChecks = [];
     this._shiftKeyDown = false;
 
     // Parent reference (set externally when attaching)
@@ -330,7 +331,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     };
 
     // Get lore skills from participants
-    const loreSkills = await SkillCheckHandlers.getLoreSkills(state, this.selectedParticipants);
+    const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
 
     const selectedCount = this.selectedParticipants.size;
     const allSelected = participants.length > 0 && selectedCount === participants.length;
@@ -349,7 +350,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Get system-specific DC context using DC handlers
     const dcContext = await DCHandlers.prepareDCContext(this);
-    const systemContext = await DCHandlers.prepareContextSystemSpecific(this);
+    const systemContext = await this._prepareContextSystemSpecific();
     const { partyLevel = null, calculatedDC = null, difficultyOptions = null } = systemContext;
 
     // Load DC presets
@@ -489,7 +490,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Attach DC handlers
     DCHandlers.attachDCHandlers(this);
-    DCHandlers.attachSystemDCHandlers(this);
+
+    // Attach system-specific DC handlers (calls subclass method)
+    this._attachSystemDCHandlers();
 
     // Attach skill action context menu
     UIHelpers.attachSkillActionContextMenu(this);
@@ -553,8 +556,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       this._shiftKeyHandler = null;
     }
 
-    // Clear batched skills
-    this.batchedSkills.clear();
+    // Clear batched checks
+    this.batchedChecks = [];
   }
 
   // ===========================
@@ -758,60 +761,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static async _onShowActiveChallenges(event, target) {
-    const mode = target.dataset.mode || 'actor';
-    this.pendingRollsGroupMode = mode;
-
-    const state = game.storyframe.stateManager.getState();
-    if (!state?.activeChallenges?.length) {
-      ui.notifications.info('No active challenges');
-      return;
-    }
-
-    // Build content showing all active challenges
-    const challengesHtml = state.activeChallenges.map((challenge, idx) => {
-      const optionsHtml = challenge.options.map((opt, optIdx) => {
-        const skillOptionsHtml = opt.skillOptions.map(so => {
-          const skillName = SkillCheckHandlers.getSkillName(so.skill);
-          const actionName = so.action ? SkillCheckHandlers.getActionName(so.skill, so.action) : null;
-          const displayText = actionName ? `${skillName} (${actionName})` : skillName;
-          const secretBadge = so.isSecret ? '<span class="secret-badge">Secret</span>' : '';
-          const minProfBadge = so.minProficiency ? `<span class="proficiency-badge">Min Prof: ${so.minProficiency}</span>` : '';
-          return `<li>DC ${so.dc}: ${displayText} ${secretBadge} ${minProfBadge}</li>`;
-        }).join('');
-
-        return `
-          <div class="challenge-option">
-            <strong>Option ${optIdx + 1}:</strong> ${opt.description || 'No description'}
-            <ul>${skillOptionsHtml}</ul>
-          </div>
-        `;
-      }).join('');
-
-      return `
-        <div class="active-challenge-display">
-          <h3>${challenge.name || `Challenge ${idx + 1}`}</h3>
-          ${challenge.image ? `<img src="${challenge.image}" alt="${challenge.name}" style="max-width: 200px; margin: 10px 0;">` : ''}
-          ${optionsHtml}
-        </div>
-      `;
-    }).join('<hr>');
-
-    const content = `
-      <div class="active-challenges-popup">
-        ${challengesHtml}
-      </div>
-    `;
-
-    new foundry.applications.api.DialogV2({
-      window: { title: 'Active Challenges' },
-      content,
-      buttons: [
-        {
-          action: 'close',
-          label: 'Close',
-          default: true,
-        },
-      ],
-    }).render(true);
+    await UIHelpers.onShowActiveChallenges(event, target, this);
   }
 }

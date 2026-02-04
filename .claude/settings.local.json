@@ -16,7 +16,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(node --check:*)",
-      "Bash(timeout 30 tail:*)"
+      "Bash(timeout 30 tail:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git ls-tree:*)"
     ]
   }
 }

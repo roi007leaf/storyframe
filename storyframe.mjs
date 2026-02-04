@@ -1,11 +1,10 @@
-import { MODULE_ID } from './scripts/constants.mjs';
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
+import { MODULE_ID } from './scripts/constants.mjs';
+import { handleJournalClose, handleJournalRender } from './scripts/hooks/journal-hooks.mjs';
+import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
-import { validatePosition } from './scripts/utils/validation-utils.mjs';
-import { handleJournalRender, handleJournalClose } from './scripts/hooks/journal-hooks.mjs';
-import { handlePlayerViewerRender, handlePlayerViewerClose } from './scripts/hooks/player-viewer-hooks.mjs';
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
@@ -151,6 +150,200 @@ Hooks.once('init', () => {
     onChange: () => {
       // Re-render GM sidebar if open
       game.storyframe.gmSidebar?.render();
+    },
+  });
+
+  // Register keybindings
+  game.keybindings.register(MODULE_ID, 'requestRollFromSelection', {
+    name: 'Request Roll from Journal Selection',
+    hint: 'Select text in a journal containing skill checks and press this key to open the roll request dialog',
+    editable: [],
+    onDown: async () => {
+      if (!game.user.isGM) return false;
+
+      const sidebar = game.storyframe?.gmSidebar;
+      if (!sidebar) {
+        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        return false;
+      }
+
+      // Get selected range from active window
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      const range = selection.getRangeAt(0);
+      if (range.collapsed) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      // Create a temporary container with the selected HTML
+      const fragment = range.cloneContents();
+      const tempContainer = document.createElement('div');
+      tempContainer.appendChild(fragment);
+
+      // Enrich checks in the selected content
+      const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+      enrichChecks(tempContainer);
+
+      // Parse checks from the enriched content
+      const checks = sidebar._parseChecksFromContent(tempContainer);
+
+      if (checks.length === 0) {
+        ui.notifications.warn('No skill checks found in selected text');
+        return false;
+      }
+
+      // Get current participants
+      const state = game.storyframe.stateManager.getState();
+      if (!state?.participants || state.participants.length === 0) {
+        ui.notifications.warn('No participants added. Add PCs first.');
+        return false;
+      }
+
+      // Enrich participants with actor data
+      const enrichedParticipants = await Promise.all(
+        state.participants.map(async (p) => {
+          const actor = await fromUuid(p.actorUuid);
+          return {
+            id: p.id,
+            name: actor?.name || p.name || 'Unknown',
+            img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
+          };
+        }),
+      );
+
+      // Import and show the roll request dialog
+      const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
+      const dialog = new RollRequestDialog(checks, enrichedParticipants);
+      dialog.render(true);
+
+      const result = await dialog.wait();
+
+      if (!result || result.length === 0) {
+        return true;
+      }
+
+      // Import requestSkillCheck function
+      const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
+      const SystemAdapter = await import('./scripts/system-adapter.mjs');
+
+      // Send roll requests for each check
+      for (const check of checks) {
+        // Map skill name to slug using SystemAdapter
+        const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase();
+
+        // Set DC
+        sidebar.currentDC = check.dc;
+        const dcInput = sidebar.element.querySelector('#dc-input');
+        if (dcInput) dcInput.value = check.dc;
+
+        // Set secret roll toggle
+        sidebar.secretRollEnabled = check.isSecret;
+
+        // Send request
+        await requestSkillCheck(sidebar, skillSlug, result, null, false);
+      }
+
+      return true;
+    },
+  });
+
+  game.keybindings.register(MODULE_ID, 'createChallengeFromSelection', {
+    name: 'Create Challenge from Journal Selection',
+    hint: 'Select text in a journal containing skill checks and press this key to create a new challenge',
+    editable: [],
+    onDown: async () => {
+      if (!game.user.isGM) return false;
+
+      const sidebar = game.storyframe?.gmSidebar;
+      if (!sidebar) {
+        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        return false;
+      }
+
+      // Get selected range from active window
+      const selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      const range = selection.getRangeAt(0);
+      if (range.collapsed) {
+        ui.notifications.warn('No text selected');
+        return false;
+      }
+
+      // Create a temporary container with the selected HTML
+      const fragment = range.cloneContents();
+      const tempContainer = document.createElement('div');
+      tempContainer.appendChild(fragment);
+
+      // Enrich checks in the selected content
+      const { enrichChecks } = await import('./scripts/check-enricher.mjs');
+      enrichChecks(tempContainer);
+
+      // Parse checks from the enriched content
+      const checks = sidebar._parseChecksFromContent(tempContainer);
+
+      if (checks.length === 0) {
+        ui.notifications.warn('No skill checks found in selected text');
+        return false;
+      }
+
+      // Prompt for challenge name
+      const challengeName = await foundry.applications.api.DialogV2.prompt({
+        window: { title: 'Create Challenge' },
+        content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+        ok: {
+          label: 'Create',
+          callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
+        },
+        rejectClose: false,
+      });
+
+      if (!challengeName) return true;
+
+      // Import SystemAdapter
+      const SystemAdapter = await import('./scripts/system-adapter.mjs');
+
+      // Create options from checks - each check becomes an option
+      const options = checks.map((check) => {
+        // Map skill name to short slug for the challenge system
+        const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
+
+        return {
+          id: foundry.utils.randomID(),
+          skillOptions: [{
+            skill: skillSlug || check.skillName,
+            dc: check.dc,
+            action: null,
+            isSecret: check.isSecret || false,
+          }],
+        };
+      });
+
+      // Create challenge template
+      const template = {
+        id: foundry.utils.randomID(),
+        name: challengeName,
+        image: null,
+        options,
+        createdAt: Date.now(),
+      };
+
+      // Save to library
+      const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+      savedChallenges.push(template);
+      await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+
+      ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+
+      return true;
     },
   });
 });
@@ -332,11 +525,14 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   if (!game.user.isGM && game.storyframe.playerViewer) {
     const viewer = game.storyframe.playerViewer;
     const hasSpeakers = state?.speakers?.length > 0;
+    const hasPendingRolls = state?.pendingRolls?.length > 0;
+    const hasActiveChallenges = state?.activeChallenges?.length > 0;
+    const hasContent = hasSpeakers || hasPendingRolls || hasActiveChallenges;
 
-    if (hasSpeakers && !viewer.rendered) {
-      viewer.render(true); // Auto-open when first speaker added
-    } else if (!hasSpeakers && viewer.rendered) {
-      viewer.close(); // Close only if NO speakers (not just no active speaker)
+    if (hasContent && !viewer.rendered) {
+      viewer.render(true); // Auto-open when content added
+    } else if (!hasContent && viewer.rendered) {
+      viewer.close(); // Close only if no content
     } else if (viewer.rendered) {
       viewer.render(); // Update display
     }

@@ -1,8 +1,8 @@
 import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
-import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
+import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
@@ -421,11 +421,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       if (currentSystem === 'pf2e') {
         // PF2e: Use action system if actionSlug provided
         if (request.actionSlug && game.pf2e?.actions) {
-          actionExecuted = true;
           roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
+          if (roll) {
+            actionExecuted = true;
+          }
         }
 
-        // PF2e: Basic skill roll if no action
+        // PF2e: Basic skill roll if no action or action failed
         if (!actionExecuted) {
           if (request.skillSlug === 'per') {
             // Perception uses actor.perception.roll()
@@ -586,12 +588,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     try {
       let roll;
+      let actionExecuted = false;
       if (currentSystem === 'pf2e') {
         // Use action if provided, otherwise basic skill roll
         if (actionSlug && game.pf2e?.actions) {
           roll = await PlayerViewerApp._tryExecuteAction(actor, actionSlug, rollOptions);
-          // Don't fall back to basic roll - action handles everything
-        } else {
+          if (roll) {
+            actionExecuted = true;
+          }
+        }
+
+        // Fall back to basic skill roll if action not available or failed
+        if (!actionExecuted) {
           // Basic skill roll
           if (skillSlug === 'per') {
             roll = await actor.perception.roll(rollOptions);
@@ -683,6 +691,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         craft: 'craft',
         repair: 'repair',
         'identify-alchemy': 'identifyAlchemy',
+        'sense-motive': 'senseMotive',
+        squeeze: 'squeeze',
+        'treat-disease': 'treatDisease',
+        'treat-poison': 'treatPoison',
+        'conceal-an-object': 'concealAnObject',
+        reposition: 'reposition',
+        'avoid-notice': 'avoidNotice',
+        'grab-an-edge': 'grabAnEdge',
       };
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
@@ -696,13 +712,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return null;
       }
 
-      // Build action options
+      // Build action options matching @check enricher behavior
+      // PF2e actions handle their own dialogs and traits automatically
       const actionOptions = {
         actors: [actor],
-        skipDialog: false,
       };
 
-      // Add DC if provided
+      // Add DC if provided - use object format to support visibility like @check
       if (rollOptions.dc) {
         actionOptions.difficultyClass = rollOptions.dc;
       }
@@ -710,6 +726,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Add rollMode if provided (for secret rolls)
       if (rollOptions.rollMode) {
         actionOptions.rollMode = rollOptions.rollMode;
+      }
+
+      // Add event parameter to support modifier keys (shift/ctrl/alt for adjustments)
+      if (rollOptions.event) {
+        actionOptions.event = rollOptions.event;
       }
 
       // Execute the action - returns an array of results
@@ -725,7 +746,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return { total: 0, message: results[0].message };
       }
 
-      return null;
+      // If we got here, the action executed but didn't return a roll in expected format
+      // Return truthy value to indicate action was executed (action posts to chat itself)
+      return { executed: true };
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to execute PF2e action ${actionSlug}:`, error);
       return null;

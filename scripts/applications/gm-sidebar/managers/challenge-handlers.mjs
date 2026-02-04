@@ -217,21 +217,11 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
 
   // Create options from checks - each check becomes an option
   const options = checks.map((check) => {
-    // Extract description without DC reference
-    let description = check.label || '';
-    // Remove common DC patterns like "DC 15" or "(DC 15)" from description
-    description = description.replace(/\(?\s*DC\s*\d+\s*\)?/gi, '').trim();
-    // If description is empty after cleaning, use skill name
-    if (!description) {
-      description = check.skillName.charAt(0).toUpperCase() + check.skillName.slice(1);
-    }
-
     // Map skill name to short slug for the challenge system
     const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
 
     return {
       id: foundry.utils.randomID(),
-      description,
       skillOptions: [{
         skill: skillSlug || check.skillName,
         dc: check.dc,

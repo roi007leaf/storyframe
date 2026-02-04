@@ -11,9 +11,17 @@ import { SELECTORS } from '../constants.mjs';
  * @returns {HTMLElement|null}
  */
 export function findJournalContent(element) {
+  if (!element) return null;
+
+  // Try multiple selectors for different journal sheet types
   return (
+    element.querySelector('.journal-entry-pages') ||
+    element.querySelector('.journal-entry-content') ||
+    element.querySelector('.scrollable') ||
+    element.querySelector('.journal-page-content')?.parentElement ||
     element.querySelector(SELECTORS.JOURNAL_CONTENT) ||
-    element.querySelector(SELECTORS.JOURNAL_CONTENT_ALT)
+    element.querySelector(SELECTORS.JOURNAL_CONTENT_ALT) ||
+    element
   );
 }
 

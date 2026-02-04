@@ -23,12 +23,24 @@ export async function onRequestSkill(_event, target, sidebar) {
 
     sidebar._shiftKeyDown = true;
 
-    if (sidebar.batchedSkills.has(skillSlug)) {
+    // Create check ID for this skill (without DC/action)
+    const checkId = `skill:${skillSlug}`;
+
+    // Check if already batched
+    const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
+
+    if (existingIndex !== -1) {
       // Remove from batch if already selected
-      sidebar.batchedSkills.delete(skillSlug);
+      sidebar.batchedChecks.splice(existingIndex, 1);
     } else {
-      // Add to batch
-      sidebar.batchedSkills.add(skillSlug);
+      // Add to batch (no DC or action specified)
+      sidebar.batchedChecks.push({
+        skill: skillSlug,
+        dc: null,
+        isSecret: false,
+        actionSlug: null,
+        checkId,
+      });
     }
 
     // Update visual highlighting
@@ -48,7 +60,7 @@ export async function onRequestSkill(_event, target, sidebar) {
  * Send batch skill check request
  */
 export async function onSendBatch(_event, _target, sidebar) {
-  if (sidebar.batchedSkills.size === 0) return;
+  if (sidebar.batchedChecks.length === 0) return;
 
   if (sidebar.selectedParticipants.size === 0) {
     ui.notifications.warn('No PCs selected');
@@ -180,14 +192,13 @@ export async function sendBatchSkillCheck(sidebar) {
     return;
   }
 
-  if (sidebar.batchedSkills.size === 0) {
+  if (sidebar.batchedChecks.length === 0) {
     return;
   }
 
   const participantIds = Array.from(sidebar.selectedParticipants);
-  const skillSlugs = Array.from(sidebar.batchedSkills);
 
-  // Track unique participant IDs and names across all skills
+  // Track unique participant IDs and names across all checks
   const uniqueSentIds = new Set();
   const uniqueOfflineIds = new Set();
   const uniqueMissingIds = new Set();
@@ -197,9 +208,27 @@ export async function sendBatchSkillCheck(sidebar) {
   // Get system skills for name lookup
   const systemSkills = SystemAdapter.getSkills();
 
-  // Send request for each skill (suppress individual notifications)
-  for (const skillSlug of skillSlugs) {
-    const result = await requestSkillCheck(sidebar, skillSlug, participantIds, null, true);
+  // Save count before clearing
+  const checkCount = sidebar.batchedChecks.length;
+
+  // Send request for each batched check (suppress individual notifications)
+  for (const check of sidebar.batchedChecks) {
+    // Set DC if specified
+    const previousDC = sidebar.currentDC;
+    const previousSecret = sidebar.secretRollEnabled;
+
+    if (check.dc !== null) {
+      sidebar.currentDC = check.dc;
+    }
+    if (check.isSecret) {
+      sidebar.secretRollEnabled = true;
+    }
+
+    const result = await requestSkillCheck(sidebar, check.skill, participantIds, check.actionSlug, true);
+
+    // Restore previous DC/secret state
+    sidebar.currentDC = previousDC;
+    sidebar.secretRollEnabled = previousSecret;
 
     // Add unique participant IDs and names to sets
     result.sentIds.forEach(id => uniqueSentIds.add(id));
@@ -212,13 +241,13 @@ export async function sendBatchSkillCheck(sidebar) {
       if (!participantMissingSkills.has(name)) {
         participantMissingSkills.set(name, new Set());
       }
-      const skillName = systemSkills[skillSlug]?.name || skillSlug;
+      const skillName = systemSkills[check.skill]?.name || check.skill;
       participantMissingSkills.get(name).add(skillName);
     });
   }
 
   // Clear batch selection
-  sidebar.batchedSkills.clear();
+  sidebar.batchedChecks = [];
   updateBatchHighlights(sidebar);
 
   // Clear selection and render
@@ -227,7 +256,7 @@ export async function sendBatchSkillCheck(sidebar) {
 
   // Show single aggregated notification with unique participant names
   if (uniqueSentIds.size > 0) {
-    ui.notifications.info(`Requested ${skillSlugs.length} skill check(s) from ${uniqueSentIds.size} PC(s)`, { permanent: false });
+    ui.notifications.info(`Requested ${checkCount} check(s) from ${uniqueSentIds.size} PC(s)`, { permanent: false });
   }
   if (uniqueOfflineNames.size > 0) {
     const names = Array.from(uniqueOfflineNames).join(', ');
@@ -259,14 +288,34 @@ export function updateBatchHighlights(sidebar) {
     wrapper.classList.remove('batched');
   });
 
-  // Add batch highlight to selected skills
-  sidebar.batchedSkills.forEach(skillSlug => {
+  // Remove all existing batch highlights from journal checks
+  sidebar.element.querySelectorAll('.journal-check-wrapper.batched').forEach(wrapper => {
+    wrapper.classList.remove('batched');
+  });
+
+  // Collect skills that have any batched checks
+  const batchedSkills = new Set();
+  sidebar.batchedChecks.forEach(check => {
+    batchedSkills.add(check.skill);
+  });
+
+  // Add batch highlight to all check types
+  batchedSkills.forEach(skillSlug => {
     // Try regular skills first
     let wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
 
     // If not found, try lore skills
     if (!wrapper) {
       wrapper = sidebar.element.querySelector(`.skill-btn.lore[data-skill="${skillSlug}"]`)?.closest('.lore-skill-wrapper');
+    }
+
+    // If not found, try journal checks (match by skill name from SystemAdapter)
+    if (!wrapper) {
+      const skills = SystemAdapter.getSkills();
+      const skillName = skills[skillSlug]?.name;
+      if (skillName) {
+        wrapper = sidebar.element.querySelector(`.journal-skill-btn[data-skill="${skillName}"]`)?.closest('.journal-check-wrapper');
+      }
     }
 
     if (wrapper) {
@@ -277,7 +326,7 @@ export function updateBatchHighlights(sidebar) {
   // Update send batch button visibility and count
   const sendBatchBtn = sidebar.element.querySelector('.send-batch-btn');
   if (sendBatchBtn) {
-    const batchCount = sidebar.batchedSkills.size;
+    const batchCount = sidebar.batchedChecks.length;
     const countSpan = sendBatchBtn.querySelector('.batch-count');
 
     if (batchCount > 0) {

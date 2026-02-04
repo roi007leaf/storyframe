@@ -19,7 +19,10 @@
   ],
   "styles": [
     "styles/design-tokens.css",
-    "styles/gm-sidebar.css",
+    "styles/gm-sidebar-base.css",
+    "styles/gm-sidebar-controls.css",
+    "styles/gm-sidebar-journal.css",
+    "styles/gm-sidebar-popups.css",
     "styles/dc-presets.css",
     "styles/player-viewer.css",
     "styles/player-sidebar.css",
