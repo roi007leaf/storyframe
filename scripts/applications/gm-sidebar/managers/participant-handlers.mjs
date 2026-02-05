@@ -10,7 +10,7 @@ export async function onAddAllPCs(_event, _target, sidebar) {
   const pcs = getPlayerCharacters();
 
   if (pcs.length === 0) {
-    ui.notifications.warn('No player characters found');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoPCsFound'));
     return;
   }
 
@@ -27,7 +27,7 @@ export async function onAddAllPCs(_event, _target, sidebar) {
     }
   }
 
-  ui.notifications.info(`Added ${pcs.length} PC(s)`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Participant.PCsAdded', { count: pcs.length }));
 }
 
 /**
@@ -69,7 +69,7 @@ export async function onToggleParticipantSelection(_event, target, sidebar) {
   const countDisplay = sidebar.element.querySelector('.selection-info .count');
   if (countDisplay) {
     countDisplay.textContent = `${selectedCount}/${totalParticipants}`;
-    countDisplay.setAttribute('aria-label', `${selectedCount} of ${totalParticipants} selected`);
+    countDisplay.setAttribute('aria-label', game.i18n.format('STORYFRAME.UI.Tooltips.SelectedCount', { selected: selectedCount, total: totalParticipants }));
   }
 
   // Update selection-info class
@@ -155,7 +155,7 @@ export function updateSelectAllCheckbox(sidebar) {
   const countDisplay = sidebar.element.querySelector('.selection-info .count');
   if (countDisplay) {
     countDisplay.textContent = `${selectedCount}/${totalParticipants}`;
-    countDisplay.setAttribute('aria-label', `${selectedCount} of ${totalParticipants} selected`);
+    countDisplay.setAttribute('aria-label', game.i18n.format('STORYFRAME.UI.Tooltips.SelectedCount', { selected: selectedCount, total: totalParticipants }));
   }
 
   // Update selection-info class
@@ -180,7 +180,9 @@ export function updateSelectAllCheckbox(sidebar) {
       }
     }
 
-    const tooltip = allSelected ? 'Deselect all' : 'Select all';
+    const tooltip = allSelected
+      ? game.i18n.localize('STORYFRAME.UI.Tooltips.DeselectAll')
+      : game.i18n.localize('STORYFRAME.UI.Tooltips.SelectAll');
     selectAllBtn.setAttribute('data-tooltip', tooltip);
     selectAllBtn.setAttribute('aria-label', tooltip);
   }
@@ -204,10 +206,10 @@ export async function onClearAllParticipants(_event, _target, sidebar) {
   if (!state?.participants?.length) return;
 
   const confirmed = await foundry.applications.api.DialogV2.confirm({
-    window: { title: 'Clear All PCs' },
-    content: '<p>Remove all PCs from the list?</p>',
-    yes: { label: 'Clear All' },
-    no: { label: 'Cancel', default: true },
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.ClearAllPCs.Title') },
+    content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.ClearAllPCs.Content')}</p>`,
+    yes: { label: game.i18n.localize('STORYFRAME.Dialogs.ClearAllPCs.Button') },
+    no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel'), default: true },
     rejectClose: false,
   });
 
@@ -242,7 +244,7 @@ export async function prepareParticipantsContext(sidebar, state) {
         actorUuid: p.actorUuid,
         userId: p.userId,
         img: actor?.img || 'icons/svg/mystery-man.svg',
-        name: actor?.name || 'Unknown',
+        name: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         selected: sidebar.selectedParticipants.has(p.id),
       };
     }),

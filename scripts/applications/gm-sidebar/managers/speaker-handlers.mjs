@@ -11,10 +11,10 @@ export async function onAddSpeakerFromImage(_event, _target, sidebar) {
     type: 'image',
     callback: async (path) => {
       const label = await foundry.applications.api.DialogV2.prompt({
-        window: { title: 'NPC Name' },
-        content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
+        window: { title: game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Title') },
+        content: `<input type="text" name="label" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
         ok: {
-          label: 'Add',
+          label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
           callback: (event, button, _dialog) => button.form.elements.label.value,
         },
         rejectClose: false,
@@ -66,10 +66,10 @@ export async function onClearAllSpeakers(_event, _target) {
   if (!state?.speakers?.length) return;
 
   const confirmed = await foundry.applications.api.DialogV2.confirm({
-    window: { title: 'Clear All NPCs' },
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.ClearAllNPCs.Title') },
     content: '<p>Remove all NPCs?</p>',
-    yes: { label: 'Clear All' },
-    no: { label: 'Cancel', default: true },
+    yes: { label: game.i18n.localize('STORYFRAME.Dialogs.ClearAllPCs.Button') },
+    no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel'), default: true },
     rejectClose: false,
   });
 
@@ -86,10 +86,10 @@ export async function onSetImageAsSpeaker(_event, target, sidebar) {
   if (!imageSrc) return;
 
   const label = await foundry.applications.api.DialogV2.prompt({
-    window: { title: 'NPC Name' },
-    content: '<input type="text" name="label" placeholder="Enter NPC name" autofocus>',
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Title') },
+    content: `<input type="text" name="label" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
     ok: {
-      label: 'Add',
+      label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
       callback: (event, button, _dialog) => button.form.elements.label.value,
     },
     rejectClose: false,
@@ -100,7 +100,7 @@ export async function onSetImageAsSpeaker(_event, target, sidebar) {
       imagePath: imageSrc,
       label,
     });
-    ui.notifications.info(`Added ${label} as NPC`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Speaker.AddedAsNPC', { label }));
   }
 }
 
@@ -113,7 +113,7 @@ export async function onSetActorAsSpeaker(_event, target, sidebar) {
 
   const actor = game.actors.get(actorId);
   if (!actor) {
-    ui.notifications.error('Actor not found');
+    ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Scene.ActorNotFound'));
     return;
   }
 
@@ -122,7 +122,7 @@ export async function onSetActorAsSpeaker(_event, target, sidebar) {
     imagePath: actor.img,
     label: actor.name,
   });
-  ui.notifications.info(`Added ${actor.name} as NPC`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Speaker.AddedAsNPC', { label: actor.name }));
 }
 
 /**
@@ -356,7 +356,7 @@ export function attachPlayerWindowsContextMenu(sidebar) {
  */
 export async function onOpenPlayerWindows(_event, _target, sidebar) {
   game.storyframe.socketManager.openAllPlayerViewers();
-  ui.notifications.info('Opening StoryFrame on all player clients');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.OpeningForPlayers'));
 }
 
 /**
@@ -364,7 +364,7 @@ export async function onOpenPlayerWindows(_event, _target, sidebar) {
  */
 export async function onClosePlayerWindows(_event, _target, sidebar) {
   game.storyframe.socketManager.closeAllPlayerViewers();
-  ui.notifications.info('Closing StoryFrame on all player clients');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingForPlayers'));
 }
 
 // --- Helper Functions ---
@@ -407,7 +407,7 @@ export async function onSaveCurrentSpeakers(_event, _target, sidebar) {
   const speakers = state?.speakers || [];
 
   if (speakers.length === 0) {
-    ui.notifications.warn('No speakers to save');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Speaker.NoSpeakersToSave'));
     return;
   }
 

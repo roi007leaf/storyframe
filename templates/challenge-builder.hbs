@@ -1,45 +1,45 @@
 <form class="challenge-builder-form">
   <div class="challenge-dialog-content">
     <label>
-      Challenge Name
-      <input type="text" name="challengeName" placeholder="e.g., Reinforce Camp" value="{{#if initialData}}{{initialData.name}}{{/if}}" required autofocus>
+      {{localize "STORYFRAME.ChallengeBuilder.ChallengeName"}}
+      <input type="text" name="challengeName" placeholder="{{localize "STORYFRAME.ChallengeBuilder.ChallengeNamePlaceholder"}}" value="{{#if initialData}}{{initialData.name}}{{/if}}" required autofocus>
     </label>
 
     <label>
-      Challenge Image (optional)
-      <input type="text" name="challengeImage" placeholder="path/to/image.png" value="{{#if initialData}}{{initialData.image}}{{/if}}">
+      {{localize "STORYFRAME.ChallengeBuilder.ChallengeImage"}}
+      <input type="text" name="challengeImage" placeholder="{{localize "STORYFRAME.ChallengeBuilder.ChallengeImagePlaceholder"}}" value="{{#if initialData}}{{initialData.image}}{{/if}}">
       <button type="button" class="challenge-pick-image" data-action="pickImage">
-        <i class="fas fa-image"></i> Pick Image
+        <i class="fas fa-image"></i> {{localize "STORYFRAME.ChallengeBuilder.PickImage"}}
       </button>
     </label>
 
     {{#unless editMode}}
     <div class="save-checkbox-wrapper">
       <input type="checkbox" name="saveToLibrary" id="save-to-library">
-      <label for="save-to-library">Save this challenge to library</label>
+      <label for="save-to-library">{{localize "STORYFRAME.ChallengeBuilder.SaveToLibrary"}}</label>
     </div>
     {{/unless}}
 
-    <div class="options-section-label">Challenge Options</div>
+    <div class="options-section-label">{{localize "STORYFRAME.ChallengeBuilder.ChallengeOptions"}}</div>
     <div class="challenge-options-list">
       {{#if hasInitialOption}}
       <div class="challenge-option-card" data-option-index="0">
         <div class="challenge-option-header">
-          <input type="text" name="option-0-name" class="option-name-input" value="Option 1" placeholder="Option name...">
+          <input type="text" name="option-0-name" class="option-name-input" value="{{localize "STORYFRAME.ChallengeBuilder.OptionLabel" num=1}}" placeholder="{{localize "STORYFRAME.UI.Labels.OptionName"}}">
         </div>
         <div class="challenge-option-fields">
           <div class="challenge-option-field">
-            <label>Skills</label>
+            <label>{{localize "STORYFRAME.UI.Labels.Skills"}}</label>
             <div class="skills-list" data-option-index="0">
               <div class="skill-dc-row" data-skill-index="0">
                 <div class="skill-select">
                   <select name="option-0-skill-0" class="skill-dropdown" data-skill-index="0" required>
-                    <option value="">Select skill...</option>
+                    <option value="">{{localize "STORYFRAME.UI.Labels.SelectSkill"}}</option>
                     {{#each skills}}
                     <option value="{{this.slug}}" data-actions="{{json this.actions}}">{{this.name}}</option>
                     {{/each}}
                     {{#if hasLoreSkills}}
-                    <optgroup label="Lore Skills">
+                    <optgroup label="{{localize "STORYFRAME.ChallengeBuilder.LoreSkills"}}">
                       {{#each loreSkills}}
                       <option value="{{this.slug}}">{{this.name}}</option>
                       {{/each}}
@@ -50,37 +50,37 @@
                 {{#if isPF2e}}
                 <div class="action-select" style="display: none;">
                   <select name="option-0-action-0" class="action-dropdown">
-                    <option value="">No action</option>
+                    <option value="">{{localize "STORYFRAME.ChallengeBuilder.NoAction"}}</option>
                   </select>
                 </div>
                 {{/if}}
                 <div class="dc-input">
-                  <input type="number" name="option-0-dc-0" min="1" placeholder="DC">
+                  <input type="number" name="option-0-dc-0" min="1" placeholder="{{localize "STORYFRAME.ChallengeBuilder.DC"}}">
                 </div>
                 <div class="proficiency-select">
-                  <select name="option-0-proficiency-0" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
-                    <option value="0">Any</option>
+                  <select name="option-0-proficiency-0" class="proficiency-dropdown" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.MinProficiency"}}">
+                    <option value="0">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Any"}}</option>
                     {{#if isPF2e}}
-                    <option value="1">Trained</option>
-                    <option value="2">Expert</option>
-                    <option value="3">Master</option>
-                    <option value="4">Legendary</option>
+                    <option value="1">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Trained"}}</option>
+                    <option value="2">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Expert"}}</option>
+                    <option value="3">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Master"}}</option>
+                    <option value="4">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Legendary"}}</option>
                     {{else}}
-                    <option value="1">Proficient</option>
-                    <option value="2">Expertise</option>
+                    <option value="1">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Proficient"}}</option>
+                    <option value="2">{{localize "STORYFRAME.ChallengeBuilder.Proficiency.Expertise"}}</option>
                     {{/if}}
                   </select>
                 </div>
                 <div class="secret-checkbox">
-                  <input type="checkbox" name="option-0-secret-0" id="option-0-secret-0" data-tooltip=""="Secret roll (GM only)">
-                  <label for="option-0-secret-0" data-tooltip="Secret roll (GM only)">
+                  <input type="checkbox" name="option-0-secret-0" id="option-0-secret-0" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SecretRoll"}}">
+                  <label for="option-0-secret-0" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SecretRoll"}}">
                     <i class="fas fa-eye-slash"></i>
                   </label>
                 </div>
               </div>
             </div>
             <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="0">
-              <i class="fas fa-plus"></i> Add Skill
+              <i class="fas fa-plus"></i> {{localize "STORYFRAME.UI.Labels.AddSkill"}}
             </button>
           </div>
         </div>
@@ -89,13 +89,13 @@
     </div>
 
     <button type="button" class="challenge-add-option" data-action="addOption">
-      <i class="fas fa-plus"></i> Add Another Option
+      <i class="fas fa-plus"></i> {{localize "STORYFRAME.ChallengeBuilder.AddOption"}}
     </button>
   </div>
 
   <footer class="form-footer">
     <button type="button" class="submit-btn" data-action="submit">
-      <i class="fas fa-paper-plane"></i> {{#if editMode}}Update & Present{{else}}Present Challenge{{/if}}
+      <i class="fas fa-paper-plane"></i> {{#if editMode}}{{localize "STORYFRAME.ChallengeBuilder.UpdateAndPresent"}}{{else}}{{localize "STORYFRAME.ChallengeBuilder.PresentChallenge"}}{{/if}}
     </button>
   </footer>
 </form>

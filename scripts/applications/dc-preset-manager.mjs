@@ -11,7 +11,7 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     id: 'storyframe-dc-preset-manager',
     classes: ['storyframe', 'dc-preset-manager'],
     window: {
-      title: 'DC Presets',
+      title: 'STORYFRAME.WindowTitles.DCPresets',
       icon: 'fas fa-bookmark',
       resizable: true,
     },
@@ -45,10 +45,10 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
 
   static async _onCreatePreset(_event, _target) {
     const dcValue = await foundry.applications.api.DialogV2.prompt({
-      window: { title: 'Add DC Preset' },
-      content: '<input type="number" name="dc" min="1" placeholder="Enter DC value" autofocus>',
+      window: { title: game.i18n.localize('STORYFRAME.Dialogs.AddDCPreset.Title') },
+      content: `<input type="number" name="dc" min="1" placeholder="${game.i18n.localize('STORYFRAME.UI.Placeholders.EnterDC')}" autofocus>`,
       ok: {
-        label: 'Add',
+        label: game.i18n.localize('STORYFRAME.Dialogs.AddDCPreset.Button'),
         callback: (event, button, _dialog) => parseInt(button.form.elements.dc.value),
       },
       rejectClose: false,
@@ -75,7 +75,7 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
       game.storyframe.gmSidebar.render();
     }
 
-    ui.notifications.info(`Added DC ${dcValue} preset`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetAdded', { value: dcValue }));
   }
 
   static async _onDeletePreset(_event, target) {
@@ -86,8 +86,8 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     if (!preset) return;
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      window: { title: 'Delete Preset' },
-      content: `<p>Delete preset "${preset.name}" (DC ${preset.dc})?</p>`,
+      window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeletePreset.Title') },
+      content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeletePreset.Content', { name: preset.name, dc: preset.dc })}</p>`,
       rejectClose: false,
     });
 
@@ -103,6 +103,6 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
       game.storyframe.gmSidebar.render();
     }
 
-    ui.notifications.info(`Deleted preset: DC ${preset.dc}`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetDeleted', { value: preset.dc }));
   }
 }

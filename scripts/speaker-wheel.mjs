@@ -105,7 +105,7 @@ async function showSceneWheel(scenes) {
   centerBtn.className = 'speaker-wheel-center';
   centerBtn.innerHTML = `
     <i class="fas fa-times"></i>
-    <span class="center-label">Cancel</span>
+    <span class="center-label">${game.i18n.localize('STORYFRAME.Dialogs.Cancel')}</span>
   `;
 
   // Append elements
@@ -150,8 +150,8 @@ async function showSceneWheel(scenes) {
       const scene = scenes.find(s => s.id === sceneId);
 
       const confirmed = await foundry.applications.api.DialogV2.confirm({
-        window: { title: 'Delete Scene' },
-        content: `<p>Delete scene "${scene.name}"?</p>`,
+        window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Title') },
+        content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeleteScene.Content', { name: scene.name })}</p>`,
         rejectClose: false,
         modal: true,
       });
@@ -170,7 +170,7 @@ async function showSceneWheel(scenes) {
       // Refresh wheel or close if no scenes left
       if (updatedScenes.length === 0) {
         hideSpeakerWheel();
-        ui.notifications.info('No scenes remaining. Show speakers directly next time.');
+        ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.NoScenesRemaining'));
       } else {
         await showSceneWheel(updatedScenes);
       }
@@ -202,7 +202,7 @@ async function showSceneSpeakers(sceneId) {
   const scene = scenes.find(s => s.id === sceneId);
 
   if (!scene || !scene.speakers || scene.speakers.length === 0) {
-    ui.notifications.warn('Scene has no speakers');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Speaker.SceneHasNoSpeakers'));
     hideSpeakerWheel();
     return;
   }
@@ -271,7 +271,7 @@ async function showSceneSpeakers(sceneId) {
   centerBtn.className = 'speaker-wheel-center back-button';
   centerBtn.innerHTML = `
     <i class="fas fa-arrow-left"></i>
-    <span class="center-label">Back</span>
+    <span class="center-label">${game.i18n.localize('STORYFRAME.SpeakerWheel.Back')}</span>
   `;
 
   // Append elements
@@ -333,7 +333,7 @@ async function showSpeakersWheel() {
   const speakers = state?.speakers || [];
 
   if (speakers.length === 0) {
-    ui.notifications.info('No NPCs available');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.NoNPCsAvailable'));
     return;
   }
 
@@ -384,7 +384,7 @@ async function showSpeakersWheel() {
   centerBtn.className = 'speaker-wheel-center';
   centerBtn.innerHTML = `
     <i class="fas fa-times"></i>
-    <span class="center-label">Clear</span>
+    <span class="center-label">${game.i18n.localize('STORYFRAME.UI.Labels.ClearAll')}</span>
   `;
 
   // Append elements

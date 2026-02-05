@@ -188,7 +188,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   const pendingRolls = state?.pendingRolls || [];
 
   if (pendingRolls.length === 0) {
-    ui.notifications.info('No pending rolls');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.PendingRolls.NoPendingRolls'));
     return;
   }
 
@@ -200,7 +200,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
       return {
         ...r,
         participantId: r.participantId,
-        participantName: actor?.name || 'Unknown',
+        participantName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         participantImg: actor?.img || 'icons/svg/mystery-man.svg',
         skillName: SkillCheckHandlers.getSkillName(r.skillSlug),
         actionName: r.actionSlug ? SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug) : null,
@@ -226,15 +226,22 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   // Generate grouped HTML
   const groupsHtml = renderPendingRollsGroups(groupedData, sidebar.pendingRollsGroupMode);
 
+  const toggleGroupingLabel = game.i18n.localize('STORYFRAME.UI.Labels.ToggleGrouping');
+  const byPCLabel = game.i18n.localize('STORYFRAME.UI.Labels.ByPC');
+  const bySkillLabel = game.i18n.localize('STORYFRAME.UI.Labels.BySkill');
+  const closeLabel = game.i18n.localize('STORYFRAME.UI.Labels.Close');
+  const cancelAllLabel = game.i18n.localize('STORYFRAME.UI.Labels.CancelAll');
+  const pendingRollsTitle = game.i18n.format('STORYFRAME.UI.Labels.PendingRolls', { count: rollsData.length });
+
   popup.innerHTML = `
     <div class="popup-header">
-      <span class="popup-title">Pending Rolls (${rollsData.length})</span>
+      <span class="popup-title">${pendingRollsTitle}</span>
       <div class="popup-header-actions">
-        <button type="button" class="group-toggle-btn" data-mode="${sidebar.pendingRollsGroupMode}" aria-label="Toggle grouping">
+        <button type="button" class="group-toggle-btn" data-mode="${sidebar.pendingRollsGroupMode}" aria-label="${toggleGroupingLabel}">
           <i class="fas fa-${sidebar.pendingRollsGroupMode === 'actor' ? 'users' : 'list'}"></i>
-          <span>${sidebar.pendingRollsGroupMode === 'actor' ? 'By PC' : 'By Skill'}</span>
+          <span>${sidebar.pendingRollsGroupMode === 'actor' ? byPCLabel : bySkillLabel}</span>
         </button>
-        <button type="button" class="popup-close" aria-label="Close">
+        <button type="button" class="popup-close" aria-label="${closeLabel}">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -243,7 +250,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
       ${groupsHtml}
     </div>
     <div class="popup-footer">
-      <button type="button" class="cancel-all-btn">Cancel All</button>
+      <button type="button" class="cancel-all-btn">${cancelAllLabel}</button>
     </div>
   `;
 
@@ -280,14 +287,14 @@ export async function onShowPendingRolls(_event, target, sidebar) {
 
       // Update count in header
       const remaining = popup.querySelectorAll('.pending-roll-item').length;
-      title.textContent = `Pending Rolls (${remaining})`;
+      title.textContent = game.i18n.format('STORYFRAME.UI.Labels.PendingRolls', { count: remaining });
 
       // Close popup if no more rolls
       if (remaining === 0) {
         popup.remove();
       }
 
-      ui.notifications.info('Roll request cancelled');
+      ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.PendingRolls.RollCancelled'));
     });
   });
 
@@ -297,7 +304,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
       await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
     }
     popup.remove();
-    ui.notifications.info('All roll requests cancelled');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.PendingRolls.AllRollsCancelled'));
   });
 
   // Close on click outside
@@ -344,7 +351,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
   const activeChallenges = state?.activeChallenges || [];
 
   if (activeChallenges.length === 0) {
-    ui.notifications.info('No active challenges');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoChallenges'));
     return;
   }
 
@@ -355,29 +362,37 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
   const popup = document.createElement('div');
   popup.className = 'storyframe-challenges-popup';
 
+  const unknownLabel = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
   const challengesHtml = activeChallenges
     .map(
-      (challenge) => `
+      (challenge) => {
+        const clearLabel = game.i18n.format('STORYFRAME.UI.Tooltips.ClearChallenge', { name: challenge.name });
+        return `
     <div class="challenge-item" data-challenge-id="${challenge.id}">
       <div class="challenge-item-header">
         ${challenge.image ? `<img src="${challenge.image}" alt="${challenge.name}" class="challenge-thumb" />` : '<i class="fas fa-flag-checkered challenge-icon"></i>'}
         <div class="challenge-info">
-          <div class="challenge-name">${challenge.name || 'Unnamed Challenge'}</div>
+          <div class="challenge-name">${challenge.name || unknownLabel}</div>
           <div class="challenge-meta">${challenge.options?.length || 0} option(s)</div>
         </div>
-        <button type="button" class="clear-challenge-btn" data-challenge-id="${challenge.id}" aria-label="Clear ${challenge.name}">
+        <button type="button" class="clear-challenge-btn" data-challenge-id="${challenge.id}" aria-label="${clearLabel}">
           <i class="fas fa-times"></i>
         </button>
       </div>
     </div>
-  `,
+  `;
+      },
     )
     .join('');
 
+  const activeChallengesTitle = game.i18n.format('STORYFRAME.UI.Labels.ActiveChallenges', { count: activeChallenges.length });
+  const closeLabel = game.i18n.localize('STORYFRAME.UI.Labels.Close');
+  const clearAllLabel = game.i18n.localize('STORYFRAME.UI.Labels.ClearAll');
+
   popup.innerHTML = `
     <div class="popup-header">
-      <span class="popup-title">Active Challenges (${activeChallenges.length})</span>
-      <button type="button" class="popup-close" aria-label="Close">
+      <span class="popup-title">${activeChallengesTitle}</span>
+      <button type="button" class="popup-close" aria-label="${closeLabel}">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -385,7 +400,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
       ${challengesHtml}
     </div>
     <div class="popup-footer">
-      <button type="button" class="clear-all-btn">Clear All</button>
+      <button type="button" class="clear-all-btn">${clearAllLabel}</button>
     </div>
   `;
 
@@ -415,14 +430,14 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
 
       // Update count in header
       const remaining = popup.querySelectorAll('.challenge-item').length;
-      title.textContent = `Active Challenges (${remaining})`;
+      title.textContent = game.i18n.format('STORYFRAME.UI.Labels.ActiveChallenges', { count: remaining });
 
       // Close popup if no more challenges
       if (remaining === 0) {
         popup.remove();
-        ui.notifications.info('All challenges cleared');
+        ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.AllChallengesCleared'));
       } else {
-        ui.notifications.info('Challenge cleared');
+        ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeCleared'));
       }
     });
   });
@@ -430,10 +445,10 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
   // Clear all challenges
   clearAllBtn.addEventListener('click', async () => {
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      window: { title: 'Clear All Challenges' },
-      content: '<p>Clear all active challenges?</p>',
-      yes: { label: 'Clear All' },
-      no: { label: 'Cancel' },
+      window: { title: game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Title') },
+      content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Content')}</p>`,
+      yes: { label: game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Button') },
+      no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel') },
       rejectClose: false,
     });
 
@@ -441,7 +456,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
 
     await game.storyframe.socketManager.requestClearAllChallenges();
     popup.remove();
-    ui.notifications.info('All challenges cleared');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.AllChallengesCleared'));
   });
 
   // Close on click outside
@@ -484,7 +499,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
  * Show proficiency filter popup (stub - system-specific implementation)
  */
 export async function onShowProficiencyFilter(_event, target, skillSlug, sidebar) {
-  ui.notifications.info('Proficiency filtering not implemented in base class');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Errors.ProficiencyFilteringNotImplemented'));
 }
 
 /**
@@ -502,7 +517,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
   // Shift+click: add all checks for this skill to batch
   if (_event.shiftKey) {
     if (sidebar.selectedParticipants.size === 0) {
-      ui.notifications.warn('Select PCs first to use batch selection');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
       return;
     }
 
@@ -623,7 +638,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
           await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
         }
       } else {
-        ui.notifications.warn('Select PCs first');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
       }
     });
 
@@ -668,12 +683,12 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
     if (skillSlug) {
       await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
     } else {
-      ui.notifications.warn(`Unknown skill: ${skillName}`);
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.UnknownSkill', { skillName }));
     }
   } else if (sidebar.selectedParticipants.size === 0) {
-    ui.notifications.warn('Select PCs first to request a roll');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
   } else {
-    ui.notifications.info(`Set DC to ${dc}`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.DCSet', { dc }));
   }
 }
 
@@ -686,7 +701,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   const actions = skill?.actions;
 
   if (!actions || actions.length === 0) {
-    ui.notifications.info(`No specific actions for ${SkillCheckHandlers.getSkillName(skillSlug)}`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoSpecificActions', { skillName: SkillCheckHandlers.getSkillName(skillSlug) }));
     return;
   }
 
@@ -719,7 +734,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       // Shift-click: add to global batch
       if (e.shiftKey) {
         if (sidebar.selectedParticipants.size === 0) {
-          ui.notifications.warn('Select PCs first to use batch selection');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
           return;
         }
 
@@ -753,7 +768,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       menu.remove();
 
       if (sidebar.selectedParticipants.size === 0) {
-        ui.notifications.warn('No PCs selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
         return;
       }
 
@@ -919,7 +934,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
   const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
 
   if (scenes.length === 0) {
-    ui.notifications.info('No saved scenes');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Scene.NoSavedScenes'));
     return;
   }
 
@@ -932,7 +947,10 @@ export async function onShowSavedScenes(_event, target, sidebar) {
 
   const scenesHtml = scenes
     .map(
-      (scene) => `
+      (scene) => {
+        const editLabel = game.i18n.format('STORYFRAME.UI.Tooltips.EditScene', { name: scene.name });
+        const deleteLabel = game.i18n.format('STORYFRAME.UI.Tooltips.DeleteScene', { name: scene.name });
+        return `
     <div class="scene-item" data-scene-id="${scene.id}">
       <div class="scene-item-header">
         <div class="scene-icon-wrapper">
@@ -943,23 +961,27 @@ export async function onShowSavedScenes(_event, target, sidebar) {
           <div class="scene-meta">${scene.speakers.length} speaker(s)</div>
         </div>
         <div class="scene-actions">
-          <button type="button" class="edit-scene-btn" data-scene-id="${scene.id}" aria-label="Edit ${scene.name}">
+          <button type="button" class="edit-scene-btn" data-scene-id="${scene.id}" aria-label="${editLabel}">
             <i class="fas fa-pencil-alt"></i>
           </button>
-          <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="Delete ${scene.name}">
+          <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="${deleteLabel}">
             <i class="fas fa-trash"></i>
           </button>
         </div>
       </div>
     </div>
-  `,
+  `;
+      },
     )
     .join('');
 
+  const savedScenesTitle = game.i18n.format('STORYFRAME.UI.Labels.SavedScenes', { count: scenes.length });
+  const closeLabel = game.i18n.localize('STORYFRAME.UI.Labels.Close');
+
   popup.innerHTML = `
     <div class="popup-header">
-      <span class="popup-title">Saved Scenes (${scenes.length})</span>
-      <button type="button" class="popup-close" aria-label="Close">
+      <span class="popup-title">${savedScenesTitle}</span>
+      <button type="button" class="popup-close" aria-label="${closeLabel}">
         <i class="fas fa-times"></i>
       </button>
     </div>
@@ -1012,10 +1034,10 @@ export async function onShowSavedScenes(_event, target, sidebar) {
       const scene = scenes.find(s => s.id === sceneId);
 
       const confirmed = await foundry.applications.api.DialogV2.confirm({
-        window: { title: 'Delete Scene' },
-        content: `<p>Delete scene "${scene.name}"?</p>`,
-        yes: { label: 'Delete' },
-        no: { label: 'Cancel', default: true },
+        window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Title') },
+        content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeleteScene.Content', { name: scene.name })}</p>`,
+        yes: { label: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Button') },
+        no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel'), default: true },
         rejectClose: false,
       });
 
@@ -1030,7 +1052,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
 
       // Update count in header
       const remaining = popup.querySelectorAll('.scene-item').length;
-      title.textContent = `Saved Scenes (${remaining})`;
+      title.textContent = game.i18n.format('STORYFRAME.UI.Labels.SavedScenes', { count: remaining });
 
       // Close popup if no more scenes
       if (remaining === 0) {
@@ -1040,7 +1062,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
       // Re-render sidebar to hide manage button if needed
       sidebar.render();
 
-      ui.notifications.info(`Deleted scene "${scene.name}"`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SceneDeleted', { name: scene.name }));
     });
   });
 

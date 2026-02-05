@@ -10,7 +10,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
   static DEFAULT_OPTIONS = {
     id: 'storyframe-roll-request-{id}',
     window: {
-      title: 'Request Rolls',
+      title: 'STORYFRAME.WindowTitles.RequestRolls',
       icon: 'fas fa-dice-d20',
       minimizable: false,
       resizable: false,
@@ -76,15 +76,23 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     });
 
     // Ensure participants have required properties with fallbacks
+    const unknownLabel = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
     const enrichedParticipants = this.participants.map(p => ({
       id: p.id,
-      name: p.name || 'Unknown',
+      name: p.name || unknownLabel,
       img: p.img || 'icons/svg/mystery-man.svg',
     }));
 
     return {
       checks: enrichedChecks,
       participants: enrichedParticipants,
+      i18n: {
+        foundChecks: game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecks', { count: enrichedChecks.length }),
+        selectPCs: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SelectPCs'),
+        cancel: game.i18n.localize('STORYFRAME.Dialogs.Cancel'),
+        sendRollRequests: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SendRollRequests'),
+        secret: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.Secret'),
+      },
     };
   }
 

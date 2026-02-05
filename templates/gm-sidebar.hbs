@@ -6,14 +6,14 @@
             data-action="switchTab"
             data-tab="npcs">
       <i class="fas fa-masks-theater" aria-hidden="true"></i>
-      <span>NPCs</span>
+      <span>{{localize "STORYFRAME.UI.Tabs.NPCs"}}</span>
     </button>
     <button type="button"
             class="tab-btn {{#if (eq currentTab 'pcs')}}active{{/if}}"
             data-action="switchTab"
             data-tab="pcs">
       <i class="fas fa-users" aria-hidden="true"></i>
-      <span>PCs</span>
+      <span>{{localize "STORYFRAME.UI.Tabs.PCs"}}</span>
       {{#if pendingRolls.length}}
       <span class="tab-badge" data-count="{{pendingRolls.length}}">{{pendingRolls.length}}</span>
       {{/if}}
@@ -23,7 +23,7 @@
             data-action="switchTab"
             data-tab="challenges">
       <i class="fas fa-tasks" aria-hidden="true"></i>
-      <span>Challenges</span>
+      <span>{{localize "STORYFRAME.UI.Labels.Challenges"}}</span>
       {{#if hasActiveChallenge}}
       <span class="tab-badge active-badge">{{activeChallenges.length}}</span>
       {{/if}}
@@ -36,40 +36,40 @@
     <section class="npcs-tab {{#unless (eq currentTab 'npcs')}}hidden{{/unless}}" data-tab-content="npcs" aria-labelledby="npcs-heading">
       <div class="tab-scroll-content">
         <div class="tab-header-actions">
-          <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
+          <button type="button" data-action="addSpeakerFromImage" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddNPC"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddNPCFromImage"}}">
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
-          <button type="button" data-action="clearSpeaker" data-tooltip="Clear active NPC" aria-label="Deselect active NPC">
+          <button type="button" data-action="clearSpeaker" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearActiveNPC"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DeselectActiveNPC"}}">
             <i class="fas fa-user-slash" aria-hidden="true"></i>
           </button>
-          <button type="button" data-action="clearAllSpeakers" data-tooltip="Clear all NPCs" aria-label="Remove all NPCs">
+          <button type="button" data-action="clearAllSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllNPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllNPCs"}}">
             <i class="fas fa-trash" aria-hidden="true"></i>
           </button>
           {{#if hasSpeakers}}
-          <button type="button" data-action="saveCurrentSpeakers" data-tooltip="Save speakers as scene" aria-label="Save current speakers as scene">
+          <button type="button" data-action="saveCurrentSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SaveSpeakersAsScene"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SaveSpeakersAsScene"}}">
             <i class="fas fa-save" aria-hidden="true"></i>
           </button>
           {{/if}}
           {{#if hasSpeakerScenes}}
-          <button type="button" data-action="manageScenes" data-tooltip="Manage speaker scenes" aria-label="Manage saved speaker scenes">
+          <button type="button" data-action="manageScenes" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ManageSpeakerScenes"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.ManageSpeakerScenes"}}">
             <i class="fas fa-folder" aria-hidden="true"></i>
           </button>
           {{/if}}
         </div>
 
-        <div class="speaker-gallery" role="list" aria-label="NPC speakers">
+        <div class="speaker-gallery" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.NPCSpeakers"}}">
         {{#if hasSpeakers}}
           {{#each speakers}}
             <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
                  data-action="setSpeaker"
                  data-speaker-id="{{this.id}}"
-                 data-tooltip="{{this.name}}{{#if this.actorDeleted}} (Actor Deleted){{/if}}"
+                 data-tooltip="{{this.name}}{{#if this.actorDeleted}} ({{localize "STORYFRAME.UI.Labels.ActorDeleted"}}){{/if}}"
                  role="listitem"
                  tabindex="0"
                  aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
               <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
               <div class="speaker-name">{{this.name}}</div>
-              <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="Remove {{this.name}}" aria-label="Remove {{this.name}}">
+              <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RemoveName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveName" name=this.name}}">
                 <i class="fas fa-times" aria-hidden="true"></i>
               </button>
             </div>
@@ -77,7 +77,7 @@
         {{else}}
           <div class="empty-state compact" role="status">
             <i class="fas fa-user-plus" aria-hidden="true"></i>
-            <span>Drag actors here</span>
+            <span>{{localize "STORYFRAME.UI.Labels.DragActorsHere"}}</span>
           </div>
         {{/if}}
         </div>
@@ -85,7 +85,7 @@
         {{#if hasJournalImages}}
         <div class="journal-images-inline">
           <div class="section-divider">
-            <span>Journal Images</span>
+            <span>{{localize "STORYFRAME.UI.Labels.JournalImages"}}</span>
           </div>
           <div class="journal-images-gallery">
           {{#each journalImages}}
@@ -93,7 +93,7 @@
                  data-action="setImageAsSpeaker"
                  data-image-id="{{this.id}}"
                  data-image-src="{{this.src}}"
-                 data-tooltip="Click to add {{this.alt}} as NPC">
+                 data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClickToAddAsNPC" name=this.alt}}">
               <div class="journal-image-item-thumb">
                 <img src="{{this.src}}" alt="{{this.alt}}" loading="lazy">
               </div>
@@ -107,14 +107,14 @@
         {{#if hasJournalActors}}
         <div class="journal-actors-inline">
           <div class="section-divider">
-            <span>Journal Actors</span>
+            <span>{{localize "STORYFRAME.UI.Labels.JournalActors"}}</span>
           </div>
           <div class="journal-actors-gallery">
           {{#each journalActors}}
             <div class="journal-actor-item"
                  data-action="setActorAsSpeaker"
                  data-actor-id="{{this.id}}"
-                 data-tooltip="Click to add {{this.name}} as NPC">
+                 data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClickToAddAsNPC" name=this.name}}">
               <div class="journal-actor-item-thumb">
                 <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
               </div>
@@ -131,35 +131,35 @@
     <section class="pcs-tab {{#unless (eq currentTab 'pcs')}}hidden{{/unless}}" data-tab-content="pcs" aria-labelledby="pcs-heading">
       <div class="tab-header-actions">
         {{#if pendingRolls.length}}
-        <button type="button" class="pending-rolls-btn" data-action="showPendingRolls" data-tooltip="{{pendingRolls.length}} pending roll(s)" aria-label="View pending rolls">
+        <button type="button" class="pending-rolls-btn" data-action="showPendingRolls" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.PendingRollsCount" count=pendingRolls.length}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.ViewPendingRolls"}}">
           <i class="fas fa-hourglass-half" aria-hidden="true"></i>
         </button>
         {{/if}}
-        <button type="button" data-action="addPartyPCs" data-tooltip="Add party members" aria-label="Add all party members">
+        <button type="button" data-action="addPartyPCs" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddPartyMembers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddPartyMembers"}}">
           <i class="fas fa-user-group" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="addAllPCs" data-tooltip="Add all PCs" aria-label="Add all player characters">
+        <button type="button" data-action="addAllPCs" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddAllPCs"}}">
           <i class="fas fa-users" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="openPlayerWindows" data-tooltip="Open\Close on players" aria-label="Open StoryFrame viewer on all player clients">
+        <button type="button" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
           <i class="fas fa-tv" aria-hidden="true"></i>
         </button>
         {{#if hasParticipants}}
-        <button type="button" data-action="clearAllParticipants" data-tooltip="Clear all PCs" aria-label="Remove all PCs">
+        <button type="button" data-action="clearAllParticipants" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllPCs"}}">
           <i class="fas fa-trash" aria-hidden="true"></i>
         </button>
         {{/if}}
-        <button type="button" class="" data-action="openSkillConfig" data-tooltip="Configure Quick Skills" aria-label="Configure quick skill buttons">
+        <button type="button" class="" data-action="openSkillConfig" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ConfigureQuickSkills"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.ConfigureQuickSkills"}}">
           <i class="fas fa-cog" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="requestRollsFromSelection" data-tooltip="Request Rolls from Selection" aria-label="Parse inline checks from selected text and request rolls">
+        <button type="button" data-action="requestRollsFromSelection" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RequestRollsFromSelection"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestRollsFromSelection"}}">
           <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </button>
       </div>
 
       {{#if hasParticipants}}
-      <div class="dc-controls-bar" role="toolbar" aria-label="DC controls">
-        <div class="participant-portraits participant-portraits-sticky" data-drop-zone="participant" role="list" aria-label="Player characters">
+      <div class="dc-controls-bar" role="toolbar" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DCControls"}}">
+        <div class="participant-portraits participant-portraits-sticky" data-drop-zone="participant" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.PlayerCharacters"}}">
           {{#each participants}}
             <div class="participant-token {{#if this.selected}}selected{{/if}}"
                  data-action="toggleParticipantSelection"
@@ -172,8 +172,8 @@
               <button type="button" class="remove-btn"
                       data-action="removeParticipant"
                       data-participant-id="{{this.id}}"
-                      data-tooltip="Remove"
-                      aria-label="Remove {{this.name}}">
+                      data-tooltip="{{localize "STORYFRAME.UI.Labels.Remove"}}"
+                      aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveName" name=this.name}}">
                 <i class="fas fa-times" aria-hidden="true"></i>
               </button>
             </div>
@@ -181,25 +181,25 @@
         </div>
 
         <div class="dc-controls-row">
-          <button type="button" data-action="toggleSelectAll" class="select-all-btn" data-tooltip="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}" aria-label="{{#if allSelected}}Deselect all{{else}}Select all{{/if}}">
+          <button type="button" data-action="toggleSelectAll" class="select-all-btn" data-tooltip="{{#if allSelected}}{{localize "STORYFRAME.UI.Tooltips.DeselectAll"}}{{else}}{{localize "STORYFRAME.UI.Tooltips.SelectAll"}}{{/if}}" aria-label="{{#if allSelected}}{{localize "STORYFRAME.UI.Tooltips.DeselectAll"}}{{else}}{{localize "STORYFRAME.UI.Tooltips.SelectAll"}}{{/if}}">
             <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
-            <span>{{#if allSelected}}Deselect{{else}}Select All{{/if}}</span>
+            <span>{{#if allSelected}}{{localize "STORYFRAME.UI.Labels.Deselect"}}{{else}}{{localize "STORYFRAME.UI.Labels.SelectAll"}}{{/if}}</span>
           </button>
 
           <div class="preset-selector">
             <div class="dc-input-group">
-              <label class="dc-label" for="dc-input">DC</label>
+              <label class="dc-label" for="dc-input">{{localize "STORYFRAME.ChallengeBuilder.DC"}}</label>
               <input type="number"
                      id="dc-input"
                      class="dc-input"
                      value="{{currentDC}}"
                      min="1"
                      placeholder="--"
-                     aria-label="Difficulty class">
+                     aria-label="{{localize "STORYFRAME.UI.AriaLabels.DifficultyClass"}}">
               <button type="button"
                       class="preset-btn"
                       data-action="togglePresetDropdown"
-                      data-tooltip="DC Presets">
+                      data-tooltip="{{localize "STORYFRAME.UI.Tooltips.DCPresets"}}">
                 <i class="fas fa-bookmark"></i>
               </button>
             </div>
@@ -209,12 +209,12 @@
                 <input type="number"
                        id="new-preset-dc"
                        class="preset-dc-input"
-                       placeholder="Add DC"
+                       placeholder="{{localize "STORYFRAME.UI.Placeholders.AddDC"}}"
                        min="1">
                 <button type="button"
                         class="preset-add-btn"
                         data-action="addPresetQuick"
-                        data-tooltip="Add preset">
+                        data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddPreset"}}">
                   <i class="fas fa-plus"></i>
                 </button>
               </div>
@@ -235,7 +235,7 @@
                             class="preset-delete-btn"
                             data-action="deletePresetQuick"
                             data-preset-id="{{this.id}}"
-                            data-tooltip="Delete">
+                            data-tooltip="{{localize "STORYFRAME.UI.Labels.Delete"}}">
                       <i class="fas fa-times"></i>
                     </button>
                   </div>
@@ -248,8 +248,8 @@
           {{#if isPF2e}}
             {{#if partyLevel}}
             <div class="difficulty-selector compact">
-              <span class="party-level" data-tooltip="Party Level">Lv{{partyLevel}}</span>
-              <select id="difficulty-select" aria-label="Difficulty by level">
+              <span class="party-level" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.PartyLevel"}}">{{localize "STORYFRAME.UI.Labels.LevelShort"}}{{partyLevel}}</span>
+              <select id="difficulty-select" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DifficultyByLevel"}}">
                 {{#each difficultyOptions}}
                   <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
                 {{/each}}
@@ -258,7 +258,7 @@
             {{/if}}
           {{else if isDND5e}}
             <div class="difficulty-selector dnd5e compact">
-              <select id="dc-select-dnd5e" aria-label="Select difficulty">
+              <select id="dc-select-dnd5e" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SelectDifficulty"}}">
                 {{#each dcOptions}}
                   <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
                 {{/each}}
@@ -269,8 +269,8 @@
           <button type="button"
                   class="secret-roll-btn {{#if secretRollEnabled}}active{{/if}}"
                   data-action="toggleSecretRoll"
-                  data-tooltip="GM Only Roll"
-                  aria-label="Toggle secret roll"
+                  data-tooltip="{{localize "STORYFRAME.UI.Tooltips.GMOnlyRoll"}}"
+                  aria-label="{{localize "STORYFRAME.UI.AriaLabels.ToggleSecretRoll"}}"
                   aria-pressed="{{#if secretRollEnabled}}true{{else}}false{{/if}}">
             <i class="fas fa-eye-slash" aria-hidden="true"></i>
           </button>
@@ -278,8 +278,8 @@
           <button type="button"
                   class="send-batch-btn"
                   data-action="sendBatch"
-                  data-tooltip="Send batched skill checks"
-                  aria-label="Send batch"
+                  data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SendBatchedSkillChecks"}}"
+                  aria-label="{{localize "STORYFRAME.UI.AriaLabels.SendBatch"}}"
                   style="display: none;">
             <i class="fas fa-paper-plane" aria-hidden="true"></i>
             <span class="batch-count">0</span>
@@ -293,7 +293,7 @@
         {{#if hasJournalChecks}}
         <div class="journal-checks-inline">
           <div class="section-divider">
-            <span>Journal Checks</span>
+            <span>{{localize "STORYFRAME.UI.Labels.JournalChecks"}}</span>
           </div>
           <div class="journal-checks-grid">
           {{#each journalCheckGroups}}
@@ -302,8 +302,8 @@
                       class="journal-skill-btn"
                       data-action="showCheckDCsPopup"
                       data-skill="{{this.skillName}}"
-                      data-tooltip="{{this.skillName}} Checks"
-                      aria-label="{{this.skillName}} Checks">
+                      data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SkillChecks" skill=this.skillName}}"
+                      aria-label="{{localize "STORYFRAME.UI.AriaLabels.SkillChecks" skill=this.skillName}}">
                 {{this.skillName}}
               </button>
             </div>
@@ -316,7 +316,7 @@
         <div class="lore-skills-section">
           <div class="lore-header">
             <i class="fas fa-book"></i>
-            <span>Lore Skills</span>
+            <span>{{localize "STORYFRAME.ChallengeBuilder.LoreSkills"}}</span>
           </div>
           <div class="lore-skills-grid">
             {{#each loreSkills}}
@@ -326,7 +326,7 @@
                         data-action="requestSkill"
                         data-skill="{{this.slug}}"
                         data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
                   {{this.name}}
                 </button>
               </div>
@@ -335,10 +335,10 @@
         </div>
         {{/if}}
 
-        <div class="skill-categories" role="group" aria-label="Skill buttons by category">
+        <div class="skill-categories" role="group" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SkillButtonsByCategory"}}">
           {{#if physicalSkills.length}}
           <div class="skill-category">
-            <span class="category-label">Physical</span>
+            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Physical"}}</span>
             <div class="category-skills">
               {{#each physicalSkills}}
               <div class="skill-btn-wrapper">
@@ -347,7 +347,7 @@
                         data-action="requestSkill"
                         data-skill="{{this.slug}}"
                         data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
                   <i class="fas {{this.icon}}" aria-hidden="true"></i>
                 </button>
                 <span class="skill-label">{{this.name}}</span>
@@ -359,7 +359,7 @@
 
           {{#if magicalSkills.length}}
           <div class="skill-category">
-            <span class="category-label">Magical</span>
+            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Magical"}}</span>
             <div class="category-skills">
               {{#each magicalSkills}}
               <div class="skill-btn-wrapper">
@@ -368,7 +368,7 @@
                         data-action="requestSkill"
                         data-skill="{{this.slug}}"
                         data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
                   <i class="fas {{this.icon}}" aria-hidden="true"></i>
                 </button>
                 <span class="skill-label">{{this.name}}</span>
@@ -380,7 +380,7 @@
 
           {{#if socialSkills.length}}
           <div class="skill-category">
-            <span class="category-label">Social</span>
+            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Social"}}</span>
             <div class="category-skills">
               {{#each socialSkills}}
               <div class="skill-btn-wrapper">
@@ -389,7 +389,7 @@
                         data-action="requestSkill"
                         data-skill="{{this.slug}}"
                         data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
                   <i class="fas {{this.icon}}" aria-hidden="true"></i>
                 </button>
                 <span class="skill-label">{{this.name}}</span>
@@ -401,7 +401,7 @@
 
           {{#if utilitySkills.length}}
           <div class="skill-category">
-            <span class="category-label">Utility</span>
+            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Utility"}}</span>
             <div class="category-skills">
               {{#each utilitySkills}}
               <div class="skill-btn-wrapper">
@@ -410,7 +410,7 @@
                         data-action="requestSkill"
                         data-skill="{{this.slug}}"
                         data-tooltip="{{this.name}}"
-                        aria-label="Request {{this.name}} check">
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
                   <i class="fas {{this.icon}}" aria-hidden="true"></i>
                 </button>
                 <span class="skill-label">{{this.name}}</span>
@@ -428,14 +428,14 @@
     <section class="challenges-tab {{#unless (eq currentTab 'challenges')}}hidden{{/unless}}" data-tab-content="challenges" aria-labelledby="challenges-heading">
       <div class="tab-header-actions">
         {{#if hasActiveChallenge}}
-        <button type="button" class="active-challenges-btn" data-action="showActiveChallenges" data-tooltip="{{activeChallenges.length}} active challenge(s)" aria-label="View active challenges">
+        <button type="button" class="active-challenges-btn" data-action="showActiveChallenges" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ActiveChallengesCount" count=activeChallenges.length}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.ViewActiveChallenges"}}">
           <i class="fas fa-flag-checkered" aria-hidden="true"></i>
         </button>
         {{/if}}
-        <button type="button" data-action="presentChallenge" data-tooltip="Present Challenge" aria-label="Present multi-option challenge to all players">
+        <button type="button" data-action="presentChallenge" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.PresentChallenge"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.PresentChallenge"}}">
           <i class="fas fa-tasks" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="createChallengeFromSelection" data-tooltip="Create from Selection" aria-label="Create challenge from selected journal text">
+        <button type="button" data-action="createChallengeFromSelection" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.CreateFromSelection"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.CreateFromSelection"}}">
           <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </button>
       </div>
@@ -454,10 +454,10 @@
                 <span class="lib-card-title">{{this.name}}</span>
               </div>
               <div class="lib-card-actions">
-                <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="Edit challenge">
+                <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditChallenge"}}">
                   <i class="fas fa-edit"></i>
                 </button>
-                <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="Delete challenge">
+                <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.DeleteChallenge"}}">
                   <i class="fas fa-trash"></i>
                 </button>
               </div>
@@ -467,12 +467,12 @@
             <div class="lib-card-body">
               {{#each this.options}}
               <div class="lib-option-preview">
-                <div class="opt-num">Option {{this.index}}</div>
+                <div class="opt-num">{{localize "STORYFRAME.ChallengeBuilder.OptionLabel" num=this.index}}</div>
                 <div class="opt-desc">{{this.name}}</div>
                 <div class="opt-skills">
                   {{#each this.skillOptions}}
                   <span class="skill-dc-pill">
-                    {{this.displayText}}{{#if this.dc}} <strong>DC {{this.dc}}</strong>{{/if}}
+                    {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
                     {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
                   </span>
                   {{/each}}
@@ -485,7 +485,7 @@
                     class="lib-present-btn"
                     data-action="presentSavedChallenge"
                     data-challenge-id="{{this.id}}">
-              <i class="fas fa-paper-plane"></i> Present to All Players
+              <i class="fas fa-paper-plane"></i> {{localize "STORYFRAME.UI.Labels.PresentToAllPlayers"}}
             </button>
             {{/unless}}
           </div>
@@ -493,8 +493,8 @@
         {{else}}
           <div class="lib-empty-state">
             <i class="fas fa-folder-open"></i>
-            <p>No saved challenges</p>
-            <p class="hint">Create a challenge and check "Save to library"</p>
+            <p>{{localize "STORYFRAME.UI.Labels.NoSavedChallenges"}}</p>
+            <p class="hint">{{localize "STORYFRAME.UI.Labels.CreateChallengeHint"}}</p>
           </div>
         {{/if}}
       </div>

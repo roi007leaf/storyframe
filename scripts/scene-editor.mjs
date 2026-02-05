@@ -114,48 +114,65 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
   await extractJournalContent();
 
+  const i18nTitle = isEditing
+    ? game.i18n.localize('STORYFRAME.SceneEditor.TitleEdit')
+    : game.i18n.localize('STORYFRAME.SceneEditor.TitleCreate');
+  const i18nSceneName = game.i18n.localize('STORYFRAME.UI.Labels.SceneName');
+  const i18nEnterSceneName = game.i18n.localize('STORYFRAME.UI.Placeholders.EnterSceneName');
+  const i18nSpeakersCount = game.i18n.format('STORYFRAME.SceneEditor.SpeakersCount', { count: editorSpeakers.length });
+  const i18nAddCurrentSpeakers = game.i18n.localize('STORYFRAME.UI.Tooltips.AddCurrentSpeakers');
+  const i18nCurrent = game.i18n.localize('STORYFRAME.SceneEditor.Current');
+  const i18nNoSpeakers = game.i18n.localize('STORYFRAME.SceneEditor.NoSpeakersMessage');
+  const i18nJournalImages = game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length });
+  const i18nJournalActors = game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length });
+  const i18nCancel = game.i18n.localize('STORYFRAME.Dialogs.Cancel');
+  const i18nSaveBtn = isEditing
+    ? game.i18n.localize('STORYFRAME.SceneEditor.SaveChanges')
+    : game.i18n.localize('STORYFRAME.SceneEditor.CreateScene');
+  const i18nClose = game.i18n.localize('STORYFRAME.Dialogs.Close');
+
   editor.innerHTML = `
     <div class="editor-header">
-      <h2>${isEditing ? 'Edit' : 'Create'} Speaker Scene</h2>
-      <button type="button" class="editor-close" aria-label="Close">
+      <h2>${i18nTitle}</h2>
+      <button type="button" class="editor-close" aria-label="${i18nClose}">
         <i class="fas fa-times"></i>
       </button>
     </div>
 
     <div class="editor-body">
       <div class="editor-section">
-        <label for="scene-name-input">Scene Name</label>
-        <input type="text" id="scene-name-input" value="${sceneName}" placeholder="Enter scene name" autofocus>
+        <label for="scene-name-input">${i18nSceneName}</label>
+        <input type="text" id="scene-name-input" value="${sceneName}" placeholder="${i18nEnterSceneName}" autofocus>
       </div>
 
       <div class="editor-section">
         <div class="section-header">
-          <h3>Speakers (${editorSpeakers.length})</h3>
+          <h3>${i18nSpeakersCount}</h3>
           <div class="section-actions">
-            <button type="button" class="btn-add-current" title="Add current speakers">
-              <i class="fas fa-users"></i> Current
+            <button type="button" class="btn-add-current" data-tooltip="${i18nAddCurrentSpeakers}">
+              <i class="fas fa-users"></i> ${i18nCurrent}
             </button>
           </div>
         </div>
         <div class="speakers-list" data-drop-zone="true">
-          ${editorSpeakers.length === 0 ? '<p class="empty-message">No speakers. Add from sources below or drag actors here.</p>' : ''}
+          ${editorSpeakers.length === 0 ? `<p class="empty-message">${i18nNoSpeakers}</p>` : ''}
         </div>
       </div>
 
       <div class="editor-section images-section" style="display: ${journalImages.length > 0 ? 'flex' : 'none'}">
-        <h3>Journal Images (${journalImages.length})</h3>
+        <h3>${i18nJournalImages}</h3>
         <div class="source-grid images-grid"></div>
       </div>
 
       <div class="editor-section actors-section" style="display: ${journalActors.length > 0 ? 'flex' : 'none'}">
-        <h3>Journal Actors (${journalActors.length})</h3>
+        <h3>${i18nJournalActors}</h3>
         <div class="source-grid actors-grid"></div>
       </div>
     </div>
 
     <div class="editor-footer">
-      <button type="button" class="btn-cancel">Cancel</button>
-      <button type="button" class="btn-save">${isEditing ? 'Save Changes' : 'Create Scene'}</button>
+      <button type="button" class="btn-cancel">${i18nCancel}</button>
+      <button type="button" class="btn-save">${i18nSaveBtn}</button>
     </div>
   `;
 
@@ -174,18 +191,19 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   // Render functions
   function renderSpeakers() {
     const header = speakersList.previousElementSibling.querySelector('h3');
-    header.textContent = `Speakers (${editorSpeakers.length})`;
+    header.textContent = game.i18n.format('STORYFRAME.SceneEditor.SpeakersCount', { count: editorSpeakers.length });
 
     if (editorSpeakers.length === 0) {
-      speakersList.innerHTML = '<p class="empty-message">No speakers. Add from sources below or drag actors here.</p>';
+      speakersList.innerHTML = `<p class="empty-message">${game.i18n.localize('STORYFRAME.SceneEditor.NoSpeakersMessage')}</p>`;
       return;
     }
 
+    const removeTooltip = game.i18n.localize('STORYFRAME.UI.Labels.Remove');
     speakersList.innerHTML = editorSpeakers.map((speaker, idx) => `
       <div class="speaker-item" data-index="${idx}">
         <img src="${speaker.img}" alt="${speaker.name}">
         <span class="speaker-name">${speaker.name}</span>
-        <button type="button" class="btn-remove" data-index="${idx}" title="Remove">
+        <button type="button" class="btn-remove" data-index="${idx}" data-tooltip="${removeTooltip}">
           <i class="fas fa-times"></i>
         </button>
       </div>
@@ -223,14 +241,15 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
     // Update count in header
     const header = section.querySelector('h3');
     if (header) {
-      header.textContent = `Journal Images (${journalImages.length})`;
+      header.textContent = game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length });
     }
 
     if (!imagesGrid) return;
+    const addToSceneTooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.AddToScene');
     imagesGrid.innerHTML = availableImages.map((img, idx) => `
       <div class="source-item" data-type="image" data-index="${idx}">
         <img src="${img.src}" alt="${img.alt}">
-        <button type="button" class="btn-add" title="Add to scene">
+        <button type="button" class="btn-add" data-tooltip="${addToSceneTooltip}">
           <i class="fas fa-plus"></i>
         </button>
       </div>
@@ -251,10 +270,10 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         let name;
         try {
           name = await foundry.applications.api.DialogV2.prompt({
-            window: { title: 'Add Speaker' },
-            content: `<p>Enter name for this speaker:</p><input type="text" name="speakerName" value="${img.alt}" autofocus>`,
+            window: { title: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Title') },
+            content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Content')}</p><input type="text" name="speakerName" value="${img.alt}" autofocus>`,
             ok: {
-              label: 'Add',
+              label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
               callback: (_event, button) => button.form.elements.speakerName.value,
             },
             rejectClose: false,
@@ -299,15 +318,16 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
     // Update count in header
     const header = section.querySelector('h3');
     if (header) {
-      header.textContent = `Journal Actors (${journalActors.length})`;
+      header.textContent = game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length });
     }
 
     if (!actorsGrid) return;
+    const addToSceneTooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.AddToScene');
     actorsGrid.innerHTML = availableActors.map((actor, idx) => `
       <div class="source-item" data-type="actor" data-index="${idx}">
         <img src="${actor.img}" alt="${actor.name}">
         <span class="source-name">${actor.name}</span>
-        <button type="button" class="btn-add" title="Add to scene">
+        <button type="button" class="btn-add" data-tooltip="${addToSceneTooltip}">
           <i class="fas fa-plus"></i>
         </button>
       </div>
@@ -343,7 +363,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       const currentSpeakers = state?.speakers || [];
 
       if (currentSpeakers.length === 0) {
-        ui.notifications.warn('No current speakers to add');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.NoSpeakersToAdd'));
         return;
       }
 
@@ -368,7 +388,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       renderSpeakers();
       renderImages();
       renderActors();
-      ui.notifications.info(`Added ${addedCount} speaker(s)`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SpeakersAdded', { count: addedCount }));
     });
   }
 
@@ -387,19 +407,19 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       if (data.type === 'Actor') {
         const actor = await fromUuid(data.uuid);
         if (!actor) {
-          ui.notifications.error('Actor not found');
+          ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Scene.ActorNotFound'));
           return;
         }
 
         if (actor.type === 'loot' || actor.type === 'hazard') {
-          ui.notifications.warn('Cannot add loot or hazard actors');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.CannotAddLootOrHazard'));
           return;
         }
 
         // Check if already exists
         const exists = editorSpeakers.some(s => s.actorUuid === data.uuid);
         if (exists) {
-          ui.notifications.warn('Speaker already in scene');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.SpeakerAlreadyInScene'));
           return;
         }
 
@@ -413,7 +433,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
-        ui.notifications.info(`Added ${actor.name}`);
+        ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SpeakerAdded', { actor: actor.name }));
       }
     } catch (err) {
       console.warn('StoryFrame | Drop failed:', err);
@@ -425,13 +445,13 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
     const name = nameInput.value.trim();
 
     if (!name) {
-      ui.notifications.warn('Scene name required');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.SceneNameRequired'));
       nameInput.focus();
       return;
     }
 
     if (editorSpeakers.length === 0) {
-      ui.notifications.warn('Add at least one speaker');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.AddAtLeastOneSpeaker'));
       return;
     }
 
@@ -445,7 +465,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           : s
       );
       await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
-      ui.notifications.info(`Updated scene "${name}"`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SceneUpdated', { name }));
     } else {
       // Create new scene
       const newScene = {
@@ -456,7 +476,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       };
       scenes.push(newScene);
       await game.settings.set(MODULE_ID, 'speakerScenes', scenes);
-      ui.notifications.info(`Created scene "${name}"`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SceneCreated', { name }));
     }
 
     editor.remove();

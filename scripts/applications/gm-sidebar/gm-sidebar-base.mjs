@@ -21,7 +21,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     id: 'storyframe-gm-sidebar',
     classes: ['storyframe', 'gm-sidebar', 'drawer'],
     window: {
-      title: 'Storyframe',
+      title: 'STORYFRAME.WindowTitles.GMSidebar',
       icon: 'fas fa-users',
       resizable: false,
       minimizable: false,
@@ -271,7 +271,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     const actor = await fromUuid(data.uuid);
     if (!actor) {
-      ui.notifications.error('Actor not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Scene.ActorNotFound'));
       return;
     }
 

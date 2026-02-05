@@ -52,13 +52,15 @@ export class SpeakerManager {
     if (actorUuid) {
       const existing = this.state.speakers.find((s) => s.actorUuid === actorUuid);
       if (existing) {
-        ui.notifications.info(`${label || 'NPC'} is already in the list`);
+        const msg = game.i18n.format('STORYFRAME.Notifications.Speaker.AlreadyInList', { label: label || 'NPC' });
+        ui.notifications.info(msg);
         return existing;
       }
     } else if (imagePath) {
       const existing = this.state.speakers.find((s) => s.imagePath === imagePath);
       if (existing) {
-        ui.notifications.info(`${label || 'NPC'} is already in the list`);
+        const msg = game.i18n.format('STORYFRAME.Notifications.Speaker.AlreadyInList', { label: label || 'NPC' });
+        ui.notifications.info(msg);
         return existing;
       }
     }
@@ -109,7 +111,7 @@ export class SpeakerManager {
       } else {
         // Actor deleted - use fallback
         img = speaker.imagePath || 'icons/svg/mystery-man.svg';
-        name = speaker.label || 'Unknown';
+        name = speaker.label || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
       }
     } else {
       // Custom image path

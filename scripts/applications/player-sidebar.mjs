@@ -13,7 +13,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     id: 'storyframe-player-sidebar',
     classes: ['storyframe', 'player-sidebar', 'drawer'],
     window: {
-      title: 'Storyframe Player Sidebar',
+      title: 'STORYFRAME.WindowTitles.PlayerSidebar',
       icon: 'fas fa-dice-d20',
       resizable: false,
       minimizable: false,
@@ -234,17 +234,34 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               }
             }
 
+            const skillName = getSkillName(so.skill);
+            const action = so.action || null;
+
+            // Build localized tooltip and aria-label
+            let tooltip, ariaLabel;
+            if (canRoll) {
+              tooltip = action
+                ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: skillName, action })
+                : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: skillName });
+              ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
+            } else {
+              tooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.InsufficientProficiency');
+              ariaLabel = game.i18n.localize('STORYFRAME.UI.Tooltips.LockedInsufficientProficiency');
+            }
+
             return {
               ...so,
-              skillName: getSkillName(so.skill),
+              skillName,
               skillIcon: getSkillIcon(so.skill),
               dc: so.dc,
               dcDifficulty: getDCDifficulty(so.dc),
-              action: so.action || null,
+              action,
               isSecret: so.isSecret || false,
               showDC: showDCs,
               canRoll,
               minProficiency: so.minProficiency || 0,
+              tooltip,
+              ariaLabel,
             };
           })),
         })));
@@ -271,16 +288,27 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
             const participant = state.participants.find(p => p.id === roll.participantId);
             const actor = participant ? await fromUuid(participant.actorUuid) : null;
 
+            const skillName = getSkillName(roll.skillSlug);
+            const actionName = roll.actionSlug || null;
+
+            // Build localized tooltip and aria-label
+            const tooltip = actionName
+              ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: skillName, action: actionName })
+              : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: skillName });
+            const ariaLabel = game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillCheck', { skill: skillName });
+
             return {
               ...roll,
-              skillName: getSkillName(roll.skillSlug),
+              skillName,
               skillIcon: getSkillIcon(roll.skillSlug),
-              actionName: roll.actionSlug || null,
+              actionName,
               dc: showDCs ? roll.dc : null,
               dcDifficulty: getDCDifficulty(roll.dc),
-              actorName: actor?.name || 'Unknown',
+              actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
               actorId: participant?.actorUuid || 'unknown',
+              tooltip,
+              ariaLabel,
             };
           })
       );
@@ -390,7 +418,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     const state = game.storyframe.stateManager.getState();
     const request = state.pendingRolls?.find((r) => r.id === requestId);
     if (!request) {
-      ui.notifications.warn('Roll request not found');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Roll.RequestNotFound'));
       return;
     }
 

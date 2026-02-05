@@ -31,7 +31,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     id: 'storyframe-player-viewer',
     classes: ['storyframe', 'player-viewer'],
     window: {
-      title: 'StoryFrame Player Viewer',
+      title: 'STORYFRAME.WindowTitles.PlayerViewer',
       resizable: true,
       minimizable: true,
       icon: 'fas fa-book-open',
@@ -56,7 +56,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static HEADER_ACTIONS = {
     toggleLayout: {
       icon: 'fas fa-th',
-      label: 'Toggle Layout',
+      label: 'STORYFRAME.UI.Labels.ToggleLayout',
       onclick: function () {
         this._onToggleLayout();
       },
@@ -134,7 +134,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
               skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
               actionName: roll.actionSlug ? PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
               dc: showDCs ? roll.dc : null,
-              actorName: actor?.name || 'Unknown',
+              actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
               actorId: participant?.actorUuid || 'unknown',
             };
@@ -301,7 +301,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return {
           id: speaker.id,
           img: 'icons/svg/mystery-man.svg',
-          name: speaker.label || 'Unknown',
+          name: speaker.label || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         };
       }
     } else {
@@ -393,14 +393,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const state = game.storyframe.stateManager.getState();
     const request = state.pendingRolls?.find((r) => r.id === requestId);
     if (!request) {
-      ui.notifications.warn('Roll request not found');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Roll.RequestNotFound'));
       return;
     }
 
     // Find participant and get actor
     const participant = state.participants?.find((p) => p.id === request.participantId);
     if (!participant) {
-      ui.notifications.error('Participant not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ParticipantNotFound'));
       if (request.isSecretRoll) {
         await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
       }
@@ -409,7 +409,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     const actor = await fromUuid(participant.actorUuid);
     if (!actor) {
-      ui.notifications.error('Actor not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       if (request.isSecretRoll) {
         await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
       }
@@ -463,7 +463,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             }
 
             if (!skill) {
-              ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
+              ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SkillNotFound', { skill: fullSlug, actor: actor.name }));
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -502,7 +502,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         // D&D 5e rollSkill may return an array or single roll
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
-        ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         if (request.isSecretRoll) {
           await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
         }
@@ -533,7 +533,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       await game.storyframe.socketManager.requestSubmitRollResult(result);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
-      ui.notifications.error('Failed to execute roll');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
       // Leave pending roll on error - player can retry
       // Exception: For secret rolls, remove pending roll as GM handles it
       if (request.isSecretRoll) {
@@ -556,12 +556,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const challenge = state?.activeChallenge;
 
     if (!challenge) {
-      ui.notifications.warn('Challenge no longer active');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Roll.ChallengeNoLongerActive'));
       return;
     }
 
     if (!skillSlug) {
-      ui.notifications.error('Invalid skill');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.InvalidSkill'));
       return;
     }
 
@@ -569,7 +569,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const myParticipant = state.participants?.find(p => p.userId === game.user.id);
 
     if (!myParticipant) {
-      ui.notifications.error('No participant found for your user');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.NoParticipantForUser'));
       return;
     }
 
@@ -588,7 +588,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static async _executeSkillRoll(participant, skillSlug, dc, actionSlug = null, isSecret = false) {
     const actor = await fromUuid(participant.actorUuid);
     if (!actor) {
-      ui.notifications.error('Actor not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       return;
     }
 
@@ -632,7 +632,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             }
 
             if (!skill) {
-              ui.notifications.error(`Skill "${fullSlug}" not found on ${actor.name}`);
+              ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SkillNotFound', { skill: fullSlug, actor: actor.name }));
               return;
             }
             roll = await skill.roll(rollOptions);
@@ -646,17 +646,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         const rollResult = await actor.rollSkill(config, {}, {});
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
-        ui.notifications.error(`Unsupported system: ${currentSystem}`);
+        ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;
       }
 
       if (!roll) return;
 
       const skillName = PlayerViewerApp._getSkillDisplayName(skillSlug);
-      ui.notifications.info(`${skillName} check completed (${roll.total ?? 'N/A'})`);
+      const total = roll.total ?? game.i18n.localize('STORYFRAME.Notifications.Roll.NA');
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.CheckCompleted', { skill: skillName, total }));
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing challenge roll:`, error);
-      ui.notifications.error('Failed to execute roll');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
     }
   }
 

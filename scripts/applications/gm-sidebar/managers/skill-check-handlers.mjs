@@ -18,7 +18,7 @@ export async function onRequestSkill(_event, target, sidebar) {
   if (_event.shiftKey) {
     // Require PC selection for batch mode
     if (sidebar.selectedParticipants.size === 0) {
-      ui.notifications.warn('Select PCs first to use batch selection');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
       return;
     }
 
@@ -51,7 +51,7 @@ export async function onRequestSkill(_event, target, sidebar) {
 
   // Normal click: send single skill
   if (sidebar.selectedParticipants.size === 0) {
-    ui.notifications.warn('No PCs selected');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
     return;
   }
   await requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
@@ -64,7 +64,7 @@ export async function onSendBatch(_event, _target, sidebar) {
   if (sidebar.batchedChecks.length === 0) return;
 
   if (sidebar.selectedParticipants.size === 0) {
-    ui.notifications.warn('No PCs selected');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
     return;
   }
 
@@ -148,15 +148,15 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
 
   if (!suppressNotifications) {
     if (sentCount > 0) {
-      ui.notifications.info(`Requested ${checkName} check from ${sentCount} PC(s)`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.CheckRequested', { checkName, count: sentCount }));
     }
     if (offlineCount > 0) {
       const names = Array.from(offlineNames).join(', ');
-      ui.notifications.warn(`${names} offline - skipped`);
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayersOffline', { names }));
     }
     if (missingSkillCount > 0) {
       const names = Array.from(missingNames).join(', ');
-      ui.notifications.warn(`${names} don't have ${skillName} - skipped`);
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayersLackSkill', { names, skillName }));
     }
 
     // Clear selection after sending rolls
@@ -171,7 +171,7 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
  */
 export async function sendBatchSkillCheck(sidebar) {
   if (sidebar.selectedParticipants.size === 0) {
-    ui.notifications.warn('No PCs selected');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
     return;
   }
 
@@ -238,20 +238,20 @@ export async function sendBatchSkillCheck(sidebar) {
 
   // Show single aggregated notification with unique participant names
   if (uniqueSentIds.size > 0) {
-    ui.notifications.info(`Requested ${checkCount} check(s) from ${uniqueSentIds.size} PC(s)`, { permanent: false });
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.MultipleChecksRequested', { checkCount, uniqueCount: uniqueSentIds.size }), { permanent: false });
   }
   if (uniqueOfflineNames.size > 0) {
     const names = Array.from(uniqueOfflineNames).join(', ');
-    const notification = ui.notifications.warn(`${names} offline - skipped`, { permanent: true });
+    const notification = ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayersOffline', { names }), { permanent: true });
     setTimeout(() => notification.remove(), 15000); // Show for 15 seconds
   }
   if (participantMissingSkills.size > 0) {
     // Build message showing each participant and their missing skills
     const messages = Array.from(participantMissingSkills.entries()).map(([name, skills]) => {
       const skillList = Array.from(skills).join(', ');
-      return `${name} (missing ${skillList})`;
+      return game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayerMissingSkills', { name, skillList });
     });
-    const notification = ui.notifications.warn(`${messages.join('; ')} - skipped`, { permanent: true });
+    const notification = ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.SkippedMissingSkills', { details: messages.join('; ') }), { permanent: true });
     setTimeout(() => notification.remove(), 15000); // Show for 15 seconds
   }
 }
@@ -464,7 +464,7 @@ export async function onOpenSkillMenu(_event, target, sidebar) {
       menu.remove();
 
       if (sidebar.selectedParticipants.size === 0) {
-        ui.notifications.warn('No PCs selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
         return;
       }
 

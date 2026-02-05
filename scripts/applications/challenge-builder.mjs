@@ -12,7 +12,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     id: 'storyframe-challenge-builder',
     classes: ['storyframe', 'challenge-builder'],
     window: {
-      title: 'Present Challenge',
+      title: 'STORYFRAME.WindowTitles.PresentChallenge',
       resizable: false,
     },
     position: {
@@ -80,6 +80,27 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
   }
 
   async _createOptionFromData(optData, context) {
+    // i18n labels
+    const i18n = {
+      selectSkill: game.i18n.localize('STORYFRAME.UI.Labels.SelectSkill'),
+      loreSkills: game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills'),
+      noAction: game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction'),
+      dc: game.i18n.localize('STORYFRAME.ChallengeBuilder.DC'),
+      minProfTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.MinProficiency'),
+      secretTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.SecretRoll'),
+      any: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Any'),
+      trained: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Trained'),
+      expert: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expert'),
+      master: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Master'),
+      legendary: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Legendary'),
+      proficient: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Proficient'),
+      expertise: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expertise'),
+      optionPlaceholder: game.i18n.localize('STORYFRAME.UI.Labels.OptionName'),
+      remove: game.i18n.localize('STORYFRAME.UI.Labels.Remove'),
+      skills: game.i18n.localize('STORYFRAME.UI.Labels.Skills'),
+      addSkill: game.i18n.localize('STORYFRAME.UI.Labels.AddSkill'),
+    };
+
     const systemSkills = SystemAdapter.getSkills();
     const skillOptions = Object.entries(systemSkills)
       .map(([slug, skill]) => {
@@ -102,7 +123,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       const actionHtml = context.isPF2e ? `
         <div class="action-select" ${so.action ? '' : 'style="display: none;"'}>
           <select name="option-${this.optionCount}-action-${soIdx}" class="action-dropdown">
-            <option value="">No action</option>
+            <option value="">${i18n.noAction}</option>
           </select>
         </div>
       ` : '';
@@ -113,32 +134,32 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         <div class="skill-dc-row" data-skill-index="${soIdx}">
           <div class="skill-select">
             <select name="option-${this.optionCount}-skill-${soIdx}" class="skill-dropdown" data-skill-index="${soIdx}" required>
-              <option value="">Select skill...</option>
+              <option value="">${i18n.selectSkill}</option>
               ${skillOptions}
-              ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
+              ${loreOptions ? `<optgroup label="${i18n.loreSkills}">${loreOptions}</optgroup>` : ''}
             </select>
           </div>
           ${actionHtml}
           <div class="dc-input">
-            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="DC">
+            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}">
           </div>
           <div class="proficiency-select">
-            <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
-              <option value="0" ${minProficiency === 0 ? 'selected' : ''}>Any</option>
+            <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
+              <option value="0" ${minProficiency === 0 ? 'selected' : ''}>${i18n.any}</option>
               ${context.isPF2e ? `
-              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>Trained</option>
-              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>Expert</option>
-              <option value="3" ${minProficiency === 3 ? 'selected' : ''}>Master</option>
-              <option value="4" ${minProficiency === 4 ? 'selected' : ''}>Legendary</option>
+              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>${i18n.trained}</option>
+              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>${i18n.expert}</option>
+              <option value="3" ${minProficiency === 3 ? 'selected' : ''}>${i18n.master}</option>
+              <option value="4" ${minProficiency === 4 ? 'selected' : ''}>${i18n.legendary}</option>
               ` : `
-              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>Proficient</option>
-              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>Expertise</option>
+              <option value="1" ${minProficiency === 1 ? 'selected' : ''}>${i18n.proficient}</option>
+              <option value="2" ${minProficiency === 2 ? 'selected' : ''}>${i18n.expertise}</option>
               `}
             </select>
           </div>
           <div class="secret-checkbox">
             <input type="checkbox" name="option-${this.optionCount}-secret-${soIdx}" id="option-${this.optionCount}-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
-            <label for="option-${this.optionCount}-secret-${soIdx}" title="Secret roll (GM only)">
+            <label for="option-${this.optionCount}-secret-${soIdx}" data-tooltip="${i18n.secretTooltip}">
               <i class="fas fa-eye-slash"></i>
             </label>
           </div>
@@ -147,19 +168,20 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       `;
     }).join('');
 
+    const optionName = optData.name || game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 });
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optData.name || `Option ${this.optionCount + 1}`}" placeholder="Option name...">
-        ${this.optionCount > 0 ? '<button type="button" class="challenge-option-remove" data-action="removeOption"><i class="fas fa-times"></i> Remove</button>' : ''}
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionName}" placeholder="${i18n.optionPlaceholder}">
+        ${this.optionCount > 0 ? `<button type="button" class="challenge-option-remove" data-action="removeOption"><i class="fas fa-times"></i> ${i18n.remove}</button>` : ''}
       </div>
       <div class="challenge-option-fields">
         <div class="challenge-option-field">
-          <label>Skills</label>
+          <label>${i18n.skills}</label>
           <div class="skills-list" data-option-index="${this.optionCount}">
             ${skillRowsHtml}
           </div>
           <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="${this.optionCount}">
-            <i class="fas fa-plus"></i> Add Skill
+            <i class="fas fa-plus"></i> ${i18n.addSkill}
           </button>
         </div>
       </div>
@@ -178,7 +200,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           const actions = JSON.parse(skillOption.dataset.actions);
           const actionDropdown = newOption.querySelector(`[name="option-${this.optionCount}-action-${soIdx}"]`);
           if (actionDropdown && actions.length > 0) {
-            actionDropdown.innerHTML = '<option value="">No action</option>' +
+            const noActionLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction');
+            actionDropdown.innerHTML = `<option value="">${noActionLabel}</option>` +
               actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
             actionDropdown.value = so.action;
           }
@@ -206,7 +229,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           try {
             const actions = JSON.parse(actionsData);
             if (actions && actions.length > 0) {
-              actionDropdown.innerHTML = '<option value="">No action</option>' +
+              const noActionLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction');
+            actionDropdown.innerHTML = `<option value="">${noActionLabel}</option>` +
                 actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
               actionSelect.style.display = 'block';
               return;
@@ -333,7 +357,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     });
 
     if (challengeData.options.length === 0) {
-      ui.notifications.warn('Add at least one option with skills');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AddAtLeastOneOption'));
       return;
     }
 
@@ -352,7 +376,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           updatedAt: Date.now(),
         };
         await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
-        ui.notifications.info(`Updated "${challengeData.name}" in library`);
+        ui.notifications.info(game.i18n.format('STORYFRAME.ChallengeBuilder.UpdatedInLibrary', { name: challengeData.name }));
       }
     } else if (formData.saveToLibrary) {
       // Save new template
@@ -366,7 +390,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       };
       savedChallenges.push(template);
       await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
-      ui.notifications.info(`Saved "${challengeData.name}" to library`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.ChallengeBuilder.SavedToLibrary', { name: challengeData.name }));
     }
 
     // Present challenge (multi-challenge support)
@@ -384,14 +408,14 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const success = await game.storyframe.socketManager.requestAddChallenge(challengeData);
 
     if (!success) {
-      ui.notifications.error(`A challenge named "${challengeData.name}" is already active. Please use a different name or clear the existing challenge.`);
+      ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeDuplicateNamePrompt', { name: challengeData.name }));
       return;  // Keep dialog open for user to fix
     }
 
     if (this.editMode) {
-      ui.notifications.info(`Challenge "${challengeData.name}" updated and presented to ${this.selectedParticipants.size || 'all'} PC(s)`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeUpdated', { name: challengeData.name, count: this.selectedParticipants.size || 'all' }));
     } else {
-      ui.notifications.info(`Challenge "${challengeData.name}" presented to ${this.selectedParticipants.size || 'all'} PC(s)`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengePresentedPCs', { name: challengeData.name, count: this.selectedParticipants.size || 'all' }));
     }
 
     this.close();
@@ -411,6 +435,23 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const optionIdx = parseInt(target.dataset.optionIndex);
     const skillsList = this.element.querySelector(`.skills-list[data-option-index="${optionIdx}"]`);
     const skillCount = this.skillCounts.get(optionIdx) || 1;
+
+    // i18n labels
+    const i18n = {
+      selectSkill: game.i18n.localize('STORYFRAME.UI.Labels.SelectSkill'),
+      loreSkills: game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills'),
+      noAction: game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction'),
+      dc: game.i18n.localize('STORYFRAME.ChallengeBuilder.DC'),
+      minProfTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.MinProficiency'),
+      secretTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.SecretRoll'),
+      any: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Any'),
+      trained: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Trained'),
+      expert: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expert'),
+      master: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Master'),
+      legendary: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Legendary'),
+      proficient: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Proficient'),
+      expertise: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expertise'),
+    };
 
     const context = await this._prepareContext();
     const systemSkills = SystemAdapter.getSkills();
@@ -434,38 +475,38 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     newSkillRow.innerHTML = `
       <div class="skill-select">
         <select name="option-${optionIdx}-skill-${skillCount}" class="skill-dropdown" data-skill-index="${skillCount}" required>
-          <option value="">Select skill...</option>
+          <option value="">${i18n.selectSkill}</option>
           ${skillOptions}
-          ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
+          ${loreOptions ? `<optgroup label="${i18n.loreSkills}">${loreOptions}</optgroup>` : ''}
         </select>
       </div>
       ${isPF2e ? `
       <div class="action-select" style="display: none;">
         <select name="option-${optionIdx}-action-${skillCount}" class="action-dropdown">
-          <option value="">No action</option>
+          <option value="">${i18n.noAction}</option>
         </select>
       </div>
       ` : ''}
       <div class="dc-input">
-        <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" placeholder="DC" required>
+        <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" placeholder="${i18n.dc}" required>
       </div>
       <div class="proficiency-select">
-        <select name="option-${optionIdx}-proficiency-${skillCount}" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
-          <option value="0">Any</option>
+        <select name="option-${optionIdx}-proficiency-${skillCount}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
+          <option value="0">${i18n.any}</option>
           ${isPF2e ? `
-          <option value="1">Trained</option>
-          <option value="2">Expert</option>
-          <option value="3">Master</option>
-          <option value="4">Legendary</option>
+          <option value="1">${i18n.trained}</option>
+          <option value="2">${i18n.expert}</option>
+          <option value="3">${i18n.master}</option>
+          <option value="4">${i18n.legendary}</option>
           ` : `
-          <option value="1">Proficient</option>
-          <option value="2">Expertise</option>
+          <option value="1">${i18n.proficient}</option>
+          <option value="2">${i18n.expertise}</option>
           `}
         </select>
       </div>
       <div class="secret-checkbox">
-        <input type="checkbox" name="option-${optionIdx}-secret-${skillCount}" id="option-${optionIdx}-secret-${skillCount}" data-tooltip="Secret roll (GM only)">
-        <label for="option-${optionIdx}-secret-${skillCount}" data-tooltip="Secret roll (GM only)">
+        <input type="checkbox" name="option-${optionIdx}-secret-${skillCount}" id="option-${optionIdx}-secret-${skillCount}" data-tooltip="${i18n.secretTooltip}">
+        <label for="option-${optionIdx}-secret-${skillCount}" data-tooltip="${i18n.secretTooltip}">
           <i class="fas fa-eye-slash"></i>
         </label>
       </div>
@@ -489,7 +530,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const actionsData = selectedOption.dataset.actions;
         if (actionsData && actionsData !== '[]') {
           const actions = JSON.parse(actionsData);
-          actionDropdown.innerHTML = '<option value="">No action</option>' +
+          const noActionLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction');
+          actionDropdown.innerHTML = `<option value="">${noActionLabel}</option>` +
             actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
           actionSelect.style.display = 'block';
         } else {
@@ -510,11 +552,32 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     if (rows.length > 1) {
       skillRow.remove();
     } else {
-      ui.notifications.warn('Must have at least one skill');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AtLeastOneSkill'));
     }
   }
 
   static async _onAddOption(_event, _target) {
+    // i18n labels
+    const i18n = {
+      selectSkill: game.i18n.localize('STORYFRAME.UI.Labels.SelectSkill'),
+      loreSkills: game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills'),
+      noAction: game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction'),
+      dc: game.i18n.localize('STORYFRAME.ChallengeBuilder.DC'),
+      minProfTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.MinProficiency'),
+      secretTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.SecretRoll'),
+      any: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Any'),
+      trained: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Trained'),
+      expert: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expert'),
+      master: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Master'),
+      legendary: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Legendary'),
+      proficient: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Proficient'),
+      expertise: game.i18n.localize('STORYFRAME.ChallengeBuilder.Proficiency.Expertise'),
+      optionPlaceholder: game.i18n.localize('STORYFRAME.UI.Labels.OptionName'),
+      remove: game.i18n.localize('STORYFRAME.UI.Labels.Remove'),
+      skills: game.i18n.localize('STORYFRAME.UI.Labels.Skills'),
+      addSkill: game.i18n.localize('STORYFRAME.UI.Labels.AddSkill'),
+    };
+
     const context = await this._prepareContext();
     const optionsList = this.element.querySelector('.challenge-options-list');
     const systemSkills = SystemAdapter.getSkills();
@@ -529,62 +592,63 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
       .join('');
 
+    const optionLabel = game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 });
     const newOption = document.createElement('div');
     newOption.className = 'challenge-option-card';
     newOption.dataset.optionIndex = this.optionCount;
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="Option ${this.optionCount + 1}" placeholder="Option name...">
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionLabel}" placeholder="${i18n.optionPlaceholder}">
         <button type="button" class="challenge-option-remove" data-action="removeOption">
-          <i class="fas fa-times"></i> Remove
+          <i class="fas fa-times"></i> ${i18n.remove}
         </button>
       </div>
       <div class="challenge-option-fields">
         <div class="challenge-option-field">
-          <label>Skills</label>
+          <label>${i18n.skills}</label>
           <div class="skills-list" data-option-index="${this.optionCount}">
             <div class="skill-dc-row" data-skill-index="0">
               <div class="skill-select">
                 <select name="option-${this.optionCount}-skill-0" class="skill-dropdown" data-skill-index="0" required>
-                  <option value="">Select skill...</option>
+                  <option value="">${i18n.selectSkill}</option>
                   ${skillOptions}
-                  ${loreOptions ? `<optgroup label="Lore Skills">${loreOptions}</optgroup>` : ''}
+                  ${loreOptions ? `<optgroup label="${i18n.loreSkills}">${loreOptions}</optgroup>` : ''}
                 </select>
               </div>
               ${context.isPF2e ? `
               <div class="action-select" style="display: none;">
                 <select name="option-${this.optionCount}-action-0" class="action-dropdown">
-                  <option value="">No action</option>
+                  <option value="">${i18n.noAction}</option>
                 </select>
               </div>
               ` : ''}
               <div class="dc-input">
-                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="DC" required>
+                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="${i18n.dc}" required>
               </div>
               <div class="proficiency-select">
-                <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="Minimum proficiency required">
-                  <option value="0">Any</option>
+                <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
+                  <option value="0">${i18n.any}</option>
                   ${context.isPF2e ? `
-                  <option value="1">Trained</option>
-                  <option value="2">Expert</option>
-                  <option value="3">Master</option>
-                  <option value="4">Legendary</option>
+                  <option value="1">${i18n.trained}</option>
+                  <option value="2">${i18n.expert}</option>
+                  <option value="3">${i18n.master}</option>
+                  <option value="4">${i18n.legendary}</option>
                   ` : `
-                  <option value="1">Proficient</option>
-                  <option value="2">Expertise</option>
+                  <option value="1">${i18n.proficient}</option>
+                  <option value="2">${i18n.expertise}</option>
                   `}
                 </select>
               </div>
               <div class="secret-checkbox">
                 <input type="checkbox" name="option-${this.optionCount}-secret-0" id="option-${this.optionCount}-secret-0">
-                <label for="option-${this.optionCount}-secret-0" data-tooltip="Secret roll (GM only)">
+                <label for="option-${this.optionCount}-secret-0" data-tooltip="${i18n.secretTooltip}">
                   <i class="fas fa-eye-slash"></i>
                 </label>
               </div>
             </div>
           </div>
           <button type="button" class="add-skill-btn" data-action="addSkill" data-option-index="${this.optionCount}">
-            <i class="fas fa-plus"></i> Add Skill
+            <i class="fas fa-plus"></i> ${i18n.addSkill}
           </button>
         </div>
       </div>
@@ -610,10 +674,10 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       optionCard.remove();
       // Renumber
       optionsList.querySelectorAll('.challenge-option-card').forEach((card, idx) => {
-        card.querySelector('.option-name-input').value = `Option ${idx + 1}`;
+        card.querySelector('.option-name-input').value = game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: idx + 1 });
       });
     } else {
-      ui.notifications.warn('Must have at least one option');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AtLeastOneOption'));
     }
   }
 }

@@ -38,13 +38,13 @@ export const PF2E_DC_BY_LEVEL = {
  * PF2e difficulty adjustment modifiers
  */
 export const PF2E_DIFFICULTY_ADJUSTMENTS = [
-  { id: 'trivial', label: 'Trivial', adjustment: -10 },
-  { id: 'low', label: 'Low', adjustment: -5 },
-  { id: 'low-med', label: 'Low-Med', adjustment: -2 },
-  { id: 'standard', label: 'Standard', adjustment: 0 },
-  { id: 'med-high', label: 'Med-High', adjustment: 2 },
-  { id: 'high', label: 'High', adjustment: 5 },
-  { id: 'extreme', label: 'Extreme', adjustment: 10 },
+  { id: 'trivial', labelKey: 'STORYFRAME.Difficulty.PF2e.Trivial', adjustment: -10 },
+  { id: 'low', labelKey: 'STORYFRAME.Difficulty.PF2e.Low', adjustment: -5 },
+  { id: 'low-med', labelKey: 'STORYFRAME.Difficulty.PF2e.LowMed', adjustment: -2 },
+  { id: 'standard', labelKey: 'STORYFRAME.Difficulty.PF2e.Standard', adjustment: 0 },
+  { id: 'med-high', labelKey: 'STORYFRAME.Difficulty.PF2e.MedHigh', adjustment: 2 },
+  { id: 'high', labelKey: 'STORYFRAME.Difficulty.PF2e.High', adjustment: 5 },
+  { id: 'extreme', labelKey: 'STORYFRAME.Difficulty.PF2e.Extreme', adjustment: 10 },
 ];
 
 /**

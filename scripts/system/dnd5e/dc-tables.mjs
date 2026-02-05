@@ -7,12 +7,12 @@
  * D&D 5e DC by difficulty
  */
 export const DND5E_DC_BY_DIFFICULTY = {
-  'very-easy': { label: 'Very Easy', dc: 5 },
-  easy: { label: 'Easy', dc: 10 },
-  medium: { label: 'Medium', dc: 15 },
-  hard: { label: 'Hard', dc: 20 },
-  'very-hard': { label: 'Very Hard', dc: 25 },
-  'nearly-impossible': { label: 'Nearly Impossible', dc: 30 },
+  'very-easy': { label: 'STORYFRAME.Difficulty.DND5e.VeryEasy', dc: 5 },
+  easy: { label: 'STORYFRAME.Difficulty.DND5e.Easy', dc: 10 },
+  medium: { label: 'STORYFRAME.Difficulty.DND5e.Medium', dc: 15 },
+  hard: { label: 'STORYFRAME.Difficulty.DND5e.Hard', dc: 20 },
+  'very-hard': { label: 'STORYFRAME.Difficulty.DND5e.VeryHard', dc: 25 },
+  'nearly-impossible': { label: 'STORYFRAME.Difficulty.DND5e.NearlyImpossible', dc: 30 },
 };
 
 /**
@@ -22,7 +22,7 @@ export const DND5E_DC_BY_DIFFICULTY = {
 export function getDND5eDCOptions() {
   return Object.entries(DND5E_DC_BY_DIFFICULTY).map(([key, data]) => ({
     value: key,
-    label: `${data.label} (DC ${data.dc})`,
+    label: `${game.i18n.localize(data.label)} (DC ${data.dc})`,
     dc: data.dc,
   }));
 }

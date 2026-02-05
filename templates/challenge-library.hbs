@@ -8,10 +8,10 @@
           <span class="lib-card-title">{{this.name}}</span>
         </div>
         <div class="lib-card-actions">
-          <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="Edit challenge">
+          <button type="button" class="lib-edit-btn" data-action="editChallenge" data-challenge-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditChallenge"}}">
             <i class="fas fa-edit"></i>
           </button>
-          <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="Delete challenge">
+          <button type="button" class="lib-delete-btn" data-action="deleteChallenge" data-challenge-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.DeleteChallenge"}}">
             <i class="fas fa-trash"></i>
           </button>
         </div>
@@ -20,12 +20,12 @@
       <div class="lib-card-body">
         {{#each this.options}}
         <div class="lib-option-preview">
-          <div class="opt-num">Option {{this.index}}</div>
+          <div class="opt-num">{{localize "STORYFRAME.ChallengeBuilder.OptionLabel" num=this.index}}</div>
           <div class="opt-desc">{{this.name}}</div>
           <div class="opt-skills">
             {{#each this.skillOptions}}
             <span class="skill-dc-pill">
-              {{this.displayText}}{{#if this.dc}} <strong>DC {{this.dc}}</strong>{{/if}}
+              {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
               {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
             </span>
             {{/each}}
@@ -38,15 +38,15 @@
               class="lib-present-btn"
               data-action="presentChallenge"
               data-challenge-id="{{this.id}}">
-        <i class="fas fa-paper-plane"></i> Present to All Players
+        <i class="fas fa-paper-plane"></i> {{localize "STORYFRAME.UI.Labels.PresentToAllPlayers"}}
       </button>
     </div>
     {{/each}}
   {{else}}
     <div class="lib-empty-state">
       <i class="fas fa-folder-open"></i>
-      <p>No saved challenges</p>
-      <p class="hint">Create a challenge and check "Save to library"</p>
+      <p>{{localize "STORYFRAME.UI.Labels.NoSavedChallenges"}}</p>
+      <p class="hint">{{localize "STORYFRAME.UI.Labels.CreateChallengeHint"}}</p>
     </div>
   {{/if}}
 </div>

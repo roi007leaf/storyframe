@@ -7,7 +7,7 @@
             data-tab="challenge"
             {{#unless hasActiveChallenges}}disabled{{/unless}}>
       <i class="fas fa-scroll" aria-hidden="true"></i>
-      <span>Challenges</span>
+      <span>{{localize "STORYFRAME.UI.Labels.Challenges"}}</span>
       {{#if activeChallenges.length}}
         <span class="notification-badge-challenges">{{activeChallenges.length}}</span>
       {{/if}}
@@ -17,7 +17,7 @@
             data-action="switchTab"
             data-tab="rolls">
       <i class="fas fa-dice-d20" aria-hidden="true"></i>
-      <span>Rolls</span>
+      <span>{{localize "STORYFRAME.UI.Labels.Rolls"}}</span>
       {{#if actorRollGroups.length}}
         <span class="notification-badge-rolls">{{totalPendingRolls}}</span>
       {{/if}}
@@ -60,8 +60,8 @@
                           data-action-slug="{{this.action}}"
                           data-is-secret="{{this.isSecret}}"
                           {{#unless this.canRoll}}disabled{{/unless}}
-                          data-tooltip="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{else}}Insufficient proficiency{{/if}}"
-                          aria-label="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}{{else}}Locked - insufficient proficiency{{/if}}">
+                          data-tooltip="{{this.tooltip}}"
+                          aria-label="{{this.ariaLabel}}">
                     {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
                     <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                     <span class="skill-name-short">{{this.skillName}}</span>
@@ -95,8 +95,8 @@
                         class="roll-btn-grid"
                         data-action="executeRoll"
                         data-request-id="{{this.id}}"
-                        data-tooltip="Roll {{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}}"
-                        aria-label="Roll {{this.skillName}} check">
+                        data-tooltip="{{this.tooltip}}"
+                        aria-label="{{this.ariaLabel}}">
                   <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                   <span class="skill-name-short">{{this.skillName}}{{#if this.actionName}}<span class="action-name-micro"> ({{this.actionName}})</span>{{/if}}</span>
                   {{#if this.dc}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
@@ -114,8 +114,8 @@
       <div class="empty-state-sidebar">
         <i class="fas fa-hourglass-half" aria-hidden="true"></i>
         <div class="empty-message">
-          <p>No Pending Actions</p>
-          <span class="empty-hint">Waiting for GM to request rolls or present challenges</span>
+          <p>{{localize "STORYFRAME.UI.Labels.NoPendingActions"}}</p>
+          <span class="empty-hint">{{localize "STORYFRAME.UI.Labels.WaitingForGM"}}</span>
         </div>
       </div>
       {{/unless}}

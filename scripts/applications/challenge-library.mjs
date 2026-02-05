@@ -11,7 +11,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     id: 'storyframe-challenge-library',
     classes: ['storyframe', 'challenge-library'],
     window: {
-      title: 'Challenge Library',
+      title: 'STORYFRAME.WindowTitles.ChallengeLibrary',
       resizable: false,
     },
     position: {
@@ -82,7 +82,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     const template = savedChallenges.find(c => c.id === challengeId);
 
     if (!template) {
-      ui.notifications.error('Challenge not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeNotFound'));
       return;
     }
 
@@ -96,7 +96,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     };
 
     await game.storyframe.socketManager.requestSetActiveChallenge(challengeData);
-    ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengePresentedAll', { name: challengeData.name }));
 
     this.close();
   }
@@ -107,7 +107,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     const template = savedChallenges.find(c => c.id === challengeId);
 
     if (!template) {
-      ui.notifications.error('Challenge not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeNotFound'));
       return;
     }
 
@@ -130,10 +130,10 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     const challengeId = target.dataset.challengeId;
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
-      window: { title: 'Delete Challenge' },
-      content: '<p>Delete this challenge from library?</p>',
-      yes: { label: 'Delete' },
-      no: { label: 'Cancel' },
+      window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Title') },
+      content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Content')}</p>`,
+      yes: { label: game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Button') },
+      no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel') },
       rejectClose: false,
     });
 
@@ -143,7 +143,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     const filtered = savedChallenges.filter(c => c.id !== challengeId);
     await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
 
-    ui.notifications.info('Challenge deleted from library');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeDeleted'));
 
     // Refresh or close
     if (filtered.length === 0) {

@@ -254,11 +254,12 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       this.currentDC = calculatedDC;
     }
 
-    // Build difficulty options
+    // Build difficulty options with localized labels
     const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
     const difficultyOptions = difficultyAdjustments
       ? difficultyAdjustments.map((d) => ({
           ...d,
+          label: game.i18n.localize(d.labelKey),
           selected: d.id === this.currentDifficulty,
         }))
       : null;
@@ -299,14 +300,14 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     const party = game.actors.find((a) => a.type === 'party');
 
     if (!party) {
-      ui.notifications.warn('No party found');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoPartyFound'));
       return;
     }
 
     const memberRefs = party.system.details.members || [];
 
     if (memberRefs.length === 0) {
-      ui.notifications.warn('No members in party');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoMembersInParty'));
       return;
     }
 
@@ -320,7 +321,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     }
 
     if (partyMembers.length === 0) {
-      ui.notifications.warn('No valid members in party');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoValidMembersInParty'));
       return;
     }
 
@@ -337,7 +338,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       }
     }
 
-    ui.notifications.info(`Added ${partyMembers.length} party member(s)`);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Participant.PartyMembersAdded', { count: partyMembers.length }));
   }
 
   /**

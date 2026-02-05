@@ -60,7 +60,8 @@ export function enrichChecks(element) {
       };
 
       const dataAttr = JSON.stringify(checkData).replace(/"/g, '&quot;');
-      return `<span class="sf-check" data-check="${dataAttr}" draggable="true" title="Drag to StoryFrame sidebar">${match}</span>`;
+      const tooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.DragToSidebar');
+      return `<span class="sf-check" data-check="${dataAttr}" draggable="true" data-tooltip="${tooltip}">${match}</span>`;
     });
 
     const wrapper = document.createElement('span');

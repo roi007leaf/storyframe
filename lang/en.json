@@ -4,6 +4,365 @@
     "Settings": {
       "Debug": "Debug Mode",
       "DebugHint": "Enable debug logging to console"
+    },
+    "WindowTitles": {
+      "PresentChallenge": "Present Challenge",
+      "ChallengeLibrary": "Challenge Library",
+      "RequestRolls": "Request Rolls",
+      "DCPresets": "DC Presets",
+      "PlayerSidebar": "Storyframe Player Sidebar",
+      "PlayerViewer": "StoryFrame Player Viewer",
+      "GMSidebar": "Storyframe"
+    },
+    "Dialogs": {
+      "RollRequest": {
+        "FoundChecks": "Found {count} check(s):",
+        "SelectPCs": "Select PCs to request rolls from:",
+        "SendRollRequests": "Send Roll Requests",
+        "Secret": "Secret"
+      },
+      "AddSpeaker": {
+        "Title": "Add Speaker",
+        "Content": "Enter name for this speaker:",
+        "Button": "Add"
+      },
+      "DeleteScene": {
+        "Title": "Delete Scene",
+        "Content": "Delete scene \"{name}\"?",
+        "Button": "Delete"
+      },
+      "DeletePreset": {
+        "Title": "Delete Preset",
+        "Content": "Delete preset \"{name}\" (DC {dc})?",
+        "Button": "Delete"
+      },
+      "AddDCPreset": {
+        "Title": "Add DC Preset",
+        "Button": "Add"
+      },
+      "ClearAllPCs": {
+        "Title": "Clear All PCs",
+        "Content": "Remove all PCs from the list?",
+        "Button": "Clear All"
+      },
+      "ClearAllChallenges": {
+        "Title": "Clear All Challenges",
+        "Content": "Clear all active challenges?",
+        "Button": "Clear All"
+      },
+      "DeleteChallenge": {
+        "Title": "Delete Challenge",
+        "Content": "Delete this challenge from library?",
+        "Button": "Delete"
+      },
+      "EnterDC": {
+        "Title": "Enter DC value",
+        "Label": "Enter DC value",
+        "Validation": "Enter a valid DC (1-60)"
+      },
+      "EnterNPCName": {
+        "Title": "NPC Name",
+        "Label": "Enter NPC name"
+      },
+      "ClearAllNPCs": {
+        "Title": "Clear All NPCs"
+      },
+      "CreateChallenge": {
+        "Title": "Create Challenge",
+        "Content": "Enter a name for this challenge:",
+        "Button": "Create"
+      },
+      "Cancel": "Cancel",
+      "Close": "Close"
+    },
+    "Notifications": {
+      "Scene": {
+        "NoSpeakersToAdd": "No current speakers to add",
+        "SpeakersAdded": "Added {count} speaker(s)",
+        "ActorNotFound": "Actor not found",
+        "CannotAddLootOrHazard": "Cannot add loot or hazard actors",
+        "SpeakerAlreadyInScene": "Speaker already in scene",
+        "SpeakerAdded": "Added {actor}",
+        "SceneNameRequired": "Scene name required",
+        "AddAtLeastOneSpeaker": "Add at least one speaker",
+        "SceneUpdated": "Updated scene \"{name}\"",
+        "SceneCreated": "Created scene \"{name}\"",
+        "NoSavedScenes": "No saved scenes",
+        "SceneDeleted": "Deleted scene \"{name}\""
+      },
+      "Speaker": {
+        "AlreadyInList": "{label} is already in the list",
+        "AddedAsNPC": "Added {label} as NPC",
+        "OpeningForPlayers": "Opening StoryFrame on all player clients",
+        "ClosingForPlayers": "Closing StoryFrame on all player clients",
+        "NoSpeakersToSave": "No speakers to save",
+        "NoNPCsAvailable": "No NPCs available",
+        "SceneHasNoSpeakers": "Scene has no speakers",
+        "NoScenesRemaining": "No scenes remaining. Show speakers directly next time."
+      },
+      "Participant": {
+        "NoPCsFound": "No player characters found",
+        "PCsAdded": "Added {count} PC(s)",
+        "NoPartyFound": "No party found",
+        "NoMembersInParty": "No members in party",
+        "NoValidMembersInParty": "No valid members in party",
+        "PartyMembersAdded": "Added {count} party member(s)"
+      },
+      "DC": {
+        "PresetAdded": "Added DC {value} preset",
+        "PresetDeleted": "Deleted preset: DC {value}",
+        "PresetApplied": "Applied: {name} (DC {dc})",
+        "InvalidDC": "Enter a valid DC (1-60)",
+        "DCAdded": "Added DC {value}",
+        "DCSet": "Set DC to {dc}"
+      },
+      "SkillCheck": {
+        "SelectPCsForBatch": "Select PCs first to use batch selection",
+        "NoPCsSelected": "No PCs selected",
+        "CheckRequested": "Requested {checkName} check from {count} PC(s)",
+        "PlayersOffline": "{names} offline - skipped",
+        "PlayersLackSkill": "{names} don't have {skillName} - skipped",
+        "MultipleChecksRequested": "Requested {checkCount} check(s) from {uniqueCount} PC(s)",
+        "UnknownSkill": "Unknown skill: {skillName}",
+        "SelectPCsFirst": "Select PCs first to request a roll",
+        "NoSpecificActions": "No specific actions for {skillName}",
+        "PlayerMissingSkills": "{name} (missing {skillList})",
+        "SkippedMissingSkills": "{details} - skipped"
+      },
+      "PendingRolls": {
+        "NoPendingRolls": "No pending rolls",
+        "RollCancelled": "Roll request cancelled",
+        "AllRollsCancelled": "All roll requests cancelled"
+      },
+      "Challenge": {
+        "NoChallenges": "No active challenges",
+        "AllChallengesCleared": "All challenges cleared",
+        "ChallengeCleared": "Challenge cleared",
+        "ChallengeNotFound": "Challenge not found",
+        "ChallengeDuplicateName": "A challenge named \"{name}\" is already active. Clear it first or rename this challenge.",
+        "ChallengeDuplicateNamePrompt": "A challenge named \"{name}\" is already active. Please use a different name or clear the existing challenge.",
+        "ChallengePresentedAll": "Challenge \"{name}\" presented to all players",
+        "ChallengePresentedPCs": "Challenge \"{name}\" presented to {count} PC(s)",
+        "ChallengeUpdated": "Challenge \"{name}\" updated and presented to {count} PC(s)",
+        "ChallengeDeleted": "Challenge deleted from library",
+        "NoJournalContent": "No journal content found",
+        "NoTextSelected": "No text selected in journal",
+        "SelectionNotInContent": "Selection must be within the journal content",
+        "NoSkillChecksFound": "No skill checks found in selected text",
+        "ChallengeCreated": "Challenge \"{name}\" created with {count} check(s)",
+        "NoParticipantsAdded": "No participants added. Add PCs first."
+      },
+      "Roll": {
+        "RequestNotFound": "Roll request not found",
+        "ParticipantNotFound": "Participant not found",
+        "ActorNotFound": "Actor not found",
+        "SkillNotFound": "Skill \"{skill}\" not found on {actor}",
+        "UnsupportedSystem": "Unsupported system: {system}",
+        "RollFailed": "Failed to execute roll",
+        "ChallengeNoLongerActive": "Challenge no longer active",
+        "InvalidSkill": "Invalid skill",
+        "NoParticipantForUser": "No participant found for your user",
+        "CheckCompleted": "{skill} check completed ({total})",
+        "NA": "N/A"
+      }
+    },
+    "UI": {
+      "Tabs": {
+        "NPCs": "NPCs",
+        "PCs": "PCs"
+      },
+      "Labels": {
+        "Skills": "Skills",
+        "SceneName": "Scene Name",
+        "SelectSkill": "Select skill...",
+        "OptionName": "Option name...",
+        "PendingRolls": "Pending Rolls ({count})",
+        "ActiveChallenges": "Active Challenges ({count})",
+        "SavedScenes": "Saved Scenes ({count})",
+        "ByPC": "By PC",
+        "BySkill": "By Skill",
+        "AddSkill": "Add Skill",
+        "AddDCPreset": "Add DC Preset",
+        "ClearAll": "Clear All",
+        "CancelAll": "Cancel All",
+        "Remove": "Remove",
+        "RemoveOption": "Remove Option",
+        "ToggleLayout": "Toggle Layout",
+        "ToggleGrouping": "Toggle grouping",
+        "Close": "Close",
+        "Unknown": "Unknown",
+        "Challenges": "Challenges",
+        "Rolls": "Rolls",
+        "NoPendingActions": "No Pending Actions",
+        "WaitingForGM": "Waiting for GM...",
+        "WaitingForGMFull": "Waiting for GM to request rolls or present challenges",
+        "Delete": "Delete",
+        "PresentToAllPlayers": "Present to All Players",
+        "NoSavedChallenges": "No saved challenges",
+        "CreateChallengeHint": "Create a challenge and check \"Save to library\"",
+        "DragActorsHere": "Drag actors here",
+        "JournalImages": "Journal Images",
+        "JournalActors": "Journal Actors",
+        "JournalChecks": "Journal Checks",
+        "ActorDeleted": "Actor Deleted",
+        "Deselect": "Deselect",
+        "SelectAll": "Select All",
+        "LevelShort": "Lv"
+      },
+      "Categories": {
+        "Physical": "Physical",
+        "Magical": "Magical",
+        "Social": "Social",
+        "Utility": "Utility"
+      },
+      "Tooltips": {
+        "MinProficiency": "Minimum proficiency required",
+        "SecretRoll": "Secret roll (GM only)",
+        "DragToSidebar": "Drag to StoryFrame sidebar",
+        "ToggleSidebar": "Toggle StoryFrame Sidebar",
+        "SelectedCount": "{selected} of {total} selected",
+        "SelectAll": "Select all",
+        "DeselectAll": "Deselect all",
+        "AddCurrentSpeakers": "Add current speakers",
+        "AddToScene": "Add to scene",
+        "ClearChallenge": "Clear {name}",
+        "EditScene": "Edit {name}",
+        "DeleteScene": "Delete {name}",
+        "RollSkill": "Roll {skill}",
+        "RollSkillWithAction": "Roll {skill} ({action})",
+        "InsufficientProficiency": "Insufficient proficiency",
+        "LockedInsufficientProficiency": "Locked - insufficient proficiency",
+        "RollSkillCheck": "Roll {skill} check",
+        "EditChallenge": "Edit challenge",
+        "DeleteChallenge": "Delete challenge",
+        "AddNPC": "Add NPC",
+        "ClearActiveNPC": "Clear active NPC",
+        "ClearAllNPCs": "Clear all NPCs",
+        "SaveSpeakersAsScene": "Save speakers as scene",
+        "ManageSpeakerScenes": "Manage speaker scenes",
+        "RemoveName": "Remove {name}",
+        "ClickToAddAsNPC": "Click to add {name} as NPC",
+        "PendingRollsCount": "{count} pending roll(s)",
+        "AddPartyMembers": "Add party members",
+        "AddAllPCs": "Add all PCs",
+        "OpenCloseOnPlayers": "Open/Close on players",
+        "ClearAllPCs": "Clear all PCs",
+        "ConfigureQuickSkills": "Configure Quick Skills",
+        "RequestRollsFromSelection": "Request Rolls from Selection",
+        "DCPresets": "DC Presets",
+        "AddPreset": "Add preset",
+        "PartyLevel": "Party Level",
+        "GMOnlyRoll": "GM Only Roll",
+        "SendBatchedSkillChecks": "Send batched skill checks",
+        "SkillChecks": "{skill} Checks",
+        "ActiveChallengesCount": "{count} active challenge(s)",
+        "PresentChallenge": "Present Challenge",
+        "CreateFromSelection": "Create from Selection"
+      },
+      "AriaLabels": {
+        "AddNPCFromImage": "Add NPC from image",
+        "DeselectActiveNPC": "Deselect active NPC",
+        "RemoveAllNPCs": "Remove all NPCs",
+        "SaveSpeakersAsScene": "Save current speakers as scene",
+        "ManageSpeakerScenes": "Manage saved speaker scenes",
+        "NPCSpeakers": "NPC speakers",
+        "RemoveName": "Remove {name}",
+        "ViewPendingRolls": "View pending rolls",
+        "AddPartyMembers": "Add all party members",
+        "AddAllPCs": "Add all player characters",
+        "OpenViewerOnPlayers": "Open StoryFrame viewer on all player clients",
+        "RemoveAllPCs": "Remove all PCs",
+        "ConfigureQuickSkills": "Configure quick skill buttons",
+        "RequestRollsFromSelection": "Parse inline checks from selected text and request rolls",
+        "DCControls": "DC controls",
+        "PlayerCharacters": "Player characters",
+        "DifficultyClass": "Difficulty class",
+        "DifficultyByLevel": "Difficulty by level",
+        "SelectDifficulty": "Select difficulty",
+        "ToggleSecretRoll": "Toggle secret roll",
+        "SendBatch": "Send batch",
+        "SkillChecks": "{skill} Checks",
+        "RequestSkillCheck": "Request {skill} check",
+        "SkillButtonsByCategory": "Skill buttons by category",
+        "ViewActiveChallenges": "View active challenges",
+        "PresentChallenge": "Present multi-option challenge to all players",
+        "CreateFromSelection": "Create challenge from selected journal text"
+      },
+      "Placeholders": {
+        "EnterSceneName": "Enter scene name",
+        "EnterDC": "Enter DC value",
+        "EnterNPCName": "Enter NPC name",
+        "AddDC": "Add DC"
+      }
+    },
+    "Difficulty": {
+      "PF2e": {
+        "Trivial": "Trivial",
+        "Low": "Low",
+        "LowMed": "Low-Med",
+        "Standard": "Standard",
+        "MedHigh": "Med-High",
+        "High": "High",
+        "Extreme": "Extreme"
+      },
+      "DND5e": {
+        "VeryEasy": "Very Easy",
+        "Easy": "Easy",
+        "Medium": "Medium",
+        "Hard": "Hard",
+        "VeryHard": "Very Hard",
+        "NearlyImpossible": "Nearly Impossible",
+        "SaveLabel": "{ability} Save"
+      }
+    },
+    "Errors": {
+      "ProficiencyFilteringNotImplemented": "Proficiency filtering not implemented in base class"
+    },
+    "SpeakerWheel": {
+      "Back": "Back"
+    },
+    "SceneEditor": {
+      "TitleCreate": "Create Speaker Scene",
+      "TitleEdit": "Edit Speaker Scene",
+      "SpeakersCount": "Speakers ({count})",
+      "JournalImagesCount": "Journal Images ({count})",
+      "JournalActorsCount": "Journal Actors ({count})",
+      "Current": "Current",
+      "NoSpeakersMessage": "No speakers. Add from sources below or drag actors here.",
+      "SaveChanges": "Save Changes",
+      "CreateScene": "Create Scene"
+    },
+    "ChallengeBuilder": {
+      "ChallengeName": "Challenge Name",
+      "ChallengeNamePlaceholder": "e.g., Reinforce Camp",
+      "ChallengeImage": "Challenge Image (optional)",
+      "ChallengeImagePlaceholder": "path/to/image.png",
+      "PickImage": "Pick Image",
+      "SaveToLibrary": "Save this challenge to library",
+      "ChallengeOptions": "Challenge Options",
+      "OptionLabel": "Option {num}",
+      "AddOption": "Add Another Option",
+      "LoreSkills": "Lore Skills",
+      "NoAction": "No action",
+      "DC": "DC",
+      "Proficiency": {
+        "Any": "Any",
+        "Trained": "Trained",
+        "Expert": "Expert",
+        "Master": "Master",
+        "Legendary": "Legendary",
+        "Proficient": "Proficient",
+        "Expertise": "Expertise"
+      },
+      "Validation": {
+        "AddAtLeastOneOption": "Add at least one option with skills",
+        "AtLeastOneSkill": "Must have at least one skill",
+        "AtLeastOneOption": "Must have at least one option"
+      },
+      "SavedToLibrary": "Saved \"{name}\" to library",
+      "UpdatedInLibrary": "Updated \"{name}\" in library",
+      "UpdateAndPresent": "Update & Present",
+      "PresentChallenge": "Present Challenge"
     }
   }
 }

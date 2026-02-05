@@ -89,7 +89,7 @@ export async function onApplyPreset(_event, target, sidebar) {
   const dropdown = sidebar.element.querySelector('.preset-dropdown');
   if (dropdown) dropdown.style.display = 'none';
 
-  ui.notifications.info(`Applied: ${preset.name} (DC ${preset.dc})`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetApplied', { name: preset.name, dc: preset.dc }));
 }
 
 /**
@@ -100,7 +100,7 @@ export async function onAddPresetQuick(_event, _target, sidebar) {
   const dcValue = parseInt(input.value);
 
   if (isNaN(dcValue) || dcValue < 1 || dcValue > 60) {
-    ui.notifications.warn('Enter a valid DC (1-60)');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.DC.InvalidDC'));
     return;
   }
 
@@ -155,7 +155,7 @@ export async function onAddPresetQuick(_event, _target, sidebar) {
   `;
   presetList.appendChild(presetItem);
 
-  ui.notifications.info(`Added DC ${dcValue}`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.DCAdded', { value: dcValue }));
 }
 
 /**

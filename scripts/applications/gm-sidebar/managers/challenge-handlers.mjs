@@ -26,10 +26,10 @@ export async function onClearChallenge(_event, target, sidebar) {
 
   if (challengeId) {
     await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
-    ui.notifications.info('Challenge cleared');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeCleared'));
   } else {
     await game.storyframe.socketManager.requestClearActiveChallenge();
-    ui.notifications.info('All challenges cleared');
+    ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.AllChallengesCleared'));
   }
 }
 
@@ -41,7 +41,7 @@ export async function onRemoveChallenge(_event, target, sidebar) {
   if (!challengeId) return;
 
   await game.storyframe.socketManager.requestRemoveChallenge(challengeId);
-  ui.notifications.info('Challenge cleared');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeCleared'));
 }
 
 /**
@@ -49,17 +49,17 @@ export async function onRemoveChallenge(_event, target, sidebar) {
  */
 export async function onClearAllChallenges(_event, _target, sidebar) {
   const confirmed = await foundry.applications.api.DialogV2.confirm({
-    window: { title: 'Clear All Challenges' },
-    content: '<p>Clear all active challenges?</p>',
-    yes: { label: 'Clear All' },
-    no: { label: 'Cancel' },
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Title') },
+    content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Content')}</p>`,
+    yes: { label: game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Button') },
+    no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel') },
     rejectClose: false,
   });
 
   if (!confirmed) return;
 
   await game.storyframe.socketManager.requestClearAllChallenges();
-  ui.notifications.info('All challenges cleared');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.AllChallengesCleared'));
 }
 
 /**
@@ -137,7 +137,7 @@ export async function onPresentSavedChallenge(_event, target, sidebar) {
   const template = savedChallenges.find(c => c.id === challengeId);
 
   if (!template) {
-    ui.notifications.error('Challenge not found');
+    ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeNotFound'));
     return;
   }
 
@@ -153,11 +153,11 @@ export async function onPresentSavedChallenge(_event, target, sidebar) {
   const success = await game.storyframe.socketManager.requestAddChallenge(challengeData);
 
   if (!success) {
-    ui.notifications.error(`A challenge named "${challengeData.name}" is already active. Clear it first or rename this challenge.`);
+    ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeDuplicateName', { name: challengeData.name }));
     return;
   }
 
-  ui.notifications.info(`Challenge "${challengeData.name}" presented to all players`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengePresentedAll', { name: challengeData.name }));
 }
 
 /**
@@ -169,7 +169,7 @@ export async function onEditChallenge(_event, target, sidebar) {
   const template = savedChallenges.find(c => c.id === challengeId);
 
   if (!template) {
-    ui.notifications.error('Challenge not found');
+    ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeNotFound'));
     return;
   }
 
@@ -189,10 +189,10 @@ export async function onDeleteChallenge(_event, target, sidebar) {
   const challengeId = target.dataset.challengeId;
 
   const confirmed = await foundry.applications.api.DialogV2.confirm({
-    window: { title: 'Delete Challenge' },
-    content: '<p>Delete this challenge from library?</p>',
-    yes: { label: 'Delete' },
-    no: { label: 'Cancel' },
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Title') },
+    content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Content')}</p>`,
+    yes: { label: game.i18n.localize('STORYFRAME.Dialogs.DeleteChallenge.Button') },
+    no: { label: game.i18n.localize('STORYFRAME.Dialogs.Cancel') },
     rejectClose: false,
   });
 
@@ -202,7 +202,7 @@ export async function onDeleteChallenge(_event, target, sidebar) {
   const filtered = savedChallenges.filter(c => c.id !== challengeId);
   await game.settings.set(MODULE_ID, 'challengeLibrary', filtered);
 
-  ui.notifications.info('Challenge deleted from library');
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Challenge.ChallengeDeleted'));
   // Note: Setting update triggers updateSetting hook which re-renders sidebar
 }
 
@@ -213,21 +213,21 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
   // Get the journal content element
   const content = getJournalContent(sidebar);
   if (!content) {
-    ui.notifications.warn('No journal content found');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoJournalContent'));
     return;
   }
 
   // Get selected text from the journal
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
-    ui.notifications.warn('No text selected in journal');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoTextSelected'));
     return;
   }
 
   // Check if selection is within the journal content
   const range = selection.getRangeAt(0);
   if (!content.contains(range.commonAncestorContainer)) {
-    ui.notifications.warn('Selection must be within the journal content');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.SelectionNotInContent'));
     return;
   }
 
@@ -240,16 +240,16 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
   const checks = sidebar._parseChecksFromContent(tempContainer);
 
   if (checks.length === 0) {
-    ui.notifications.warn('No skill checks found in selected text');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoSkillChecksFound'));
     return;
   }
 
   // Prompt for challenge name
   const challengeName = await foundry.applications.api.DialogV2.prompt({
-    window: { title: 'Create Challenge' },
-    content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Title') },
+    content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Content')}</p><input type="text" name="challengeName" autofocus>`,
     ok: {
-      label: 'Create',
+      label: game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Button'),
       callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
     },
     rejectClose: false,
@@ -287,7 +287,7 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
   savedChallenges.push(template);
   await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
 
-  ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeCreated', { name: challengeName, count: checks.length }));
   // Note: Setting update triggers updateSetting hook which re-renders sidebar
 
   // Clear selection
@@ -301,21 +301,21 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
   // Get the journal content element
   const content = getJournalContent(sidebar);
   if (!content) {
-    ui.notifications.warn('No journal content found');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoJournalContent'));
     return;
   }
 
   // Get selected text from the journal
   const selection = window.getSelection();
   if (!selection || selection.rangeCount === 0) {
-    ui.notifications.warn('No text selected in journal');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoTextSelected'));
     return;
   }
 
   // Check if selection is within the journal content
   const range = selection.getRangeAt(0);
   if (!content.contains(range.commonAncestorContainer)) {
-    ui.notifications.warn('Selection must be within the journal content');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.SelectionNotInContent'));
     return;
   }
 
@@ -328,14 +328,14 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
   const checks = sidebar._parseChecksFromContent(tempContainer);
 
   if (checks.length === 0) {
-    ui.notifications.warn('No skill checks found in selected text');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoSkillChecksFound'));
     return;
   }
 
   // Get current participants
   const state = game.storyframe.stateManager.getState();
   if (!state?.participants || state.participants.length === 0) {
-    ui.notifications.warn('No participants added. Add PCs first.');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoParticipantsAdded'));
     return;
   }
 
@@ -345,7 +345,7 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
       const actor = await fromUuid(p.actorUuid);
       return {
         id: p.id,
-        name: actor?.name || p.name || 'Unknown',
+        name: actor?.name || p.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
       };
     }),

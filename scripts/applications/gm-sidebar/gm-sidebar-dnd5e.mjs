@@ -40,7 +40,7 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
 
       if (ability && dc) {
         checks.push({
-          label: label || `${ability.toUpperCase()} Save`,
+          label: label || game.i18n.format('STORYFRAME.Difficulty.DND5e.SaveLabel', { ability: ability.toUpperCase() }),
           skillName: ability.toLowerCase(),
           dc: parseInt(dc),
           isSecret: false, // D&D 5e doesn't have inline secret trait support
