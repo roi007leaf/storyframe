@@ -90,7 +90,7 @@
   border-color: rgba(76, 86, 106, 0.6);
 }
 
-.gm-sidebar .secret-roll-btn[aria-pressed="true"] {
+.gm-sidebar .secret-roll-btn[aria-pressed='true'] {
   background: linear-gradient(135deg, rgba(76, 86, 106, 0.7), rgba(76, 86, 106, 0.5));
   border-color: rgba(76, 86, 106, 0.9);
   color: white;
@@ -101,8 +101,17 @@
 }
 
 @keyframes secret-glow {
-  0%, 100% { box-shadow: 0 0 16px rgba(76, 86, 106, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
-  50% { box-shadow: 0 0 24px rgba(76, 86, 106, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.3); }
+  0%,
+  100% {
+    box-shadow:
+      0 0 16px rgba(76, 86, 106, 0.6),
+      inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 24px rgba(76, 86, 106, 0.9),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
 }
 
 .gm-sidebar .secret-roll-btn i {
@@ -181,7 +190,9 @@
   margin-right: 12px;
   font-size: 14px;
   color: rgba(94, 129, 172, 0.7);
-  transition: transform 0.25s ease, color 0.2s ease;
+  transition:
+    transform 0.25s ease,
+    color 0.2s ease;
 }
 
 .gm-sidebar .lib-card-header:hover .collapse-icon {
@@ -979,13 +990,13 @@
   color: var(--sf-accent-primary);
 }
 
-.gm-sidebar-container .secret-roll-toggle input[type="checkbox"] {
+.gm-sidebar-container .secret-roll-toggle input[type='checkbox'] {
   margin: 0;
   cursor: pointer;
 }
 
-.gm-sidebar-container .secret-roll-toggle input[type="checkbox"]:checked ~ i,
-.gm-sidebar-container .secret-roll-toggle input[type="checkbox"]:checked ~ span {
+.gm-sidebar-container .secret-roll-toggle input[type='checkbox']:checked ~ i,
+.gm-sidebar-container .secret-roll-toggle input[type='checkbox']:checked ~ span {
   color: var(--sf-accent-primary);
 }
 
@@ -1134,6 +1145,7 @@
 .lore-header {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: var(--sf-font-xs);
   color: var(--sf-text-muted);
@@ -1141,7 +1153,8 @@
   letter-spacing: 0.05em;
   font-weight: 600;
   margin-bottom: var(--sf-space-xs);
-  padding: 0 4px;
+  padding-bottom: 8px;
+  justify-content: center;
 }
 
 .lore-header i {
@@ -1598,4 +1611,3 @@
 /* ========================================
    Journal Header Toggle Button
    ======================================== */
-

@@ -64,7 +64,10 @@ export function groupChecksBySkill(checks) {
   const grouped = {};
   unique.forEach((check) => {
     const skill = check.skillName;
-    const skillDisplay = skill.charAt(0).toUpperCase() + skill.slice(1);
+    // Get full skill name from system adapter
+    const allSkills = SystemAdapter.getSkills();
+    const skillData = allSkills[skill.toLowerCase()];
+    const skillDisplay = skillData?.name || (skill.charAt(0).toUpperCase() + skill.slice(1));
     // Convert skill name to proper slug for batch highlighting
     const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
     if (!grouped[skill]) {

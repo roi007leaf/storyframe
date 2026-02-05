@@ -5,6 +5,30 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2026-02-05
+
+### Fixed
+
+- **D&D 5e Skill Check Parsing** - Journal check detection and parsing
+  - Fixed parser to detect both `data-type="check"` and `data-type="skill"` attributes
+  - Added support for both single (`<a class="roll-action">`) and grouped (`<span class="roll-link-group">`) check elements
+  - Fixed skill vs ability priority - now prefers `data-skill` over `data-ability` when both present
+  - Added pipe-separated skill handling (e.g., `data-skill="acr|ath"`)
+  - Fixed journal checks to show full skill names instead of abbreviations (e.g., "Deception" not "Dec")
+- **D&D 5e Skill Display** - All 18 skills now visible in sidebar
+  - Fixed skill categorization to use D&D 5e-specific categories instead of PF2e slugs
+  - Added Physical, Mental, Social, and Utility skill categories for D&D 5e
+  - Generates all skills from SystemAdapter instead of relying on quickButtonSkills setting
+- **D&D 5e Skill Icons** - Added icons for all skills
+  - Added Font Awesome icons for all 18 D&D 5e skills
+  - Fixed duplicate icon issue (Insight changed from `fa-eye` to `fa-lightbulb`)
+- **D&D 5e Challenge Handler** - Fixed function call error
+  - Fixed `sidebar._requestSkillCheck is not a function` error
+  - Added proper import for SkillCheckHandlers module
+  - Updated function call to use correct signature
+- **Skill Category Headers** - Centered category labels
+  - Added `text-align: center` to `.category-label` in sidebar CSS
+
 ## [1.6.0] - 2026-02-05
 
 ### Added
@@ -60,8 +84,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 72px square thumbnails with 8px border radius
   - Border styling matches theme colors
 
-### Fixed
-
 - **Transform Composition** - Active speaker positioning
   - Scale effect applied to child elements instead of container
   - Preserves inline translate transform for radial positioning
@@ -113,6 +135,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 This release focuses entirely on internal code organization and architecture improvements. **No user-facing changes** - all functionality remains identical and fully backward compatible.
 
 #### Phase 1: Foundation Setup
+
 - **Added** `scripts/constants.mjs` - Centralized all module constants (MODULE_ID, LIMITS, SELECTORS)
 - **Added** `scripts/utils/` - Shared utility modules:
   - `element-utils.mjs` - DOM element extraction and manipulation
@@ -121,6 +144,7 @@ This release focuses entirely on internal code organization and architecture imp
 - **Eliminated** ~90 lines of duplicate code across 9 files
 
 #### Phase 2: Hook Consolidation
+
 - **Added** `scripts/hooks/journal-hooks.mjs` - Unified journal sheet handlers
 - **Added** `scripts/hooks/player-viewer-hooks.mjs` - Player viewer lifecycle handlers
 - **Refactored** storyframe.mjs from 639 to 355 lines (44% reduction)
@@ -128,6 +152,7 @@ This release focuses entirely on internal code organization and architecture imp
 - **Consolidated** 5 duplicate hooks into 2 unified handlers
 
 #### Phase 3: State Management Refactoring
+
 - **Added** domain-specific managers in `scripts/state/`:
   - `speaker-manager.mjs` - Speaker operations
   - `participant-manager.mjs` - Participant operations
@@ -139,6 +164,7 @@ This release focuses entirely on internal code organization and architecture imp
 - **Improved** separation of concerns and testability
 
 #### Phase 4: GM Sidebar Modularization
+
 - **Reorganized** sidebar into `scripts/applications/gm-sidebar/` directory
 - **Added** 7 specialized handler modules (3,297 lines):
   - `managers/speaker-handlers.mjs` (398 lines)
@@ -153,6 +179,7 @@ This release focuses entirely on internal code organization and architecture imp
 - **Net reduction** of ~4,080 lines while improving organization
 
 #### Phase 5: System Code Consolidation
+
 - **Organized** system-specific data into `scripts/system/`:
   - `pf2e/skills.mjs`, `pf2e/actions.mjs`, `pf2e/dc-tables.mjs`
   - `dnd5e/skills.mjs`, `dnd5e/dc-tables.mjs`
@@ -162,11 +189,13 @@ This release focuses entirely on internal code organization and architecture imp
 - **Improved** extensibility for adding new game systems
 
 #### Documentation
+
 - **Added** ARCHITECTURE.md - Comprehensive architecture documentation
 - **Added** REFACTORING_PLAN.md - Detailed refactoring plan and approach
 - **Updated** CHANGELOG.md - This file
 
 #### Overall Impact
+
 - **~5,000 lines eliminated** through deduplication and reorganization
 - **23 new focused modules created** from monolithic files
 - **100% backward compatible** - no breaking changes
@@ -176,6 +205,7 @@ This release focuses entirely on internal code organization and architecture imp
 - **Zero user-facing changes** - all functionality identical
 
 ### Technical Debt Eliminated
+
 - Removed 145+ lines of duplicate journal hook code
 - Removed 400+ lines of duplicate state management code
 - Removed 4,000+ lines of duplicate sidebar code
@@ -183,6 +213,7 @@ This release focuses entirely on internal code organization and architecture imp
 - Centralized all magic numbers and strings into constants
 
 ### Developer Experience Improvements
+
 - Clear module boundaries for easier navigation
 - Single responsibility per file
 - Consistent patterns (facade, delegation, composition)

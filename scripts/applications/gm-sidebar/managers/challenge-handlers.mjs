@@ -6,6 +6,7 @@
 import { ChallengeBuilderDialog } from '../../challenge-builder.mjs';
 import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import * as SkillCheckHandlers from './skill-check-handlers.mjs';
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 
 /**
@@ -376,7 +377,7 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     sidebar.secretRollEnabled = check.isSecret;
 
     // Send request
-    await sidebar._requestSkillCheck(skillSlug, result, null, false);
+    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, result, null, false);
   }
 
   // Reset secret toggle
