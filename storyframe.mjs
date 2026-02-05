@@ -121,6 +121,13 @@ Hooks.once('init', () => {
     default: [],
   });
 
+  game.settings.register(MODULE_ID, 'speakerScenes', {
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
   game.settings.register(MODULE_ID, 'moduleVersion', {
     scope: 'client',
     config: false,
@@ -191,6 +198,9 @@ Hooks.once('init', () => {
 
       // Parse checks from the enriched content
       const checks = sidebar._parseChecksFromContent(tempContainer);
+
+      // Clean up temp container
+      tempContainer.remove();
 
       if (checks.length === 0) {
         ui.notifications.warn('No skill checks found in selected text');
@@ -290,6 +300,9 @@ Hooks.once('init', () => {
       // Parse checks from the enriched content
       const checks = sidebar._parseChecksFromContent(tempContainer);
 
+      // Clean up temp container
+      tempContainer.remove();
+
       if (checks.length === 0) {
         ui.notifications.warn('No skill checks found in selected text');
         return false;
@@ -346,16 +359,32 @@ Hooks.once('init', () => {
       return true;
     },
   });
+
+  game.keybindings.register(MODULE_ID, 'speakerWheel', {
+    name: 'Speaker Selection Wheel',
+    hint: 'Hold to show radial speaker selection wheel',
+    editable: [],
+    onDown: async () => {
+      if (!game.user.isGM) return false;
+      const { showSpeakerWheel } = await import('./scripts/speaker-wheel.mjs');
+      await showSpeakerWheel();
+      return true;
+    },
+    onUp: async () => {
+      if (!game.user.isGM) return false;
+      const { hideSpeakerWheel } = await import('./scripts/speaker-wheel.mjs');
+      hideSpeakerWheel();
+      return true;
+    },
+  });
 });
 
 // Hook: setup (Documents available, settings readable)
 Hooks.once('setup', () => {
-  console.log(`${MODULE_ID} | setup hook fired`);
   game.storyframe.stateManager = new StateManager();
 
   // If socketlib already loaded, initialize now
   if (game.storyframe.socketManager) {
-    console.log(`${MODULE_ID} | socketlib already ready, initializing managers now`);
     game.storyframe.stateManager.initialize(game.storyframe.socketManager);
     game.storyframe.initialized = true;
   }
@@ -363,7 +392,6 @@ Hooks.once('setup', () => {
 
 // Hook: socketlib.ready (register socket functions)
 Hooks.once('socketlib.ready', () => {
-  console.log(`${MODULE_ID} | socketlib.ready hook fired`);
 
   // Defensive: socketlib.ready can fire before init in v13
   if (!game.storyframe) {
@@ -380,7 +408,6 @@ Hooks.once('socketlib.ready', () => {
   if (game.storyframe.stateManager) {
     game.storyframe.stateManager.initialize(game.storyframe.socketManager);
     game.storyframe.initialized = true;
-    console.log(`${MODULE_ID} | Managers initialized via socketlib.ready`);
   } else {
     console.warn(`${MODULE_ID} | StateManager not available in socketlib.ready`);
   }
@@ -440,13 +467,13 @@ Hooks.once('ready', async () => {
         }
       }, 100);
     });
-  } else {
-    console.log(`${MODULE_ID} | Already initialized`);
   }
 
-  console.log(`${MODULE_ID} | Loading state...`);
   await game.storyframe.stateManager.load();
-  console.log(`${MODULE_ID} | State loaded:`, game.storyframe.stateManager.getState());
+
+  // Initialize mouse tracking for speaker wheel positioning
+  const { initMouseTracking } = await import('./scripts/speaker-wheel.mjs');
+  initMouseTracking();
 
   // Migration: Detect and perform migration from 1.x to 2.x
   const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');

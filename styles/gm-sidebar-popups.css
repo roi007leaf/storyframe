@@ -457,3 +457,133 @@
   background: rgba(94, 129, 172, 0.3);
   color: #ffffff;
 }
+
+/* ========================================
+   Speaker Scenes Popup
+   ======================================== */
+
+.storyframe-scenes-popup {
+  position: fixed;
+  z-index: 10000;
+  width: 320px;
+  max-height: 400px;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(135deg, rgba(30, 35, 45, 0.98), rgba(20, 25, 35, 0.95));
+  border: 2px solid rgba(163, 190, 140, 0.4);
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+}
+
+.storyframe-scenes-popup .popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.storyframe-scenes-popup .popup-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.storyframe-scenes-popup .popup-close {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.storyframe-scenes-popup .popup-close:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.storyframe-scenes-popup .popup-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+}
+
+/* Scene Items */
+.storyframe-scenes-popup .scene-item {
+  background: rgba(163, 190, 140, 0.12);
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+}
+
+.storyframe-scenes-popup .scene-item:hover {
+  background: rgba(163, 190, 140, 0.18);
+  border-color: rgba(163, 190, 140, 0.4);
+}
+
+.storyframe-scenes-popup .scene-item-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+}
+
+.storyframe-scenes-popup .scene-icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.3), rgba(163, 190, 140, 0.2));
+  border: 2px solid rgba(163, 190, 140, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.storyframe-scenes-popup .scene-icon {
+  font-size: 24px;
+  color: rgba(163, 190, 140, 0.9);
+}
+
+.storyframe-scenes-popup .scene-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.storyframe-scenes-popup .scene-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #ffffff;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.storyframe-scenes-popup .scene-meta {
+  font-size: 11px;
+  color: #888;
+}
+
+.storyframe-scenes-popup .delete-scene-btn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 4px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.storyframe-scenes-popup .delete-scene-btn:hover {
+  background: rgba(191, 97, 106, 0.2);
+  color: #bf616a;
+}

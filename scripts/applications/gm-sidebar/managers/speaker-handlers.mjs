@@ -3,6 +3,8 @@
  * Handles all speaker (NPC) related operations including add, remove, set active, and journal integration
  */
 
+import { MODULE_ID } from '../../../constants.mjs';
+
 /**
  * Add a speaker from an image file picker
  */
@@ -407,4 +409,57 @@ function normalizeImagePath(path) {
 function extractActorIdFromUuid(uuid) {
   if (!uuid || !uuid.includes('Actor.')) return null;
   return uuid.split('Actor.')[1]?.split('.')[0] || null;
+}
+
+/**
+ * Save current speakers as a scene
+ */
+export async function onSaveCurrentSpeakers(_event, _target, sidebar) {
+  const state = game.storyframe.stateManager.getState();
+  const speakers = state?.speakers || [];
+
+  if (speakers.length === 0) {
+    ui.notifications.warn('No speakers to save');
+    return;
+  }
+
+  // Prompt for scene name
+  const sceneName = await foundry.applications.api.DialogV2.prompt({
+    window: { title: 'Save Speaker Scene' },
+    content: '<p>Enter a name for this speaker scene:</p><input type="text" name="sceneName" autofocus>',
+    ok: {
+      label: 'Save',
+      callback: (_event, button, _dialog) => button.form.elements.sceneName.value,
+    },
+    rejectClose: false,
+  });
+
+  if (!sceneName) return;
+
+  // Create scene object
+  const scene = {
+    id: foundry.utils.randomID(),
+    name: sceneName,
+    speakers: [...speakers], // Clone speakers array
+    createdAt: Date.now(),
+  };
+
+  // Save to settings
+  const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+  scenes.push(scene);
+  await game.settings.set(MODULE_ID, 'speakerScenes', scenes);
+
+  ui.notifications.info(`Saved ${speakers.length} speaker(s) as "${sceneName}"`);
+
+  // Re-render sidebar to show manage button if needed
+  sidebar.render();
+}
+
+/**
+ * Manage speaker scenes - delegates to UIHelpers popup
+ */
+export async function onManageScenes(event, target, sidebar) {
+  // Import UIHelpers dynamically to avoid circular dependencies
+  const UIHelpers = await import('./ui-helpers.mjs');
+  await UIHelpers.onShowSavedScenes(event, target, sidebar);
 }

@@ -21,11 +21,11 @@
         {{#each this.options}}
         <div class="lib-option-preview">
           <div class="opt-num">Option {{this.index}}</div>
-          <div class="opt-desc">{{this.description}}</div>
+          <div class="opt-desc">{{this.name}}</div>
           <div class="opt-skills">
             {{#each this.skillOptions}}
             <span class="skill-dc-pill">
-              {{this.displayText}} <strong>DC {{this.dc}}</strong>
+              {{this.displayText}}{{#if this.dc}} <strong>DC {{this.dc}}</strong>{{/if}}
               {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
             </span>
             {{/each}}

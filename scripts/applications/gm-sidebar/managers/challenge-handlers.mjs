@@ -449,7 +449,7 @@ export function prepareChallengesContext(sidebar, state) {
 
       return {
         index: idx + 1,
-        description: opt.description,
+        name: opt.name,
         skillOptions,
       };
     });

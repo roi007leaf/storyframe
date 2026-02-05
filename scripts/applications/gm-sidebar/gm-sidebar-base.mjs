@@ -36,6 +36,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       removeSpeaker: GMSidebarAppBase._onRemoveSpeaker,
       clearSpeaker: GMSidebarAppBase._onClearSpeaker,
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
+      saveCurrentSpeakers: GMSidebarAppBase._onSaveCurrentSpeakers,
+      manageScenes: GMSidebarAppBase._onManageScenes,
       clearAllParticipants: GMSidebarAppBase._onClearAllParticipants,
       switchTab: GMSidebarAppBase._onSwitchTab,
       toggleSecretRoll: GMSidebarAppBase._onToggleSecretRoll,
@@ -249,6 +251,39 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   /**
+   * Handle dragover to allow drop
+   */
+  _handleDragOver(event) {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }
+
+  /**
+   * Handle drop event
+   */
+  async _handleDrop(event) {
+    event.preventDefault();
+
+    const data = TextEditor.getDragEventData(event);
+
+    // Only handle Actor drops
+    if (data.type !== 'Actor') return;
+
+    const actor = await fromUuid(data.uuid);
+    if (!actor) {
+      ui.notifications.error('Actor not found');
+      return;
+    }
+
+    // Add actor as speaker (state manager handles duplicate notification)
+    await game.storyframe.socketManager.requestAddSpeaker({
+      actorUuid: actor.uuid,
+      imagePath: actor.img,
+      label: actor.name,
+    });
+  }
+
+  /**
    * Prepare context data for the sidebar template
    * Orchestrates data from all manager modules
    */
@@ -368,9 +403,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         img: p.img,
       }));
 
-    console.log('Context - selectedParticipants:', Array.from(this.selectedParticipants));
-    console.log('Context - selectedParticipantData:', selectedParticipantData);
-
     // Get system-specific DC context using DC handlers
     const dcContext = await DCHandlers.prepareDCContext(this);
     const systemContext = await this._prepareContextSystemSpecific();
@@ -383,10 +415,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Prepare challenges context
     const challengesContext = ChallengeHandlers.prepareChallengesContext(this, state);
 
+    // Check for saved speaker scenes
+    const speakerScenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+
     return {
       speakers,
       activeSpeaker: state.activeSpeaker,
       hasSpeakers: speakers.length > 0,
+      hasSpeakerScenes: speakerScenes.length > 0,
       participants,
       hasParticipants: participants.length > 0,
       totalParticipants: participants.length,
@@ -511,6 +547,16 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Start tracking parent position
     this._startTrackingParent();
 
+    // Set up drag-drop for actors (remove old listeners first)
+    if (this._dropHandler) {
+      this.element.removeEventListener('drop', this._dropHandler);
+      this.element.removeEventListener('dragover', this._dragoverHandler);
+    }
+    this._dropHandler = this._handleDrop.bind(this);
+    this._dragoverHandler = this._handleDragOver.bind(this);
+    this.element.addEventListener('drop', this._dropHandler);
+    this.element.addEventListener('dragover', this._dragoverHandler);
+
     // Attach DC handlers
     DCHandlers.attachDCHandlers(this);
 
@@ -579,8 +625,21 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       this._shiftKeyHandler = null;
     }
 
-    // Clear batched checks
+    // Remove drag/drop handlers
+    if (this._dropHandler) {
+      this.element.removeEventListener('drop', this._dropHandler);
+      this._dropHandler = null;
+    }
+    if (this._dragoverHandler) {
+      this.element.removeEventListener('dragover', this._dragoverHandler);
+      this._dragoverHandler = null;
+    }
+
+    // Clear data structures
     this.batchedChecks = [];
+    this.selectedParticipants.clear();
+    this.collapsedChallenges.clear();
+    this.collapsedLibraryChallenges.clear();
   }
 
   // ===========================
@@ -606,6 +665,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onClearAllSpeakers(event, target) {
     return SpeakerHandlers.onClearAllSpeakers(event, target, this);
+  }
+
+  static async _onSaveCurrentSpeakers(event, target) {
+    return SpeakerHandlers.onSaveCurrentSpeakers(event, target, this);
+  }
+
+  static async _onManageScenes(event, target) {
+    return SpeakerHandlers.onManageScenes(event, target, this);
   }
 
   static async _onSetImageAsSpeaker(event, target) {

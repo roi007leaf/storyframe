@@ -101,12 +101,6 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
 
     // Validate that the participant has this skill
     const actor = await fromUuid(participant.actorUuid);
-    console.log('[Storyframe] Checking participant:', {
-      participantId,
-      actorName: actor?.name,
-      actorUuid: participant.actorUuid,
-      storedUserId: participant.userId
-    });
 
     if (actor) {
       const hasSkill = await actorHasSkill(sidebar, actor, skillSlug);
@@ -118,18 +112,7 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
       }
     }
 
-    // Find current active owner of the actor (not using stored userId which can be stale)
-    const allUsers = game.users.map(u => ({
-      id: u.id,
-      name: u.name,
-      active: u.active,
-      isGM: u.isGM,
-      hasOwnership: actor?.testUserPermission?.(u, 'OWNER')
-    }));
-    console.log('[Storyframe] All users:', allUsers);
-
     const user = game.users.find(u => u.active && !u.isGM && actor?.testUserPermission?.(u, 'OWNER'));
-    console.log('[Storyframe] Found user:', user ? { id: user.id, name: user.name, active: user.active } : 'none');
 
     if (!user) {
       offlineCount++;

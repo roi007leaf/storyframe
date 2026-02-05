@@ -257,6 +257,11 @@
   margin-bottom: 12px;
 }
 
+.gm-sidebar .lib-challenge-card.collapsed .lib-card-body,
+.gm-sidebar .lib-challenge-card.collapsed .lib-present-btn {
+  display: none;
+}
+
 .gm-sidebar .lib-option-preview {
   margin: 8px 0;
   padding: 10px 14px;

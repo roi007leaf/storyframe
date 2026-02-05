@@ -232,12 +232,22 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * Attach right-click context menu for image enlargement
    */
   _attachImageContextMenu() {
+    // Clean up old handlers first
+    if (this._imageContextHandlers) {
+      this._imageContextHandlers.forEach(({ img, handler }) => {
+        img.removeEventListener('contextmenu', handler);
+      });
+    }
+    this._imageContextHandlers = [];
+
     const images = this.element.querySelectorAll('.speaker-item img');
     images.forEach((img) => {
-      img.addEventListener('contextmenu', (e) => {
+      const handler = (e) => {
         e.preventDefault();
         this._showEnlargedImage(img.src, img.alt);
-      });
+      };
+      img.addEventListener('contextmenu', handler);
+      this._imageContextHandlers.push({ img, handler });
     });
   }
 
@@ -325,6 +335,17 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // Save minimized state
     await game.settings.set(MODULE_ID, 'playerViewerMinimized', this.minimized);
+
+    // Clean up image context handlers
+    if (this._imageContextHandlers) {
+      this._imageContextHandlers.forEach(({ img, handler }) => {
+        img.removeEventListener('contextmenu', handler);
+      });
+      this._imageContextHandlers = null;
+    }
+
+    // Remove any lingering image popups
+    document.querySelector('.storyframe-image-popup')?.remove();
 
     return super._onClose(_options);
   }
@@ -508,10 +529,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         chatMessageId: roll.message?.id || null,
       };
 
-      console.log(`${MODULE_ID} | Submitting roll result to GM:`, result);
       // Submit result to GM via socket
       await game.storyframe.socketManager.requestSubmitRollResult(result);
-      console.log(`${MODULE_ID} | Roll result submitted successfully:`, requestId);
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error('Failed to execute roll');

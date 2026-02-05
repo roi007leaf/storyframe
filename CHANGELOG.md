@@ -5,6 +5,81 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2026-02-05
+
+### Added
+
+#### Speaker Wheel System
+
+- **Radial Speaker Selection Wheel** - Quick NPC speaker selection via keybind
+  - Opens at mouse cursor position with radial layout
+  - Calculates optimal radius based on item count
+  - Items positioned with trigonometric placement
+  - Animated appearance with scale-in animation
+  - Center button: Cancel (scenes) or Clear (direct speakers)
+  - Escape key to close wheel
+- **Speaker Scenes** - Save and reuse speaker groups
+  - Create named scenes from current speakers
+  - Two-level navigation: Scenes → Speakers
+  - Scene items styled with icon and label
+  - Right-click scene to delete with confirmation
+  - Automatic fallback to direct speakers if no scenes
+  - Session memory: Returns to last selected scene
+- **Active Speaker Indication** - Visual feedback in wheel
+  - Golden border and glow effect on active speaker
+  - Star badge with pop animation
+  - Scales up slightly for emphasis
+  - Enhanced hover effects when active
+  - Consistent positioning (no layout shift)
+- **Smart Mouse Tracking** - Accurate wheel positioning
+  - Global mousemove listener initialized on module ready
+  - Persistent tracking throughout session
+  - Position memory prevents jumping during scene transitions
+  - Initial position saved per wheel session
+- **Back Navigation** - Navigate between scenes and speakers
+  - Back button in speaker view returns to scene selection
+  - Maintains wheel position during navigation
+  - Blue color-coded for navigation context
+
+### Changed
+
+- **Speaker Images** - Cropped to show faces
+  - `object-position: top center` for better portrait framing
+  - 72px square thumbnails with 8px border radius
+  - Border styling matches theme colors
+
+### Fixed
+
+- **Transform Composition** - Active speaker positioning
+  - Scale effect applied to child elements instead of container
+  - Preserves inline translate transform for radial positioning
+  - No more snapping to center when speaker becomes active
+- **Z-Index Layering** - Proper stacking order
+  - Center button: z-index 100 (always on top)
+  - Active speaker: z-index 50 (above others)
+  - Hovered items: z-index 10 (above siblings)
+
+### Technical
+
+- **New Module**: `scripts/speaker-wheel.mjs`
+  - `initMouseTracking()` - Initialize global mouse listener
+  - `showSpeakerWheel()` - Main entry point with scene/speaker routing
+  - `showSceneWheel()` - Scene selection level
+  - `showSceneSpeakers()` - Speaker selection within scene
+  - `showSpeakersWheel()` - Direct speaker selection
+  - `hideSpeakerWheel()` - Cleanup and removal
+  - `calculateRadius()` - Dynamic radius calculation
+- **New Stylesheet**: `styles/speaker-wheel.css`
+  - Radial item positioning and animations
+  - Active speaker styling with golden accents
+  - Scene item styling with green theme
+  - Split button layout for back/clear
+  - Responsive scaling for small screens
+- **Memory Management**
+  - Persistent mousemove listener (intentional, not a leak)
+  - Session-scoped scene memory
+  - Per-session wheel position tracking
+
 ## [1.5.0] - 2026-02-04
 
 ### Internal - Comprehensive Codebase Refactoring

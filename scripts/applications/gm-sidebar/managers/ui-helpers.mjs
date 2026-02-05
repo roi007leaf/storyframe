@@ -3,6 +3,7 @@
  * Handles positioning, popups, scroll management, and other UI utilities
  */
 
+import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 import * as SkillCheckHandlers from './skill-check-handlers.mjs';
@@ -908,5 +909,143 @@ export function renderPendingRollsGroups(groups, mode) {
         </div>
       </div>
     `).join('');
+  }
+}
+
+/**
+ * Show saved speaker scenes popup
+ */
+export async function onShowSavedScenes(_event, target, sidebar) {
+  const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+
+  if (scenes.length === 0) {
+    ui.notifications.info('No saved scenes');
+    return;
+  }
+
+  // Remove existing popup if any
+  document.querySelector('.storyframe-scenes-popup')?.remove();
+
+  // Create popup
+  const popup = document.createElement('div');
+  popup.className = 'storyframe-scenes-popup';
+
+  const scenesHtml = scenes
+    .map(
+      (scene) => `
+    <div class="scene-item" data-scene-id="${scene.id}">
+      <div class="scene-item-header">
+        <div class="scene-icon-wrapper">
+          <i class="fas fa-users scene-icon"></i>
+        </div>
+        <div class="scene-info">
+          <div class="scene-name">${scene.name}</div>
+          <div class="scene-meta">${scene.speakers.length} speaker(s)</div>
+        </div>
+        <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="Delete ${scene.name}">
+          <i class="fas fa-trash"></i>
+        </button>
+      </div>
+    </div>
+  `,
+    )
+    .join('');
+
+  popup.innerHTML = `
+    <div class="popup-header">
+      <span class="popup-title">Saved Scenes (${scenes.length})</span>
+      <button type="button" class="popup-close" aria-label="Close">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+    <div class="popup-body">
+      ${scenesHtml}
+    </div>
+  `;
+
+  // Position popup
+  const rect = target.getBoundingClientRect();
+  popup.style.top = `${rect.bottom + 8}px`;
+  popup.style.left = `${rect.left}px`;
+
+  // Event handlers
+  const closeBtn = popup.querySelector('.popup-close');
+  const title = popup.querySelector('.popup-title');
+
+  closeBtn.addEventListener('click', () => popup.remove());
+
+  // Delete individual scene
+  popup.querySelectorAll('.delete-scene-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const sceneId = btn.dataset.sceneId;
+      const scene = scenes.find(s => s.id === sceneId);
+
+      const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: 'Delete Scene' },
+        content: `<p>Delete scene "${scene.name}"?</p>`,
+        yes: { label: 'Delete' },
+        no: { label: 'Cancel', default: true },
+        rejectClose: false,
+      });
+
+      if (!confirmed) return;
+
+      const filtered = scenes.filter(s => s.id !== sceneId);
+      await game.settings.set(MODULE_ID, 'speakerScenes', filtered);
+
+      // Remove item from popup
+      const item = btn.closest('.scene-item');
+      item.remove();
+
+      // Update count in header
+      const remaining = popup.querySelectorAll('.scene-item').length;
+      title.textContent = `Saved Scenes (${remaining})`;
+
+      // Close popup if no more scenes
+      if (remaining === 0) {
+        popup.remove();
+      }
+
+      // Re-render sidebar to hide manage button if needed
+      sidebar.render();
+
+      ui.notifications.info(`Deleted scene "${scene.name}"`);
+    });
+  });
+
+  // Close on click outside
+  const closeHandler = (e) => {
+    if (!popup.contains(e.target) && !target.contains(e.target)) {
+      popup.remove();
+      document.removeEventListener('click', closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 10);
+
+  // Close on escape
+  const escHandler = (e) => {
+    if (e.key === 'Escape') {
+      popup.remove();
+      document.removeEventListener('keydown', escHandler);
+    }
+  };
+  document.addEventListener('keydown', escHandler);
+
+  document.body.appendChild(popup);
+
+  // Adjust position if off-screen
+  const popupRect = popup.getBoundingClientRect();
+  if (popupRect.right > window.innerWidth - 10) {
+    popup.style.left = `${window.innerWidth - popupRect.width - 10}px`;
+  }
+  if (popupRect.bottom > window.innerHeight - 10) {
+    popup.style.top = `${rect.top - popupRect.height - 8}px`;
+  }
+  if (popupRect.left < 10) {
+    popup.style.left = '10px';
+  }
+  if (popupRect.top < 10) {
+    popup.style.top = '10px';
   }
 }
