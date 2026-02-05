@@ -289,9 +289,9 @@
   height: 72px;
   border-radius: 12px;
   background:
-    linear-gradient(135deg, rgba(163, 190, 140, 0.25), rgba(143, 170, 120, 0.2)),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
-  border: 3px solid rgba(163, 190, 140, 0.6);
+    linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(143, 170, 120, 0.4)),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.08), transparent);
+  border: 3px solid rgba(163, 190, 140, 0.7);
   display: flex;
   align-items: center;
   justify-content: center;
