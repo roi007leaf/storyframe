@@ -60,9 +60,8 @@
                           data-action-slug="{{this.action}}"
                           data-is-secret="{{this.isSecret}}"
                           {{#unless this.canRoll}}disabled{{/unless}}
-                          data-tooltip="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.keyboardHint}} (Press {{this.keyboardHint}}){{/if}}{{else}}Insufficient proficiency{{/if}}"
+                          data-tooltip="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{else}}Insufficient proficiency{{/if}}"
                           aria-label="{{#if this.canRoll}}Roll {{this.skillName}}{{#if this.action}} ({{this.action}}){{/if}}{{#if this.showDC}} DC {{this.dc}}{{/if}}{{else}}Locked - insufficient proficiency{{/if}}">
-                    {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
                     {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
                     <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                     <span class="skill-name-short">{{this.skillName}}</span>
@@ -96,9 +95,8 @@
                         class="roll-btn-grid"
                         data-action="executeRoll"
                         data-request-id="{{this.id}}"
-                        data-tooltip="Roll {{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}} (Press {{this.keyboardHint}})"
+                        data-tooltip="Roll {{this.skillName}}{{#if this.actionName}} ({{this.actionName}}){{/if}}"
                         aria-label="Roll {{this.skillName}} check">
-                  {{#if this.keyboardHint}}<span class="keyboard-hint">{{this.keyboardHint}}</span>{{/if}}
                   <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                   <span class="skill-name-short">{{this.skillName}}{{#if this.actionName}}<span class="action-name-micro"> ({{this.actionName}})</span>{{/if}}</span>
                   {{#if this.dc}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}

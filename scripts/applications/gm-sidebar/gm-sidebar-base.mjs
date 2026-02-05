@@ -656,7 +656,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static async _onRemoveSpeaker(event, target) {
-    return SpeakerHandlers.onRemoveSpeaker(event, target, this);
+    return SpeakerHandlers.onRemoveSpeaker(event, target);
   }
 
   static async _onClearSpeaker(event, target) {

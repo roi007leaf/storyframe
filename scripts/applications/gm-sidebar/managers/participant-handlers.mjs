@@ -89,6 +89,9 @@ export async function onToggleParticipantSelection(_event, target, sidebar) {
   if (requestBar) {
     requestBar.classList.toggle('ready', selectedCount > 0 && sidebar.currentDC);
   }
+
+  // Re-render to update lore skills based on new selection
+  sidebar.render();
 }
 
 /**
@@ -132,6 +135,9 @@ export async function onToggleSelectAll(_event, _target, sidebar) {
 
   // Update the UI elements to reflect the selection change
   updateSelectAllCheckbox(sidebar);
+
+  // Re-render to update lore skills based on new selection
+  sidebar.render();
 }
 
 /**

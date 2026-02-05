@@ -37,8 +37,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       icon: 'fas fa-book-open',
     },
     position: {
-      width: 400,
-      height: 300,
+      width: 600,
+      height: 500,
     },
     actions: {
       executeRoll: PlayerViewerApp._onExecuteRoll,

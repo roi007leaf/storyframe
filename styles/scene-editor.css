@@ -1,0 +1,353 @@
+/* Scene Editor Dialog */
+.storyframe-scene-editor {
+  position: fixed;
+  top: 10%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 700px;
+  max-height: 80vh;
+  z-index: 10001;
+  background: linear-gradient(135deg, rgba(30, 35, 45, 0.98), rgba(20, 25, 35, 0.98));
+  border: 2px solid rgba(94, 129, 172, 0.4);
+  border-radius: 12px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.8),
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  animation: editor-slide-in 0.3s var(--sf-ease-spring);
+}
+
+@keyframes editor-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+.storyframe-scene-editor .editor-header {
+  cursor: move;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(94, 129, 172, 0.3);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.05), transparent);
+}
+
+.storyframe-scene-editor .editor-header h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: #ffffff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.storyframe-scene-editor .editor-close {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  transition: all var(--sf-transition-base);
+  border-radius: 4px;
+}
+
+.storyframe-scene-editor .editor-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.storyframe-scene-editor .editor-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.storyframe-scene-editor .editor-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storyframe-scene-editor .editor-section label {
+  font-size: 12px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.storyframe-scene-editor #scene-name-input {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all var(--sf-transition-base);
+}
+
+.storyframe-scene-editor #scene-name-input:focus {
+  outline: none;
+  border-color: rgba(94, 129, 172, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
+}
+
+.storyframe-scene-editor .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.storyframe-scene-editor .section-header h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.storyframe-scene-editor .section-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.storyframe-scene-editor .btn-add-current {
+  padding: 6px 12px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.8), rgba(94, 129, 172, 0.6));
+  border: 1px solid rgba(94, 129, 172, 0.6);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sf-transition-base);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.storyframe-scene-editor .btn-add-current:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 1), rgba(94, 129, 172, 0.8));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(94, 129, 172, 0.4);
+}
+
+.storyframe-scene-editor .speakers-list {
+  min-height: 60px;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 2px dashed rgba(94, 129, 172, 0.3);
+  border-radius: 8px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.storyframe-scene-editor .speakers-list[data-drop-zone="true"] {
+  cursor: copy;
+}
+
+.storyframe-scene-editor .empty-message {
+  margin: 0;
+  padding: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.storyframe-scene-editor .speaker-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(94, 129, 172, 0.3);
+  transition: all var(--sf-transition-base);
+}
+
+.storyframe-scene-editor .speaker-item:hover {
+  border-color: rgba(94, 129, 172, 0.6);
+  transform: scale(1.05);
+}
+
+.storyframe-scene-editor .speaker-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.storyframe-scene-editor .speaker-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storyframe-scene-editor .btn-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  padding: 4px;
+  background: rgba(191, 97, 106, 0.9);
+  border: 1px solid rgba(191, 97, 106, 0.6);
+  border-radius: 50%;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 10px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--sf-transition-base);
+  opacity: 0;
+}
+
+.storyframe-scene-editor .speaker-item:hover .btn-remove {
+  opacity: 1;
+}
+
+.storyframe-scene-editor .btn-remove:hover {
+  background: rgba(191, 97, 106, 1);
+  transform: scale(1.1);
+}
+
+.storyframe-scene-editor .source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  gap: 8px;
+}
+
+.storyframe-scene-editor .source-item {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: 8px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+  border: 2px solid rgba(94, 129, 172, 0.3);
+  transition: all var(--sf-transition-base);
+}
+
+.storyframe-scene-editor .source-item:hover {
+  border-color: rgba(94, 129, 172, 0.6);
+  transform: scale(1.05);
+}
+
+.storyframe-scene-editor .source-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+}
+
+.storyframe-scene-editor .source-item .btn-add {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  padding: 6px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.9), rgba(143, 170, 120, 0.9));
+  border: 1px solid rgba(163, 190, 140, 0.6);
+  border-radius: 50%;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--sf-transition-base);
+  opacity: 0;
+}
+
+.storyframe-scene-editor .source-item:hover .btn-add {
+  opacity: 1;
+}
+
+.storyframe-scene-editor .source-item .btn-add:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 1), rgba(143, 170, 120, 1));
+  transform: scale(1.1);
+}
+
+.storyframe-scene-editor .source-name {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 4px 6px;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), transparent);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storyframe-scene-editor .editor-footer {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid rgba(94, 129, 172, 0.3);
+  justify-content: flex-end;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.3), transparent);
+}
+
+.storyframe-scene-editor .editor-footer button {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--sf-transition-base);
+  border: 1px solid transparent;
+}
+
+.storyframe-scene-editor .btn-cancel {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.storyframe-scene-editor .btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.storyframe-scene-editor .btn-save {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.8), rgba(143, 170, 120, 0.8));
+  border-color: rgba(163, 190, 140, 0.6);
+  color: #ffffff;
+}
+
+.storyframe-scene-editor .btn-save:hover {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 1), rgba(143, 170, 120, 1));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(163, 190, 140, 0.4);
+}

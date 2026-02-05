@@ -3,8 +3,6 @@
  * Handles all speaker (NPC) related operations including add, remove, set active, and journal integration
  */
 
-import { MODULE_ID } from '../../../constants.mjs';
-
 /**
  * Add a speaker from an image file picker
  */
@@ -45,41 +43,31 @@ export async function onSetSpeaker(_event, target, sidebar) {
 /**
  * Remove a speaker
  */
-export async function onRemoveSpeaker(event, target, sidebar) {
+export async function onRemoveSpeaker(event, target) {
   event.stopPropagation();
   const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
   if (!speakerId) return;
 
-  const confirmed = await foundry.applications.api.DialogV2.confirm({
-    window: { title: 'Remove NPC' },
-    content: '<p>Remove this NPC from the list?</p>',
-    yes: { label: 'Remove' },
-    no: { label: 'Cancel', default: true },
-    rejectClose: false,
-  });
-
-  if (confirmed) {
-    await game.storyframe.socketManager.requestRemoveSpeaker(speakerId);
-  }
+  await game.storyframe.socketManager.requestRemoveSpeaker(speakerId);
 }
 
 /**
  * Clear the active speaker
  */
-export async function onClearSpeaker(_event, _target, sidebar) {
+export async function onClearSpeaker(_event, _target) {
   await game.storyframe.socketManager.requestSetActiveSpeaker(null);
 }
 
 /**
  * Clear all speakers
  */
-export async function onClearAllSpeakers(_event, _target, sidebar) {
+export async function onClearAllSpeakers(_event, _target) {
   const state = game.storyframe.stateManager.getState();
   if (!state?.speakers?.length) return;
 
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: 'Clear All NPCs' },
-    content: '<p>Remove all NPCs from the list?</p>',
+    content: '<p>Remove all NPCs?</p>',
     yes: { label: 'Clear All' },
     no: { label: 'Cancel', default: true },
     rejectClose: false,
@@ -423,33 +411,15 @@ export async function onSaveCurrentSpeakers(_event, _target, sidebar) {
     return;
   }
 
-  // Prompt for scene name
-  const sceneName = await foundry.applications.api.DialogV2.prompt({
-    window: { title: 'Save Speaker Scene' },
-    content: '<p>Enter a name for this speaker scene:</p><input type="text" name="sceneName" autofocus>',
-    ok: {
-      label: 'Save',
-      callback: (_event, button, _dialog) => button.form.elements.sceneName.value,
-    },
-    rejectClose: false,
-  });
+  // Get journal element for images/actors if available
+  const journalElement = document.querySelector('.journal-entry-pages');
 
-  if (!sceneName) return;
-
-  // Create scene object
-  const scene = {
-    id: foundry.utils.randomID(),
-    name: sceneName,
+  // Open scene editor with current speakers
+  const { showSceneEditor } = await import('../../../scene-editor.mjs');
+  await showSceneEditor({
     speakers: [...speakers], // Clone speakers array
-    createdAt: Date.now(),
-  };
-
-  // Save to settings
-  const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
-  scenes.push(scene);
-  await game.settings.set(MODULE_ID, 'speakerScenes', scenes);
-
-  ui.notifications.info(`Saved ${speakers.length} speaker(s) as "${sceneName}"`);
+    journalElement,
+  });
 
   // Re-render sidebar to show manage button if needed
   sidebar.render();

@@ -5,6 +5,7 @@
  */
 
 import { MODULE_ID } from './constants.mjs';
+import { showSceneEditor } from './scene-editor.mjs';
 
 // Remember last selected scene for the session
 let lastSelectedSceneId = null;
@@ -117,11 +118,26 @@ async function showSceneWheel(scenes) {
 
   // Event handlers
   wheel.querySelectorAll('.speaker-wheel-item.scene').forEach(item => {
-    // Left click: show scene speakers
+    // Left click: show scene speakers (or edit with Shift)
     item.addEventListener('click', async (e) => {
       e.stopPropagation();
       const sceneId = item.dataset.sceneId;
-      // Remember this scene for next time
+      const scene = scenes.find(s => s.id === sceneId);
+
+      // Shift+click: Edit scene in dedicated editor
+      if (e.shiftKey) {
+        hideSpeakerWheel();
+        const journalElement = document.querySelector('.journal-entry-pages');
+        await showSceneEditor({
+          sceneId: scene.id,
+          sceneName: scene.name,
+          speakers: scene.speakers || [],
+          journalElement,
+        });
+        return;
+      }
+
+      // Normal click: show scene speakers
       lastSelectedSceneId = sceneId;
       await showSceneSpeakers(sceneId);
     });
@@ -200,16 +216,25 @@ async function showSceneSpeakers(sceneId) {
   // Resolve speaker data and match with current state
   const resolvedSpeakers = await Promise.all(
     scene.speakers.map(async (s) => {
-      const resolved = await game.storyframe.stateManager.resolveSpeaker(s);
-      // Try to find matching speaker in current state by actor UUID
-      const currentSpeaker = state?.speakers?.find(cs => cs.actorUuid === s.actorUuid);
-      const finalId = currentSpeaker?.id || s.id;
+      // If speaker has actorUuid, resolve from actor
+      if (s.actorUuid) {
+        const resolved = await game.storyframe.stateManager.resolveSpeaker(s);
+        const currentSpeaker = state?.speakers?.find(cs => cs.actorUuid === s.actorUuid);
+        const finalId = currentSpeaker?.id || s.id;
 
-      return {
-        id: finalId,
-        img: resolved.img,
-        name: resolved.name,
-      };
+        return {
+          id: finalId,
+          img: resolved.img,
+          name: resolved.name,
+        };
+      } else {
+        // For image speakers, use stored values directly
+        return {
+          id: s.id,
+          img: s.img,
+          name: s.name,
+        };
+      }
     }),
   );
 

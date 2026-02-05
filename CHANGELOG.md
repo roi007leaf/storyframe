@@ -22,9 +22,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Create named scenes from current speakers
   - Two-level navigation: Scenes → Speakers
   - Scene items styled with icon and label
+  - Shift+click scene to edit in dedicated editor
   - Right-click scene to delete with confirmation
   - Automatic fallback to direct speakers if no scenes
   - Session memory: Returns to last selected scene
+- **Scene Editor Dialog** - Comprehensive scene builder
+  - Add speakers from journal images (with name prompt)
+  - Add speakers from journal actors (auto-named)
+  - Drag and drop actors directly into scene
+  - Remove speakers from scene
+  - Add all current speakers with one click
+  - Visual grid layout for sources
+  - Inline speaker list with remove buttons
+  - Used for both creating and editing scenes
+  - Edit button in scene management popup
+  - Shift+click scene in wheel to edit
 - **Active Speaker Indication** - Visual feedback in wheel
   - Golden border and glow effect on active speaker
   - Star badge with pop animation
@@ -58,6 +70,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Center button: z-index 100 (always on top)
   - Active speaker: z-index 50 (above others)
   - Hovered items: z-index 10 (above siblings)
+- **Lore Skills Display** - GM sidebar PCs tab quick skills
+  - Lore skills now update immediately when selecting/deselecting participants
+  - Added render() calls to participant selection handlers
+  - Fixes delay where lore skills only appeared on manual rerender
 
 ### Technical
 
@@ -69,12 +85,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `showSpeakersWheel()` - Direct speaker selection
   - `hideSpeakerWheel()` - Cleanup and removal
   - `calculateRadius()` - Dynamic radius calculation
+- **New Module**: `scripts/scene-editor.mjs`
+  - `showSceneEditor()` - Dedicated scene creation/editing dialog
+  - Handles journal image/actor extraction
+  - Drag and drop support for actors
+  - Speaker list management with add/remove
 - **New Stylesheet**: `styles/speaker-wheel.css`
   - Radial item positioning and animations
   - Active speaker styling with golden accents
   - Scene item styling with green theme
   - Split button layout for back/clear
   - Responsive scaling for small screens
+- **New Stylesheet**: `styles/scene-editor.css`
+  - Modal dialog with backdrop
+  - Grid layout for source items
+  - Speaker list with inline remove buttons
+  - Drag and drop visual feedback
 - **Memory Management**
   - Persistent mousemove listener (intentional, not a leak)
   - Session-scoped scene memory

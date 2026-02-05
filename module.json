@@ -24,6 +24,7 @@
     "styles/gm-sidebar-journal.css",
     "styles/gm-sidebar-popups.css",
     "styles/speaker-wheel.css",
+    "styles/scene-editor.css",
     "styles/dc-presets.css",
     "styles/player-viewer.css",
     "styles/player-sidebar.css",

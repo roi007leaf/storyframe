@@ -942,9 +942,14 @@ export async function onShowSavedScenes(_event, target, sidebar) {
           <div class="scene-name">${scene.name}</div>
           <div class="scene-meta">${scene.speakers.length} speaker(s)</div>
         </div>
-        <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="Delete ${scene.name}">
-          <i class="fas fa-trash"></i>
-        </button>
+        <div class="scene-actions">
+          <button type="button" class="edit-scene-btn" data-scene-id="${scene.id}" aria-label="Edit ${scene.name}">
+            <i class="fas fa-pencil-alt"></i>
+          </button>
+          <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="Delete ${scene.name}">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
       </div>
     </div>
   `,
@@ -973,6 +978,31 @@ export async function onShowSavedScenes(_event, target, sidebar) {
   const title = popup.querySelector('.popup-title');
 
   closeBtn.addEventListener('click', () => popup.remove());
+
+  // Edit individual scene
+  popup.querySelectorAll('.edit-scene-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const sceneId = btn.dataset.sceneId;
+      const scene = scenes.find(s => s.id === sceneId);
+
+      // Close popup
+      popup.remove();
+
+      // Open scene editor
+      const { showSceneEditor } = await import('../../../scene-editor.mjs');
+      const journalElement = document.querySelector('.journal-entry-pages');
+      await showSceneEditor({
+        sceneId: scene.id,
+        sceneName: scene.name,
+        speakers: scene.speakers || [],
+        journalElement,
+      });
+
+      // Re-render sidebar after edit
+      sidebar.render();
+    });
+  });
 
   // Delete individual scene
   popup.querySelectorAll('.delete-scene-btn').forEach((btn) => {

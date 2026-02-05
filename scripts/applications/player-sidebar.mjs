@@ -211,15 +211,10 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
         GMSidebar = GMSidebarAppBase;
       }
 
-      // Add keyboard hints to first 9 challenge skills across all challenges
-      let skillIndex = 0;
-
       activeChallenges = await Promise.all(state.activeChallenges.map(async challenge => {
         const enrichedOptions = await Promise.all(challenge.options.map(async opt => ({
           ...opt,
           skillOptionsDisplay: await Promise.all(opt.skillOptions.map(async so => {
-            const hint = skillIndex < 9 ? (skillIndex + 1).toString() : null;
-            skillIndex++;
 
             // Check if player meets proficiency requirement
             let canRoll = true;
@@ -248,7 +243,6 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               action: so.action || null,
               isSecret: so.isSecret || false,
               showDC: showDCs,
-              keyboardHint: hint,
               canRoll,
               minProficiency: so.minProficiency || 0,
             };
@@ -305,17 +299,6 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       }, {});
 
       actorRollGroups = Object.values(groupedByActor);
-
-      // Add keyboard hints to first 9 rolls
-      let rollIndex = 0;
-      for (const group of actorRollGroups) {
-        for (const roll of group.rolls) {
-          if (rollIndex < 9) {
-            roll.keyboardHint = (rollIndex + 1).toString();
-          }
-          rollIndex++;
-        }
-      }
     }
 
     // Auto-switch to rolls tab only on first render if there are pending rolls
@@ -365,27 +348,6 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     this._keyHandler = (event) => {
       // Ignore if typing in input field
       if (event.target.matches('input, textarea')) return;
-
-      // Number keys 1-9 trigger buttons based on active tab
-      if (event.key >= '1' && event.key <= '9') {
-        const index = parseInt(event.key) - 1;
-
-        // If on challenge tab, trigger challenge buttons
-        if (this.currentTab === null) {
-          const challengeButtons = this.element.querySelectorAll('.challenge-btn-grid');
-          if (challengeButtons[index]) {
-            challengeButtons[index].click();
-            event.preventDefault();
-          }
-        } else {
-          // On rolls tab, trigger roll buttons
-          const rollButtons = this.element.querySelectorAll('.roll-btn-grid');
-          if (rollButtons[index]) {
-            rollButtons[index].click();
-            event.preventDefault();
-          }
-        }
-      }
 
       // Tab key switches between tabs
       if (event.key === 'Tab' && !event.shiftKey) {

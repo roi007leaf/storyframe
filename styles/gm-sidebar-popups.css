@@ -572,6 +572,14 @@
   color: #888;
 }
 
+.storyframe-scenes-popup .scene-actions {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+  flex-shrink: 0;
+}
+
+.storyframe-scenes-popup .edit-scene-btn,
 .storyframe-scenes-popup .delete-scene-btn {
   background: transparent;
   border: none;
@@ -581,6 +589,11 @@
   border-radius: 4px;
   transition: all 0.15s;
   flex-shrink: 0;
+}
+
+.storyframe-scenes-popup .edit-scene-btn:hover {
+  background: rgba(94, 129, 172, 0.2);
+  color: #5e81ac;
 }
 
 .storyframe-scenes-popup .delete-scene-btn:hover {

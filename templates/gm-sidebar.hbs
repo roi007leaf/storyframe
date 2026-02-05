@@ -39,15 +39,15 @@
           <button type="button" data-action="addSpeakerFromImage" data-tooltip="Add NPC" aria-label="Add NPC from image">
             <i class="fas fa-plus" aria-hidden="true"></i>
           </button>
-          {{#if hasSpeakers}}
-          <button type="button" data-action="saveCurrentSpeakers" data-tooltip="Save speakers as scene" aria-label="Save current speakers as scene">
-            <i class="fas fa-save" aria-hidden="true"></i>
-          </button>
           <button type="button" data-action="clearSpeaker" data-tooltip="Clear active NPC" aria-label="Deselect active NPC">
             <i class="fas fa-user-slash" aria-hidden="true"></i>
           </button>
           <button type="button" data-action="clearAllSpeakers" data-tooltip="Clear all NPCs" aria-label="Remove all NPCs">
             <i class="fas fa-trash" aria-hidden="true"></i>
+          </button>
+          {{#if hasSpeakers}}
+          <button type="button" data-action="saveCurrentSpeakers" data-tooltip="Save speakers as scene" aria-label="Save current speakers as scene">
+            <i class="fas fa-save" aria-hidden="true"></i>
           </button>
           {{/if}}
           {{#if hasSpeakerScenes}}
