@@ -32,11 +32,11 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           actorUuid: s.actorUuid,
         };
       } else {
-        // For image speakers, use stored values directly
+        // For image speakers, use stored values directly (label/imagePath from state)
         return {
           id: s.id,
-          name: s.name,
-          img: s.img,
+          name: s.label || s.name,
+          img: s.imagePath || s.img,
         };
       }
     })

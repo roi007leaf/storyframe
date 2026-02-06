@@ -284,12 +284,25 @@ async function showSceneSpeakers(sceneId) {
 
   // Event handlers
   wheel.querySelectorAll('.speaker-wheel-item').forEach(item => {
-    // Left click: set active speaker
+    // Left click: set active speaker or deselect if already active
     item.addEventListener('click', async (e) => {
       e.stopPropagation();
       const speakerId = item.dataset.speakerId;
-      await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
-      hideSpeakerWheel();
+      const currentState = game.storyframe.stateManager.getState();
+      const isAlreadyActive = currentState?.activeSpeaker === speakerId;
+
+      if (isAlreadyActive) {
+        // Deselect the active speaker
+        await game.storyframe.socketManager.requestSetActiveSpeaker(null);
+        // Update UI: remove active class from all items
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
+      } else {
+        // Select new speaker
+        await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
+        // Update UI: remove active from all, add to this one
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      }
     });
 
     // Right click: clear active speaker if this is the active one
@@ -300,7 +313,8 @@ async function showSceneSpeakers(sceneId) {
       const currentState = game.storyframe.stateManager.getState();
       if (currentState?.activeSpeaker === speakerId) {
         await game.storyframe.socketManager.requestSetActiveSpeaker(null);
-        hideSpeakerWheel();
+        // Update UI: remove active class from all items
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
       }
     });
   });
@@ -397,12 +411,25 @@ async function showSpeakersWheel() {
 
   // Event handlers
   wheel.querySelectorAll('.speaker-wheel-item').forEach(item => {
-    // Left click: set active speaker
+    // Left click: set active speaker or deselect if already active
     item.addEventListener('click', async (e) => {
       e.stopPropagation();
       const speakerId = item.dataset.speakerId;
-      await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
-      hideSpeakerWheel();
+      const currentState = game.storyframe.stateManager.getState();
+      const isAlreadyActive = currentState?.activeSpeaker === speakerId;
+
+      if (isAlreadyActive) {
+        // Deselect the active speaker
+        await game.storyframe.socketManager.requestSetActiveSpeaker(null);
+        // Update UI: remove active class from all items
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
+      } else {
+        // Select new speaker
+        await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
+        // Update UI: remove active from all, add to this one
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
+        item.classList.add('active');
+      }
     });
 
     // Right click: clear active speaker if this is the active one
@@ -413,7 +440,8 @@ async function showSpeakersWheel() {
       const currentState = game.storyframe.stateManager.getState();
       if (currentState?.activeSpeaker === speakerId) {
         await game.storyframe.socketManager.requestSetActiveSpeaker(null);
-        hideSpeakerWheel();
+        // Update UI: remove active class from all items
+        wheel.querySelectorAll('.speaker-wheel-item').forEach(i => i.classList.remove('active'));
       }
     });
   });

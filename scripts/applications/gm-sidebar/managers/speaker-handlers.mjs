@@ -261,7 +261,7 @@ export function extractJournalActors(sidebar) {
     }
   });
 
-  return actors;
+  return unique;
 }
 
 /**
