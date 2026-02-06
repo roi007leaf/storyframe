@@ -4,8 +4,8 @@
  */
 
 import { MODULE_ID } from '../constants.mjs';
+import { findCloseButton, findJournalContent } from '../utils/dom-utils.mjs';
 import { extractElement } from '../utils/element-utils.mjs';
-import { findJournalContent, findCloseButton } from '../utils/dom-utils.mjs';
 
 /**
  * Unified handler for all journal sheet render hooks
@@ -30,6 +30,9 @@ export async function handleJournalRender(sheet, html) {
   const contentArea = findJournalContent(element);
   if (contentArea) {
     enrichChecks(contentArea);
+
+    // Set up shift+click handlers for inline check repost buttons
+    _setupInlineCheckShiftClickHandlers(contentArea);
   }
 
   // Auto-open sidebar if setting enabled
@@ -213,4 +216,114 @@ function _updateAllJournalToggleButtons() {
     const html = journal.element[0] || journal.element;
     _updateToggleButtonState(journal, html);
   }
+}
+
+/**
+ * Setup shift+click handlers for inline check repost buttons
+ * When shift+clicking a "send to chat" button on a PF2e inline check,
+ * open the Roll Requester Dialog instead of the normal chat behavior
+ * @private
+ */
+function _setupInlineCheckShiftClickHandlers(contentArea) {
+  if (!game.user.isGM) return;
+
+  // Find all inline checks with repost buttons (PF2e format)
+  const inlineChecks = contentArea.querySelectorAll('a.inline-check.with-repost[data-pf2-check][data-pf2-dc]');
+
+  inlineChecks.forEach((checkElement) => {
+    // Find the repost icon within this check
+    const repostIcon = checkElement.querySelector('[data-pf2-repost]');
+    if (!repostIcon) return;
+
+    // Add click listener to the repost icon
+    repostIcon.addEventListener('click', async (event) => {
+      // Only intercept if ctrl key is pressed
+      if (!event.ctrlKey) return;
+
+      // Prevent default PF2e repost behavior
+      event.preventDefault();
+      event.stopPropagation();
+
+      // Extract check data from the inline check element
+      const skillName = checkElement.dataset.pf2Check;
+      const dc = parseInt(checkElement.dataset.pf2Dc);
+      const traits = checkElement.dataset.pf2Traits || '';
+      const isSecret = traits.includes('secret');
+
+      // Get state and validate participants exist
+      const state = game.storyframe.stateManager.getState();
+      if (!state?.participants || state.participants.length === 0) {
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
+        return;
+      }
+
+      // Enrich participants with actor data
+      const enrichedParticipants = await Promise.all(
+        state.participants.map(async (p) => {
+          const actor = await fromUuid(p.actorUuid);
+          return {
+            id: p.id,
+            name: actor?.name || p.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
+            img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
+          };
+        })
+      );
+
+      // Create check for dialog (single check)
+      const checksForDialog = [{
+        skillName: skillName,
+        dc: dc,
+        isSecret: isSecret
+      }];
+
+      // Import and show Roll Requester Dialog
+      const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
+      const dialog = new RollRequestDialog(checksForDialog, enrichedParticipants);
+      dialog.render(true);
+
+      // Wait for result
+      const result = await dialog.wait();
+      if (!result || result.length === 0) {
+        return;
+      }
+
+      // Get sidebar reference
+      const sidebar = game.storyframe.gmSidebar;
+      if (!sidebar) {
+        ui.notifications.error('StoryFrame sidebar not available');
+        return;
+      }
+
+      // Import skill check handlers
+      const { requestSkillCheck } = await import('../applications/gm-sidebar/managers/skill-check-handlers.mjs');
+      const SystemAdapter = await import('../system-adapter.mjs');
+
+      // Determine if this is a save or skill check
+      const saveTypes = new Set(['fortitude', 'reflex', 'will']);
+      const checkType = saveTypes.has(skillName.toLowerCase()) ? 'save' : 'skill';
+
+      // Convert skill/save name to slug
+      const checkSlug = checkType === 'save'
+        ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
+        : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
+
+      // Set DC and secret state
+      sidebar.currentDC = dc;
+      const dcInput = sidebar.element.querySelector('#dc-input');
+      if (dcInput) dcInput.value = dc;
+
+      sidebar.secretRollEnabled = isSecret;
+
+      // Send request with correct check type
+      await requestSkillCheck(sidebar, checkSlug, result, null, false, checkType);
+
+      // Reset secret toggle
+      sidebar.secretRollEnabled = false;
+      const secretBtn = sidebar.element.querySelector('.secret-roll-btn');
+      if (secretBtn) {
+        secretBtn.classList.remove('active');
+        secretBtn.setAttribute('aria-pressed', 'false');
+      }
+    });
+  });
 }
