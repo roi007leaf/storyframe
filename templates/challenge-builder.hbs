@@ -1,4 +1,17 @@
 <form class="challenge-builder-form">
+  <datalist id="dc-presets">
+    <option value="10">
+    <option value="12">
+    <option value="15">
+    <option value="18">
+    <option value="20">
+    <option value="22">
+    <option value="25">
+    <option value="30">
+    <option value="35">
+    <option value="40">
+  </datalist>
+
   <div class="challenge-dialog-content">
     <label>
       {{localize "STORYFRAME.ChallengeBuilder.ChallengeName"}}
@@ -33,15 +46,15 @@
             <div class="skills-list" data-option-index="0">
               <div class="skill-dc-row" data-skill-index="0">
                 <div class="skill-select">
-                  <select name="option-0-skill-0" class="skill-dropdown" data-skill-index="0" required>
+                  <select name="option-0-skill-0" class="skill-dropdown" data-skill-index="0">
                     <option value="">{{localize "STORYFRAME.UI.Labels.SelectSkill"}}</option>
                     {{#each skills}}
-                    <option value="{{this.slug}}" data-actions="{{json this.actions}}">{{this.name}}</option>
+                    <option value="{{this.slug}}" data-actions="{{json this.actions}}" data-check-type="skill">{{this.name}}</option>
                     {{/each}}
                     {{#if hasLoreSkills}}
                     <optgroup label="{{localize "STORYFRAME.ChallengeBuilder.LoreSkills"}}">
                       {{#each loreSkills}}
-                      <option value="{{this.slug}}">{{this.name}}</option>
+                      <option value="{{this.slug}}" data-check-type="skill">{{this.name}}</option>
                       {{/each}}
                     </optgroup>
                     {{/if}}
@@ -55,7 +68,7 @@
                 </div>
                 {{/if}}
                 <div class="dc-input">
-                  <input type="number" name="option-0-dc-0" min="1" placeholder="{{localize "STORYFRAME.ChallengeBuilder.DC"}}">
+                  <input type="number" name="option-0-dc-0" min="1" placeholder="{{localize "STORYFRAME.ChallengeBuilder.DC"}}" list="dc-presets">
                 </div>
                 <div class="proficiency-select">
                   <select name="option-0-proficiency-0" class="proficiency-dropdown" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.MinProficiency"}}">
@@ -83,6 +96,17 @@
               <i class="fas fa-plus"></i> {{localize "STORYFRAME.UI.Labels.AddSkill"}}
             </button>
           </div>
+          {{#if hasSaves}}
+          <div class="challenge-option-field saves-section">
+            <label>{{localize "STORYFRAME.UI.Categories.SavingThrows"}}</label>
+            <div class="saves-list" data-option-index="0">
+              <!-- Saves will be added dynamically via addSave action -->
+            </div>
+            <button type="button" class="add-save-btn" data-action="addSave" data-option-index="0">
+              <i class="fas fa-plus"></i> Add Save
+            </button>
+          </div>
+          {{/if}}
         </div>
       </div>
       {{/if}}
@@ -94,6 +118,9 @@
   </div>
 
   <footer class="form-footer">
+    <button type="button" class="save-only-btn" data-action="saveOnly">
+      <i class="fas fa-save"></i> {{#if editMode}}{{localize "STORYFRAME.UI.Labels.Update"}}{{else}}{{localize "STORYFRAME.UI.Labels.SaveToLibrary"}}{{/if}}
+    </button>
     <button type="button" class="submit-btn" data-action="submit">
       <i class="fas fa-paper-plane"></i> {{#if editMode}}{{localize "STORYFRAME.ChallengeBuilder.UpdateAndPresent"}}{{else}}{{localize "STORYFRAME.ChallengeBuilder.PresentChallenge"}}{{/if}}
     </button>

@@ -26,24 +26,6 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
     const checkGroups = [...singleChecks, ...multiChecks];
     const saveGroups = [...singleSaves, ...multiSaves];
 
-    // Debug: Show actual HTML content
-    console.log('StoryFrame | DND5e Parser Debug:', {
-      singleChecks: singleChecks.length,
-      multiChecks: multiChecks.length,
-      totalChecks: checkGroups.length,
-      singleSaves: singleSaves.length,
-      multiSaves: multiSaves.length,
-      totalSaves: saveGroups.length,
-      htmlPreview: content.innerHTML.substring(0, 500),
-      hasRollAction: content.querySelectorAll('a.roll-action').length,
-      hasRollLinkGroup: content.querySelectorAll('span.roll-link-group').length,
-      allDataTypes: Array.from(content.querySelectorAll('[data-type]')).map(el => ({
-        tag: el.tagName,
-        classes: el.className,
-        dataType: el.dataset.type,
-      })),
-    });
-
     // Parse skill checks
     checkGroups.forEach((group) => {
       // Prefer skill over ability when both are present (e.g., data-ability="cha" data-skill="dec")
@@ -61,6 +43,7 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
             skillName: skill.toLowerCase(),
             dc: parseInt(dc),
             isSecret: false, // D&D 5e doesn't have inline secret trait support
+            checkType: 'skill', // Mark as skill check
             id: foundry.utils.randomID(),
           });
         });
@@ -83,6 +66,7 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
             skillName: ability.toLowerCase(),
             dc: parseInt(dc),
             isSecret: false, // D&D 5e doesn't have inline secret trait support
+            checkType: 'save', // Mark as save check
             id: foundry.utils.randomID(),
           });
         });
@@ -181,9 +165,18 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
       utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.utility, allSkills, participants),
     };
 
+    // Get all D&D 5e saves from system adapter
+    const allSystemSaves = SystemAdapter.getSaves();
+    const saves = Object.keys(allSystemSaves).map(slug => ({
+      slug,
+      name: allSystemSaves[slug].name,
+      icon: allSystemSaves[slug].icon,
+    }));
+
     return {
       ...baseContext,
       ...categorizedSkills,
+      saves,
     };
   }
 
@@ -245,6 +238,18 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
     }
 
     return false;
+  }
+
+  /**
+   * Check if an actor has a specific save (D&D 5e specific)
+   * @param {Actor} actor - The actor to check
+   * @param {string} saveSlug - The save slug to check for (str, dex, con, int, wis, cha)
+   * @returns {Promise<boolean>} True if the actor has the save
+   */
+  async _actorHasSave(actor, saveSlug) {
+    if (!actor?.system?.abilities) return false;
+    // D&D 5e saves are stored in abilities
+    return !!actor.system.abilities[saveSlug];
   }
 
   /**

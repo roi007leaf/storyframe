@@ -424,6 +424,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       const skillSlugMap = getSkillSlugMap();
       const fullSlug = skillSlugMap[request.skillSlug] || request.skillSlug;
 
+      // Determine if this is a save or skill check
+      const checkType = request.checkType || 'skill';
+
       // Build roll options - only include DC if set
       const rollOptions = { skipDialog: false };
       if (request.dc !== null && request.dc !== undefined) {
@@ -440,41 +443,50 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }
 
       if (currentSystem === 'pf2e') {
-        // PF2e: Use action system if actionSlug provided
-        if (request.actionSlug && game.pf2e?.actions) {
-          roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
-          if (roll) {
-            actionExecuted = true;
+        if (checkType === 'save') {
+          // PF2e: Saving throw
+          const save = actor.saves?.[fullSlug];
+          if (!save) {
+            ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: fullSlug, actor: actor.name }));
+            return;
           }
-        }
-
-        // PF2e: Basic skill roll if no action or action failed
-        if (!actionExecuted) {
-          if (request.skillSlug === 'per') {
-            // Perception uses actor.perception.roll()
-            roll = await actor.perception.roll(rollOptions);
-          } else {
-            // Try to find the skill - check both actor.skills and actor.system.skills for lore skills
-            let skill = actor.skills?.[fullSlug];
-
-            // If not found and it's a lore skill, try actor.system.skills
-            if (!skill && fullSlug.includes('-lore')) {
-              skill = actor.system?.skills?.[fullSlug];
+          roll = await save.roll(rollOptions);
+        } else {
+          // PF2e: Use action system if actionSlug provided
+          if (request.actionSlug && game.pf2e?.actions) {
+            roll = await PlayerViewerApp._tryExecuteAction(actor, request.actionSlug, rollOptions);
+            if (roll) {
+              actionExecuted = true;
             }
+          }
 
-            if (!skill) {
-              ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SkillNotFound', { skill: fullSlug, actor: actor.name }));
-              return;
+          // PF2e: Basic skill roll if no action or action failed
+          if (!actionExecuted) {
+            if (request.skillSlug === 'per') {
+              // Perception uses actor.perception.roll()
+              roll = await actor.perception.roll(rollOptions);
+            } else {
+              // Try to find the skill - check both actor.skills and actor.system.skills for lore skills
+              let skill = actor.skills?.[fullSlug];
+
+              // If not found and it's a lore skill, try actor.system.skills
+              if (!skill && fullSlug.includes('-lore')) {
+                skill = actor.system?.skills?.[fullSlug];
+              }
+
+              if (!skill) {
+                ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SkillNotFound', { skill: fullSlug, actor: actor.name }));
+                return;
+              }
+              roll = await skill.roll(rollOptions);
             }
-            roll = await skill.roll(rollOptions);
           }
         }
       } else if (currentSystem === 'dnd5e') {
-        // D&D 5e: Use actor.rollSkill method
+        // D&D 5e: Use actor.rollSkill or actor.rollAbilitySave method
         // D&D 5e doesn't use actions, so ignore actionSlug
 
-        // D&D 5e v4 API: rollSkill(config={}, dialog={}, message={})
-        const config = { skill: fullSlug };
+        const config = {};
         const dialogConfig = {};
         const messageConfig = {};
 
@@ -488,8 +500,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           // Show DC in message flavor only if visibility setting allows
           // 'all' = everyone sees DCs, 'gm' = only GM sees, 'none' = no one sees in chat
           if (challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM)) {
-            const skillName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
-            messageConfig.flavor = `${skillName} Check (DC ${request.dc})`;
+            const displayName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
+            const checkLabel = checkType === 'save' ? 'Save' : 'Check';
+            messageConfig.flavor = `${displayName} ${checkLabel} (DC ${request.dc})`;
           }
         }
 
@@ -498,8 +511,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           messageConfig.rollMode = CONST.DICE_ROLL_MODES.BLIND;
         }
 
-        const rollResult = await actor.rollSkill(config, dialogConfig, messageConfig);
-        // D&D 5e rollSkill may return an array or single roll
+        let rollResult;
+        if (checkType === 'save') {
+          // D&D 5e: Saving throw (ability save)
+          rollResult = await actor.rollAbilitySave(fullSlug, { ...config, ...dialogConfig, ...messageConfig });
+        } else {
+          // D&D 5e: Skill check
+          config.skill = fullSlug;
+          rollResult = await actor.rollSkill(config, dialogConfig, messageConfig);
+        }
+        // D&D 5e rollSkill/rollAbilitySave may return an array or single roll
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
@@ -531,6 +552,15 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       // Submit result to GM via socket
       await game.storyframe.socketManager.requestSubmitRollResult(result);
+
+      // If this roll was part of an "allow only one" group, dismiss other rolls for this participant
+      if (request.batchGroupId && request.allowOnlyOne) {
+        await PlayerViewerApp._dismissGroupRolls(
+          request.batchGroupId,
+          request.participantId,
+          requestId
+        );
+      }
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing roll:`, error);
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
@@ -543,12 +573,48 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   }
 
   /**
+   * Dismiss other rolls in an "allow only one" group for the same participant.
+   * Called after a player successfully executes a roll from a grouped batch.
+   * @param {string} batchGroupId - The shared group ID
+   * @param {string} participantId - The participant who rolled (only dismiss their other rolls)
+   * @param {string} executedRequestId - The request that was executed (don't dismiss this one)
+   */
+  static async _dismissGroupRolls(batchGroupId, participantId, executedRequestId) {
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.pendingRolls) return;
+
+    // Find other rolls in the same group for the same participant
+    const otherRolls = state.pendingRolls.filter(
+      r => r.batchGroupId === batchGroupId
+        && r.participantId === participantId
+        && r.id !== executedRequestId
+    );
+
+    if (otherRolls.length === 0) return;
+
+    // Remove all other rolls in group for this participant
+    for (const roll of otherRolls) {
+      await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
+    }
+
+    // Notify user
+    if (otherRolls.length > 0) {
+      ui.notifications.info(
+        game.i18n.format('STORYFRAME.Notifications.Roll.GroupRollsDismissed', {
+          count: otherRolls.length
+        })
+      );
+    }
+  }
+
+  /**
    * Handle challenge option selection.
    * @param {Event} _event - Click event
    * @param {HTMLElement} target - Button element
    */
   static async _onSelectChallengeOption(_event, target) {
-    const skillSlug = target.dataset.skill;
+    const checkSlug = target.dataset.skill;
+    const checkType = target.dataset.checkType || 'skill';
     const dc = target.dataset.dc ? parseInt(target.dataset.dc) : null;
     const actionSlug = target.dataset.actionSlug || null;
     const isSecret = target.dataset.isSecret === 'true';
@@ -560,7 +626,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    if (!skillSlug) {
+    if (!checkSlug) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.InvalidSkill'));
       return;
     }
@@ -573,8 +639,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Execute roll (with optional action and secret flag)
-    await PlayerViewerApp._executeSkillRoll(myParticipant, skillSlug, dc, actionSlug, isSecret);
+    // Execute appropriate roll based on check type
+    if (checkType === 'save') {
+      await PlayerViewerApp._executeSaveRoll(myParticipant, checkSlug, dc, isSecret);
+    } else {
+      await PlayerViewerApp._executeSkillRoll(myParticipant, checkSlug, dc, actionSlug, isSecret);
+    }
   }
 
   /**
@@ -657,6 +727,59 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.CheckCompleted', { skill: skillName, total }));
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing challenge roll:`, error);
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
+    }
+  }
+
+  /**
+   * Execute save roll for challenge option.
+   * @param {Object} participant - Participant data
+   * @param {string} saveSlug - Save slug (e.g., 'fortitude', 'str')
+   * @param {number} dc - DC value
+   * @param {boolean} isSecret - Whether this is a secret roll (GM only)
+   */
+  static async _executeSaveRoll(participant, saveSlug, dc, isSecret = false) {
+    const actor = await fromUuid(participant.actorUuid);
+    if (!actor) {
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
+      return;
+    }
+
+    const currentSystem = SystemAdapter.detectSystem();
+    const rollOptions = { skipDialog: false };
+    if (dc !== null && dc !== undefined) {
+      rollOptions.dc = { value: dc };
+    }
+    if (isSecret) {
+      rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+    }
+
+    try {
+      let roll;
+      if (currentSystem === 'pf2e') {
+        const save = actor.saves?.[saveSlug];
+        if (!save) {
+          ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: saveSlug, actor: actor.name }));
+          return;
+        }
+        roll = await save.roll(rollOptions);
+      } else if (currentSystem === 'dnd5e') {
+        const config = { target: dc };
+        const rollResult = await actor.rollAbilitySave(saveSlug, config);
+        roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else {
+        ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
+        return;
+      }
+
+      if (!roll) return;
+
+      const saves = SystemAdapter.getSaves();
+      const saveName = saves[saveSlug]?.name || saveSlug.toUpperCase();
+      const total = roll.total ?? game.i18n.localize('STORYFRAME.Notifications.Roll.NA');
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.CheckCompleted', { skill: saveName, total }));
+    } catch (error) {
+      console.error(`${MODULE_ID} | Error executing challenge save roll:`, error);
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
     }
   }

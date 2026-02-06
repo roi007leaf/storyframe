@@ -56,6 +56,7 @@
                           data-action="selectChallengeOption"
                           data-option-id="{{../id}}"
                           data-skill="{{this.skill}}"
+                          data-check-type="{{this.checkType}}"
                           data-dc="{{this.dc}}"
                           data-action-slug="{{this.action}}"
                           data-is-secret="{{this.isSecret}}"
@@ -84,10 +85,16 @@
     <section class="rolls-tab {{#unless currentTab}}hidden{{/unless}}" data-tab-content="rolls">
       <div class="tab-scroll-content">
         {{#each actorRollGroups}}
-          <div class="actor-roll-group">
+          <div class="actor-roll-group {{#if this.hasAllowOnlyOne}}allow-only-one-group{{/if}}">
             <div class="actor-header-compact">
               <img src="{{this.actorImg}}" alt="{{this.actorName}}" loading="lazy" class="actor-avatar-small">
               <span class="actor-name">{{this.actorName}}</span>
+              {{#if this.hasAllowOnlyOne}}
+                <span class="allow-only-one-badge">
+                  <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+                  {{localize "STORYFRAME.UI.Labels.ChooseOne"}}
+                </span>
+              {{/if}}
             </div>
             <div class="rolls-grid">
               {{#each this.rolls}}
@@ -95,6 +102,7 @@
                         class="roll-btn-grid"
                         data-action="executeRoll"
                         data-request-id="{{this.id}}"
+                        data-check-type="{{this.checkType}}"
                         data-tooltip="{{this.tooltip}}"
                         aria-label="{{this.ariaLabel}}">
                   <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>

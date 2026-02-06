@@ -1,4 +1,3 @@
-import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 
 /**
@@ -13,10 +12,11 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       title: 'STORYFRAME.WindowTitles.RequestRolls',
       icon: 'fas fa-dice-d20',
       minimizable: false,
-      resizable: false,
+      resizable: true,
     },
     position: {
       width: 480,
+      height: 700,
     },
     classes: ['storyframe', 'roll-request-dialog-app'],
     actions: {
@@ -35,6 +35,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     super(options);
     this.checks = checks;
     this.participants = participants;
+    this.allowOnlyOne = false; // Allow-only-one toggle state
     this.resolve = null;
     this.promise = new Promise((resolve) => {
       this.resolve = resolve;
@@ -43,26 +44,31 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
   async _prepareContext(_options) {
     const systemSkills = SystemAdapter.getSkills();
+    const systemSaves = SystemAdapter.getSaves();
 
-    // Enrich checks with skill icons and display names
+    // Enrich checks with skill/save icons and display names
     const enrichedChecks = this.checks.map(check => {
-      // Try to find skill data by various methods
-      let skillData = null;
+      // Determine if this is a save or skill check
+      const checkType = check.checkType || 'skill';
+      const lookupTable = checkType === 'save' ? systemSaves : systemSkills;
 
-      // First try using the skill name as-is (might be short slug like "thi")
-      skillData = systemSkills[check.skillName];
+      // Try to find check data by various methods
+      let checkData = null;
+
+      // First try using the check name as-is (might be short slug like "thi" or "fortitude")
+      checkData = lookupTable[check.skillName];
 
       // If not found, try lowercase
-      if (!skillData) {
-        skillData = systemSkills[check.skillName.toLowerCase()];
+      if (!checkData) {
+        checkData = lookupTable[check.skillName.toLowerCase()];
       }
 
-      // If still not found, search through all skills for a match
-      if (!skillData) {
+      // If still not found, search through all checks for a match
+      if (!checkData) {
         const searchName = check.skillName.toLowerCase();
-        for (const [key, skill] of Object.entries(systemSkills)) {
-          if (skill.name?.toLowerCase() === searchName || key === searchName) {
-            skillData = skill;
+        for (const [key, data] of Object.entries(lookupTable)) {
+          if (data.name?.toLowerCase() === searchName || key === searchName) {
+            checkData = data;
             break;
           }
         }
@@ -70,8 +76,9 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
       return {
         ...check,
-        skillIcon: skillData?.icon || 'fa-dice-d20',
-        skillName: skillData?.name || check.skillName,
+        skillIcon: checkData?.icon || 'fa-dice-d20',
+        skillName: checkData?.name || check.skillName,
+        checkType,
       };
     });
 
@@ -83,15 +90,33 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       img: p.img || 'icons/svg/mystery-man.svg',
     }));
 
+    // Detect what types of checks are present (skills, saves, or both)
+    const hasSkills = enrichedChecks.some(check => check.checkType !== 'save');
+    const hasSaves = enrichedChecks.some(check => check.checkType === 'save');
+
+    let foundChecksText;
+    if (hasSkills && hasSaves) {
+      // Mixed: both skills and saves
+      foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecksAndSaves', { count: enrichedChecks.length });
+    } else if (hasSaves) {
+      // Only saves
+      foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundSaves', { count: enrichedChecks.length });
+    } else {
+      // Only skills/checks
+      foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecks', { count: enrichedChecks.length });
+    }
+
     return {
       checks: enrichedChecks,
       participants: enrichedParticipants,
+      allowOnlyOne: this.allowOnlyOne,
       i18n: {
-        foundChecks: game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecks', { count: enrichedChecks.length }),
+        foundChecks: foundChecksText,
         selectPCs: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SelectPCs'),
         cancel: game.i18n.localize('STORYFRAME.Dialogs.Cancel'),
         sendRollRequests: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SendRollRequests'),
         secret: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.Secret'),
+        allowOnlyOneLabel: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.AllowOnlyOne'),
       },
     };
   }
@@ -115,7 +140,11 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       ? (Array.isArray(data.participant) ? data.participant : [data.participant])
       : [];
 
-    this.resolve(selectedIds);
+    // Get allow-only-one checkbox state
+    const allowOnlyOne = data.allowOnlyOne || false;
+
+    // Return object with both selectedIds and allowOnlyOne
+    this.resolve({ selectedIds, allowOnlyOne });
     this.close();
   }
 

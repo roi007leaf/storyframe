@@ -40,18 +40,34 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
   async _prepareContext(_options) {
     const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
 
+    // Import SystemAdapter for save names
+    const SystemAdapter = await import('../system-adapter.mjs');
+    const systemSaves = SystemAdapter.getSaves();
+
     // Enrich challenges with formatted options
     const challenges = savedChallenges.map(c => {
       const optionsPreview = c.options.map((opt, idx) => {
         const skillOptions = opt.skillOptions.map(so => {
-          const skillName = this.gmSidebar._getSkillName(so.skill);
+          const checkType = so.checkType || 'skill';
+
+          // Get name based on check type (saves don't capitalize, skills do)
+          let checkName;
+          if (checkType === 'save') {
+            // For saves, get proper name without uppercasing
+            checkName = systemSaves[so.skill]?.name || so.skill;
+          } else {
+            // For skills, use existing method (which uppercases)
+            checkName = this.gmSidebar._getSkillName(so.skill);
+          }
+
           const actionName = so.action ? this.gmSidebar._getActionName(so.skill, so.action) : null;
           return {
-            skillName,
+            skillName: checkName,
             actionName,
             dc: so.dc,
             isSecret: so.isSecret || false,
-            displayText: actionName ? `${skillName} (${actionName})` : skillName,
+            checkType,
+            displayText: actionName ? `${checkName} (${actionName})` : checkName,
           };
         });
 

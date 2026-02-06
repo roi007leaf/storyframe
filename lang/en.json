@@ -17,9 +17,12 @@
     "Dialogs": {
       "RollRequest": {
         "FoundChecks": "Found {count} check(s):",
+        "FoundSaves": "Found {count} save(s):",
+        "FoundChecksAndSaves": "Found {count} check(s) and save(s):",
         "SelectPCs": "Select PCs to request rolls from:",
         "SendRollRequests": "Send Roll Requests",
-        "Secret": "Secret"
+        "Secret": "Secret",
+        "AllowOnlyOne": "Allow only one roll (dismiss others when one is rolled)"
       },
       "AddSpeaker": {
         "Title": "Add Speaker",
@@ -120,9 +123,12 @@
         "SelectPCsForBatch": "Select PCs first to use batch selection",
         "NoPCsSelected": "No PCs selected",
         "CheckRequested": "Requested {checkName} check from {count} PC(s)",
+        "SaveRequested": "Requested {checkName} save from {count} PC(s)",
         "PlayersOffline": "{names} offline - skipped",
         "PlayersLackSkill": "{names} don't have {skillName} - skipped",
         "MultipleChecksRequested": "Requested {checkCount} check(s) from {uniqueCount} PC(s)",
+        "MultipleSavesRequested": "Requested {checkCount} save(s) from {uniqueCount} PC(s)",
+        "MultipleChecksAndSavesRequested": "Requested {checkCount} check(s) and save(s) from {uniqueCount} PC(s)",
         "UnknownSkill": "Unknown skill: {skillName}",
         "SelectPCsFirst": "Select PCs first to request a roll",
         "NoSpecificActions": "No specific actions for {skillName}",
@@ -157,13 +163,15 @@
         "ParticipantNotFound": "Participant not found",
         "ActorNotFound": "Actor not found",
         "SkillNotFound": "Skill \"{skill}\" not found on {actor}",
+        "SaveNotFound": "Save \"{save}\" not found on {actor}",
         "UnsupportedSystem": "Unsupported system: {system}",
         "RollFailed": "Failed to execute roll",
         "ChallengeNoLongerActive": "Challenge no longer active",
         "InvalidSkill": "Invalid skill",
         "NoParticipantForUser": "No participant found for your user",
         "CheckCompleted": "{skill} check completed ({total})",
-        "NA": "N/A"
+        "NA": "N/A",
+        "GroupRollsDismissed": "{count} other roll(s) in group dismissed"
       }
     },
     "UI": {
@@ -175,6 +183,7 @@
         "Skills": "Skills",
         "SceneName": "Scene Name",
         "SelectSkill": "Select skill...",
+        "SelectSave": "Select save...",
         "OptionName": "Option name...",
         "PendingRolls": "Pending Rolls ({count})",
         "ActiveChallenges": "Active Challenges ({count})",
@@ -182,11 +191,14 @@
         "ByPC": "By PC",
         "BySkill": "By Skill",
         "AddSkill": "Add Skill",
+        "AddSave": "Add Save",
         "AddDCPreset": "Add DC Preset",
         "ClearAll": "Clear All",
         "CancelAll": "Cancel All",
         "Remove": "Remove",
         "RemoveOption": "Remove Option",
+        "Update": "Update",
+        "SaveToLibrary": "Save to Library",
         "ToggleLayout": "Toggle Layout",
         "ToggleGrouping": "Toggle grouping",
         "Close": "Close",
@@ -204,16 +216,21 @@
         "JournalImages": "Journal Images",
         "JournalActors": "Journal Actors",
         "JournalChecks": "Journal Checks",
+        "JournalSkills": "Journal Skills",
+        "JournalSaves": "Journal Saving Throws",
         "ActorDeleted": "Actor Deleted",
         "Deselect": "Deselect",
         "SelectAll": "Select All",
-        "LevelShort": "Lv"
+        "LevelShort": "Lv",
+        "AllowOnlyOne": "Allow only one",
+        "ChooseOne": "Choose One"
       },
       "Categories": {
         "Physical": "Physical",
         "Magical": "Magical",
         "Social": "Social",
-        "Utility": "Utility"
+        "Utility": "Utility",
+        "SavingThrows": "Saving Throws"
       },
       "Tooltips": {
         "MinProficiency": "Minimum proficiency required",
@@ -255,9 +272,13 @@
         "GMOnlyRoll": "GM Only Roll",
         "SendBatchedSkillChecks": "Send batched skill checks",
         "SkillChecks": "{skill} Checks",
+        "SavingThrows": "{save} Saving Throws",
+        "RequestSave": "Request {save} Save",
+        "RollSave": "Roll {save} Save",
         "ActiveChallengesCount": "{count} active challenge(s)",
         "PresentChallenge": "Present Challenge",
-        "CreateFromSelection": "Create from Selection"
+        "CreateFromSelection": "Create from Selection",
+        "AllowOnlyOne": "When enabled, only the first roll from this group will count. Other pending rolls will be automatically dismissed."
       },
       "AriaLabels": {
         "AddNPCFromImage": "Add NPC from image",
@@ -282,7 +303,10 @@
         "ToggleSecretRoll": "Toggle secret roll",
         "SendBatch": "Send batch",
         "SkillChecks": "{skill} Checks",
+        "SavingThrows": "{save} saving throw checks",
         "RequestSkillCheck": "Request {skill} check",
+        "RequestSave": "Request {save} saving throw",
+        "RollCheck": "Roll {check}",
         "SkillButtonsByCategory": "Skill buttons by category",
         "ViewActiveChallenges": "View active challenges",
         "PresentChallenge": "Present multi-option challenge to all players",
@@ -342,7 +366,7 @@
       "ChallengeOptions": "Challenge Options",
       "OptionLabel": "Option {num}",
       "AddOption": "Add Another Option",
-      "LoreSkills": "Lore Skills",
+      "LoreSkills": "Lore",
       "NoAction": "No action",
       "DC": "DC",
       "Proficiency": {

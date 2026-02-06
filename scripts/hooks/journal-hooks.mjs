@@ -31,8 +31,10 @@ export async function handleJournalRender(sheet, html) {
   if (contentArea) {
     enrichChecks(contentArea);
 
-    // Set up shift+click handlers for inline check repost buttons
-    _setupInlineCheckShiftClickHandlers(contentArea);
+    // Set up ctrl+click handlers for inline check repost buttons
+    _setupInlineCheckCtrlClickHandlers(contentArea);
+  } else {
+    console.warn('StoryFrame: No content area found in journal');
   }
 
   // Auto-open sidebar if setting enabled
@@ -219,24 +221,29 @@ function _updateAllJournalToggleButtons() {
 }
 
 /**
- * Setup shift+click handlers for inline check repost buttons
- * When shift+clicking a "send to chat" button on a PF2e inline check,
+ * Setup ctrl+click handlers for inline check repost buttons
+ * When ctrl+clicking a "send to chat" button on a PF2e inline check,
  * open the Roll Requester Dialog instead of the normal chat behavior
  * @private
  */
-function _setupInlineCheckShiftClickHandlers(contentArea) {
+function _setupInlineCheckCtrlClickHandlers(contentArea) {
   if (!game.user.isGM) return;
 
   // Find all inline checks with repost buttons (PF2e format)
   const inlineChecks = contentArea.querySelectorAll('a.inline-check.with-repost[data-pf2-check][data-pf2-dc]');
 
+
   inlineChecks.forEach((checkElement) => {
     // Find the repost icon within this check
     const repostIcon = checkElement.querySelector('[data-pf2-repost]');
-    if (!repostIcon) return;
+    if (!repostIcon) {
+      console.warn('StoryFrame: No repost icon found for check', checkElement);
+      return;
+    }
 
     // Add click listener to the repost icon
     repostIcon.addEventListener('click', async (event) => {
+
       // Only intercept if ctrl key is pressed
       if (!event.ctrlKey) return;
 
@@ -249,6 +256,10 @@ function _setupInlineCheckShiftClickHandlers(contentArea) {
       const dc = parseInt(checkElement.dataset.pf2Dc);
       const traits = checkElement.dataset.pf2Traits || '';
       const isSecret = traits.includes('secret');
+
+      // Determine if this is a save or skill check (before dialog)
+      const saveTypes = new Set(['fortitude', 'reflex', 'will']);
+      const checkType = saveTypes.has(skillName.toLowerCase()) ? 'save' : 'skill';
 
       // Get state and validate participants exist
       const state = game.storyframe.stateManager.getState();
@@ -273,7 +284,8 @@ function _setupInlineCheckShiftClickHandlers(contentArea) {
       const checksForDialog = [{
         skillName: skillName,
         dc: dc,
-        isSecret: isSecret
+        isSecret: isSecret,
+        checkType: checkType
       }];
 
       // Import and show Roll Requester Dialog
@@ -283,46 +295,57 @@ function _setupInlineCheckShiftClickHandlers(contentArea) {
 
       // Wait for result
       const result = await dialog.wait();
-      if (!result || result.length === 0) {
+
+      // Handle both old format (array) and new format (object)
+      const selectedIds = result?.selectedIds || result || [];
+      const allowOnlyOne = result?.allowOnlyOne || false;
+
+      if (!selectedIds || selectedIds.length === 0) {
         return;
       }
 
       // Get sidebar reference
       const sidebar = game.storyframe.gmSidebar;
       if (!sidebar) {
+        console.error('StoryFrame: Sidebar not available');
         ui.notifications.error('StoryFrame sidebar not available');
         return;
       }
 
-      // Import skill check handlers
-      const { requestSkillCheck } = await import('../applications/gm-sidebar/managers/skill-check-handlers.mjs');
-      const SystemAdapter = await import('../system-adapter.mjs');
+      try {
+        // Import skill check handlers
+        const { requestSkillCheck } = await import('../applications/gm-sidebar/managers/skill-check-handlers.mjs');
+        const SystemAdapter = await import('../system-adapter.mjs');
 
-      // Determine if this is a save or skill check
-      const saveTypes = new Set(['fortitude', 'reflex', 'will']);
-      const checkType = saveTypes.has(skillName.toLowerCase()) ? 'save' : 'skill';
+        // Convert skill/save name to slug (checkType already determined above)
+        const checkSlug = checkType === 'save'
+          ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
+          : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
 
-      // Convert skill/save name to slug
-      const checkSlug = checkType === 'save'
-        ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
-        : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
+        // Generate group ID if allow-only-one is enabled
+        const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
 
-      // Set DC and secret state
-      sidebar.currentDC = dc;
-      const dcInput = sidebar.element.querySelector('#dc-input');
-      if (dcInput) dcInput.value = dc;
 
-      sidebar.secretRollEnabled = isSecret;
+        // Set DC and secret state
+        sidebar.currentDC = dc;
+        const dcInput = sidebar.element.querySelector('#dc-input');
+        if (dcInput) dcInput.value = dc;
 
-      // Send request with correct check type
-      await requestSkillCheck(sidebar, checkSlug, result, null, false, checkType);
+        sidebar.secretRollEnabled = isSecret;
 
-      // Reset secret toggle
-      sidebar.secretRollEnabled = false;
-      const secretBtn = sidebar.element.querySelector('.secret-roll-btn');
-      if (secretBtn) {
-        secretBtn.classList.remove('active');
-        secretBtn.setAttribute('aria-pressed', 'false');
+        // Send request with correct check type and group ID
+        await requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne);
+
+        // Reset secret toggle
+        sidebar.secretRollEnabled = false;
+        const secretBtn = sidebar.element.querySelector('.secret-roll-btn');
+        if (secretBtn) {
+          secretBtn.classList.remove('active');
+          secretBtn.setAttribute('aria-pressed', 'false');
+        }
+      } catch (error) {
+        console.error('StoryFrame: Error sending request:', error);
+        ui.notifications.error('Failed to send roll request: ' + error.message);
       }
     });
   });

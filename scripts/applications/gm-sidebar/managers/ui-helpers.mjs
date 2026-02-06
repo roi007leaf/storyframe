@@ -197,23 +197,69 @@ export async function onShowPendingRolls(_event, target, sidebar) {
     pendingRolls.map(async (r) => {
       const participant = state.participants?.find((p) => p.id === r.participantId);
       const actor = participant ? await fromUuid(participant.actorUuid) : null;
+
+      // Get appropriate name based on check type
+      const checkType = r.checkType || 'skill';
+      let checkName;
+      if (checkType === 'save') {
+        const saves = SystemAdapter.getSaves();
+        checkName = saves[r.skillSlug]?.name || r.skillSlug.toUpperCase();
+      } else {
+        checkName = SkillCheckHandlers.getSkillName(r.skillSlug);
+      }
+
       return {
         ...r,
         participantId: r.participantId,
         participantName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         participantImg: actor?.img || 'icons/svg/mystery-man.svg',
-        skillName: SkillCheckHandlers.getSkillName(r.skillSlug),
+        skillName: checkName,
         actionName: r.actionSlug ? SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug) : null,
+        checkType: checkType,
       };
     }),
   );
 
+  // Pre-process: Combine allow-only-one groups into single items
+  const processedRolls = [];
+  const batchGroups = new Map();
+
+  rollsData.forEach(roll => {
+    if (roll.allowOnlyOne && roll.batchGroupId) {
+      // Part of an allow-only-one group
+      const groupKey = `${roll.participantId}:${roll.batchGroupId}`;
+      if (!batchGroups.has(groupKey)) {
+        batchGroups.set(groupKey, {
+          id: roll.batchGroupId,  // Use group ID for cancel operations
+          isAllowOnlyOne: true,
+          batchGroupId: roll.batchGroupId,
+          participantId: roll.participantId,
+          participantName: roll.participantName,
+          participantImg: roll.participantImg,
+          groupedRolls: [],
+          skillName: `Choose One (${0})`,  // Will update count
+          dc: null,  // Multiple DCs
+        });
+      }
+      batchGroups.get(groupKey).groupedRolls.push(roll);
+    } else {
+      // Regular roll
+      processedRolls.push(roll);
+    }
+  });
+
+  // Add batch groups to processed rolls with updated count
+  batchGroups.forEach(group => {
+    group.skillName = `Choose One (${group.groupedRolls.length})`;
+    processedRolls.push(group);
+  });
+
   // Group data based on current mode
   let groupedData;
   if (sidebar.pendingRollsGroupMode === 'actor') {
-    groupedData = groupPendingRollsByActor(rollsData);
+    groupedData = groupPendingRollsByActor(processedRolls);
   } else {
-    groupedData = groupPendingRollsBySkill(rollsData);
+    groupedData = groupPendingRollsBySkill(processedRolls);
   }
 
   // Remove existing popup if any
@@ -290,6 +336,84 @@ export async function onShowPendingRolls(_event, target, sidebar) {
       title.textContent = game.i18n.format('STORYFRAME.UI.Labels.PendingRolls', { count: remaining });
 
       // Close popup if no more rolls
+      if (remaining === 0) {
+        popup.remove();
+      }
+
+      ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.PendingRolls.RollCancelled'));
+    });
+  });
+
+  // Cancel entire allow-only-one group
+  popup.querySelectorAll('.cancel-group-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const batchGroupId = btn.dataset.batchGroupId;
+      const participantId = btn.dataset.participantId;
+
+      // Find all rolls in this group for this participant
+      const groupRolls = rollsData.filter(r =>
+        r.batchGroupId === batchGroupId && r.participantId === participantId && !r.isAllowOnlyOne
+      );
+
+      // Remove all rolls in group
+      for (const roll of groupRolls) {
+        await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
+      }
+
+      // Remove group item from popup
+      const groupItem = btn.closest('.pending-roll-item');
+      const subItems = groupItem.nextElementSibling;
+      groupItem.remove();
+      if (subItems?.classList.contains('group-sub-items')) {
+        subItems.remove();
+      }
+
+      // Update count and check if empty
+      const remaining = popup.querySelectorAll('.pending-roll-item').length;
+      title.textContent = game.i18n.format('STORYFRAME.UI.Labels.PendingRolls', { count: remaining });
+
+      if (remaining === 0) {
+        popup.remove();
+      }
+
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.GroupRollsDismissed', { count: groupRolls.length }));
+    });
+  });
+
+  // Cancel individual sub-roll from allow-only-one group
+  popup.querySelectorAll('.cancel-sub-roll-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const requestId = btn.dataset.requestId;
+      const batchGroupId = btn.dataset.batchGroupId;
+
+      await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+
+      // Remove this sub-item
+      const subItem = btn.closest('.sub-roll-item');
+      subItem.remove();
+
+      // Check if group is now empty
+      const groupItem = subItem.closest('.group-sub-items').previousElementSibling;
+      const remainingSubItems = subItem.closest('.group-sub-items').querySelectorAll('.sub-roll-item').length;
+
+      if (remainingSubItems === 0) {
+        // Remove entire group if no sub-items left
+        groupItem.remove();
+        subItem.closest('.group-sub-items').remove();
+      } else {
+        // Update count in group header
+        const groupHeader = groupItem.querySelector('.skill-name, .participant-name');
+        if (groupHeader) {
+          groupHeader.textContent = groupHeader.textContent.replace(/\(\d+\)/, `(${remainingSubItems})`);
+        }
+      }
+
+      // Update total count
+      const remaining = popup.querySelectorAll('.pending-roll-item').length;
+      title.textContent = game.i18n.format('STORYFRAME.UI.Labels.PendingRolls', { count: remaining });
+
       if (remaining === 0) {
         popup.remove();
       }
@@ -507,25 +631,41 @@ export async function onShowProficiencyFilter(_event, target, skillSlug, sidebar
  */
 export async function onShowCheckDCsPopup(_event, target, sidebar) {
   const skillName = target.dataset.skill;
+  const checkType = target.dataset.checkType || 'skill';
 
-  // Find all checks for this skill from context
+  // Find all checks for this skill/save from context
   const context = await sidebar._prepareContext();
-  const skillGroup = context.journalCheckGroups.find((g) => g.skillName === skillName);
 
-  if (!skillGroup?.checks?.length) return;
+  // Try to get the appropriate group list, with fallback to journalCheckGroups for backward compatibility
+  let groupList;
+  if (checkType === 'save') {
+    groupList = context.journalSaveGroups;
+  } else {
+    groupList = context.journalSkillGroups || context.journalCheckGroups;
+  }
 
-  // Shift+click: add all checks for this skill to batch
+  const skillGroup = groupList?.find((g) => g.skillName === skillName);
+
+  if (!skillGroup?.checks?.length) {
+    console.warn('StoryFrame: No checks found for', skillName, 'in', groupList);
+    return;
+  }
+
+  // Shift+click: add all checks for this skill/save to batch
   if (_event.shiftKey) {
     if (sidebar.selectedParticipants.size === 0) {
       ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
       return;
     }
 
-    const skillSlug = SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase();
+    // Use appropriate slug converter based on check type
+    const checkSlug = checkType === 'save'
+      ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
+      : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
 
-    // Add all checks for this skill to batch
+    // Add all checks for this skill/save to batch
     skillGroup.checks.forEach((check) => {
-      const checkId = `journal:${skillSlug}:${check.dc}`;
+      const checkId = `journal:${checkSlug}:${check.dc}`;
 
       // Check if already in batch
       const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
@@ -533,10 +673,11 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
       if (existingIndex === -1) {
         // Add to batch if not already there
         sidebar.batchedChecks.push({
-          skill: skillSlug,
+          skill: checkSlug,
           dc: check.dc,
           isSecret: check.isSecret || false,
           actionSlug: null,
+          checkType: checkType,
           checkId,
         });
       }
@@ -553,7 +694,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
   // Create popup menu
   const menu = document.createElement('div');
-  menu.className = 'storyframe-dc-popup';
+  menu.className = `storyframe-dc-popup ${checkType === 'save' ? 'save-popup' : 'skill-popup'}`;
 
   menu.innerHTML = `
     <div class="dc-popup-header">${skillName}</div>
@@ -592,8 +733,11 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
       // Shift-click: add to global batch
       if (e.shiftKey) {
-        const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
-        const checkId = `journal:${skillSlug}:${dc}`;
+        // Use appropriate slug converter based on check type
+        const checkSlug = checkType === 'save'
+          ? (SystemAdapter.getSaveSlugFromName(skill) || skill.toLowerCase())
+          : (SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase());
+        const checkId = `journal:${checkSlug}:${dc}`;
 
         // Check if already in global batch
         const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
@@ -605,10 +749,11 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
         } else {
           // Add to global batch
           sidebar.batchedChecks.push({
-            skill: skillSlug,
+            skill: checkSlug,
             dc,
             isSecret,
             actionSlug: null,
+            checkType: checkType,
             checkId,
           });
           btn.classList.add('selected');
@@ -633,9 +778,12 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
       if (secretToggle) secretToggle.checked = isSecret;
 
       if (sidebar.selectedParticipants.size > 0) {
-        const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
-        if (skillSlug) {
-          await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
+        // Use appropriate slug converter based on check type
+        const checkSlug = checkType === 'save'
+          ? (SystemAdapter.getSaveSlugFromName(skill) || skill.toLowerCase())
+          : (SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase());
+        if (checkSlug) {
+          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, Array.from(sidebar.selectedParticipants), null, false, checkType);
         }
       } else {
         ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
@@ -643,9 +791,11 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     });
 
     // Mark as selected if already in global batch
-    const skillSlug = SystemAdapter.getSkillSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase();
+    const btnCheckSlug = checkType === 'save'
+      ? (SystemAdapter.getSaveSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase())
+      : (SystemAdapter.getSkillSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase());
     const dc = parseInt(btn.dataset.dc);
-    const checkId = `journal:${skillSlug}:${dc}`;
+    const checkId = `journal:${btnCheckSlug}:${dc}`;
     if (sidebar.batchedChecks.some(c => c.checkId === checkId)) {
       btn.classList.add('selected');
     }
@@ -886,15 +1036,38 @@ export function renderPendingRollsGroups(groups, mode) {
         </div>
         <div class="group-items">
           ${group.rolls.map(roll => `
-            <div class="pending-roll-item" data-request-id="${roll.id}">
-              <div class="roll-info">
-                <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
-                ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+            ${roll.isAllowOnlyOne ? `
+              <div class="pending-roll-item allow-only-one-group-item" data-batch-group-id="${roll.batchGroupId}">
+                <div class="roll-info">
+                  <i class="fas fa-hand-pointer allow-only-one-icon"></i>
+                  <span class="skill-name">${roll.skillName}</span>
+                </div>
+                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-participant-id="${roll.participantId}">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
-              <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
+              <div class="group-sub-items">
+                ${roll.groupedRolls.map(subRoll => `
+                  <div class="sub-roll-item">
+                    <span class="sub-skill-name">${subRoll.skillName}${subRoll.actionName ? ` (${subRoll.actionName})` : ''}</span>
+                    ${subRoll.dc ? `<span class="dc-badge">DC ${subRoll.dc}</span>` : ''}
+                    <button type="button" class="cancel-sub-roll-btn" data-request-id="${subRoll.id}" data-batch-group-id="${roll.batchGroupId}">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            ` : `
+              <div class="pending-roll-item" data-request-id="${roll.id}">
+                <div class="roll-info">
+                  <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
+                  ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                </div>
+                <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            `}
           `).join('')}
         </div>
       </div>
@@ -910,16 +1083,40 @@ export function renderPendingRollsGroups(groups, mode) {
         </div>
         <div class="group-items">
           ${group.rolls.map(roll => `
-            <div class="pending-roll-item" data-request-id="${roll.id}">
-              <div class="roll-info">
-                <img src="${roll.participantImg || 'icons/svg/mystery-man.svg'}" alt="${roll.participantName}" class="participant-avatar-small" />
-                <span class="participant-name">${roll.participantName}</span>
-                ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+            ${roll.isAllowOnlyOne ? `
+              <div class="pending-roll-item allow-only-one-group-item" data-batch-group-id="${roll.batchGroupId}">
+                <div class="roll-info">
+                  <i class="fas fa-hand-pointer allow-only-one-icon"></i>
+                  <img src="${roll.participantImg}" alt="${roll.participantName}" class="participant-avatar-small" />
+                  <span class="participant-name">${roll.participantName} - Choose One (${roll.groupedRolls.length})</span>
+                </div>
+                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-participant-id="${roll.participantId}">
+                  <i class="fas fa-times"></i>
+                </button>
               </div>
-              <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
-                <i class="fas fa-times"></i>
-              </button>
-            </div>
+              <div class="group-sub-items">
+                ${roll.groupedRolls.map(subRoll => `
+                  <div class="sub-roll-item">
+                    <span class="sub-skill-name">${subRoll.skillName}${subRoll.actionName ? ` (${subRoll.actionName})` : ''}</span>
+                    ${subRoll.dc ? `<span class="dc-badge">DC ${subRoll.dc}</span>` : ''}
+                    <button type="button" class="cancel-sub-roll-btn" data-request-id="${subRoll.id}" data-batch-group-id="${roll.batchGroupId}">
+                      <i class="fas fa-times"></i>
+                    </button>
+                  </div>
+                `).join('')}
+              </div>
+            ` : `
+              <div class="pending-roll-item" data-request-id="${roll.id}">
+                <div class="roll-info">
+                  <img src="${roll.participantImg || 'icons/svg/mystery-man.svg'}" alt="${roll.participantName}" class="participant-avatar-small" />
+                  <span class="participant-name">${roll.participantName}</span>
+                  ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                </div>
+                <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+            `}
           `).join('')}
         </div>
       </div>

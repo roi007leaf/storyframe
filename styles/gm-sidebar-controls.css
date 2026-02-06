@@ -139,13 +139,70 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   padding: 0 4px 4px 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .gm-sidebar .category-skills {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
   gap: 8px;
+}
+
+/* Saves Category */
+.gm-sidebar .saves-category {
+  border-top: 2px solid rgba(220, 118, 51, 0.3);
+  padding-top: var(--sf-space-md);
+  margin-top: var(--sf-space-md);
+}
+
+.gm-sidebar .saves-category .category-label {
+  color: rgba(220, 118, 51, 0.9);
+  border-bottom-color: rgba(220, 118, 51, 0.2);
+}
+
+.gm-sidebar .saves-category .category-skills {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(55px, 1fr));
+  gap: 8px;
+}
+
+/* Save Buttons */
+.gm-sidebar button[data-action='requestSave'] {
+  width: 100%;
+  padding: 10px;
+  background: linear-gradient(135deg, #c05621 0%, #dc7633 100%);
+  border: 1px solid rgba(220, 118, 51, 0.4);
+  border-radius: var(--sf-radius-md);
+  color: white;
+  cursor: pointer;
+  transition: all var(--sf-transition-base) var(--sf-ease-out);
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+}
+
+.gm-sidebar button[data-action='requestSave'] i {
+  font-size: 20px;
+}
+
+.gm-sidebar button[data-action='requestSave']:hover {
+  background: linear-gradient(135deg, #dc7633 0%, #e67e22 100%);
+  border-color: rgba(230, 126, 34, 0.6);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 118, 51, 0.4);
+}
+
+.gm-sidebar button[data-action='requestSave']:active {
+  transform: translateY(0);
+}
+
+/* Multi-Select State for Saves */
+.gm-sidebar-container .save-btn-wrapper.batched button[data-action='requestSave'] {
+  background: linear-gradient(135deg, rgba(230, 126, 34, 0.5), rgba(230, 126, 34, 0.35));
+  border: 2px solid rgba(230, 126, 34, 0.8);
+  box-shadow: 0 0 8px rgba(230, 126, 34, 0.5);
+  transform: scale(0.98);
 }
 
 /* Disabled skill buttons */
@@ -168,6 +225,7 @@
   padding: 16px;
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.25);
   transition: all 0.3s ease;
+  margin-bottom: 10px;
 }
 
 .gm-sidebar .lib-challenge-card:hover {
@@ -323,6 +381,17 @@
 .gm-sidebar .skill-dc-pill .secret-marker {
   font-size: 9px;
   color: #888;
+}
+
+/* Save Pills - Orange Accent */
+.gm-sidebar .skill-dc-pill[data-check-type="save"] {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));
+  border-color: rgba(220, 118, 51, 0.4);
+  color: #dc7633;
+}
+
+.gm-sidebar .skill-dc-pill[data-check-type="save"] strong {
+  color: #dc7633;
 }
 
 .gm-sidebar .lib-present-btn {
@@ -1143,23 +1212,12 @@
 }
 
 .lore-header {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  font-size: var(--sf-font-xs);
+  font-size: 10px;
+  font-weight: 700;
   color: var(--sf-text-muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-  margin-bottom: var(--sf-space-xs);
-  padding-bottom: 6px;
-  justify-content: center;
-}
-
-.lore-header i {
-  font-size: 10px;
-  opacity: 0.7;
+  letter-spacing: 0.08em;
+  padding: 0 4px 4px 4px;
 }
 
 .lore-skills-grid {
@@ -1247,6 +1305,48 @@
   font-weight: 700;
   min-width: 20px;
   text-align: center;
+}
+
+/* Allow Only One Toggle */
+.gm-sidebar .allow-only-one-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(163, 190, 140, 0.15);
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: var(--sf-radius-md);
+  font-size: 11px;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.gm-sidebar .allow-only-one-toggle:hover {
+  background: rgba(163, 190, 140, 0.25);
+  border-color: rgba(163, 190, 140, 0.5);
+}
+
+.gm-sidebar .allow-only-one-toggle input[type='checkbox'] {
+  cursor: pointer;
+  margin: 0;
+}
+
+.gm-sidebar .allow-only-one-toggle input[type='checkbox']:checked ~ span {
+  color: #a3be8c;
+  font-weight: 600;
+}
+
+.gm-sidebar .allow-only-one-toggle i {
+  font-size: 10px;
+  color: rgba(163, 190, 140, 0.7);
+}
+
+.gm-sidebar .send-batch-btn.allow-only-one-active {
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(163, 190, 140, 0.4));
+  border-color: rgba(163, 190, 140, 0.8);
+  box-shadow: 0 0 8px rgba(163, 190, 140, 0.4);
 }
 
 /* Pending Rolls Section */

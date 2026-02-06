@@ -374,6 +374,22 @@
   hyphens: auto;
 }
 
+/* Save Buttons - Orange Accent */
+.player-sidebar .challenge-btn-grid[data-check-type="save"] {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));
+  border-color: rgba(220, 118, 51, 0.4);
+}
+
+.player-sidebar .challenge-btn-grid[data-check-type="save"]:hover {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.4), rgba(220, 118, 51, 0.3));
+  border-color: #dc7633;
+  box-shadow: 0 3px 8px rgba(220, 118, 51, 0.4);
+}
+
+.player-sidebar .challenge-btn-grid[data-check-type="save"] i {
+  color: #dc7633;
+}
+
 /* Proficiency Locked State */
 .player-sidebar .challenge-btn-grid.proficiency-locked {
   background: linear-gradient(135deg, rgba(76, 86, 106, 0.15), rgba(76, 86, 106, 0.08));
@@ -453,6 +469,49 @@
   color: var(--sf-text-primary);
 }
 
+/* Allow Only One Badge */
+.player-sidebar .allow-only-one-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.3), rgba(163, 190, 140, 0.2));
+  border: 1px solid rgba(163, 190, 140, 0.5);
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #a3be8c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: auto;
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+
+.player-sidebar .allow-only-one-badge i {
+  font-size: 9px;
+  color: #a3be8c;
+}
+
+@keyframes badge-pulse {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(163, 190, 140, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(163, 190, 140, 0.6);
+  }
+}
+
+/* Allow Only One Group Styling */
+.player-sidebar .actor-roll-group.allow-only-one-group {
+  border-color: rgba(163, 190, 140, 0.5);
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.12), rgba(163, 190, 140, 0.08));
+  box-shadow: 0 2px 8px rgba(163, 190, 140, 0.2);
+}
+
+.player-sidebar .actor-roll-group.allow-only-one-group .actor-header-compact {
+  border-bottom-color: rgba(163, 190, 140, 0.4);
+}
+
 .player-sidebar .rolls-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
@@ -511,6 +570,22 @@
   max-width: 100%;
   word-break: break-word;
   hyphens: auto;
+}
+
+/* Save Roll Buttons - Orange Accent */
+.player-sidebar .roll-btn-grid[data-check-type="save"] {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));
+  border-color: rgba(220, 118, 51, 0.4);
+}
+
+.player-sidebar .roll-btn-grid[data-check-type="save"]:hover {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.4), rgba(220, 118, 51, 0.3));
+  border-color: rgba(220, 118, 51, 0.9);
+  box-shadow: 0 4px 16px rgba(220, 118, 51, 0.6);
+}
+
+.player-sidebar .roll-btn-grid[data-check-type="save"] i {
+  color: #dc7633;
 }
 
 .player-sidebar .action-name-micro {

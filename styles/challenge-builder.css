@@ -78,6 +78,13 @@
   text-align: center;
 }
 
+/* Select dropdowns should be left-aligned */
+.storyframe.challenge-builder select {
+  text-align: left;
+  padding: 8px 24px 8px 10px;
+  font-size: 13px;
+}
+
 .storyframe.challenge-builder input:focus,
 .storyframe.challenge-builder textarea:focus,
 .storyframe.challenge-builder select:focus {
@@ -315,18 +322,67 @@
 }
 
 .storyframe.challenge-builder .skill-dc-row .skill-select {
-  flex: 1.2;
-  min-width: 160px;
+  flex: 2;
+  min-width: 0;
 }
 
 .storyframe.challenge-builder .skill-dc-row .action-select {
-  flex: 1;
-  min-width: 150px;
+  flex: 1.5;
+  min-width: 0;
 }
 
 .storyframe.challenge-builder .skill-dc-row .dc-input {
-  width: 90px;
+  width: 60px;
   flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .skill-dc-row .proficiency-select {
+  width: 80px;
+  flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox label {
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  color: rgba(94, 129, 172, 0.6);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox label:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(94, 129, 172, 0.5);
+  color: rgba(94, 129, 172, 0.8);
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox input[type="checkbox"]:checked + label {
+  background: rgba(191, 97, 106, 0.3);
+  border-color: rgba(191, 97, 106, 0.6);
+  color: #bf616a;
+}
+
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox input[type="checkbox"]:checked + label:hover {
+  background: rgba(191, 97, 106, 0.4);
+  border-color: rgba(191, 97, 106, 0.7);
 }
 
 /* Buttons */
@@ -431,6 +487,7 @@
   background: rgba(0, 0, 0, 0.2);
   display: flex;
   justify-content: flex-end;
+  gap: 12px;
 }
 
 .storyframe.challenge-builder .submit-btn {
@@ -460,4 +517,169 @@
 .storyframe.challenge-builder .submit-btn:active {
   transform: translateY(0);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .save-only-btn {
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.3), rgba(94, 129, 172, 0.2));
+  border: 1px solid rgba(94, 129, 172, 0.5);
+  color: #5e81ac;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .save-only-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.45), rgba(94, 129, 172, 0.35));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .save-only-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Saves Section */
+.storyframe.challenge-builder .saves-section {
+  padding-top: 12px;
+  margin-top: 12px;
+  border-top: 2px solid rgba(220, 118, 51, 0.3);
+}
+
+.storyframe.challenge-builder .saves-section > label {
+  color: rgba(220, 118, 51, 0.9);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .saves-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.storyframe.challenge-builder .save-dc-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+.storyframe.challenge-builder .save-dc-row .save-select {
+  flex: 1;
+  min-width: 0;
+}
+
+.storyframe.challenge-builder .save-dc-row .dc-input {
+  width: 70px;
+  flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox label {
+  cursor: pointer;
+  padding: 10px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(220, 118, 51, 0.3);
+  color: rgba(220, 118, 51, 0.6);
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox label:hover {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(220, 118, 51, 0.5);
+  color: rgba(220, 118, 51, 0.8);
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox input[type="checkbox"]:checked + label {
+  background: rgba(191, 97, 106, 0.3);
+  border-color: rgba(191, 97, 106, 0.6);
+  color: #bf616a;
+}
+
+.storyframe.challenge-builder .save-dc-row .secret-checkbox input[type="checkbox"]:checked + label:hover {
+  background: rgba(191, 97, 106, 0.4);
+  border-color: rgba(191, 97, 106, 0.7);
+}
+
+.storyframe.challenge-builder .add-save-btn {
+  padding: 8px 14px;
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.3), rgba(220, 118, 51, 0.2));
+  border: 1px solid rgba(220, 118, 51, 0.5);
+  color: #dc7633;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .add-save-btn:hover {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.45), rgba(220, 118, 51, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .add-save-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .save-dc-row-remove {
+  padding: 8px 10px;
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.3), rgba(191, 97, 106, 0.2));
+  border: 1px solid rgba(191, 97, 106, 0.5);
+  color: #bf616a;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .save-dc-row-remove:hover {
+  background: linear-gradient(135deg, rgba(191, 97, 106, 0.45), rgba(191, 97, 106, 0.35));
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.storyframe.challenge-builder .save-dc-row-remove:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }

@@ -5,6 +5,85 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-06
+
+### Added
+
+#### Saving Throws Support
+
+- **Complete Save System** - Full support for saving throws across all features
+  - Added save support to Challenge Builder with separate "Saving Throws" section
+  - Saves display with distinctive orange accent (#dc7633) throughout the UI
+  - Proper capitalization for save names ("Reflex" instead of "REFLEX")
+  - Save validation removed (all actors have all saves)
+  - checkType field ('skill' or 'save') added to challenge data structure
+
+#### Challenge Builder Enhancements
+
+- **Separate Saves Section** - Saves now have their own dedicated section with orange theme
+  - Distinct "Skills" and "Saving Throws" sections in Challenge Builder
+  - "Add Save" button with orange styling
+  - Save rows include: save dropdown, DC input, secret checkbox, remove button
+  - No proficiency requirements for saves (removed from save UI)
+  - No action selection for saves (PF2e actions only apply to skills)
+- **Save Only Button** - Option to save challenges without presenting
+  - "Save to Library" button (create mode) - blue styling
+  - "Update" button (edit mode) - updates library entry only
+  - "Present Challenge"/"Update and Present" remains as primary action (green)
+- **DC Quick Select** - HTML5 datalist for common DC values
+  - Click any DC input to see preset suggestions (10, 12, 15, 18, 20, 22, 25, 30, 35, 40)
+  - Still allows manual DC entry
+  - Works for both skills and saves
+- **Dropdown Tooltips** - Hover to see full text of truncated dropdowns
+  - All select elements show full selected text as tooltip
+  - Automatically updates when selection changes
+
+#### Allow Only One Feature
+
+- **Batched Roll Mutual Exclusion** - Players can only roll one check from a group
+  - "Allow only one" checkbox in Roll Requester Dialog
+  - When enabled, rolling one check auto-dismisses others in the group
+  - Participant-specific dismissal (each player's choices are independent)
+  - Visual indicator with green "Choose One" badge
+  - Batched rolls grouped by batchGroupId in player sidebar
+  - Works for both skill checks and saves
+
+#### Orange Theme for Saves
+
+- **Consistent Visual Identity** - Orange accent for all save-related UI
+  - GM Sidebar: Orange save buttons and category headers
+  - Journal: Orange save check buttons and DC badges
+  - Challenge Builder: Orange saves section, pills, and buttons
+  - Player Challenges: Orange save buttons
+  - Player Pending Rolls: Orange save roll buttons
+  - Challenge Library: Orange save pills with proper capitalization
+  - Roll Requester: Save-aware dialog text ("Found X save(s)")
+
+### Fixed
+
+- **Ctrl+Click Roll Requester** - Fixed regression in journal repost icon behavior
+  - Updated storyframe.mjs to handle new RollRequestDialog object format
+  - Properly extracts selectedIds and allowOnlyOne from dialog result
+  - Generates shared batchGroupId for grouped requests
+  - Passes checkType and allow-only-one parameters correctly
+- **Challenge Display** - Fixed challenge rendering in GM sidebar
+  - Made prepareChallengesContext async to properly load save names
+  - Added await when calling async context preparation function
+  - Saves now display with correct names and styling
+- **UI Polish** - Various layout and styling improvements
+  - Reduced dropdown padding and font size to prevent text truncation
+  - Left-aligned select dropdown text for better readability
+  - Flexible width constraints to fit dialog width
+  - Sticky footer in Roll Requester Dialog
+
+### Changed
+
+- **Roll Requester Dialog** - Enhanced layout and behavior
+  - Increased default height to 700px for better content visibility
+  - Implemented proper flexbox layout for sticky footer
+  - Footer stays at bottom when resizing dialog
+  - Resizable dialog for user customization
+
 ## [1.6.2] - 2026-02-05
 
 ### Fixed
@@ -693,6 +772,13 @@ This release focuses entirely on internal code organization and architecture imp
 - Additional game system support
 - Roll history tracking and display
 - Export/import speaker galleries
+- Custom speaker sorting and filtering
+- Integration with other narrative modules
+
+---
+
+[1.0.0]: https://github.com/[author]/storyframe/releases/tag/v1.0.0
+
 - Custom speaker sorting and filtering
 - Integration with other narrative modules
 

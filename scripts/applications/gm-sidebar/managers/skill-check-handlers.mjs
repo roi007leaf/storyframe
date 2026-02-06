@@ -3,8 +3,8 @@
  * Handles skill check requests, batch processing, skill menus, and proficiency checks
  */
 
-import * as SystemAdapter from '../../../system-adapter.mjs';
 import { MODULE_ID } from '../../../constants.mjs';
+import * as SystemAdapter from '../../../system-adapter.mjs';
 import * as ParticipantHandlers from './participant-handlers.mjs';
 
 /**
@@ -58,6 +58,49 @@ export async function onRequestSkill(_event, target, sidebar) {
 }
 
 /**
+ * Request a save check (save button click)
+ */
+export async function onRequestSave(_event, target, sidebar) {
+  const saveSlug = target.dataset.save;
+  if (!saveSlug) return;
+
+  // Shift+click adds to batch selection
+  if (_event.shiftKey) {
+    if (sidebar.selectedParticipants.size === 0) {
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
+      return;
+    }
+
+    sidebar._shiftKeyDown = true;
+    const checkId = `save:${saveSlug}`;
+    const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
+
+    if (existingIndex !== -1) {
+      sidebar.batchedChecks.splice(existingIndex, 1);
+    } else {
+      sidebar.batchedChecks.push({
+        skill: saveSlug,
+        dc: null,
+        isSecret: false,
+        actionSlug: null,
+        checkType: 'save',
+        checkId,
+      });
+    }
+
+    updateBatchHighlights(sidebar);
+    return;
+  }
+
+  // Normal click: send single save
+  if (sidebar.selectedParticipants.size === 0) {
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
+    return;
+  }
+  await requestSkillCheck(sidebar, saveSlug, Array.from(sidebar.selectedParticipants), null, false, 'save');
+}
+
+/**
  * Send batch skill check request
  */
 export async function onSendBatch(_event, _target, sidebar) {
@@ -72,9 +115,17 @@ export async function onSendBatch(_event, _target, sidebar) {
 }
 
 /**
- * Core skill check request logic
+ * Core skill/save check request logic
+ * @param {Object} sidebar - Sidebar instance
+ * @param {string} skillSlug - Skill or save slug
+ * @param {Array} participantIds - Array of participant IDs
+ * @param {string} actionSlug - Optional action slug (skills only)
+ * @param {boolean} suppressNotifications - Whether to suppress notifications
+ * @param {string} checkType - 'skill' or 'save' (defaults to 'skill' for backward compatibility)
+ * @param {string} batchGroupId - Optional group ID for "allow only one" feature
+ * @param {boolean} allowOnlyOne - Whether this roll is part of an "allow only one" group
  */
-export async function requestSkillCheck(sidebar, skillSlug, participantIds, actionSlug = null, suppressNotifications = false) {
+export async function requestSkillCheck(sidebar, skillSlug, participantIds, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false) {
   const state = game.storyframe.stateManager.getState();
   if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
@@ -99,11 +150,12 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
     const participant = state.participants.find((p) => p.id === participantId);
     if (!participant) continue;
 
-    // Validate that the participant has this skill
+    // Validate that the participant has this skill (saves don't need validation - all actors have all saves)
     const actor = await fromUuid(participant.actorUuid);
 
-    if (actor) {
+    if (actor && checkType === 'skill') {
       const hasSkill = await actorHasSkill(sidebar, actor, skillSlug);
+
       if (!hasSkill) {
         missingSkillCount++;
         missingIds.add(participantId);
@@ -130,10 +182,13 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
       actorUuid: participant.actorUuid,
       userId: participant.userId,
       skillSlug,
+      checkType, // 'skill' or 'save'
       actionSlug,
       dc: sidebar.currentDC,
       isSecretRoll,
       timestamp: Date.now(),
+      batchGroupId,    // Group ID for "allow only one" feature
+      allowOnlyOne,    // Flag for mutual exclusion
     };
 
     await game.storyframe.socketManager.requestAddPendingRoll(request);
@@ -142,13 +197,23 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
     sentIds.add(participantId);
   }
 
-  const skillName = getSkillName(skillSlug);
-  const actionName = actionSlug ? getActionName(skillSlug, actionSlug) : null;
-  const checkName = actionName ? `${skillName} (${actionName})` : skillName;
+  // Get appropriate name and notification based on check type
+  let checkName, notificationKey;
+  if (checkType === 'save') {
+    const systemSaves = SystemAdapter.getSaves();
+    const saveName = systemSaves[skillSlug]?.name || skillSlug.toUpperCase();
+    checkName = saveName;
+    notificationKey = 'STORYFRAME.Notifications.SkillCheck.SaveRequested';
+  } else {
+    const skillName = getSkillName(skillSlug);
+    const actionName = actionSlug ? getActionName(skillSlug, actionSlug) : null;
+    checkName = actionName ? `${skillName} (${actionName})` : skillName;
+    notificationKey = 'STORYFRAME.Notifications.SkillCheck.CheckRequested';
+  }
 
   if (!suppressNotifications) {
     if (sentCount > 0) {
-      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.CheckRequested', { checkName, count: sentCount }));
+      ui.notifications.info(game.i18n.format(notificationKey, { checkName, count: sentCount }));
     }
     if (offlineCount > 0) {
       const names = Array.from(offlineNames).join(', ');
@@ -156,7 +221,7 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
     }
     if (missingSkillCount > 0) {
       const names = Array.from(missingNames).join(', ');
-      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayersLackSkill', { names, skillName }));
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PlayersLackSkill', { names, skillName: checkName }));
     }
 
     // Clear selection after sending rolls
@@ -194,6 +259,14 @@ export async function sendBatchSkillCheck(sidebar) {
   // Save count before clearing
   const checkCount = sidebar.batchedChecks.length;
 
+  // Detect what types of checks are in the batch
+  const hasSkills = sidebar.batchedChecks.some(check => check.checkType !== 'save');
+  const hasSaves = sidebar.batchedChecks.some(check => check.checkType === 'save');
+
+  // Get allow-only-one state and generate group ID if enabled
+  const allowOnlyOne = sidebar.allowOnlyOneEnabled || false;
+  const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
+
   // Send request for each batched check (suppress individual notifications)
   for (const check of sidebar.batchedChecks) {
     // Set DC if specified
@@ -207,7 +280,7 @@ export async function sendBatchSkillCheck(sidebar) {
       sidebar.secretRollEnabled = true;
     }
 
-    const result = await requestSkillCheck(sidebar, check.skill, participantIds, check.actionSlug, true);
+    const result = await requestSkillCheck(sidebar, check.skill, participantIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, allowOnlyOne);
 
     // Restore previous DC/secret state
     sidebar.currentDC = previousDC;
@@ -224,8 +297,16 @@ export async function sendBatchSkillCheck(sidebar) {
       if (!participantMissingSkills.has(name)) {
         participantMissingSkills.set(name, new Set());
       }
-      const skillName = systemSkills[check.skill]?.name || check.skill;
-      participantMissingSkills.get(name).add(skillName);
+      // Get name based on check type (saves don't need validation, but keep for error messages)
+      const checkType = check.checkType || 'skill';
+      let checkName;
+      if (checkType === 'save') {
+        const systemSaves = SystemAdapter.getSaves();
+        checkName = systemSaves[check.skill]?.name || check.skill;
+      } else {
+        checkName = systemSkills[check.skill]?.name || check.skill;
+      }
+      participantMissingSkills.get(name).add(checkName);
     });
   }
 
@@ -233,12 +314,26 @@ export async function sendBatchSkillCheck(sidebar) {
   sidebar.batchedChecks = [];
   updateBatchHighlights(sidebar);
 
+  // Reset allow-only-one toggle
+  sidebar.allowOnlyOneEnabled = false;
+
   // Clear participant selection
   clearParticipantSelection(sidebar);
 
   // Show single aggregated notification with unique participant names
   if (uniqueSentIds.size > 0) {
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.MultipleChecksRequested', { checkCount, uniqueCount: uniqueSentIds.size }), { permanent: false });
+    let notificationKey;
+    if (hasSkills && hasSaves) {
+      // Mixed: both skills and saves
+      notificationKey = 'STORYFRAME.Notifications.SkillCheck.MultipleChecksAndSavesRequested';
+    } else if (hasSaves) {
+      // Only saves
+      notificationKey = 'STORYFRAME.Notifications.SkillCheck.MultipleSavesRequested';
+    } else {
+      // Only skills/checks
+      notificationKey = 'STORYFRAME.Notifications.SkillCheck.MultipleChecksRequested';
+    }
+    ui.notifications.info(game.i18n.format(notificationKey, { checkCount, uniqueCount: uniqueSentIds.size }), { permanent: false });
   }
   if (uniqueOfflineNames.size > 0) {
     const names = Array.from(uniqueOfflineNames).join(', ');
@@ -265,6 +360,11 @@ export function updateBatchHighlights(sidebar) {
     wrapper.classList.remove('batched');
   });
 
+  // Remove all existing batch highlights from save buttons
+  sidebar.element.querySelectorAll('.save-btn-wrapper.batched').forEach(wrapper => {
+    wrapper.classList.remove('batched');
+  });
+
   // Remove all existing batch highlights from lore skills
   sidebar.element.querySelectorAll('.lore-skill-wrapper.batched').forEach(wrapper => {
     wrapper.classList.remove('batched');
@@ -275,18 +375,31 @@ export function updateBatchHighlights(sidebar) {
     wrapper.classList.remove('batched');
   });
 
+  // Remove all existing batch highlights from journal saves
+  sidebar.element.querySelectorAll('.journal-save-wrapper.batched').forEach(wrapper => {
+    wrapper.classList.remove('batched');
+  });
+
   // Collect skills by source type
   const batchedRegularSkills = new Set();
+  const batchedSaves = new Set();
   const batchedLoreSkills = new Set();
   const batchedJournalSkills = new Set();
+  const batchedJournalSaves = new Set();
   const batchedActionSkills = new Set();
 
   sidebar.batchedChecks.forEach(check => {
     // Determine source type from checkId
     if (check.checkId.startsWith('journal:')) {
-      batchedJournalSkills.add(check.skill);
+      if (check.checkType === 'save') {
+        batchedJournalSaves.add(check.skill);
+      } else {
+        batchedJournalSkills.add(check.skill);
+      }
     } else if (check.checkId.startsWith('action:')) {
       batchedActionSkills.add(check.skill);
+    } else if (check.checkId.startsWith('save:')) {
+      batchedSaves.add(check.skill);
     } else if (check.checkId.startsWith('skill:')) {
       // Regular skills and lore skills both use "skill:" prefix
       // Lore skills have different slugs (e.g., "cooking-lore")
@@ -301,6 +414,14 @@ export function updateBatchHighlights(sidebar) {
   // Highlight regular skill buttons
   batchedRegularSkills.forEach(skillSlug => {
     const wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('batched');
+    }
+  });
+
+  // Highlight save buttons
+  batchedSaves.forEach(saveSlug => {
+    const wrapper = sidebar.element.querySelector(`.save-btn[data-save="${saveSlug}"]`)?.closest('.save-btn-wrapper');
     if (wrapper) {
       wrapper.classList.add('batched');
     }
@@ -333,6 +454,21 @@ export function updateBatchHighlights(sidebar) {
     }
   });
 
+  // Highlight journal save buttons
+  const saves = SystemAdapter.getSaves();
+  batchedJournalSaves.forEach(saveSlug => {
+    let saveName = saves[saveSlug]?.name;
+
+    if (!saveName) {
+      saveName = saveSlug.charAt(0).toUpperCase() + saveSlug.slice(1);
+    }
+
+    const wrapper = sidebar.element.querySelector(`.journal-save-btn[data-skill="${saveName}"]`)?.closest('.journal-save-wrapper');
+    if (wrapper) {
+      wrapper.classList.add('batched');
+    }
+  });
+
   // Highlight skill action buttons (same as regular for now)
   batchedActionSkills.forEach(skillSlug => {
     const wrapper = sidebar.element.querySelector(`.skill-btn[data-skill="${skillSlug}"]`)?.closest('.skill-btn-wrapper');
@@ -343,6 +479,8 @@ export function updateBatchHighlights(sidebar) {
 
   // Update send batch button visibility and count
   const sendBatchBtn = sidebar.element.querySelector('.send-batch-btn');
+  const allowOnlyOneToggle = sidebar.element.querySelector('.allow-only-one-toggle');
+
   if (sendBatchBtn) {
     const batchCount = sidebar.batchedChecks.length;
     const countSpan = sendBatchBtn.querySelector('.batch-count');
@@ -352,8 +490,16 @@ export function updateBatchHighlights(sidebar) {
       if (countSpan) {
         countSpan.textContent = batchCount;
       }
+      // Show allow-only-one toggle when batch has items
+      if (allowOnlyOneToggle) {
+        allowOnlyOneToggle.style.display = '';
+      }
     } else {
       sendBatchBtn.style.display = 'none';
+      // Hide allow-only-one toggle when batch is empty
+      if (allowOnlyOneToggle) {
+        allowOnlyOneToggle.style.display = 'none';
+      }
     }
   }
 }
@@ -812,6 +958,18 @@ export async function actorHasSkill(sidebar, actor, skillSlug) {
   // Call the sidebar's system-specific implementation
   if (sidebar._actorHasSkill) {
     return await sidebar._actorHasSkill(actor, skillSlug);
+  }
+  // Base implementation always returns true
+  return true;
+}
+
+/**
+ * Check if actor has a specific save (system-specific)
+ */
+export async function actorHasSave(sidebar, actor, saveSlug) {
+  // Call the sidebar's system-specific implementation
+  if (sidebar._actorHasSave) {
+    return await sidebar._actorHasSave(actor, saveSlug);
   }
   // Base implementation always returns true
   return true;

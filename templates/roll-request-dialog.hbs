@@ -36,6 +36,18 @@
         {{/each}}
       </div>
     </section>
+
+    <section class="allow-only-one-section">
+      <label class="allow-only-one-toggle">
+        <input type="checkbox"
+               name="allowOnlyOne"
+               {{#if allowOnlyOne}}checked{{/if}}>
+        <span>{{i18n.allowOnlyOneLabel}}</span>
+        <i class="fas fa-info-circle"
+           data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AllowOnlyOne"}}"
+           aria-hidden="true"></i>
+      </label>
+    </section>
   </div>
 
   <footer class="dialog-footer">

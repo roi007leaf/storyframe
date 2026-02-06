@@ -21,9 +21,12 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     },
     actions: {
       submit: ChallengeBuilderDialog._onSubmit,
+      saveOnly: ChallengeBuilderDialog._onSaveOnly,
       pickImage: ChallengeBuilderDialog._onPickImage,
       addSkill: ChallengeBuilderDialog._onAddSkill,
       removeSkill: ChallengeBuilderDialog._onRemoveSkill,
+      addSave: ChallengeBuilderDialog._onAddSave,
+      removeSave: ChallengeBuilderDialog._onRemoveSave,
       addOption: ChallengeBuilderDialog._onAddOption,
       removeOption: ChallengeBuilderDialog._onRemoveOption,
     },
@@ -44,6 +47,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     this.optionCount = 1;
     this.skillCounts = new Map();
     this.skillCounts.set(0, 1);
+    this.saveCounts = new Map();
+    this.saveCounts.set(0, 0);  // Start at 0 since saves section starts empty
   }
 
   async _onRender(context, _options) {
@@ -57,6 +62,31 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     // Attach skill change handlers
     if (context.isPF2e) {
       this._attachSkillChangeHandlers();
+    }
+
+    // Attach tooltip update handlers for all selects
+    this._attachTooltipHandlers();
+  }
+
+  _attachTooltipHandlers() {
+    const allSelects = this.element.querySelectorAll('select');
+    allSelects.forEach(select => {
+      // Set initial tooltip
+      this._updateSelectTooltip(select);
+
+      // Update tooltip on change
+      select.addEventListener('change', () => {
+        this._updateSelectTooltip(select);
+      });
+    });
+  }
+
+  _updateSelectTooltip(select) {
+    const selectedOption = select.selectedOptions[0];
+    if (selectedOption && selectedOption.value) {
+      select.setAttribute('data-tooltip', selectedOption.textContent.trim());
+    } else {
+      select.removeAttribute('data-tooltip');
     }
   }
 
@@ -102,24 +132,38 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     };
 
     const systemSkills = SystemAdapter.getSkills();
-    const skillOptions = Object.entries(systemSkills)
+    const systemSaves = SystemAdapter.getSaves();
+
+    const skillOptionsHtml = Object.entries(systemSkills)
       .map(([slug, skill]) => {
         const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
-        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+        return `<option value="${slug}" data-actions='${actionsJson}' data-check-type="skill">${skill.name}</option>`;
       })
       .join('');
 
-    const loreOptions = context.loreSkills
-      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
+    const loreOptionsHtml = context.loreSkills
+      .map(ls => `<option value="${ls.slug}" data-check-type="skill">${ls.name}</option>`)
       .join('');
+
+    // Build skill options (NO saves - they're in a separate section now)
+    let skillOptions = skillOptionsHtml;
+    let loreOptions = '';
+    if (loreOptionsHtml) {
+      const loreLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills');
+      loreOptions = `<optgroup label="${loreLabel}">${loreOptionsHtml}</optgroup>`;
+    }
 
     const optionsList = this.element.querySelector('.challenge-options-list');
     const newOption = document.createElement('div');
     newOption.className = 'challenge-option-card';
     newOption.dataset.optionIndex = this.optionCount;
 
+    // Separate skills from saves
+    const skills = optData.skillOptions.filter(so => so.checkType !== 'save');
+    const saves = optData.skillOptions.filter(so => so.checkType === 'save');
+
     // Build skill rows HTML
-    const skillRowsHtml = optData.skillOptions.map((so, soIdx) => {
+    const skillRowsHtml = skills.map((so, soIdx) => {
       const actionHtml = context.isPF2e ? `
         <div class="action-select" ${so.action ? '' : 'style="display: none;"'}>
           <select name="option-${this.optionCount}-action-${soIdx}" class="action-dropdown">
@@ -141,7 +185,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           </div>
           ${actionHtml}
           <div class="dc-input">
-            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}">
+            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}" list="dc-presets">
           </div>
           <div class="proficiency-select">
             <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
@@ -168,7 +212,35 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       `;
     }).join('');
 
+    // Build save rows HTML
+    const saveRowsHtml = saves.map((so, soIdx) => {
+      return `
+        <div class="save-dc-row" data-save-index="${soIdx}">
+          <div class="save-select">
+            <select name="option-${this.optionCount}-save-${soIdx}" class="save-dropdown" data-save-index="${soIdx}" required>
+              <option value="">${i18n.selectSkill}</option>
+            </select>
+          </div>
+          <div class="dc-input">
+            <input type="number" name="option-${this.optionCount}-save-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}" list="dc-presets">
+          </div>
+          <div class="secret-checkbox">
+            <input type="checkbox" name="option-${this.optionCount}-save-secret-${soIdx}" id="option-${this.optionCount}-save-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
+            <label for="option-${this.optionCount}-save-secret-${soIdx}" data-tooltip="${i18n.secretTooltip}">
+              <i class="fas fa-eye-slash"></i>
+            </label>
+          </div>
+          <button type="button" class="save-dc-row-remove" data-action="removeSave">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      `;
+    }).join('');
+
     const optionName = optData.name || game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 });
+    const savesLabel = game.i18n.localize('STORYFRAME.UI.Categories.SavingThrows');
+    const addSaveLabel = game.i18n.localize('STORYFRAME.UI.Labels.AddSave');
+
     newOption.innerHTML = `
       <div class="challenge-option-header">
         <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionName}" placeholder="${i18n.optionPlaceholder}">
@@ -184,13 +256,24 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
             <i class="fas fa-plus"></i> ${i18n.addSkill}
           </button>
         </div>
+        ${context.hasSaves ? `
+        <div class="challenge-option-field saves-section">
+          <label>${savesLabel}</label>
+          <div class="saves-list" data-option-index="${this.optionCount}">
+            ${saveRowsHtml}
+          </div>
+          <button type="button" class="add-save-btn" data-action="addSave" data-option-index="${this.optionCount}">
+            <i class="fas fa-plus"></i> ${addSaveLabel}
+          </button>
+        </div>
+        ` : ''}
       </div>
     `;
 
     optionsList.appendChild(newOption);
 
     // Set skill and action values
-    optData.skillOptions.forEach((so, soIdx) => {
+    skills.forEach((so, soIdx) => {
       const skillSelect = newOption.querySelector(`[name="option-${this.optionCount}-skill-${soIdx}"]`);
       if (skillSelect) skillSelect.value = so.skill;
 
@@ -209,7 +292,22 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       }
     });
 
-    this.skillCounts.set(this.optionCount, optData.skillOptions.length);
+    // Set save values
+    saves.forEach((so, soIdx) => {
+      const saveSelect = newOption.querySelector(`[name="option-${this.optionCount}-save-${soIdx}"]`);
+      if (saveSelect) {
+        // Populate save options
+        const saveOptionsHtml = Object.entries(systemSaves)
+          .map(([slug, save]) => `<option value="${slug}" data-check-type="save">${save.name}</option>`)
+          .join('');
+        const selectSaveLabel = game.i18n.localize('STORYFRAME.UI.Labels.SelectSave');
+        saveSelect.innerHTML = `<option value="">${selectSaveLabel}</option>${saveOptionsHtml}`;
+        saveSelect.value = so.skill;
+      }
+    });
+
+    this.skillCounts.set(this.optionCount, skills.length);
+    this.saveCounts.set(this.optionCount, saves.length);
   }
 
   _attachSkillChangeHandlers() {
@@ -248,15 +346,30 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
   async _prepareContext(_options) {
     const currentSystem = SystemAdapter.detectSystem();
     const systemSkills = SystemAdapter.getSkills();
+    const systemSaves = SystemAdapter.getSaves();
+
     let skills = Object.entries(systemSkills).map(([slug, skill]) => ({
       slug,
       name: skill.name,
       actions: skill.actions || [],
     }));
 
+    let saves = Object.entries(systemSaves).map(([slug, save]) => ({
+      slug,
+      name: save.name,
+      icon: save.icon,
+    }));
+
     // Get lore skills from all participants
     const state = game.storyframe.stateManager.getState();
     const loreSkills = await this._getLoreSkills(state);
+
+    // Load DC presets
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+    const dcPresets = allPresets.filter(p => !p.system || p.system === currentSystem);
+
+    // Get DC options (level-based for PF2e, standard for D&D5e)
+    const dcOptions = SystemAdapter.getDCOptions();
 
     // If in edit mode, load template data
     let initialData = null;
@@ -270,12 +383,16 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     return {
       skills,
+      saves,
       loreSkills,
       hasLoreSkills: loreSkills.length > 0,
+      hasSaves: saves.length > 0,
       isPF2e: currentSystem === 'pf2e',
       hasInitialOption: !this.editMode,
       editMode: this.editMode,
       initialData,
+      dcPresets,
+      dcOptions,
     };
   }
 
@@ -335,14 +452,40 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
         const minProficiency = formData[`option-${idx}-proficiency-${skillIdx}`];
 
-        // Allow skills without DC (dc is optional)
+        // Get checkType from selected option's data attribute
+        const skillSelect = card.querySelector(`[name="option-${idx}-skill-${skillIdx}"]`);
+        const selectedOption = skillSelect?.selectedOptions[0];
+        const checkType = selectedOption?.dataset.checkType || 'skill';
+
+        // Allow skills/saves without DC (dc is optional)
         if (skill) {
           skillOptions.push({
             skill,
+            checkType,  // NEW
             dc: dc ? parseInt(dc) : null,
             action,
             isSecret,
             minProficiency: minProficiency ? parseInt(minProficiency) : 0,
+          });
+        }
+      });
+
+      // Parse save-DC pairs (separate section)
+      const saveRows = card.querySelectorAll('.save-dc-row');
+      saveRows.forEach((row) => {
+        const saveIdx = row.dataset.saveIndex;
+        const save = formData[`option-${idx}-save-${saveIdx}`];
+        const dc = formData[`option-${idx}-save-dc-${saveIdx}`];
+        const isSecret = formData[`option-${idx}-save-secret-${saveIdx}`] || false;
+
+        if (save) {
+          skillOptions.push({
+            skill: save,
+            checkType: 'save',
+            dc: dc ? parseInt(dc) : null,
+            action: null,  // Saves never have actions
+            isSecret,
+            minProficiency: 0,  // Saves don't have proficiency requirements
           });
         }
       });
@@ -421,6 +564,125 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     this.close();
   }
 
+  static async _onSaveOnly(event, target) {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const form = target.closest('form');
+    const formData = new FormDataExtended(form).object;
+
+    // Build challenge data (same logic as submit)
+    const challengeData = {
+      id: foundry.utils.randomID(),
+      name: formData.challengeName || '',
+      image: formData.challengeImage || null,
+      selectedParticipants: Array.from(this.selectedParticipants),
+      options: [],
+    };
+
+    // Parse options from form
+    const optionCards = this.element.querySelectorAll('.challenge-option-card');
+    optionCards.forEach((card) => {
+      const idx = card.dataset.optionIndex;
+      const name = formData[`option-${idx}-name`] || `Option ${parseInt(idx) + 1}`;
+
+      const skillOptions = [];
+
+      // Parse skill rows
+      const skillRows = card.querySelectorAll('.skill-dc-row');
+      skillRows.forEach((row) => {
+        const skillIdx = row.dataset.skillIndex;
+        const skill = formData[`option-${idx}-skill-${skillIdx}`];
+        const dc = formData[`option-${idx}-dc-${skillIdx}`];
+        const action = formData[`option-${idx}-action-${skillIdx}`] || null;
+        const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
+        const minProficiency = formData[`option-${idx}-proficiency-${skillIdx}`];
+
+        const skillSelect = card.querySelector(`[name="option-${idx}-skill-${skillIdx}"]`);
+        const selectedOption = skillSelect?.selectedOptions[0];
+        const checkType = selectedOption?.dataset.checkType || 'skill';
+
+        if (skill) {
+          skillOptions.push({
+            skill,
+            checkType,
+            dc: dc ? parseInt(dc) : null,
+            action,
+            isSecret,
+            minProficiency: minProficiency ? parseInt(minProficiency) : 0,
+          });
+        }
+      });
+
+      // Parse save rows
+      const saveRows = card.querySelectorAll('.save-dc-row');
+      saveRows.forEach((row) => {
+        const saveIdx = row.dataset.saveIndex;
+        const save = formData[`option-${idx}-save-${saveIdx}`];
+        const dc = formData[`option-${idx}-save-dc-${saveIdx}`];
+        const isSecret = formData[`option-${idx}-save-secret-${saveIdx}`] || false;
+
+        if (save) {
+          skillOptions.push({
+            skill: save,
+            checkType: 'save',
+            dc: dc ? parseInt(dc) : null,
+            action: null,
+            isSecret,
+            minProficiency: 0,
+          });
+        }
+      });
+
+      if (skillOptions.length > 0) {
+        challengeData.options.push({
+          id: foundry.utils.randomID(),
+          name,
+          skillOptions,
+        });
+      }
+    });
+
+    if (challengeData.options.length === 0) {
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AddAtLeastOneOption'));
+      return;
+    }
+
+    // Save to library (always save, don't present)
+    if (this.editMode && this.templateId) {
+      // Update existing template
+      const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+      const index = savedChallenges.findIndex(c => c.id === this.templateId);
+      if (index !== -1) {
+        savedChallenges[index] = {
+          id: this.templateId,
+          name: challengeData.name,
+          image: challengeData.image,
+          options: challengeData.options,
+          createdAt: savedChallenges[index].createdAt,
+          updatedAt: Date.now(),
+        };
+        await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+        ui.notifications.info(game.i18n.format('STORYFRAME.ChallengeBuilder.UpdatedInLibrary', { name: challengeData.name }));
+      }
+    } else {
+      // Save new template
+      const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
+      const template = {
+        id: foundry.utils.randomID(),
+        name: challengeData.name,
+        image: challengeData.image,
+        options: challengeData.options,
+        createdAt: Date.now(),
+      };
+      savedChallenges.push(template);
+      await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
+      ui.notifications.info(game.i18n.format('STORYFRAME.ChallengeBuilder.SavedToLibrary', { name: challengeData.name }));
+    }
+
+    this.close();
+  }
+
   static async _onPickImage(_event, _target) {
     new FilePicker({
       type: 'image',
@@ -455,16 +717,25 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     const context = await this._prepareContext();
     const systemSkills = SystemAdapter.getSkills();
-    const skillOptions = Object.entries(systemSkills)
+
+    const skillOptionsHtml = Object.entries(systemSkills)
       .map(([slug, skill]) => {
         const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
-        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+        return `<option value="${slug}" data-actions='${actionsJson}' data-check-type="skill">${skill.name}</option>`;
       })
       .join('');
 
-    const loreOptions = context.loreSkills
-      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
+    const loreOptionsHtml = context.loreSkills
+      .map(ls => `<option value="${ls.slug}" data-check-type="skill">${ls.name}</option>`)
       .join('');
+
+    // Build skill options (NO saves - they're in a separate section now)
+    let skillOptions = skillOptionsHtml;
+    let loreOptions = '';
+    if (loreOptionsHtml) {
+      const loreLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills');
+      loreOptions = `<optgroup label="${loreLabel}">${loreOptionsHtml}</optgroup>`;
+    }
 
     const currentSystem = SystemAdapter.detectSystem();
     const isPF2e = currentSystem === 'pf2e';
@@ -517,6 +788,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     skillsList.appendChild(newSkillRow);
 
+    // Update tooltips for the new row
+    this._attachTooltipHandlers();
+
     // Attach skill change handler to show/hide action dropdown
     if (isPF2e) {
       const skillSelect = newSkillRow.querySelector('.skill-dropdown');
@@ -556,6 +830,62 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     }
   }
 
+  static async _onAddSave(_event, target) {
+    const optionIdx = parseInt(target.dataset.optionIndex);
+    const savesList = this.element.querySelector(`.saves-list[data-option-index="${optionIdx}"]`);
+    const saveCount = this.saveCounts.get(optionIdx) || 0;
+
+    // i18n labels
+    const i18n = {
+      selectSave: game.i18n.localize('STORYFRAME.UI.Labels.SelectSave'),
+      dc: game.i18n.localize('STORYFRAME.ChallengeBuilder.DC'),
+      secretTooltip: game.i18n.localize('STORYFRAME.UI.Tooltips.SecretRoll'),
+    };
+
+    const systemSaves = SystemAdapter.getSaves();
+
+    const saveOptionsHtml = Object.entries(systemSaves)
+      .map(([slug, save]) => {
+        return `<option value="${slug}" data-check-type="save">${save.name}</option>`;
+      })
+      .join('');
+
+    const newSaveRow = document.createElement('div');
+    newSaveRow.className = 'save-dc-row';
+    newSaveRow.dataset.saveIndex = saveCount;
+    newSaveRow.innerHTML = `
+      <div class="save-select">
+        <select name="option-${optionIdx}-save-${saveCount}" class="save-dropdown" data-save-index="${saveCount}" required>
+          <option value="">${i18n.selectSave}</option>
+          ${saveOptionsHtml}
+        </select>
+      </div>
+      <div class="dc-input">
+        <input type="number" name="option-${optionIdx}-save-dc-${saveCount}" min="1" placeholder="${i18n.dc}" list="dc-presets" required>
+      </div>
+      <div class="secret-checkbox">
+        <input type="checkbox" name="option-${optionIdx}-save-secret-${saveCount}" id="option-${optionIdx}-save-secret-${saveCount}" data-tooltip="${i18n.secretTooltip}">
+        <label for="option-${optionIdx}-save-secret-${saveCount}" data-tooltip="${i18n.secretTooltip}">
+          <i class="fas fa-eye-slash"></i>
+        </label>
+      </div>
+      <button type="button" class="save-dc-row-remove" data-action="removeSave">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+    savesList.appendChild(newSaveRow);
+    this.saveCounts.set(optionIdx, saveCount + 1);
+
+    // Update tooltips for the new row
+    this._attachTooltipHandlers();
+  }
+
+  static async _onRemoveSave(_event, target) {
+    const saveRow = target.closest('.save-dc-row');
+    saveRow.remove();
+  }
+
   static async _onAddOption(_event, _target) {
     // i18n labels
     const i18n = {
@@ -581,18 +911,30 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const context = await this._prepareContext();
     const optionsList = this.element.querySelector('.challenge-options-list');
     const systemSkills = SystemAdapter.getSkills();
-    const skillOptions = Object.entries(systemSkills)
+
+    const skillOptionsHtml = Object.entries(systemSkills)
       .map(([slug, skill]) => {
         const actionsJson = skill.actions ? JSON.stringify(skill.actions) : '[]';
-        return `<option value="${slug}" data-actions='${actionsJson}'>${skill.name}</option>`;
+        return `<option value="${slug}" data-actions='${actionsJson}' data-check-type="skill">${skill.name}</option>`;
       })
       .join('');
 
-    const loreOptions = context.loreSkills
-      .map(ls => `<option value="${ls.slug}">${ls.name}</option>`)
+    const loreOptionsHtml = context.loreSkills
+      .map(ls => `<option value="${ls.slug}" data-check-type="skill">${ls.name}</option>`)
       .join('');
 
+    // Build skill options (NO saves - they're in a separate section now)
+    let skillOptions = skillOptionsHtml;
+    let loreOptions = '';
+    if (loreOptionsHtml) {
+      const loreLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.LoreSkills');
+      loreOptions = `<optgroup label="${loreLabel}">${loreOptionsHtml}</optgroup>`;
+    }
+
     const optionLabel = game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 });
+    const savesLabel = game.i18n.localize('STORYFRAME.UI.Categories.SavingThrows');
+    const addSaveLabel = game.i18n.localize('STORYFRAME.UI.Labels.AddSave');
+
     const newOption = document.createElement('div');
     newOption.className = 'challenge-option-card';
     newOption.dataset.optionIndex = this.optionCount;
@@ -623,7 +965,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               </div>
               ` : ''}
               <div class="dc-input">
-                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="${i18n.dc}" required>
+                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="${i18n.dc}" list="dc-presets" required>
               </div>
               <div class="proficiency-select">
                 <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
@@ -651,11 +993,26 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
             <i class="fas fa-plus"></i> ${i18n.addSkill}
           </button>
         </div>
+        ${context.hasSaves ? `
+        <div class="challenge-option-field saves-section">
+          <label>${savesLabel}</label>
+          <div class="saves-list" data-option-index="${this.optionCount}">
+            <!-- Saves will be added dynamically via addSave action -->
+          </div>
+          <button type="button" class="add-save-btn" data-action="addSave" data-option-index="${this.optionCount}">
+            <i class="fas fa-plus"></i> ${addSaveLabel}
+          </button>
+        </div>
+        ` : ''}
       </div>
     `;
 
     this.skillCounts.set(this.optionCount, 1);
+    this.saveCounts.set(this.optionCount, 0);  // Start with 0 saves
     optionsList.appendChild(newOption);
+
+    // Update tooltips for the new option
+    this._attachTooltipHandlers();
 
     // Attach skill change handler for new option
     if (context.isPF2e) {

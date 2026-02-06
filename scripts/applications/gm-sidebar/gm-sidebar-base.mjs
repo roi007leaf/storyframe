@@ -41,6 +41,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       clearAllParticipants: GMSidebarAppBase._onClearAllParticipants,
       switchTab: GMSidebarAppBase._onSwitchTab,
       toggleSecretRoll: GMSidebarAppBase._onToggleSecretRoll,
+      toggleAllowOnlyOne: GMSidebarAppBase._onToggleAllowOnlyOne,
       toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
       toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
       addAllPCs: GMSidebarAppBase._onAddAllPCs,
@@ -49,6 +50,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       removeParticipant: GMSidebarAppBase._onRemoveParticipant,
       toggleSelectAll: GMSidebarAppBase._onToggleSelectAll,
       requestSkill: GMSidebarAppBase._onRequestSkill,
+      requestSave: GMSidebarAppBase._onRequestSave,
       sendBatch: GMSidebarAppBase._onSendBatch,
       openSkillMenu: GMSidebarAppBase._onOpenSkillMenu,
       openSkillConfig: GMSidebarAppBase._onOpenSkillConfig,
@@ -110,6 +112,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
     this.secretRollEnabled = false; // Secret roll toggle state
+    this.allowOnlyOneEnabled = false; // Allow-only-one toggle state
 
     // Track active speaker for change detection
     this._lastActiveSpeaker = null;
@@ -284,6 +287,49 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   /**
+   * Group journal checks by type (skills vs saves)
+   * @param {Array} checkGroups - Array of check groups
+   * @returns {object} Separated skill and save groups
+   */
+  _groupJournalChecksByType(checkGroups) {
+    const skillGroups = [];
+    const saveGroups = [];
+
+    checkGroups.forEach(group => {
+      // Each group contains checks with the same skillName
+      const hasSkills = group.checks.some(check => check.checkType === 'skill' || !check.checkType);
+      const hasSaves = group.checks.some(check => check.checkType === 'save');
+
+      if (hasSkills) {
+        const skillChecks = group.checks.filter(check => check.checkType === 'skill' || !check.checkType);
+        if (skillChecks.length > 0) {
+          skillGroups.push({
+            ...group,
+            checks: skillChecks,
+          });
+        }
+      }
+
+      if (hasSaves) {
+        const saveChecks = group.checks.filter(check => check.checkType === 'save');
+        if (saveChecks.length > 0) {
+          saveGroups.push({
+            ...group,
+            checks: saveChecks,
+          });
+        }
+      }
+    });
+
+    return {
+      journalSkillGroups: skillGroups,
+      journalSaveGroups: saveGroups,
+      hasJournalChecks: skillGroups.length > 0,
+      hasJournalSaves: saveGroups.length > 0,
+    };
+  }
+
+  /**
    * Prepare context data for the sidebar template
    * Orchestrates data from all manager modules
    */
@@ -295,9 +341,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Extract checks, images, and actors from parent journal using journal handlers
     let journalCheckGroups = JournalHandlers.extractJournalChecks(this);
+    const groupedChecks = this._groupJournalChecksByType(journalCheckGroups);
     const journalImages = SpeakerHandlers.extractJournalImages(this);
     const journalActors = SpeakerHandlers.extractJournalActors(this);
-    const hasJournalChecks = journalCheckGroups.length > 0;
 
     if (!state) {
       const dcOptions = SystemAdapter.getDCOptions();
@@ -413,7 +459,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const dcPresets = allPresets.filter((p) => !p.system || p.system === currentSystem);
 
     // Prepare challenges context
-    const challengesContext = ChallengeHandlers.prepareChallengesContext(this, state);
+    const challengesContext = await ChallengeHandlers.prepareChallengesContext(this, state);
 
     // Check for saved speaker scenes
     const speakerScenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
@@ -448,8 +494,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       isPF2e: currentSystem === 'pf2e',
       isDND5e: currentSystem === 'dnd5e',
       dcPresets,
-      journalCheckGroups,
-      hasJournalChecks,
+      journalCheckGroups, // Keep for backward compatibility
+      ...groupedChecks, // Adds journalSkillGroups, journalSaveGroups, hasJournalChecks, hasJournalSaves
       journalImages,
       hasJournalImages: journalImages.length > 0,
       journalActors,
@@ -721,6 +767,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return SkillCheckHandlers.onRequestSkill(event, target, this);
   }
 
+  static async _onRequestSave(event, target) {
+    return SkillCheckHandlers.onRequestSave(event, target, this);
+  }
+
   static async _onSendBatch(event, target) {
     return SkillCheckHandlers.onSendBatch(event, target, this);
   }
@@ -841,6 +891,16 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         secretBtn.classList.remove('active');
         secretBtn.setAttribute('aria-pressed', 'false');
       }
+    }
+  }
+
+  static async _onToggleAllowOnlyOne(event, target) {
+    this.allowOnlyOneEnabled = target.checked;
+
+    // Visual feedback on batch button
+    const batchBtn = this.element.querySelector('.send-batch-btn');
+    if (batchBtn) {
+      batchBtn.classList.toggle('allow-only-one-active', this.allowOnlyOneEnabled);
     }
   }
 

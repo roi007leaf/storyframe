@@ -233,13 +233,20 @@ Hooks.once('init', () => {
 
       const result = await dialog.wait();
 
-      if (!result || result.length === 0) {
+      // Handle both old format (array) and new format (object)
+      const selectedIds = result?.selectedIds || result || [];
+      const allowOnlyOne = result?.allowOnlyOne || false;
+
+      if (!selectedIds || selectedIds.length === 0) {
         return true;
       }
 
       // Import requestSkillCheck function
       const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
       const SystemAdapter = await import('./scripts/system-adapter.mjs');
+
+      // Generate batch group ID if allow-only-one is enabled
+      const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
 
       // Send roll requests for each check
       for (const check of checks) {
@@ -254,8 +261,11 @@ Hooks.once('init', () => {
         // Set secret roll toggle
         sidebar.secretRollEnabled = check.isSecret;
 
-        // Send request
-        await requestSkillCheck(sidebar, skillSlug, result, null, false);
+        // Determine check type
+        const checkType = check.checkType || 'skill';
+
+        // Send request with check type and allow-only-one support
+        await requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne);
       }
 
       return true;

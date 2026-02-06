@@ -4,14 +4,26 @@
   border: 2px solid var(--sf-border-primary);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  height: 500px;
+  display: flex;
+  flex-direction: column;
+}
+
+.storyframe.roll-request-dialog-app .window-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
 }
 
 .roll-request-dialog {
   display: flex;
   flex-direction: column;
   gap: 0;
-  min-height: 300px;
-  max-height: 600px;
+  flex: 1;
+  min-height: 0;
 }
 
 /* Content */
@@ -178,6 +190,51 @@
 
 .roll-request-dialog .participant-card input:checked ~ .participant-content .check-icon {
   opacity: 1;
+}
+
+/* Allow Only One Section */
+.roll-request-dialog .allow-only-one-section {
+  padding: var(--sf-space-md);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(163, 190, 140, 0.08);
+}
+
+.roll-request-dialog .allow-only-one-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(163, 190, 140, 0.15);
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  margin: 0;
+}
+
+.roll-request-dialog .allow-only-one-toggle:hover {
+  background: rgba(163, 190, 140, 0.25);
+  border-color: rgba(163, 190, 140, 0.5);
+}
+
+.roll-request-dialog .allow-only-one-toggle input[type="checkbox"] {
+  cursor: pointer;
+  margin: 0;
+}
+
+.roll-request-dialog .allow-only-one-toggle input[type="checkbox"]:checked ~ span {
+  color: #a3be8c;
+  font-weight: 600;
+}
+
+.roll-request-dialog .allow-only-one-toggle i {
+  font-size: 11px;
+  color: rgba(163, 190, 140, 0.7);
+  margin-left: auto;
 }
 
 /* Footer */

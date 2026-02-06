@@ -284,6 +284,17 @@
             <i class="fas fa-paper-plane" aria-hidden="true"></i>
             <span class="batch-count">0</span>
           </button>
+
+          <label class="allow-only-one-toggle" style="display: none;">
+            <input type="checkbox"
+                   id="allow-only-one-toggle"
+                   data-action="toggleAllowOnlyOne"
+                   {{#if allowOnlyOneEnabled}}checked{{/if}}>
+            <span>{{localize "STORYFRAME.UI.Labels.AllowOnlyOne"}}</span>
+            <i class="fas fa-info-circle"
+               data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AllowOnlyOne"}}"
+               aria-hidden="true"></i>
+          </label>
         </div>
       </div>
       {{/if}}
@@ -293,17 +304,41 @@
         {{#if hasJournalChecks}}
         <div class="journal-checks-inline">
           <div class="section-divider">
-            <span>{{localize "STORYFRAME.UI.Labels.JournalChecks"}}</span>
+            <span>{{localize "STORYFRAME.UI.Labels.JournalSkills"}}</span>
           </div>
           <div class="journal-checks-grid">
-          {{#each journalCheckGroups}}
+          {{#each journalSkillGroups}}
             <div class="journal-check-wrapper">
               <button type="button"
                       class="journal-skill-btn"
                       data-action="showCheckDCsPopup"
                       data-skill="{{this.skillName}}"
+                      data-check-type="skill"
                       data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SkillChecks" skill=this.skillName}}"
                       aria-label="{{localize "STORYFRAME.UI.AriaLabels.SkillChecks" skill=this.skillName}}">
+                {{this.skillName}}
+              </button>
+            </div>
+          {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
+        {{#if hasJournalSaves}}
+        <div class="journal-saves-inline">
+          <div class="section-divider">
+            <span>{{localize "STORYFRAME.UI.Labels.JournalSaves"}}</span>
+          </div>
+          <div class="journal-saves-grid">
+          {{#each journalSaveGroups}}
+            <div class="journal-save-wrapper">
+              <button type="button"
+                      class="journal-save-btn"
+                      data-action="showCheckDCsPopup"
+                      data-skill="{{this.skillName}}"
+                      data-check-type="save"
+                      data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SavingThrows" save=this.skillName}}"
+                      aria-label="{{localize "STORYFRAME.UI.AriaLabels.SavingThrows" save=this.skillName}}">
                 {{this.skillName}}
               </button>
             </div>
@@ -418,6 +453,27 @@
             </div>
           </div>
           {{/if}}
+
+          {{#if saves.length}}
+          <div class="skill-category saves-category">
+            <span class="category-label">{{localize "STORYFRAME.UI.Categories.SavingThrows"}}</span>
+            <div class="category-skills">
+              {{#each saves}}
+              <div class="skill-btn-wrapper save-btn-wrapper">
+                <button type="button"
+                        class="skill-btn save-btn"
+                        data-action="requestSave"
+                        data-save="{{this.slug}}"
+                        data-tooltip="{{this.name}}"
+                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSave" save=this.name}}">
+                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
+                </button>
+                <span class="skill-label">{{this.name}}</span>
+              </div>
+              {{/each}}
+            </div>
+          </div>
+          {{/if}}
         </div>
         {{/if}}
       </div>
@@ -470,7 +526,7 @@
                 <div class="opt-desc">{{this.name}}</div>
                 <div class="opt-skills">
                   {{#each this.skillOptions}}
-                  <span class="skill-dc-pill">
+                  <span class="skill-dc-pill" data-check-type="{{this.checkType}}">
                     {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
                     {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
                   </span>

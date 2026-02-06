@@ -128,11 +128,11 @@ export function setupJournalCheckHighlighting(sidebar) {
     // Store for popup highlighting
     sidebar._visibleChecks = new Map(sidebar._visibleChecksMap);
 
-    // Update button highlight state
-    const buttons = sidebar.element.querySelectorAll('.journal-skill-btn');
+    // Update button highlight state for both skill and save buttons
+    const buttons = sidebar.element.querySelectorAll('.journal-skill-btn, .journal-save-btn');
     buttons.forEach((btn) => {
-      const skillName = btn.dataset.skill?.toLowerCase();
-      if (skillName && sidebar._visibleChecksMap.has(skillName)) {
+      const checkName = (btn.dataset.skill || btn.dataset.save)?.toLowerCase();
+      if (checkName && sidebar._visibleChecksMap.has(checkName)) {
         btn.classList.add('in-view');
       } else {
         btn.classList.remove('in-view');

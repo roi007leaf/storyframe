@@ -17,6 +17,9 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
   _parseChecksFromContent(content) {
     const checks = [];
 
+    // Save types for detection
+    const saveTypes = new Set(['fortitude', 'reflex', 'will']);
+
     // Find PF2e inline-check elements
     const checkElements = content.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
 
@@ -28,11 +31,15 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       const label = labelSpan ? labelSpan.textContent.trim() : checkEl.textContent.trim();
 
       if (dc && type) {
+        // Determine if this is a save or skill check
+        const checkType = saveTypes.has(type.toLowerCase()) ? 'save' : 'skill';
+
         checks.push({
           label,
           skillName: type,
           dc: parseInt(dc),
           isSecret: traits.toLowerCase().includes('secret'),
+          checkType, // Add check type
           id: foundry.utils.randomID(),
         });
       }
@@ -244,6 +251,23 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
   /**
    * Prepare PF2e-specific context
    */
+  async _prepareContext(_options) {
+    const baseContext = await super._prepareContext(_options);
+
+    // Get all PF2e saves from system adapter
+    const allSystemSaves = SystemAdapter.getSaves();
+    const saves = Object.keys(allSystemSaves).map(slug => ({
+      slug,
+      name: allSystemSaves[slug].name,
+      icon: allSystemSaves[slug].icon,
+    }));
+
+    return {
+      ...baseContext,
+      saves,
+    };
+  }
+
   async _prepareContextSystemSpecific() {
     const partyLevel = await this._getPartyLevel();
     const calculatedDC =
@@ -390,5 +414,17 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     }
 
     return false;
+  }
+
+  /**
+   * Check if an actor has a specific save (PF2e specific)
+   * @param {Actor} actor - The actor to check
+   * @param {string} saveSlug - The save slug to check for (fortitude, reflex, will)
+   * @returns {Promise<boolean>} True if the actor has the save
+   */
+  async _actorHasSave(actor, saveSlug) {
+    if (!actor?.saves) return false;
+    // PF2e actors have saves.fortitude, saves.reflex, saves.will
+    return !!actor.saves[saveSlug];
   }
 }

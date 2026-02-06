@@ -231,6 +231,17 @@
   margin-left: 4px;
 }
 
+/* Save Pills - Orange Accent */
+.storyframe.challenge-library .skill-dc-pill[data-check-type="save"] {
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));
+  border-color: rgba(220, 118, 51, 0.4);
+  color: #dc7633;
+}
+
+.storyframe.challenge-library .skill-dc-pill[data-check-type="save"] strong {
+  color: #dc7633;
+}
+
 /* Present Button */
 .storyframe.challenge-library .lib-present-btn {
   width: 100%;

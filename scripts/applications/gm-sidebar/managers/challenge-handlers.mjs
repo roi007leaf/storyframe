@@ -260,13 +260,17 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
 
   // Create options from checks - each check becomes an option
   const options = checks.map((check) => {
-    // Map skill name to short slug for the challenge system
-    const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName;
+    // Map skill/save name to slug based on check type
+    const checkType = check.checkType || 'skill';
+    const checkSlug = checkType === 'save'
+      ? (SystemAdapter.getSaveSlugFromName(check.skillName) || check.skillName)
+      : (SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName);
 
     return {
       id: foundry.utils.randomID(),
       skillOptions: [{
-        skill: skillSlug || check.skillName,
+        skill: checkSlug,
+        checkType: checkType,  // NEW: Preserve check type
         dc: check.dc,
         action: null,
         isSecret: check.isSecret || false,
@@ -363,6 +367,13 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     return;
   }
 
+  // Handle both old format (array) and new format (object with selectedIds)
+  const participantIds = result?.selectedIds || result || [];
+  const allowOnlyOne = result?.allowOnlyOne || false;
+
+  // Generate ONE shared group ID for ALL checks if allow-only-one is enabled
+  const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
+
   // Send roll requests for each check
   for (const check of checks) {
     // Map skill name to slug using SystemAdapter
@@ -376,8 +387,8 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     // Set secret roll toggle
     sidebar.secretRollEnabled = check.isSecret;
 
-    // Send request
-    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, result, null, false);
+    // Send request with shared batch group ID
+    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, participantIds, null, false, 'skill', batchGroupId, allowOnlyOne);
   }
 
   // Reset secret toggle
@@ -397,7 +408,7 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
 /**
  * Prepare challenge context data for template
  */
-export function prepareChallengesContext(sidebar, state) {
+export async function prepareChallengesContext(sidebar, state) {
   if (!state) return {
     activeChallenges: [],
     activeChallenge: null,
@@ -406,6 +417,10 @@ export function prepareChallengesContext(sidebar, state) {
     hasSavedChallenges: false,
   };
 
+  // Import SystemAdapter for save names
+  const SystemAdapter = await import('../../../system-adapter.mjs');
+  const systemSaves = SystemAdapter.getSaves();
+
   // Active challenges (multi-challenge support)
   const activeChallenges = (state?.activeChallenges || []).map(c => ({
     ...c,
@@ -413,14 +428,24 @@ export function prepareChallengesContext(sidebar, state) {
     options: c.options.map(opt => ({
       ...opt,
       skillOptions: opt.skillOptions.map(so => {
-        const skillName = getSkillName(so.skill);
+        const checkType = so.checkType || 'skill';
+
+        // Get name based on check type (saves don't capitalize)
+        let checkName;
+        if (checkType === 'save') {
+          checkName = systemSaves[so.skill]?.name || so.skill;
+        } else {
+          checkName = getSkillName(so.skill);
+        }
+
         const actionName = so.action ? getActionName(so.skill, so.action) : null;
-        const displayText = actionName ? `${skillName} (${actionName})` : skillName;
+        const displayText = actionName ? `${checkName} (${actionName})` : checkName;
         return {
           ...so,
-          skillName,
+          skillName: checkName,
           actionName,
           displayText,
+          checkType,
           isSecret: so.isSecret || false,
           minProficiency: so.minProficiency || 0
         };
@@ -437,14 +462,24 @@ export function prepareChallengesContext(sidebar, state) {
   const savedChallenges = savedChallengesRaw.map(c => {
     const optionsPreview = c.options.map((opt, idx) => {
       const skillOptions = opt.skillOptions.map(so => {
-        const skillName = getSkillName(so.skill);
+        const checkType = so.checkType || 'skill';
+
+        // Get name based on check type (saves don't capitalize)
+        let checkName;
+        if (checkType === 'save') {
+          checkName = systemSaves[so.skill]?.name || so.skill;
+        } else {
+          checkName = getSkillName(so.skill);
+        }
+
         const actionName = so.action ? getActionName(so.skill, so.action) : null;
         return {
-          skillName,
+          skillName: checkName,
           actionName,
           dc: so.dc,
           isSecret: so.isSecret || false,
-          displayText: actionName ? `${skillName} (${actionName})` : skillName,
+          checkType,
+          displayText: actionName ? `${checkName} (${actionName})` : checkName,
         };
       });
 

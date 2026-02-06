@@ -153,6 +153,14 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return slug.toUpperCase();
     };
 
+    // Get save names helper
+    const getSaveName = (slug) => {
+      const saves = SystemAdapter.getSaves();
+      const save = saves[slug];
+      if (save?.name) return save.name;
+      return slug.toUpperCase();
+    };
+
     // Get skill icon helper
     const getSkillIcon = (slug) => {
       const iconMap = {
@@ -215,10 +223,12 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
         const enrichedOptions = await Promise.all(challenge.options.map(async opt => ({
           ...opt,
           skillOptionsDisplay: await Promise.all(opt.skillOptions.map(async so => {
+            // Determine if this is a save or skill check
+            const checkType = so.checkType || 'skill';
 
-            // Check if player meets proficiency requirement
+            // Check if player meets proficiency requirement (skills only, not saves)
             let canRoll = true;
-            if (so.minProficiency && so.minProficiency > 0) {
+            if (checkType === 'skill' && so.minProficiency && so.minProficiency > 0) {
               // Check proficiency for this player's participant(s)
               canRoll = false;
 
@@ -234,16 +244,31 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               }
             }
 
-            const skillName = getSkillName(so.skill);
+            // Get appropriate name and icon based on check type
+            let checkName, checkIcon;
+            if (checkType === 'save') {
+              checkName = getSaveName(so.skill);
+              const saves = SystemAdapter.getSaves();
+              checkIcon = saves[so.skill]?.icon || 'fa-shield';
+            } else {
+              checkName = getSkillName(so.skill);
+              checkIcon = getSkillIcon(so.skill);
+            }
+
             const action = so.action || null;
 
             // Build localized tooltip and aria-label
             let tooltip, ariaLabel;
             if (canRoll) {
-              tooltip = action
-                ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: skillName, action })
-                : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: skillName });
-              ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
+              if (checkType === 'save') {
+                tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.RollSave', { save: checkName });
+                ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
+              } else {
+                tooltip = action
+                  ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action })
+                  : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: checkName });
+                ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
+              }
             } else {
               tooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.InsufficientProficiency');
               ariaLabel = game.i18n.localize('STORYFRAME.UI.Tooltips.LockedInsufficientProficiency');
@@ -251,8 +276,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
             return {
               ...so,
-              skillName,
-              skillIcon: getSkillIcon(so.skill),
+              skillName: checkName,
+              skillIcon: checkIcon,
+              checkType,  // NEW
               dc: so.dc,
               dcDifficulty: getDCDifficulty(so.dc),
               action,
@@ -288,45 +314,91 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
             const participant = state.participants.find(p => p.id === roll.participantId);
             const actor = participant ? await fromUuid(participant.actorUuid) : null;
 
-            const skillName = getSkillName(roll.skillSlug);
+            // Determine if this is a save or skill check
+            const checkType = roll.checkType || 'skill';
+            const checkSlug = roll.skillSlug; // skillSlug is used for both skills and saves
+
+            // Get appropriate name based on check type
+            const checkName = checkType === 'save' ? getSaveName(checkSlug) : getSkillName(checkSlug);
             const actionName = roll.actionSlug || null;
 
             // Build localized tooltip and aria-label
-            const tooltip = actionName
-              ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: skillName, action: actionName })
-              : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: skillName });
-            const ariaLabel = game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillCheck', { skill: skillName });
+            let tooltip, ariaLabel;
+            if (checkType === 'save') {
+              tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.RollSave', { save: checkName });
+              ariaLabel = game.i18n.format('STORYFRAME.UI.AriaLabels.RollCheck', { check: checkName });
+            } else {
+              tooltip = actionName
+                ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action: actionName })
+                : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: checkName });
+              ariaLabel = game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillCheck', { skill: checkName });
+            }
 
             return {
               ...roll,
-              skillName,
-              skillIcon: getSkillIcon(roll.skillSlug),
+              skillName: checkName,
+              skillIcon: getSkillIcon(checkSlug),
               actionName,
               dc: showDCs ? roll.dc : null,
               dcDifficulty: getDCDifficulty(roll.dc),
               actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
               actorId: participant?.actorUuid || 'unknown',
+              checkType,
               tooltip,
               ariaLabel,
+              allowOnlyOne: roll.allowOnlyOne || false,
+              batchGroupId: roll.batchGroupId || null,
             };
           })
       );
 
-      const groupedByActor = rolls.reduce((acc, roll) => {
-        if (!acc[roll.actorId]) {
-          acc[roll.actorId] = {
-            actorId: roll.actorId,
-            actorName: roll.actorName,
-            actorImg: roll.actorImg,
-            rolls: [],
-          };
-        }
-        acc[roll.actorId].rolls.push(roll);
-        return acc;
-      }, {});
+      // Group rolls by actor AND batchGroupId to separate allow-only-one groups
+      const groups = [];
+      const actorBatchGroups = new Map(); // Track which batchGroupIds we've seen per actor
 
-      actorRollGroups = Object.values(groupedByActor);
+      rolls.forEach(roll => {
+        if (roll.allowOnlyOne && roll.batchGroupId) {
+          // Part of an allow-only-one group
+          const groupKey = `${roll.actorId}:${roll.batchGroupId}`;
+
+          if (!actorBatchGroups.has(groupKey)) {
+            // Create new allow-only-one group
+            const group = {
+              actorId: roll.actorId,
+              actorName: roll.actorName,
+              actorImg: roll.actorImg,
+              rolls: [],
+              hasAllowOnlyOne: true,
+              batchGroupId: roll.batchGroupId,
+            };
+            groups.push(group);
+            actorBatchGroups.set(groupKey, group);
+          }
+
+          // Add roll to its group
+          actorBatchGroups.get(groupKey).rolls.push(roll);
+        } else {
+          // Regular roll - group with other regular rolls for same actor
+          const regularGroupKey = `${roll.actorId}:regular`;
+
+          if (!actorBatchGroups.has(regularGroupKey)) {
+            const group = {
+              actorId: roll.actorId,
+              actorName: roll.actorName,
+              actorImg: roll.actorImg,
+              rolls: [],
+              hasAllowOnlyOne: false,
+            };
+            groups.push(group);
+            actorBatchGroups.set(regularGroupKey, group);
+          }
+
+          actorBatchGroups.get(regularGroupKey).rolls.push(roll);
+        }
+      });
+
+      actorRollGroups = groups;
     }
 
     // Auto-switch to rolls tab only on first render if there are pending rolls
