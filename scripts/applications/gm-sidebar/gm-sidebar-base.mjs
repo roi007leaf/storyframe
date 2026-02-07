@@ -63,6 +63,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       showActiveChallenges: GMSidebarAppBase._onShowActiveChallenges,
       togglePresetDropdown: GMSidebarAppBase._onTogglePresetDropdown,
       applyPreset: GMSidebarAppBase._onApplyPreset,
+      applyPresetDC: GMSidebarAppBase._onApplyPresetDC,
       addPresetQuick: GMSidebarAppBase._onAddPresetQuick,
       deletePresetQuick: GMSidebarAppBase._onDeletePresetQuick,
       applyJournalCheck: GMSidebarAppBase._onApplyJournalCheck,
@@ -798,6 +799,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onApplyPreset(event, target) {
     return DCHandlers.onApplyPreset(event, target, this);
+  }
+
+  static async _onApplyPresetDC(event, target) {
+    return DCHandlers.onApplyPresetDC(event, target, this);
   }
 
   static async _onAddPresetQuick(event, target) {

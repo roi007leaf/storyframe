@@ -203,68 +203,7 @@
                 <i class="fas fa-bookmark"></i>
               </button>
             </div>
-
-            <div class="preset-dropdown" style="display: none;">
-              <div class="preset-add-form">
-                <input type="number"
-                       id="new-preset-dc"
-                       class="preset-dc-input"
-                       placeholder="{{localize "STORYFRAME.UI.Placeholders.AddDC"}}"
-                       min="1">
-                <button type="button"
-                        class="preset-add-btn"
-                        data-action="addPresetQuick"
-                        data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddPreset"}}">
-                  <i class="fas fa-plus"></i>
-                </button>
-              </div>
-              {{#if dcPresets.length}}
-              <div class="preset-divider"></div>
-              <div class="preset-list">
-                {{#each dcPresets}}
-                  <div class="preset-item">
-                    <button type="button"
-                            class="preset-option"
-                            data-action="applyPreset"
-                            data-preset-id="{{this.id}}"
-                            data-dc="{{this.dc}}"
-                            data-tooltip="{{this.name}}">
-                      {{this.dc}}
-                    </button>
-                    <button type="button"
-                            class="preset-delete-btn"
-                            data-action="deletePresetQuick"
-                            data-preset-id="{{this.id}}"
-                            data-tooltip="{{localize "STORYFRAME.UI.Labels.Delete"}}">
-                      <i class="fas fa-times"></i>
-                    </button>
-                  </div>
-                {{/each}}
-              </div>
-              {{/if}}
-            </div>
           </div>
-
-          {{#if isPF2e}}
-            {{#if partyLevel}}
-            <div class="difficulty-selector compact">
-              <span class="party-level" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.PartyLevel"}}">{{localize "STORYFRAME.UI.Labels.LevelShort"}}{{partyLevel}}</span>
-              <select id="difficulty-select" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DifficultyByLevel"}}">
-                {{#each difficultyOptions}}
-                  <option value="{{this.id}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
-                {{/each}}
-              </select>
-            </div>
-            {{/if}}
-          {{else if isDND5e}}
-            <div class="difficulty-selector dnd5e compact">
-              <select id="dc-select-dnd5e" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SelectDifficulty"}}">
-                {{#each dcOptions}}
-                  <option value="{{this.dc}}" data-dc="{{this.dc}}" {{#if (eq this.dc ../currentDC)}}selected{{/if}}>{{this.label}}</option>
-                {{/each}}
-              </select>
-            </div>
-          {{/if}}
 
           <button type="button"
                   class="secret-roll-btn {{#if secretRollEnabled}}active{{/if}}"

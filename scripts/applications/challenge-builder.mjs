@@ -338,7 +338,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
             const actions = JSON.parse(actionsData);
             if (actions && actions.length > 0) {
               const noActionLabel = game.i18n.localize('STORYFRAME.ChallengeBuilder.NoAction');
-            actionDropdown.innerHTML = `<option value="">${noActionLabel}</option>` +
+              actionDropdown.innerHTML = `<option value="">${noActionLabel}</option>` +
                 actions.map(a => `<option value="${a.slug}">${a.name}</option>`).join('');
               actionSelect.style.display = 'block';
               return;
@@ -1176,7 +1176,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     const addPresetForm = `
       <div class="add-preset-form">
-        <input type="text" class="preset-name-input" placeholder="Name" maxlength="20">
         <input type="number" class="preset-dc-input" placeholder="DC" min="1" max="99">
         <button type="button" class="preset-add-btn" data-action="addDCPreset">
           <i class="fas fa-plus"></i>
@@ -1282,17 +1281,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
   static async _onAddDCPreset(_event, target) {
     const dropdown = target.closest('.dc-preset-dropdown');
-    const nameInput = dropdown.querySelector('.preset-name-input');
     const dcInput = dropdown.querySelector('.preset-dc-input');
 
-    const name = nameInput.value.trim();
     const dc = parseInt(dcInput.value);
-
-    if (!name) {
-      ui.notifications.warn('Please enter a name for the preset');
-      nameInput.focus();
-      return;
-    }
 
     if (!dc || dc < 1) {
       ui.notifications.warn('Please enter a valid DC value');
@@ -1307,7 +1298,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     // Create new preset
     const newPreset = {
       id: foundry.utils.randomID(),
-      name,
       dc,
       system: currentSystem,
     };
@@ -1316,7 +1306,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     allPresets.push(newPreset);
     await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-    ui.notifications.info(`Added preset: ${name} (DC ${dc})`);
+    ui.notifications.info(`Added preset: (DC ${dc})`);
 
     // Recreate dropdown
     const inputGroup = dropdown.closest('.dc-input-group');

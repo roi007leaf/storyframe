@@ -273,6 +273,9 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     const calculatedDC =
       partyLevel !== null ? this._calculateDCByLevel(partyLevel, this.currentDifficulty) : null;
 
+    // Store party level in instance for access by DC dropdown
+    this.partyLevel = partyLevel;
+
     // Update currentDC if using level-based DC
     if (this.currentDC === null && calculatedDC !== null) {
       this.currentDC = calculatedDC;
