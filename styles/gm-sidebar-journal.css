@@ -356,6 +356,11 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  overflow: visible;
+}
+
+.dc-input-group {
+  overflow: visible;
 }
 
 /* ========================================
