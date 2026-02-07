@@ -14,7 +14,6 @@
       "Bash(wc:*)",
       "Bash(dir:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)",
       "Bash(node --check:*)",
       "Bash(timeout 30 tail:*)",
       "Bash(git checkout:*)",
@@ -22,7 +21,6 @@
       "Bash(git ls-tree:*)",
       "Bash(gh repo view:*)",
       "Bash(gh repo list:*)",
-      "Bash(git push:*)",
       "Bash(node -e:*)",
       "Bash(echo \"\nThe user is reporting that [[/skill 10 deception]] doesn''t parse correctly.\nLooking at the code, it expects:\n- span.roll-link-group with data-type=''check'' or data-type=''save''\n- data-ability or data-skill attribute\n- data-dc attribute\n\nLet me create a test to see what the actual HTML structure should be.\")",
       "WebFetch(domain:github.com)"

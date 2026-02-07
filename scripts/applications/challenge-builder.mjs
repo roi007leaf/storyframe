@@ -1150,57 +1150,110 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     // Get difficulty adjustments for PF2e
     const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
-    let html = '';
+    // Build tabs
+    const tabs = [];
 
-    // Add custom presets if any
+    // Tab 1: Custom Presets (if any)
     if (dcPresets.length > 0) {
-      html += '<div class="preset-section-label">Presets</div>';
-      html += dcPresets.map(preset => `
-        <button type="button"
-                class="preset-option"
-                data-action="applyDCPreset"
-                data-dc="${preset.dc}"
-                data-tooltip="${preset.name}">
-          ${preset.dc}
-        </button>
-      `).join('');
-    }
-
-    // Add DC options (level-based or standard)
-    if (dcOptions && dcOptions.length > 0) {
-      if (html) html += '<div class="preset-divider"></div>';
-      html += '<div class="preset-section-label">By Level</div>';
-      html += dcOptions.map(option => `
-        <button type="button"
-                class="preset-option"
-                data-action="applyDCPreset"
-                data-dc="${option.dc}"
-                data-tooltip="${option.label || option.dc}">
-          ${option.dc}
-        </button>
-      `).join('');
-    }
-
-    // Add difficulty-based DCs if party level is available (PF2e only)
-    if (partyLevel !== null && difficultyAdjustments && difficultyAdjustments.length > 0) {
-      if (html) html += '<div class="preset-divider"></div>';
-      html += '<div class="preset-section-label">Party Level ' + partyLevel + '</div>';
-      html += difficultyAdjustments.map(difficulty => {
-        const calculatedDC = ChallengeBuilderDialog.prototype._calculateDCByLevel(partyLevel, difficulty.id);
-        const label = game.i18n.localize(difficulty.labelKey);
-        return `
+      tabs.push({
+        id: 'presets',
+        label: 'Presets',
+        content: dcPresets.map(preset => `
           <button type="button"
                   class="preset-option"
                   data-action="applyDCPreset"
-                  data-dc="${calculatedDC}"
-                  data-tooltip="${label} (DC ${calculatedDC})">
-            ${calculatedDC}
+                  data-dc="${preset.dc}"
+                  data-tooltip="${preset.name}">
+            ${preset.dc}
           </button>
-        `;
-      }).join('');
+        `).join(''),
+      });
     }
 
-    dropdown.innerHTML = html || '<div class="no-presets">No DC options available</div>';
+    // Tab 2: By Level (always available)
+    if (dcOptions && dcOptions.length > 0) {
+      tabs.push({
+        id: 'by-level',
+        label: 'By Level',
+        content: dcOptions.map(option => `
+          <button type="button"
+                  class="preset-option"
+                  data-action="applyDCPreset"
+                  data-dc="${option.dc}"
+                  data-tooltip="${option.label || option.dc}">
+            ${option.dc}
+          </button>
+        `).join(''),
+      });
+    }
+
+    // Tab 3: Party Level (if available)
+    if (partyLevel !== null && difficultyAdjustments && difficultyAdjustments.length > 0) {
+      tabs.push({
+        id: 'party-level',
+        label: `Party Lvl ${partyLevel}`,
+        content: difficultyAdjustments.map(difficulty => {
+          const calculatedDC = ChallengeBuilderDialog.prototype._calculateDCByLevel(partyLevel, difficulty.id);
+          const label = game.i18n.localize(difficulty.labelKey);
+          return `
+            <button type="button"
+                    class="preset-option"
+                    data-action="applyDCPreset"
+                    data-dc="${calculatedDC}"
+                    data-tooltip="${label} (DC ${calculatedDC})">
+              <span class="preset-dc">${calculatedDC}</span>
+              <span class="preset-label">${label}</span>
+            </button>
+          `;
+        }).join(''),
+      });
+    }
+
+    if (tabs.length === 0) {
+      dropdown.innerHTML = '<div class="no-presets">No DC options available</div>';
+    } else {
+      // Build tabbed interface
+      const tabButtons = tabs.map((tab, idx) => `
+        <button type="button"
+                class="dc-tab-btn ${idx === 0 ? 'active' : ''}"
+                data-tab="${tab.id}">
+          ${tab.label}
+        </button>
+      `).join('');
+
+      const tabContents = tabs.map((tab, idx) => `
+        <div class="dc-tab-content ${idx === 0 ? 'active' : ''}" data-tab-content="${tab.id}">
+          ${tab.content}
+        </div>
+      `).join('');
+
+      dropdown.innerHTML = `
+        <div class="dc-tabs-header">
+          ${tabButtons}
+        </div>
+        <div class="dc-tabs-body">
+          ${tabContents}
+        </div>
+      `;
+
+      // Attach tab switching handlers
+      setTimeout(() => {
+        dropdown.querySelectorAll('.dc-tab-btn').forEach(btn => {
+          btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const tabId = btn.dataset.tab;
+
+            // Update active tab button
+            dropdown.querySelectorAll('.dc-tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            // Update active tab content
+            dropdown.querySelectorAll('.dc-tab-content').forEach(c => c.classList.remove('active'));
+            dropdown.querySelector(`[data-tab-content="${tabId}"]`).classList.add('active');
+          });
+        });
+      }, 0);
+    }
 
     inputGroup.style.position = 'relative';
     inputGroup.appendChild(dropdown);

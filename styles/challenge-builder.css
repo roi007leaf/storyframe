@@ -372,15 +372,69 @@
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
   border-radius: 6px;
-  padding: 4px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 1000;
-  display: flex;
-  gap: 4px;
-  flex-wrap: wrap;
-  max-width: 200px;
+  min-width: 220px;
+  max-width: 280px;
 }
 
+/* Tabs Header */
+.storyframe.challenge-builder .dc-tabs-header {
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(94, 129, 172, 0.2);
+  border-radius: 6px 6px 0 0;
+}
+
+.storyframe.challenge-builder .dc-tab-btn {
+  flex: 1;
+  padding: 6px 8px;
+  background: rgba(94, 129, 172, 0.1);
+  border: 1px solid rgba(94, 129, 172, 0.2);
+  border-radius: 4px;
+  cursor: pointer;
+  color: rgba(94, 129, 172, 0.7);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.storyframe.challenge-builder .dc-tab-btn:hover {
+  background: rgba(94, 129, 172, 0.2);
+  border-color: rgba(94, 129, 172, 0.4);
+  color: #5e81ac;
+}
+
+.storyframe.challenge-builder .dc-tab-btn.active {
+  background: rgba(94, 129, 172, 0.3);
+  border-color: rgba(94, 129, 172, 0.5);
+  color: #5e81ac;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Tabs Body */
+.storyframe.challenge-builder .dc-tabs-body {
+  padding: 8px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.storyframe.challenge-builder .dc-tab-content {
+  display: none;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.storyframe.challenge-builder .dc-tab-content.active {
+  display: flex;
+}
+
+/* Preset Options */
 .storyframe.challenge-builder .preset-option {
   padding: 6px 10px;
   background: rgba(94, 129, 172, 0.2);
@@ -391,12 +445,26 @@
   font-weight: 600;
   font-size: 12px;
   transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .storyframe.challenge-builder .preset-option:hover {
   background: rgba(94, 129, 172, 0.4);
   transform: translateY(-1px);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .preset-option .preset-dc {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.storyframe.challenge-builder .preset-option .preset-label {
+  font-size: 10px;
+  font-weight: 500;
+  opacity: 0.8;
 }
 
 .storyframe.challenge-builder .no-presets {
@@ -406,21 +474,23 @@
   font-style: italic;
 }
 
-.storyframe.challenge-builder .preset-section-label {
-  width: 100%;
-  padding: 4px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--sf-text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+/* Scrollbar for tabs body */
+.storyframe.challenge-builder .dc-tabs-body::-webkit-scrollbar {
+  width: 6px;
 }
 
-.storyframe.challenge-builder .preset-divider {
-  width: 100%;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.1);
-  margin: 4px 0;
+.storyframe.challenge-builder .dc-tabs-body::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.storyframe.challenge-builder .dc-tabs-body::-webkit-scrollbar-thumb {
+  background: rgba(94, 129, 172, 0.4);
+  border-radius: 3px;
+}
+
+.storyframe.challenge-builder .dc-tabs-body::-webkit-scrollbar-thumb:hover {
+  background: rgba(94, 129, 172, 0.6);
 }
 
 .storyframe.challenge-builder .skill-dc-row .proficiency-select {
