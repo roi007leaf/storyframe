@@ -12,8 +12,7 @@
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 10000;
-  min-width: 260px;
-  max-width: 320px;
+  width: 220px;
 }
 
 /* Tabs Header */
