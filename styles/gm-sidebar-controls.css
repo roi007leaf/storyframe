@@ -24,7 +24,7 @@
   display: flex;
   gap: var(--sf-space-sm);
   align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .gm-sidebar .participant-portraits-sticky {
