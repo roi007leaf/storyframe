@@ -26,6 +26,7 @@
     "styles/speaker-wheel.css",
     "styles/scene-editor.css",
     "styles/dc-presets.css",
+    "styles/dc-preset-dropdown.css",
     "styles/player-viewer.css",
     "styles/player-sidebar.css",
     "styles/challenge-builder.css",
