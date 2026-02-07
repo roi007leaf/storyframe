@@ -86,7 +86,7 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
 
     const confirmed = await foundry.applications.api.DialogV2.confirm({
       window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeletePreset.Title') },
-      content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeletePreset.Content', { name: preset.name, dc: preset.dc })}</p>`,
+      content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeletePreset.Content', { dc: preset.dc })}</p>`,
       rejectClose: false,
     });
 
