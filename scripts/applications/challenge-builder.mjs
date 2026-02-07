@@ -29,6 +29,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       removeSave: ChallengeBuilderDialog._onRemoveSave,
       addOption: ChallengeBuilderDialog._onAddOption,
       removeOption: ChallengeBuilderDialog._onRemoveOption,
+      toggleDCPreset: ChallengeBuilderDialog._onToggleDCPreset,
+      applyDCPreset: ChallengeBuilderDialog._onApplyDCPreset,
     },
   };
 
@@ -184,8 +186,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
             </select>
           </div>
           ${actionHtml}
-          <div class="dc-input">
-            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}" list="dc-presets">
+          <div class="dc-input-group">
+            <input type="number" name="option-${this.optionCount}-dc-${soIdx}" class="dc-number-input" min="1" value="${so.dc}" placeholder="${i18n.dc}">
+            <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="skill" data-option-index="${this.optionCount}" data-row-index="${soIdx}">
+              <i class="fas fa-bookmark"></i>
+            </button>
           </div>
           <div class="proficiency-select">
             <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
@@ -221,8 +226,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               <option value="">${i18n.selectSkill}</option>
             </select>
           </div>
-          <div class="dc-input">
-            <input type="number" name="option-${this.optionCount}-save-dc-${soIdx}" min="1" value="${so.dc}" placeholder="${i18n.dc}" list="dc-presets">
+          <div class="dc-input-group">
+            <input type="number" name="option-${this.optionCount}-save-dc-${soIdx}" class="dc-number-input" min="1" value="${so.dc}" placeholder="${i18n.dc}">
+            <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="save" data-option-index="${this.optionCount}" data-row-index="${soIdx}">
+              <i class="fas fa-bookmark"></i>
+            </button>
           </div>
           <div class="secret-checkbox">
             <input type="checkbox" name="option-${this.optionCount}-save-secret-${soIdx}" id="option-${this.optionCount}-save-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
@@ -364,12 +372,21 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const state = game.storyframe.stateManager.getState();
     const loreSkills = await this._getLoreSkills(state);
 
+    // Calculate party level from selected participants
+    const partyLevel = await this._calculatePartyLevel(state);
+
+    // Store party level in instance for access by static methods
+    this.partyLevel = partyLevel;
+
     // Load DC presets
     const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
     const dcPresets = allPresets.filter(p => !p.system || p.system === currentSystem);
 
     // Get DC options (level-based for PF2e, standard for D&D5e)
     const dcOptions = SystemAdapter.getDCOptions();
+
+    // Get difficulty adjustments for PF2e
+    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
     // If in edit mode, load template data
     let initialData = null;
@@ -393,6 +410,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       initialData,
       dcPresets,
       dcOptions,
+      partyLevel,
+      difficultyAdjustments,
     };
   }
 
@@ -417,6 +436,42 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     }
 
     return Array.from(loreSkillsSet).map(s => JSON.parse(s));
+  }
+
+  async _calculatePartyLevel(state) {
+    if (!state?.participants?.length) return null;
+
+    // Filter to selected participants if any
+    const relevantParticipants = this.selectedParticipants && this.selectedParticipants.size > 0
+      ? state.participants.filter(p => this.selectedParticipants.has(p.id))
+      : state.participants;
+
+    if (relevantParticipants.length === 0) return null;
+
+    const levels = await Promise.all(
+      relevantParticipants.map(async (p) => {
+        const actor = await fromUuid(p.actorUuid);
+        return actor?.system?.details?.level?.value ?? actor?.system?.level ?? null;
+      }),
+    );
+
+    const validLevels = levels.filter((l) => l !== null);
+    if (validLevels.length === 0) return null;
+
+    return Math.round(validLevels.reduce((a, b) => a + b, 0) / validLevels.length);
+  }
+
+  _calculateDCByLevel(level, difficultyId) {
+    const dcOptions = SystemAdapter.getDCOptions();
+    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
+
+    const levelOption = dcOptions.find((opt) => opt.value === level);
+    const baseDC = levelOption?.dc || 14;
+
+    const difficulty = difficultyAdjustments?.find((d) => d.id === difficultyId);
+    const adjustment = difficulty?.adjustment || 0;
+
+    return baseDC + adjustment;
   }
 
   static async _onSubmit(event, target) {
@@ -758,8 +813,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         </select>
       </div>
       ` : ''}
-      <div class="dc-input">
-        <input type="number" name="option-${optionIdx}-dc-${skillCount}" min="1" placeholder="${i18n.dc}" required>
+      <div class="dc-input-group">
+        <input type="number" name="option-${optionIdx}-dc-${skillCount}" class="dc-number-input" min="1" placeholder="${i18n.dc}" required>
+        <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="skill" data-option-index="${optionIdx}" data-row-index="${skillCount}">
+          <i class="fas fa-bookmark"></i>
+        </button>
       </div>
       <div class="proficiency-select">
         <select name="option-${optionIdx}-proficiency-${skillCount}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
@@ -860,8 +918,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           ${saveOptionsHtml}
         </select>
       </div>
-      <div class="dc-input">
-        <input type="number" name="option-${optionIdx}-save-dc-${saveCount}" min="1" placeholder="${i18n.dc}" list="dc-presets" required>
+      <div class="dc-input-group">
+        <input type="number" name="option-${optionIdx}-save-dc-${saveCount}" class="dc-number-input" min="1" placeholder="${i18n.dc}" required>
+        <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="save" data-option-index="${optionIdx}" data-row-index="${saveCount}">
+          <i class="fas fa-bookmark"></i>
+        </button>
       </div>
       <div class="secret-checkbox">
         <input type="checkbox" name="option-${optionIdx}-save-secret-${saveCount}" id="option-${optionIdx}-save-secret-${saveCount}" data-tooltip="${i18n.secretTooltip}">
@@ -964,8 +1025,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
                 </select>
               </div>
               ` : ''}
-              <div class="dc-input">
-                <input type="number" name="option-${this.optionCount}-dc-0" min="1" placeholder="${i18n.dc}" list="dc-presets" required>
+              <div class="dc-input-group">
+                <input type="number" name="option-${this.optionCount}-dc-0" class="dc-number-input" min="1" placeholder="${i18n.dc}" required>
+                <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="skill" data-option-index="${this.optionCount}" data-row-index="0">
+                  <i class="fas fa-bookmark"></i>
+                </button>
               </div>
               <div class="proficiency-select">
                 <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
@@ -1035,6 +1099,128 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       });
     } else {
       ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AtLeastOneOption'));
+    }
+  }
+
+  static _onToggleDCPreset(_event, target) {
+    // Close all other open dropdowns first
+    this.element.querySelectorAll('.dc-preset-dropdown').forEach(d => {
+      if (!target.closest('.dc-input-group')?.contains(d)) {
+        d.style.display = 'none';
+      }
+    });
+
+    // Toggle this dropdown
+    const inputGroup = target.closest('.dc-input-group');
+    let dropdown = inputGroup.querySelector('.dc-preset-dropdown');
+
+    if (!dropdown) {
+      // Create dropdown if it doesn't exist
+      dropdown = ChallengeBuilderDialog._createDCPresetDropdown(inputGroup, this.partyLevel);
+    }
+
+    const isVisible = dropdown.style.display !== 'none';
+    dropdown.style.display = isVisible ? 'none' : 'block';
+
+    if (!isVisible) {
+      // Click outside to close
+      const closeHandler = (e) => {
+        if (!dropdown.contains(e.target) && !target.contains(e.target)) {
+          dropdown.style.display = 'none';
+          document.removeEventListener('click', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeHandler), 0);
+    }
+  }
+
+  static _createDCPresetDropdown(inputGroup, partyLevel) {
+    const dropdown = document.createElement('div');
+    dropdown.className = 'dc-preset-dropdown';
+    dropdown.style.display = 'none';
+
+    // Get presets from context
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+    const currentSystem = SystemAdapter.detectSystem();
+    const dcPresets = allPresets.filter(p => !p.system || p.system === currentSystem);
+
+    // Get DC options (level-based for PF2e, standard for D&D5e)
+    const dcOptions = SystemAdapter.getDCOptions();
+
+    // Get difficulty adjustments for PF2e
+    const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
+
+    let html = '';
+
+    // Add custom presets if any
+    if (dcPresets.length > 0) {
+      html += '<div class="preset-section-label">Presets</div>';
+      html += dcPresets.map(preset => `
+        <button type="button"
+                class="preset-option"
+                data-action="applyDCPreset"
+                data-dc="${preset.dc}"
+                data-tooltip="${preset.name}">
+          ${preset.dc}
+        </button>
+      `).join('');
+    }
+
+    // Add DC options (level-based or standard)
+    if (dcOptions && dcOptions.length > 0) {
+      if (html) html += '<div class="preset-divider"></div>';
+      html += '<div class="preset-section-label">By Level</div>';
+      html += dcOptions.map(option => `
+        <button type="button"
+                class="preset-option"
+                data-action="applyDCPreset"
+                data-dc="${option.dc}"
+                data-tooltip="${option.label || option.dc}">
+          ${option.dc}
+        </button>
+      `).join('');
+    }
+
+    // Add difficulty-based DCs if party level is available (PF2e only)
+    if (partyLevel !== null && difficultyAdjustments && difficultyAdjustments.length > 0) {
+      if (html) html += '<div class="preset-divider"></div>';
+      html += '<div class="preset-section-label">Party Level ' + partyLevel + '</div>';
+      html += difficultyAdjustments.map(difficulty => {
+        const calculatedDC = ChallengeBuilderDialog.prototype._calculateDCByLevel(partyLevel, difficulty.id);
+        const label = game.i18n.localize(difficulty.labelKey);
+        return `
+          <button type="button"
+                  class="preset-option"
+                  data-action="applyDCPreset"
+                  data-dc="${calculatedDC}"
+                  data-tooltip="${label} (DC ${calculatedDC})">
+            ${calculatedDC}
+          </button>
+        `;
+      }).join('');
+    }
+
+    dropdown.innerHTML = html || '<div class="no-presets">No DC options available</div>';
+
+    inputGroup.style.position = 'relative';
+    inputGroup.appendChild(dropdown);
+
+    return dropdown;
+  }
+
+  static _onApplyDCPreset(_event, target) {
+    const dc = parseInt(target.dataset.dc);
+    const inputGroup = target.closest('.dc-input-group');
+    const dcInput = inputGroup.querySelector('input[type="number"]');
+
+    if (dcInput && !isNaN(dc)) {
+      dcInput.value = dc;
+    }
+
+    // Close dropdown
+    const dropdown = inputGroup.querySelector('.dc-preset-dropdown');
+    if (dropdown) {
+      dropdown.style.display = 'none';
     }
   }
 }

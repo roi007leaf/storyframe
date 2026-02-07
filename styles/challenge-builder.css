@@ -331,9 +331,96 @@
   min-width: 0;
 }
 
-.storyframe.challenge-builder .skill-dc-row .dc-input {
-  width: 60px;
+.storyframe.challenge-builder .skill-dc-row .dc-input-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  position: relative;
   flex-shrink: 0;
+}
+
+.storyframe.challenge-builder .dc-number-input {
+  width: 50px;
+  text-align: center;
+  padding: 8px 4px;
+}
+
+.storyframe.challenge-builder .dc-preset-btn {
+  padding: 8px;
+  background: rgba(94, 129, 172, 0.2);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  color: rgba(94, 129, 172, 0.7);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storyframe.challenge-builder .dc-preset-btn:hover {
+  background: rgba(94, 129, 172, 0.3);
+  border-color: rgba(94, 129, 172, 0.5);
+  color: #5e81ac;
+}
+
+.storyframe.challenge-builder .dc-preset-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: var(--sf-surface-secondary);
+  border: 1px solid var(--sf-border-primary);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  max-width: 200px;
+}
+
+.storyframe.challenge-builder .preset-option {
+  padding: 6px 10px;
+  background: rgba(94, 129, 172, 0.2);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 4px;
+  cursor: pointer;
+  color: #5e81ac;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.2s;
+}
+
+.storyframe.challenge-builder .preset-option:hover {
+  background: rgba(94, 129, 172, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.storyframe.challenge-builder .no-presets {
+  padding: 8px 12px;
+  color: var(--sf-text-muted);
+  font-size: 11px;
+  font-style: italic;
+}
+
+.storyframe.challenge-builder .preset-section-label {
+  width: 100%;
+  padding: 4px 8px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--sf-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.storyframe.challenge-builder .preset-divider {
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 4px 0;
 }
 
 .storyframe.challenge-builder .skill-dc-row .proficiency-select {
@@ -581,8 +668,11 @@
   min-width: 0;
 }
 
-.storyframe.challenge-builder .save-dc-row .dc-input {
-  width: 70px;
+.storyframe.challenge-builder .save-dc-row .dc-input-group {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  position: relative;
   flex-shrink: 0;
 }
 

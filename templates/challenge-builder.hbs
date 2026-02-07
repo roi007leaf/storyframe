@@ -1,15 +1,13 @@
 <form class="challenge-builder-form">
   <datalist id="dc-presets">
-    <option value="10">
-    <option value="12">
-    <option value="15">
-    <option value="18">
-    <option value="20">
-    <option value="22">
-    <option value="25">
-    <option value="30">
-    <option value="35">
-    <option value="40">
+    {{#each dcPresets}}
+    <option value="{{this.dc}}" label="{{this.name}}">
+    {{/each}}
+    {{#if dcOptions}}
+    {{#each dcOptions}}
+    <option value="{{this.dc}}" label="{{this.label}}">
+    {{/each}}
+    {{/if}}
   </datalist>
 
   <div class="challenge-dialog-content">
@@ -67,8 +65,11 @@
                   </select>
                 </div>
                 {{/if}}
-                <div class="dc-input">
-                  <input type="number" name="option-0-dc-0" min="1" placeholder="{{localize "STORYFRAME.ChallengeBuilder.DC"}}" list="dc-presets">
+                <div class="dc-input-group">
+                  <input type="number" name="option-0-dc-0" class="dc-number-input" min="1" placeholder="{{localize "STORYFRAME.ChallengeBuilder.DC"}}">
+                  <button type="button" class="dc-preset-btn" data-action="toggleDCPreset" data-row-type="skill" data-option-index="0" data-row-index="0">
+                    <i class="fas fa-bookmark"></i>
+                  </button>
                 </div>
                 <div class="proficiency-select">
                   <select name="option-0-proficiency-0" class="proficiency-dropdown" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.MinProficiency"}}">
