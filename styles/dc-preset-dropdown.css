@@ -33,8 +33,8 @@
 /* Tabs Body */
 .preset-dropdown .dc-tabs-body,
 .dc-preset-dropdown .dc-tabs-body {
-  padding: 12px;
-  max-height: 180px;
+  padding: 10px;
+  max-height: 140px;
   overflow-y: auto;
 }
 
