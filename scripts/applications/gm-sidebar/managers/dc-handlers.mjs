@@ -123,7 +123,7 @@ export async function onApplyPreset(_event, target, sidebar) {
   const dropdown = target.closest('.preset-dropdown');
   if (dropdown) dropdown.style.display = 'none';
 
-  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetApplied', { name: preset.name, dc: preset.dc }));
+  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetApplied', { dc: preset.dc }));
 }
 
 /**
@@ -147,17 +147,9 @@ export async function onApplyPresetDC(_event, target, sidebar) {
  */
 export async function onAddPresetQuick(_event, target, sidebar) {
   const dropdown = target.closest('.preset-dropdown');
-  const nameInput = dropdown.querySelector('.preset-name-input');
   const dcInput = dropdown.querySelector('.preset-dc-input-new');
 
-  const name = nameInput.value.trim();
   const dc = parseInt(dcInput.value);
-
-  if (!name) {
-    ui.notifications.warn('Please enter a name for the preset');
-    nameInput.focus();
-    return;
-  }
 
   if (!dc || dc < 1) {
     ui.notifications.warn('Please enter a valid DC value');
@@ -172,7 +164,6 @@ export async function onAddPresetQuick(_event, target, sidebar) {
   // Create new preset
   const newPreset = {
     id: foundry.utils.randomID(),
-    name,
     dc,
     system: currentSystem,
   };
@@ -181,7 +172,7 @@ export async function onAddPresetQuick(_event, target, sidebar) {
   allPresets.push(newPreset);
   await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-  ui.notifications.info(`Added preset: ${name} (DC ${dc})`);
+  ui.notifications.info(`Added preset: (DC ${dc})`);
 
   // Recreate dropdown using shared component
   const inputGroup = dropdown.closest('.dc-input-group');
@@ -211,7 +202,7 @@ export async function onDeletePresetQuick(_event, target, sidebar) {
   allPresets.splice(presetIndex, 1);
   await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-  ui.notifications.info(`Removed preset: ${removedPreset.name}`);
+  ui.notifications.info(`Removed preset: (DC ${removedPreset.dc})`);
 
   // Recreate dropdown using shared component
   const dropdown = target.closest('.preset-dropdown');

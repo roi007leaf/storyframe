@@ -362,62 +362,62 @@
   margin-top: 4px;
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 1000;
-  min-width: 220px;
-  max-width: 280px;
+  min-width: 260px;
+  max-width: 320px;
 }
 
 /* Tabs Header */
 .preset-dropdown .dc-tabs-header {
   display: flex;
-  gap: 2px;
-  padding: 4px;
-  background: rgba(0, 0, 0, 0.2);
-  border-bottom: 1px solid rgba(94, 129, 172, 0.2);
-  border-radius: 6px 6px 0 0;
+  gap: 4px;
+  padding: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 8px 8px 0 0;
 }
 
 .preset-dropdown .dc-tab-btn {
   flex: 1;
-  padding: 6px 8px;
+  padding: 8px 12px;
   background: rgba(94, 129, 172, 0.1);
   border: 1px solid rgba(94, 129, 172, 0.2);
-  border-radius: 4px;
+  border-radius: 5px;
   cursor: pointer;
-  color: rgba(94, 129, 172, 0.7);
-  font-size: 10px;
-  font-weight: 600;
+  color: rgba(94, 129, 172, 0.8);
+  font-size: 11px;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   transition: all 0.2s;
   white-space: nowrap;
 }
 
 .preset-dropdown .dc-tab-btn:hover {
-  background: rgba(94, 129, 172, 0.2);
-  border-color: rgba(94, 129, 172, 0.4);
-  color: #5e81ac;
+  background: rgba(94, 129, 172, 0.25);
+  border-color: rgba(94, 129, 172, 0.5);
+  color: #6b91c9;
 }
 
 .preset-dropdown .dc-tab-btn.active {
-  background: rgba(94, 129, 172, 0.3);
-  border-color: rgba(94, 129, 172, 0.5);
-  color: #5e81ac;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  background: rgba(94, 129, 172, 0.35);
+  border-color: rgba(94, 129, 172, 0.6);
+  color: #81a1ff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
 /* Tabs Body */
 .preset-dropdown .dc-tabs-body {
-  padding: 8px;
-  max-height: 240px;
+  padding: 12px;
+  max-height: 280px;
   overflow-y: auto;
 }
 
 .preset-dropdown .dc-tab-content {
   display: none;
-  gap: 4px;
+  gap: 6px;
   flex-wrap: wrap;
 }
 
@@ -429,42 +429,47 @@
 .preset-dropdown .preset-option-wrapper {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
   position: relative;
   width: 100%;
 }
 
 .preset-dropdown .preset-option {
-  padding: 6px 10px;
-  background: rgba(94, 129, 172, 0.2);
-  border: 1px solid rgba(94, 129, 172, 0.3);
-  border-radius: 4px;
+  padding: 10px 14px;
+  background: rgba(94, 129, 172, 0.25);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 6px;
   cursor: pointer;
-  color: #5e81ac;
+  color: #7fa3d1;
   font-weight: 600;
-  font-size: 12px;
+  font-size: 13px;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   flex: 1;
+  min-height: 38px;
 }
 
 .preset-dropdown .preset-option:hover {
-  background: rgba(94, 129, 172, 0.4);
+  background: rgba(94, 129, 172, 0.45);
+  border-color: rgba(94, 129, 172, 0.6);
+  color: #a0c0f0;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .preset-dropdown .preset-option .preset-dc {
   font-weight: 700;
-  font-size: 13px;
+  font-size: 16px;
+  color: #b5d5ff;
 }
 
 .preset-dropdown .preset-option .preset-label {
-  font-size: 10px;
-  font-weight: 500;
-  opacity: 0.8;
+  font-size: 11px;
+  font-weight: 600;
+  opacity: 0.9;
+  text-transform: capitalize;
 }
 
 .preset-dropdown .preset-remove-btn {
@@ -495,54 +500,56 @@
 .preset-dropdown .add-preset-form {
   width: 100%;
   display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(94, 129, 172, 0.2);
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(94, 129, 172, 0.3);
 }
 
 .preset-dropdown .preset-name-input {
   flex: 1;
-  padding: 6px 8px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(94, 129, 172, 0.3);
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 11px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 5px;
+  color: #e8e8e8;
+  font-size: 12px;
   text-align: left;
 }
 
 .preset-dropdown .preset-name-input:focus {
-  border-color: rgba(94, 129, 172, 0.6);
+  border-color: rgba(94, 129, 172, 0.7);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.15);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
 }
 
 .preset-dropdown .preset-dc-input-new {
-  width: 45px;
-  padding: 6px 4px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(94, 129, 172, 0.3);
-  border-radius: 4px;
-  color: #e0e0e0;
-  font-size: 11px;
+  width: 55px;
+  padding: 8px 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 5px;
+  color: #e8e8e8;
+  font-size: 12px;
   text-align: center;
+  font-weight: 600;
 }
 
 .preset-dropdown .preset-dc-input-new:focus {
-  border-color: rgba(94, 129, 172, 0.6);
+  border-color: rgba(94, 129, 172, 0.7);
   outline: none;
-  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.15);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
 }
 
 .preset-dropdown .preset-add-btn {
-  padding: 6px 10px;
-  background: rgba(163, 190, 140, 0.3);
-  border: 1px solid rgba(163, 190, 140, 0.5);
-  border-radius: 4px;
+  padding: 8px 14px;
+  background: rgba(163, 190, 140, 0.35);
+  border: 1px solid rgba(163, 190, 140, 0.6);
+  border-radius: 5px;
   cursor: pointer;
-  color: #a3be8c;
-  font-size: 11px;
+  color: #b8d5a0;
+  font-size: 12px;
+  font-weight: 600;
   transition: all 0.2s;
   display: flex;
   align-items: center;
@@ -550,16 +557,20 @@
 }
 
 .preset-dropdown .preset-add-btn:hover {
-  background: rgba(163, 190, 140, 0.4);
+  background: rgba(163, 190, 140, 0.5);
+  border-color: rgba(163, 190, 140, 0.8);
+  color: #d0f0b8;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3);
 }
 
 .preset-dropdown .no-presets {
-  padding: 8px 12px;
-  color: var(--sf-text-muted);
-  font-size: 11px;
+  width: 100%;
+  padding: 12px 16px;
+  color: rgba(200, 200, 200, 0.7);
+  font-size: 12px;
   font-style: italic;
+  text-align: center;
 }
 
 /* Scrollbar for tabs body */
