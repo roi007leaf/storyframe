@@ -73,8 +73,6 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     if (game.storyframe.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.render();
     }
-
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetAdded', { value: dcValue }));
   }
 
   static async _onDeletePreset(_event, target) {
@@ -101,7 +99,5 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
     if (game.storyframe.gmSidebar?.rendered) {
       game.storyframe.gmSidebar.render();
     }
-
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetDeleted', { value: preset.dc }));
   }
 }

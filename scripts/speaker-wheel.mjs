@@ -142,38 +142,18 @@ async function showSceneWheel(scenes) {
       await showSceneSpeakers(sceneId);
     });
 
-    // Right click: delete scene
+    // Right click: load scene speakers (replace all current speakers)
     item.addEventListener('contextmenu', async (e) => {
       e.preventDefault();
       e.stopPropagation();
       const sceneId = item.dataset.sceneId;
       const scene = scenes.find(s => s.id === sceneId);
 
-      const confirmed = await foundry.applications.api.DialogV2.confirm({
-        window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Title') },
-        content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeleteScene.Content', { name: scene.name })}</p>`,
-        rejectClose: false,
-        modal: true,
-      });
+      // Load the scene's speakers
+      await game.storyframe.socketManager.requestUpdateSpeakers(scene.speakers || []);
 
-      if (!confirmed) return;
-
-      // Remove scene from settings
-      const updatedScenes = scenes.filter(s => s.id !== sceneId);
-      await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
-
-      // Clear memory if this was the last selected scene
-      if (lastSelectedSceneId === sceneId) {
-        lastSelectedSceneId = null;
-      }
-
-      // Refresh wheel or close if no scenes left
-      if (updatedScenes.length === 0) {
-        hideSpeakerWheel();
-        ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.NoScenesRemaining'));
-      } else {
-        await showSceneWheel(updatedScenes);
-      }
+      // Hide the wheel
+      hideSpeakerWheel();
     });
   });
 
@@ -216,9 +196,11 @@ async function showSceneSpeakers(sceneId) {
   // Resolve speaker data and match with current state
   const resolvedSpeakers = await Promise.all(
     scene.speakers.map(async (s) => {
-      // If speaker has actorUuid, resolve from actor
+      // Always resolve speakers consistently (uses label as source of truth)
+      const resolved = await game.storyframe.stateManager.resolveSpeaker(s);
+
+      // For actor-based speakers, try to match with current state
       if (s.actorUuid) {
-        const resolved = await game.storyframe.stateManager.resolveSpeaker(s);
         const currentSpeaker = state?.speakers?.find(cs => cs.actorUuid === s.actorUuid);
         const finalId = currentSpeaker?.id || s.id;
 
@@ -228,11 +210,11 @@ async function showSceneSpeakers(sceneId) {
           name: resolved.name,
         };
       } else {
-        // For image speakers, use stored values directly
+        // For image speakers, use resolved values
         return {
           id: s.id,
-          img: s.img,
-          name: s.name,
+          img: resolved.img,
+          name: resolved.name,
         };
       }
     }),

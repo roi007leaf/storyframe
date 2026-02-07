@@ -1146,6 +1146,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
     .map(
       (scene) => {
         const editLabel = game.i18n.format('STORYFRAME.UI.Tooltips.EditScene', { name: scene.name });
+        const updateLabel = game.i18n.format('STORYFRAME.UI.Tooltips.UpdateScene', { name: scene.name });
         const deleteLabel = game.i18n.format('STORYFRAME.UI.Tooltips.DeleteScene', { name: scene.name });
         return `
     <div class="scene-item" data-scene-id="${scene.id}">
@@ -1160,6 +1161,9 @@ export async function onShowSavedScenes(_event, target, sidebar) {
         <div class="scene-actions">
           <button type="button" class="edit-scene-btn" data-scene-id="${scene.id}" aria-label="${editLabel}">
             <i class="fas fa-pencil-alt"></i>
+          </button>
+          <button type="button" class="update-scene-btn" data-scene-id="${scene.id}" aria-label="${updateLabel}">
+            <i class="fas fa-sync-alt"></i>
           </button>
           <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="${deleteLabel}">
             <i class="fas fa-trash"></i>
@@ -1220,6 +1224,92 @@ export async function onShowSavedScenes(_event, target, sidebar) {
 
       // Re-render sidebar after edit
       sidebar.render();
+    });
+  });
+
+  // Update scene with current speakers
+  popup.querySelectorAll('.update-scene-btn').forEach((btn) => {
+    btn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const sceneId = btn.dataset.sceneId;
+
+      // Get current speakers from state
+      const state = game.storyframe.stateManager.getState();
+      const currentSpeakers = state?.speakers || [];
+
+      if (currentSpeakers.length === 0) {
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Scene.NoSpeakersToAdd'));
+        return;
+      }
+
+      // Clean speaker data - only save source properties
+      const cleanedSpeakers = currentSpeakers.map(s => ({
+        id: s.id,
+        actorUuid: s.actorUuid,
+        imagePath: s.imagePath,
+        label: s.label,
+      }));
+
+      // Update the scene
+      const updatedScenes = scenes.map(s =>
+        s.id === sceneId
+          ? { ...s, speakers: cleanedSpeakers, updatedAt: Date.now() }
+          : s
+      );
+
+      await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
+
+      // Update the scene item's speaker count in the popup
+      const sceneItem = btn.closest('.scene-item');
+      const metaElement = sceneItem.querySelector('.scene-meta');
+      metaElement.textContent = `${cleanedSpeakers.length} speaker(s)`;
+    });
+  });
+
+  // Helper function to load a scene
+  const loadScene = async (scene) => {
+    // Load the scene's speakers
+    await game.storyframe.socketManager.requestUpdateSpeakers(scene.speakers || []);
+
+    // Close popup
+    popup.remove();
+
+    // Re-render sidebar to show the loaded speakers
+    sidebar.render();
+  };
+
+  // Load scene on click
+  popup.querySelectorAll('.scene-item').forEach((item) => {
+    item.addEventListener('click', async (e) => {
+      // Don't trigger if clicking on action buttons
+      if (e.target.closest('.edit-scene-btn') || e.target.closest('.update-scene-btn') || e.target.closest('.delete-scene-btn')) {
+        return;
+      }
+
+      const sceneId = item.dataset.sceneId;
+      const scene = scenes.find(s => s.id === sceneId);
+
+      if (scene) {
+        await loadScene(scene);
+      }
+    });
+
+    // Load scene on right-click
+    item.addEventListener('contextmenu', async (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // Don't trigger if clicking on action buttons
+      if (e.target.closest('.edit-scene-btn') || e.target.closest('.update-scene-btn') || e.target.closest('.delete-scene-btn')) {
+        return;
+      }
+
+      const sceneId = item.dataset.sceneId;
+      const scene = scenes.find(s => s.id === sceneId);
+
+      if (scene) {
+        await loadScene(scene);
+      }
     });
   });
 

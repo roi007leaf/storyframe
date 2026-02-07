@@ -67,6 +67,11 @@
         "Title": "NPC Name",
         "Label": "Enter NPC name"
       },
+      "EditNPCName": {
+        "Title": "Edit NPC Name",
+        "Label": "Enter new name",
+        "Button": "Save"
+      },
       "ClearAllNPCs": {
         "Title": "Clear All NPCs"
       },
@@ -91,11 +96,14 @@
         "SceneUpdated": "Updated scene \"{name}\"",
         "SceneCreated": "Created scene \"{name}\"",
         "NoSavedScenes": "No saved scenes",
-        "SceneDeleted": "Deleted scene \"{name}\""
+        "SceneDeleted": "Deleted scene \"{name}\"",
+        "SceneLoaded": "Loaded scene \"{name}\"",
+        "SceneUpdatedWithCurrentSpeakers": "Updated \"{name}\" with {count} current speaker(s)"
       },
       "Speaker": {
         "AlreadyInList": "{label} is already in the list",
         "AddedAsNPC": "Added {label} as NPC",
+        "NameUpdated": "Updated speaker name to \"{name}\"",
         "OpeningForPlayers": "Opening StoryFrame on all player clients",
         "ClosingForPlayers": "Closing StoryFrame on all player clients",
         "NoSpeakersToSave": "No speakers to save",
@@ -244,6 +252,7 @@
         "AddToScene": "Add to scene",
         "ClearChallenge": "Clear {name}",
         "EditScene": "Edit {name}",
+        "UpdateScene": "Update {name} with current speakers",
         "DeleteScene": "Delete {name}",
         "RollSkill": "Roll {skill}",
         "RollSkillWithAction": "Roll {skill} ({action})",
@@ -257,6 +266,7 @@
         "ClearAllNPCs": "Clear all NPCs",
         "SaveSpeakersAsScene": "Save speakers as scene",
         "ManageSpeakerScenes": "Manage speaker scenes",
+        "EditName": "Edit {name}",
         "RemoveName": "Remove {name}",
         "ClickToAddAsNPC": "Click to add {name} as NPC",
         "PendingRollsCount": "{count} pending roll(s)",
@@ -287,6 +297,7 @@
         "SaveSpeakersAsScene": "Save current speakers as scene",
         "ManageSpeakerScenes": "Manage saved speaker scenes",
         "NPCSpeakers": "NPC speakers",
+        "EditName": "Edit {name}",
         "RemoveName": "Remove {name}",
         "ViewPendingRolls": "View pending rolls",
         "AddPartyMembers": "Add all party members",

@@ -596,15 +596,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     for (const roll of otherRolls) {
       await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
     }
-
-    // Notify user
-    if (otherRolls.length > 0) {
-      ui.notifications.info(
-        game.i18n.format('STORYFRAME.Notifications.Roll.GroupRollsDismissed', {
-          count: otherRolls.length
-        })
-      );
-    }
   }
 
   /**
@@ -722,9 +713,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       if (!roll) return;
 
-      const skillName = PlayerViewerApp._getSkillDisplayName(skillSlug);
-      const total = roll.total ?? game.i18n.localize('STORYFRAME.Notifications.Roll.NA');
-      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.CheckCompleted', { skill: skillName, total }));
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing challenge roll:`, error);
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));
@@ -773,11 +761,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }
 
       if (!roll) return;
-
-      const saves = SystemAdapter.getSaves();
-      const saveName = saves[saveSlug]?.name || saveSlug.toUpperCase();
-      const total = roll.total ?? game.i18n.localize('STORYFRAME.Notifications.Roll.NA');
-      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Roll.CheckCompleted', { skill: saveName, total }));
     } catch (error) {
       console.error(`${MODULE_ID} | Error executing challenge save roll:`, error);
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.RollFailed'));

@@ -19,7 +19,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
   const isEditing = !!sceneId;
 
-  // Resolve speakers to get current name/img values
+  // Resolve speakers to get current name/img values for display
   const editorSpeakers = await Promise.all(
     speakers.map(async (s) => {
       // If speaker has actorUuid, resolve from actor
@@ -30,13 +30,19 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           name: resolved.name,
           img: resolved.img,
           actorUuid: s.actorUuid,
+          // Preserve original properties for saving
+          label: s.label,
+          imagePath: s.imagePath,
         };
       } else {
-        // For image speakers, use stored values directly (label/imagePath from state)
+        // For image speakers, preserve original properties
         return {
           id: s.id,
           name: s.label || s.name,
           img: s.imagePath || s.img,
+          // Preserve original properties for saving
+          label: s.label || s.name,
+          imagePath: s.imagePath || s.img,
         };
       }
     })
@@ -290,6 +296,9 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           id: foundry.utils.randomID(),
           name,
           img: img.src,
+          // Preserve original properties for saving
+          label: name,
+          imagePath: img.src,
         });
         renderSpeakers();
         renderImages();
@@ -343,6 +352,9 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           name: actor.name,
           img: actor.img,
           actorUuid: actor.uuid,
+          // Preserve original properties for saving
+          label: actor.name,
+          imagePath: actor.img,
         });
         renderSpeakers();
         renderImages();
@@ -380,6 +392,9 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
             name: resolved.name,
             img: resolved.img,
             actorUuid: speaker.actorUuid,
+            // Preserve original properties for saving
+            label: speaker.label || resolved.name,
+            imagePath: speaker.imagePath || resolved.img,
           });
           addedCount++;
         }
@@ -428,12 +443,14 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           name: actor.name,
           img: actor.img,
           actorUuid: data.uuid,
+          // Preserve original properties for saving
+          label: actor.name,
+          imagePath: actor.img,
         });
 
         renderSpeakers();
         renderImages();
         renderActors();
-        ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SpeakerAdded', { actor: actor.name }));
       }
     } catch (err) {
       console.warn('StoryFrame | Drop failed:', err);
@@ -457,11 +474,19 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
     const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
 
+    // Clean speaker data - only save source properties (not display properties)
+    const cleanedSpeakers = editorSpeakers.map(s => ({
+      id: s.id,
+      actorUuid: s.actorUuid,
+      imagePath: s.imagePath,
+      label: s.label,
+    }));
+
     if (isEditing) {
       // Update existing scene
       const updatedScenes = scenes.map(s =>
         s.id === sceneId
-          ? { ...s, name, speakers: editorSpeakers, updatedAt: Date.now() }
+          ? { ...s, name, speakers: cleanedSpeakers, updatedAt: Date.now() }
           : s
       );
       await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
@@ -471,7 +496,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       const newScene = {
         id: foundry.utils.randomID(),
         name,
-        speakers: editorSpeakers,
+        speakers: cleanedSpeakers,
         createdAt: Date.now(),
       };
       scenes.push(newScene);

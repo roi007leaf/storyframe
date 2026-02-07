@@ -122,8 +122,6 @@ export async function onApplyPreset(_event, target, sidebar) {
 
   const dropdown = target.closest('.preset-dropdown');
   if (dropdown) dropdown.style.display = 'none';
-
-  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.PresetApplied', { dc: preset.dc }));
 }
 
 /**

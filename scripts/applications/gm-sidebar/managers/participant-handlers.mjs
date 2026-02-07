@@ -26,8 +26,6 @@ export async function onAddAllPCs(_event, _target, sidebar) {
       });
     }
   }
-
-  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Participant.PCsAdded', { count: pcs.length }));
 }
 
 /**

@@ -33,6 +33,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     actions: {
       addSpeakerFromImage: GMSidebarAppBase._onAddSpeakerFromImage,
       setSpeaker: GMSidebarAppBase._onSetSpeaker,
+      editSpeaker: GMSidebarAppBase._onEditSpeaker,
       removeSpeaker: GMSidebarAppBase._onRemoveSpeaker,
       clearSpeaker: GMSidebarAppBase._onClearSpeaker,
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
@@ -700,6 +701,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onSetSpeaker(event, target) {
     return SpeakerHandlers.onSetSpeaker(event, target, this);
+  }
+
+  static async _onEditSpeaker(event, target) {
+    return SpeakerHandlers.onEditSpeaker(event, target);
   }
 
   static async _onRemoveSpeaker(event, target) {

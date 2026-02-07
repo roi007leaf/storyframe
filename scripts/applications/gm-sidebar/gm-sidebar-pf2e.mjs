@@ -1,5 +1,5 @@
-import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
+import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 
 /**
  * PF2e-specific GM Sidebar implementation
@@ -285,10 +285,10 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
     const difficultyOptions = difficultyAdjustments
       ? difficultyAdjustments.map((d) => ({
-          ...d,
-          label: game.i18n.localize(d.labelKey),
-          selected: d.id === this.currentDifficulty,
-        }))
+        ...d,
+        label: game.i18n.localize(d.labelKey),
+        selected: d.id === this.currentDifficulty,
+      }))
       : null;
 
     return { partyLevel, calculatedDC, difficultyOptions };
@@ -364,8 +364,6 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
         });
       }
     }
-
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Participant.PartyMembersAdded', { count: partyMembers.length }));
   }
 
   /**

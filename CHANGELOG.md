@@ -5,6 +5,41 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2026-02-07
+
+### Added
+
+#### Speaker Management Enhancements
+
+- **Edit Speaker Names** - Rename NPCs with hover-revealed edit button
+  - Blue pencil icon appears on hover (left of remove button)
+  - Click to edit speaker name via dialog prompt
+  - Works for all speaker types (images, actors, journal sources)
+  - Clear visual indicator with tooltip
+
+- **Update Scene with Current Speakers** - Quick scene updates from scenes popup
+  - Sync icon button in saved scenes list
+  - Updates scene speakers without opening editor
+  - Speaker count updates instantly in UI
+
+### Changed
+
+#### Speaker Data Consistency
+
+- **Unified Speaker Property Model** - Improved data consistency
+  - All speaker sources now use `label` as single source of truth
+  - Resolution process converts `label` → `name` for display
+  - Scene editor strips redundant properties before saving
+  - Speaker wheel consistently resolves all speakers
+
+#### UX Refinements
+
+- **Reduced Notification Noise** - Removed redundant notifications
+  - Removed "Speaker name updated" (UI updates immediately)
+  - Removed "Added as NPC" messages (visual feedback sufficient)
+  - Removed "Speaker added to scene" in editor (list updates immediately)
+  - Kept important notifications for remote actions and errors
+
 ## [1.7.1] - 2026-02-07
 
 ### Added

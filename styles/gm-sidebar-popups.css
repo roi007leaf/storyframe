@@ -627,6 +627,7 @@
   border-radius: 8px;
   margin-bottom: 8px;
   transition: all 0.15s;
+  cursor: pointer;
 }
 
 .storyframe-scenes-popup .scene-item:hover {
@@ -686,6 +687,7 @@
 }
 
 .storyframe-scenes-popup .edit-scene-btn,
+.storyframe-scenes-popup .update-scene-btn,
 .storyframe-scenes-popup .delete-scene-btn {
   background: transparent;
   border: none;
@@ -700,6 +702,11 @@
 .storyframe-scenes-popup .edit-scene-btn:hover {
   background: rgba(94, 129, 172, 0.2);
   color: #5e81ac;
+}
+
+.storyframe-scenes-popup .update-scene-btn:hover {
+  background: rgba(136, 192, 208, 0.2);
+  color: #88c0d0;
 }
 
 .storyframe-scenes-popup .delete-scene-btn:hover {

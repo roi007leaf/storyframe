@@ -69,6 +69,9 @@
                  aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
               <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
               <div class="speaker-name">{{this.name}}</div>
+              <button type="button" class="edit-speaker" data-action="editSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.EditName" name=this.name}}">
+                <i class="fas fa-pen" aria-hidden="true"></i>
+              </button>
               <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RemoveName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveName" name=this.name}}">
                 <i class="fas fa-times" aria-hidden="true"></i>
               </button>

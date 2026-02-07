@@ -41,6 +41,47 @@ export async function onSetSpeaker(_event, target, sidebar) {
 }
 
 /**
+ * Edit a speaker's name
+ */
+export async function onEditSpeaker(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  // Get current speaker data from state
+  const state = game.storyframe.stateManager.getState();
+  const speaker = state?.speakers?.find((s) => s.id === speakerId);
+  if (!speaker) return;
+
+  // Get current name (label is the source of truth in state)
+  const currentName = speaker.label || '';
+
+  // Prompt for new name
+  const newName = await foundry.applications.api.DialogV2.prompt({
+    window: { title: game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Title') },
+    content: `<input type="text" name="label" value="${currentName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Label')}" autofocus>`,
+    ok: {
+      label: game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Button'),
+      callback: (event, button, _dialog) => button.form.elements.label.value,
+    },
+    rejectClose: false,
+  });
+
+  // Update if name changed
+  if (newName && newName !== currentName) {
+    // Update speaker label in state
+    const updatedSpeakers = state.speakers.map((s) => {
+      if (s.id === speakerId) {
+        return { ...s, label: newName };
+      }
+      return s;
+    });
+
+    await game.storyframe.socketManager.requestUpdateSpeakers(updatedSpeakers);
+  }
+}
+
+/**
  * Remove a speaker
  */
 export async function onRemoveSpeaker(event, target) {
@@ -100,7 +141,6 @@ export async function onSetImageAsSpeaker(_event, target, sidebar) {
       imagePath: imageSrc,
       label,
     });
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Speaker.AddedAsNPC', { label }));
   }
 }
 
@@ -122,7 +162,6 @@ export async function onSetActorAsSpeaker(_event, target, sidebar) {
     imagePath: actor.img,
     label: actor.name,
   });
-  ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Speaker.AddedAsNPC', { label: actor.name }));
 }
 
 /**
