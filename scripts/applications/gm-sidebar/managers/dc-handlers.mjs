@@ -173,8 +173,6 @@ export async function onAddPresetQuick(_event, target, sidebar) {
   allPresets.push(newPreset);
   await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-  ui.notifications.info(`Added preset: DC ${dc}`);
-
   // Recreate dropdown using shared component
   const inputGroup = dropdown.closest('.dc-input-group');
   dropdown.remove();
@@ -199,11 +197,8 @@ export async function onDeletePresetQuick(_event, target, sidebar) {
     return;
   }
 
-  const removedPreset = allPresets[presetIndex];
   allPresets.splice(presetIndex, 1);
   await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
-
-  ui.notifications.info(`Removed preset: (DC ${removedPreset.dc})`);
 
   // Recreate dropdown using shared component
   const dropdown = target.closest('.preset-dropdown');

@@ -71,6 +71,84 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     // Attach tooltip update handlers for all selects
     this._attachTooltipHandlers();
+
+    this._attachSelectionVisibilityHandlers();
+    this._refreshSelectionVisibility();
+  }
+
+  _attachSelectionVisibilityHandlers() {
+    this._attachSkillSelectionVisibilityHandlers();
+    this._attachSaveSelectionVisibilityHandlers();
+  }
+
+  _attachSkillSelectionVisibilityHandlers() {
+    const skillDropdowns = this.element.querySelectorAll('.skill-dc-row .skill-dropdown');
+    skillDropdowns.forEach((skillSelect) => {
+      if (skillSelect.dataset.sfVisibilityBound === '1') return;
+      skillSelect.dataset.sfVisibilityBound = '1';
+
+      skillSelect.addEventListener('change', () => {
+        const row = skillSelect.closest('.skill-dc-row');
+        this._updateSkillRowSelectionUI(row);
+      });
+    });
+  }
+
+  _attachSaveSelectionVisibilityHandlers() {
+    const saveDropdowns = this.element.querySelectorAll('.save-dc-row .save-dropdown');
+    saveDropdowns.forEach((saveSelect) => {
+      if (saveSelect.dataset.sfVisibilityBound === '1') return;
+      saveSelect.dataset.sfVisibilityBound = '1';
+
+      saveSelect.addEventListener('change', () => {
+        const row = saveSelect.closest('.save-dc-row');
+        this._updateSaveRowSelectionUI(row);
+      });
+    });
+  }
+
+  _refreshSelectionVisibility() {
+    const skillRows = this.element.querySelectorAll('.skill-dc-row');
+    skillRows.forEach(row => this._updateSkillRowSelectionUI(row));
+
+    const saveRows = this.element.querySelectorAll('.save-dc-row');
+    saveRows.forEach(row => this._updateSaveRowSelectionUI(row));
+  }
+
+  _updateSkillRowSelectionUI(row) {
+    if (!row) return;
+
+    const skillSelect = row.querySelector('.skill-dropdown');
+    const hasSkill = Boolean(skillSelect?.value);
+
+    const profWrap = row.querySelector('.proficiency-select');
+    const secretWrap = row.querySelector('.secret-checkbox');
+
+    if (profWrap) profWrap.classList.toggle('sf-hidden', !hasSkill);
+    if (secretWrap) secretWrap.classList.toggle('sf-hidden', !hasSkill);
+
+    if (hasSkill) return;
+
+    const profSelect = row.querySelector('.proficiency-dropdown');
+    if (profSelect) profSelect.value = '0';
+
+    const secretInput = row.querySelector('.secret-checkbox input[type="checkbox"]');
+    if (secretInput) secretInput.checked = false;
+  }
+
+  _updateSaveRowSelectionUI(row) {
+    if (!row) return;
+
+    const saveSelect = row.querySelector('.save-dropdown');
+    const hasSave = Boolean(saveSelect?.value);
+
+    const secretWrap = row.querySelector('.secret-checkbox');
+    if (secretWrap) secretWrap.classList.toggle('sf-hidden', !hasSave);
+
+    if (hasSave) return;
+
+    const secretInput = row.querySelector('.secret-checkbox input[type="checkbox"]');
+    if (secretInput) secretInput.checked = false;
   }
 
   _attachTooltipHandlers() {
@@ -195,7 +273,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               <i class="fas fa-bookmark"></i>
             </button>
           </div>
-          <div class="proficiency-select">
+          <div class="proficiency-select sf-hidden">
             <select name="option-${this.optionCount}-proficiency-${soIdx}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
               <option value="0" ${minProficiency === 0 ? 'selected' : ''}>${i18n.any}</option>
               ${context.isPF2e ? `
@@ -209,7 +287,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               `}
             </select>
           </div>
-          <div class="secret-checkbox">
+          <div class="secret-checkbox sf-hidden">
             <input type="checkbox" name="option-${this.optionCount}-secret-${soIdx}" id="option-${this.optionCount}-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
             <label for="option-${this.optionCount}-secret-${soIdx}" data-tooltip="${i18n.secretTooltip}">
               <i class="fas fa-eye-slash"></i>
@@ -235,7 +313,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               <i class="fas fa-bookmark"></i>
             </button>
           </div>
-          <div class="secret-checkbox">
+          <div class="secret-checkbox sf-hidden">
             <input type="checkbox" name="option-${this.optionCount}-save-secret-${soIdx}" id="option-${this.optionCount}-save-secret-${soIdx}" ${so.isSecret ? 'checked' : ''}>
             <label for="option-${this.optionCount}-save-secret-${soIdx}" data-tooltip="${i18n.secretTooltip}">
               <i class="fas fa-eye-slash"></i>
@@ -433,6 +511,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       for (const [skillSlug, skillData] of Object.entries(actor.skills)) {
         if (skillData.lore) {
           const loreName = skillData.label || skillData.name || skillSlug;
+          if (skillSlug === 'lore') continue;
+          if (String(loreName).trim().toLowerCase() === 'lore') continue;
           loreSkillsSet.add(JSON.stringify({ slug: skillSlug, name: loreName }));
         }
       }
@@ -822,7 +902,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           <i class="fas fa-bookmark"></i>
         </button>
       </div>
-      <div class="proficiency-select">
+      <div class="proficiency-select sf-hidden">
         <select name="option-${optionIdx}-proficiency-${skillCount}" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
           <option value="0">${i18n.any}</option>
           ${isPF2e ? `
@@ -836,7 +916,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           `}
         </select>
       </div>
-      <div class="secret-checkbox">
+      <div class="secret-checkbox sf-hidden">
         <input type="checkbox" name="option-${optionIdx}-secret-${skillCount}" id="option-${optionIdx}-secret-${skillCount}" data-tooltip="${i18n.secretTooltip}">
         <label for="option-${optionIdx}-secret-${skillCount}" data-tooltip="${i18n.secretTooltip}">
           <i class="fas fa-eye-slash"></i>
@@ -851,6 +931,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     // Update tooltips for the new row
     this._attachTooltipHandlers();
+
+    this._attachSelectionVisibilityHandlers();
+    this._updateSkillRowSelectionUI(newSkillRow);
 
     // Attach skill change handler to show/hide action dropdown
     if (isPF2e) {
@@ -927,7 +1010,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           <i class="fas fa-bookmark"></i>
         </button>
       </div>
-      <div class="secret-checkbox">
+      <div class="secret-checkbox sf-hidden">
         <input type="checkbox" name="option-${optionIdx}-save-secret-${saveCount}" id="option-${optionIdx}-save-secret-${saveCount}" data-tooltip="${i18n.secretTooltip}">
         <label for="option-${optionIdx}-save-secret-${saveCount}" data-tooltip="${i18n.secretTooltip}">
           <i class="fas fa-eye-slash"></i>
@@ -943,6 +1026,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     // Update tooltips for the new row
     this._attachTooltipHandlers();
+
+    this._attachSelectionVisibilityHandlers();
+    this._updateSaveRowSelectionUI(newSaveRow);
   }
 
   static async _onRemoveSave(_event, target) {
@@ -1034,7 +1120,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
                   <i class="fas fa-bookmark"></i>
                 </button>
               </div>
-              <div class="proficiency-select">
+              <div class="proficiency-select sf-hidden">
                 <select name="option-${this.optionCount}-proficiency-0" class="proficiency-dropdown" data-tooltip="${i18n.minProfTooltip}">
                   <option value="0">${i18n.any}</option>
                   ${context.isPF2e ? `
@@ -1048,7 +1134,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
                   `}
                 </select>
               </div>
-              <div class="secret-checkbox">
+              <div class="secret-checkbox sf-hidden">
                 <input type="checkbox" name="option-${this.optionCount}-secret-0" id="option-${this.optionCount}-secret-0">
                 <label for="option-${this.optionCount}-secret-0" data-tooltip="${i18n.secretTooltip}">
                   <i class="fas fa-eye-slash"></i>
@@ -1080,6 +1166,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     // Update tooltips for the new option
     this._attachTooltipHandlers();
+
+    this._attachSelectionVisibilityHandlers();
+    this._refreshSelectionVisibility();
 
     // Attach skill change handler for new option
     if (context.isPF2e) {
@@ -1193,8 +1282,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     allPresets.push(newPreset);
     await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-    ui.notifications.info(`Added preset: DC ${dc}`);
-
     // Recreate dropdown using shared component
     const inputGroup = dropdown.closest('.dc-input-group');
     dropdown.remove();
@@ -1228,11 +1315,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       return;
     }
 
-    const removedPreset = allPresets[presetIndex];
     allPresets.splice(presetIndex, 1);
     await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
-
-    ui.notifications.info(`Removed preset: ${removedPreset.name}`);
 
     // Recreate dropdown using shared component
     const dropdown = target.closest('.preset-dropdown');

@@ -16,7 +16,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     },
     position: {
       width: 480,
-      height: 700,
+      height: 'auto',
     },
     classes: ['storyframe', 'roll-request-dialog-app'],
     actions: {
@@ -36,10 +36,25 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     this.checks = checks;
     this.participants = participants;
     this.allowOnlyOne = false; // Allow-only-one toggle state
+    this._autoSized = false;
     this.resolve = null;
     this.promise = new Promise((resolve) => {
       this.resolve = resolve;
     });
+  }
+
+  async _onRender(_context, _options) {
+    super._onRender(_context, _options);
+
+    if (this._autoSized) return;
+    this._autoSized = true;
+
+    await this._autoSizeToContent();
+  }
+
+  async _autoSizeToContent() {
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    this.setPosition({ height: 'auto' });
   }
 
   async _prepareContext(_options) {

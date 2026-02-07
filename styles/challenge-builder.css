@@ -315,20 +315,38 @@
   margin-bottom: 8px;
 }
 
+.storyframe.challenge-builder .sf-hidden {
+  display: none !important;
+}
+
 .storyframe.challenge-builder .skill-dc-row {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(94, 129, 172, 0.22);
 }
 
 .storyframe.challenge-builder .skill-dc-row .skill-select {
-  flex: 2;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: clamp(10rem, 32vw, 20rem);
+}
+
+.storyframe.challenge-builder .skill-dc-row .skill-select .skill-dropdown {
+  width: 100%;
 }
 
 .storyframe.challenge-builder .skill-dc-row .action-select {
-  flex: 1.5;
-  min-width: 0;
+  flex: 1 1 auto;
+  min-width: clamp(8rem, 22vw, 14rem);
+}
+
+.storyframe.challenge-builder .skill-dc-row .action-select .action-dropdown {
+  width: 100%;
 }
 
 .storyframe.challenge-builder .skill-dc-row .dc-input-group {
@@ -365,8 +383,13 @@
 }
 
 .storyframe.challenge-builder .skill-dc-row .proficiency-select {
-  width: 80px;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  width: fit-content;
+  min-width: clamp(7.5rem, 18vw, 12rem);
+}
+
+.storyframe.challenge-builder .skill-dc-row .proficiency-select .proficiency-dropdown {
+  width: 100%;
 }
 
 .storyframe.challenge-builder .skill-dc-row .secret-checkbox {
@@ -384,22 +407,28 @@
 
 .storyframe.challenge-builder .skill-dc-row .secret-checkbox label {
   cursor: pointer;
-  padding: 10px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(94, 129, 172, 0.3);
-  color: rgba(94, 129, 172, 0.6);
-  transition: all 0.2s ease;
+  padding: 8px 12px;
+  background: rgba(76, 86, 106, 0.25);
+  border: 2px solid rgba(76, 86, 106, 0.4);
+  border-radius: var(--sf-radius-md);
+  color: var(--sf-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
 }
 
+.storyframe.challenge-builder .skill-dc-row .secret-checkbox label i {
+  font-size: 14px;
+}
+
 .storyframe.challenge-builder .skill-dc-row .secret-checkbox label:hover {
-  background: rgba(0, 0, 0, 0.5);
-  border-color: rgba(94, 129, 172, 0.5);
-  color: rgba(94, 129, 172, 0.8);
+  background: rgba(76, 86, 106, 0.35);
+  border-color: rgba(76, 86, 106, 0.6);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .storyframe.challenge-builder
@@ -407,18 +436,13 @@
   .secret-checkbox
   input[type='checkbox']:checked
   + label {
-  background: rgba(191, 97, 106, 0.3);
-  border-color: rgba(191, 97, 106, 0.6);
-  color: #bf616a;
-}
-
-.storyframe.challenge-builder
-  .skill-dc-row
-  .secret-checkbox
-  input[type='checkbox']:checked
-  + label:hover {
-  background: rgba(191, 97, 106, 0.4);
-  border-color: rgba(191, 97, 106, 0.7);
+  background: linear-gradient(135deg, rgba(76, 86, 106, 0.7), rgba(76, 86, 106, 0.5));
+  border-color: rgba(148, 230, 245, 0.9);
+  color: #00fff7;
+  box-shadow:
+    0 0 16px rgba(76, 86, 106, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: secret-glow 2s ease-in-out infinite;
 }
 
 /* Buttons */
@@ -609,12 +633,22 @@
 .storyframe.challenge-builder .save-dc-row {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
+  align-items: center;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(220, 118, 51, 0.22);
 }
 
 .storyframe.challenge-builder .save-dc-row .save-select {
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 12rem;
+  min-width: clamp(8rem, 26vw, 16rem);
+}
+
+.storyframe.challenge-builder .save-dc-row .save-select .save-dropdown {
+  width: 100%;
 }
 
 .storyframe.challenge-builder .save-dc-row .dc-input-group {
@@ -640,28 +674,38 @@
 
 .storyframe.challenge-builder .save-dc-row .secret-checkbox label {
   cursor: pointer;
-  padding: 10px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(220, 118, 51, 0.3);
-  color: rgba(220, 118, 51, 0.6);
-  transition: all 0.2s ease;
+  padding: 8px 12px;
+  background: rgba(76, 86, 106, 0.25);
+  border: 2px solid rgba(76, 86, 106, 0.4);
+  border-radius: var(--sf-radius-md);
+  color: var(--sf-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0;
 }
 
+.storyframe.challenge-builder .save-dc-row .secret-checkbox label i {
+  font-size: 14px;
+}
+
 .storyframe.challenge-builder .save-dc-row .secret-checkbox label:hover {
-  background: rgba(0, 0, 0, 0.5);
-  border-color: rgba(220, 118, 51, 0.5);
-  color: rgba(220, 118, 51, 0.8);
+  background: rgba(76, 86, 106, 0.35);
+  border-color: rgba(76, 86, 106, 0.6);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .storyframe.challenge-builder .save-dc-row .secret-checkbox input[type='checkbox']:checked + label {
-  background: rgba(191, 97, 106, 0.3);
-  border-color: rgba(191, 97, 106, 0.6);
-  color: #bf616a;
+  background: linear-gradient(135deg, rgba(76, 86, 106, 0.7), rgba(76, 86, 106, 0.5));
+  border-color: rgba(76, 86, 106, 0.9);
+  color: #ffffff;
+  box-shadow:
+    0 0 16px rgba(76, 86, 106, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: secret-glow 2s ease-in-out infinite;
 }
 
 .storyframe.challenge-builder
@@ -669,8 +713,8 @@
   .secret-checkbox
   input[type='checkbox']:checked
   + label:hover {
-  background: rgba(191, 97, 106, 0.4);
-  border-color: rgba(191, 97, 106, 0.7);
+  background: linear-gradient(135deg, rgba(76, 86, 106, 0.7), rgba(76, 86, 106, 0.5));
+  border-color: rgba(76, 86, 106, 0.9);
 }
 
 .storyframe.challenge-builder .add-save-btn {

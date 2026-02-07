@@ -94,8 +94,9 @@
 
 .gm-sidebar .secret-roll-btn[aria-pressed='true'] {
   background: linear-gradient(135deg, rgba(76, 86, 106, 0.7), rgba(76, 86, 106, 0.5));
-  border-color: rgba(76, 86, 106, 0.9);
-  color: white;
+  border-color: rgba(148, 230, 245, 0.9);
+  border: 2px solid rgba(76, 86, 106, 0.4);
+  color: #00fff7;
   box-shadow:
     0 0 16px rgba(76, 86, 106, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -386,13 +387,13 @@
 }
 
 /* Save Pills - Orange Accent */
-.gm-sidebar .skill-dc-pill[data-check-type="save"] {
+.gm-sidebar .skill-dc-pill[data-check-type='save'] {
   background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));
   border-color: rgba(220, 118, 51, 0.4);
   color: #dc7633;
 }
 
-.gm-sidebar .skill-dc-pill[data-check-type="save"] strong {
+.gm-sidebar .skill-dc-pill[data-check-type='save'] strong {
   color: #dc7633;
 }
 

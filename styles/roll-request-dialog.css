@@ -4,7 +4,8 @@
   border: 2px solid var(--sf-border-primary);
   border-radius: 8px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-  height: 500px;
+  height: auto;
+  max-height: 85vh;
   display: flex;
   flex-direction: column;
 }
@@ -131,7 +132,7 @@
   display: block;
 }
 
-.roll-request-dialog .participant-card input[type="checkbox"] {
+.roll-request-dialog .participant-card input[type='checkbox'] {
   position: absolute;
   opacity: 0;
   pointer-events: none;
@@ -221,12 +222,12 @@
   border-color: rgba(163, 190, 140, 0.5);
 }
 
-.roll-request-dialog .allow-only-one-toggle input[type="checkbox"] {
+.roll-request-dialog .allow-only-one-toggle input[type='checkbox'] {
   cursor: pointer;
   margin: 0;
 }
 
-.roll-request-dialog .allow-only-one-toggle input[type="checkbox"]:checked ~ span {
+.roll-request-dialog .allow-only-one-toggle input[type='checkbox']:checked ~ span {
   color: #a3be8c;
   font-weight: 600;
 }
