@@ -1144,9 +1144,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const currentSystem = SystemAdapter.detectSystem();
     const dcPresets = allPresets.filter(p => !p.system || p.system === currentSystem);
 
-    // Get DC options (level-based for PF2e, standard for D&D5e)
-    const dcOptions = SystemAdapter.getDCOptions();
-
     // Get difficulty adjustments for PF2e
     const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
 
@@ -1170,24 +1167,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       });
     }
 
-    // Tab 2: By Level (always available)
-    if (dcOptions && dcOptions.length > 0) {
-      tabs.push({
-        id: 'by-level',
-        label: 'By Level',
-        content: dcOptions.map(option => `
-          <button type="button"
-                  class="preset-option"
-                  data-action="applyDCPreset"
-                  data-dc="${option.dc}"
-                  data-tooltip="${option.label || option.dc}">
-            ${option.dc}
-          </button>
-        `).join(''),
-      });
-    }
-
-    // Tab 3: Party Level (if available)
+    // Tab 2: Party Level (if available)
     if (partyLevel !== null && difficultyAdjustments && difficultyAdjustments.length > 0) {
       tabs.push({
         id: 'party-level',
