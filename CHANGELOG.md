@@ -5,6 +5,81 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2026-02-07
+
+### Added
+
+#### DC Preset System Enhancements
+
+- **Party Level DC Calculator** - Dynamic DC calculation based on party level
+  - Calculates average level from selected participants (or all participants)
+  - Difficulty-based DC options (Trivial, Low, Moderate, High, Severe, Extreme for PF2e)
+  - Automatic DC calculation: Base DC (for level) + Difficulty adjustment
+  - Available in both Challenge Builder and PCs tab
+
+- **Tabbed DC Preset Dropdown** - Organized interface for DC selection
+  - Tab 1: "Presets" - Custom GM-defined DC presets
+  - Tab 2: "Party Lvl X" - Difficulty-based DCs for current party level
+  - Click bookmark button (📑) next to DC inputs to open
+  - Compact 220px width, 100px max-height body
+  - Scrollable tab content for many presets
+
+- **Preset Management** - Add/remove DC presets directly from dropdown
+  - Add presets: Enter DC value, auto-generates name "DC X"
+  - Remove presets: X button on each preset (shows on hover)
+  - Instant updates with dropdown refresh
+  - System-specific presets (PF2e/D&D5e)
+
+### Changed
+
+#### Code Organization & DRY Improvements
+
+- **Shared DC Dropdown Component** - Eliminated code duplication
+  - Created `scripts/utils/dc-preset-dropdown.mjs` utility
+  - Created `styles/dc-preset-dropdown.css` shared stylesheet
+  - ~250 lines of duplicate JS code eliminated
+  - ~445 lines of duplicate CSS eliminated
+  - Single source of truth for dropdown logic and styling
+
+#### UI Refinements
+
+- **Improved Readability** - Enhanced dropdown visual clarity
+  - Larger tabs (11px font, 8px/12px padding)
+  - Bigger preset buttons (13px font, 38px min-height)
+  - Brighter colors for better contrast (#81a1ff active tabs, #b5d5ff DCs)
+  - Increased spacing throughout (6-12px gaps and padding)
+  - Better hover states with enhanced shadows
+
+- **Simplified Preset Form** - Streamlined user experience
+  - Removed name input field - only DC value needed
+  - Auto-generated preset names ("DC 15", "DC 20", etc.)
+  - Wider DC input for better UX
+  - Green add button, red remove buttons
+
+- **Layout Improvements** - Better visual organization
+  - PCs tab: All DC controls on single row (Select All, DC, Preset, Secret)
+  - Secret roll button moved outside dc-input-group container
+  - Removed separate difficulty selector dropdown (integrated into preset tabs)
+  - Cleaner, more compact layout
+
+### Fixed
+
+- **Dropdown Positioning & Visibility**
+  - Added `overflow: visible` to parent containers (dc-controls-bar, dc-controls-row, preset-selector)
+  - Prevents dropdown from being clipped by sidebar overflow
+  - Reduced dropdown height to fit in constrained spaces
+  - Absolute positioning with proper z-index (10000)
+
+- **Action Handler Fixes**
+  - Fixed class name mismatch (`.preset-dropdown` vs `.dc-preset-dropdown`)
+  - Resolved TypeError when adding/removing presets
+  - All dropdown interactions now functional (apply, add, remove)
+
+- **Ctrl+Click Roll Requester** - Fixed broken functionality
+  - Properly extracts selectedIds and allowOnlyOne from dialog result
+  - Generates batchGroupId for grouped requests
+  - Passes checkType and allow-only-one parameters
+
 ## [1.7.0] - 2026-02-06
 
 ### Added
