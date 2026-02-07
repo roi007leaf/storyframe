@@ -161,9 +161,10 @@ export async function onAddPresetQuick(_event, target, sidebar) {
   const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
   const currentSystem = SystemAdapter.detectSystem();
 
-  // Create new preset
+  // Create new preset with auto-generated name
   const newPreset = {
     id: foundry.utils.randomID(),
+    name: `DC ${dc}`,
     dc,
     system: currentSystem,
   };
@@ -172,7 +173,7 @@ export async function onAddPresetQuick(_event, target, sidebar) {
   allPresets.push(newPreset);
   await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
 
-  ui.notifications.info(`Added preset: (DC ${dc})`);
+  ui.notifications.info(`Added preset: DC ${dc}`);
 
   // Recreate dropdown using shared component
   const inputGroup = dropdown.closest('.dc-input-group');

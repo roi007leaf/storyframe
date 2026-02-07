@@ -7,9 +7,9 @@
 .preset-dropdown,
 .dc-preset-dropdown {
   position: absolute;
-  top: 100%;
+  bottom: 100%;
   right: 0;
-  margin-top: 4px;
+  margin-bottom: 4px;
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
   border-radius: 8px;
@@ -28,6 +28,14 @@
   background: rgba(0, 0, 0, 0.3);
   border-bottom: 1px solid rgba(94, 129, 172, 0.3);
   border-radius: 8px 8px 0 0;
+}
+
+/* Tabs Body */
+.preset-dropdown .dc-tabs-body,
+.dc-preset-dropdown .dc-tabs-body {
+  padding: 12px;
+  max-height: 220px;
+  overflow-y: auto;
 }
 
 .preset-dropdown .dc-tab-btn,
@@ -166,40 +174,20 @@
 .dc-preset-dropdown .add-preset-form {
   width: 100%;
   display: flex;
-  gap: 6px;
-  margin-top: 10px;
+  gap: 8px;
   padding-top: 10px;
   border-top: 1px solid rgba(94, 129, 172, 0.3);
 }
 
-.preset-dropdown .preset-name-input,
-.dc-preset-dropdown .preset-name-input {
-  flex: 1;
-  padding: 8px 10px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(94, 129, 172, 0.4);
-  border-radius: 5px;
-  color: #e8e8e8;
-  font-size: 12px;
-  text-align: left;
-}
-
-.preset-dropdown .preset-name-input:focus,
-.dc-preset-dropdown .preset-name-input:focus {
-  border-color: rgba(94, 129, 172, 0.7);
-  outline: none;
-  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
-}
-
 .preset-dropdown .preset-dc-input-new,
 .dc-preset-dropdown .preset-dc-input-new {
-  width: 55px;
-  padding: 8px 6px;
+  flex: 1;
+  padding: 10px 12px;
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(94, 129, 172, 0.4);
   border-radius: 5px;
   color: #e8e8e8;
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
   font-weight: 600;
 }
@@ -213,14 +201,14 @@
 
 .preset-dropdown .preset-add-btn,
 .dc-preset-dropdown .preset-add-btn {
-  padding: 8px 14px;
+  padding: 10px 16px;
   background: rgba(163, 190, 140, 0.35);
   border: 1px solid rgba(163, 190, 140, 0.6);
   border-radius: 5px;
   cursor: pointer;
   color: #b8d5a0;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 700;
   transition: all 0.2s;
   display: flex;
   align-items: center;

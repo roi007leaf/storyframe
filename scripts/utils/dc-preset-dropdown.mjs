@@ -60,7 +60,6 @@ export function createDCPresetDropdown({ inputGroup, partyLevel, calculateDCByLe
 
   const addPresetForm = `
     <div class="add-preset-form">
-      <input type="text" class="preset-name-input" placeholder="Name" maxlength="20">
       <input type="number" class="preset-dc-input-new" placeholder="DC" min="1" max="99">
       <button type="button" class="preset-add-btn" data-action="${actions.addPreset}">
         <i class="fas fa-plus"></i>
