@@ -6,7 +6,10 @@
 /* Dropdown Container */
 .preset-dropdown,
 .dc-preset-dropdown {
-  position: fixed;
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
   border-radius: 8px;

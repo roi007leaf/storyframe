@@ -141,13 +141,9 @@ export function createDCPresetDropdown({ inputGroup, partyLevel, calculateDCByLe
     }, 0);
   }
 
-  // Position dropdown using fixed positioning to escape parent overflow constraints
-  document.body.appendChild(dropdown);
-
-  // Calculate position based on input group location
-  const rect = inputGroup.getBoundingClientRect();
-  dropdown.style.top = `${rect.bottom + 4}px`;
-  dropdown.style.right = `${window.innerWidth - rect.right}px`;
+  // Append to input group so Foundry's action system works
+  inputGroup.style.position = 'relative';
+  inputGroup.appendChild(dropdown);
 
   return dropdown;
 }
