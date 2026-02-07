@@ -31,6 +31,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       removeOption: ChallengeBuilderDialog._onRemoveOption,
       toggleDCPreset: ChallengeBuilderDialog._onToggleDCPreset,
       applyDCPreset: ChallengeBuilderDialog._onApplyDCPreset,
+      addDCPreset: ChallengeBuilderDialog._onAddDCPreset,
+      removeDCPreset: ChallengeBuilderDialog._onRemoveDCPreset,
     },
   };
 
@@ -1150,22 +1152,43 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     // Build tabs
     const tabs = [];
 
-    // Tab 1: Custom Presets (if any)
-    if (dcPresets.length > 0) {
-      tabs.push({
-        id: 'presets',
-        label: 'Presets',
-        content: dcPresets.map(preset => `
-          <button type="button"
-                  class="preset-option"
-                  data-action="applyDCPreset"
-                  data-dc="${preset.dc}"
-                  data-tooltip="${preset.name}">
-            ${preset.dc}
-          </button>
-        `).join(''),
-      });
-    }
+    // Tab 1: Custom Presets (always show, even if empty)
+    const presetsContent = dcPresets.length > 0
+      ? dcPresets.map(preset => `
+          <div class="preset-option-wrapper">
+            <button type="button"
+                    class="preset-option"
+                    data-action="applyDCPreset"
+                    data-dc="${preset.dc}"
+                    data-tooltip="${preset.name}">
+              ${preset.dc}
+            </button>
+            <button type="button"
+                    class="preset-remove-btn"
+                    data-action="removeDCPreset"
+                    data-preset-id="${preset.id || preset.dc}"
+                    data-tooltip="Remove ${preset.name}">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+        `).join('')
+      : '<div class="no-presets">No custom presets yet</div>';
+
+    const addPresetForm = `
+      <div class="add-preset-form">
+        <input type="text" class="preset-name-input" placeholder="Name" maxlength="20">
+        <input type="number" class="preset-dc-input" placeholder="DC" min="1" max="99">
+        <button type="button" class="preset-add-btn" data-action="addDCPreset">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+    `;
+
+    tabs.push({
+      id: 'presets',
+      label: 'Presets',
+      content: presetsContent + addPresetForm,
+    });
 
     // Tab 2: Party Level (if available)
     if (partyLevel !== null && difficultyAdjustments && difficultyAdjustments.length > 0) {
@@ -1255,5 +1278,78 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     if (dropdown) {
       dropdown.style.display = 'none';
     }
+  }
+
+  static async _onAddDCPreset(_event, target) {
+    const dropdown = target.closest('.dc-preset-dropdown');
+    const nameInput = dropdown.querySelector('.preset-name-input');
+    const dcInput = dropdown.querySelector('.preset-dc-input');
+
+    const name = nameInput.value.trim();
+    const dc = parseInt(dcInput.value);
+
+    if (!name) {
+      ui.notifications.warn('Please enter a name for the preset');
+      nameInput.focus();
+      return;
+    }
+
+    if (!dc || dc < 1) {
+      ui.notifications.warn('Please enter a valid DC value');
+      dcInput.focus();
+      return;
+    }
+
+    // Get current presets
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+    const currentSystem = SystemAdapter.detectSystem();
+
+    // Create new preset
+    const newPreset = {
+      id: foundry.utils.randomID(),
+      name,
+      dc,
+      system: currentSystem,
+    };
+
+    // Add to presets
+    allPresets.push(newPreset);
+    await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
+
+    ui.notifications.info(`Added preset: ${name} (DC ${dc})`);
+
+    // Recreate dropdown
+    const inputGroup = dropdown.closest('.dc-input-group');
+    dropdown.remove();
+    const newDropdown = ChallengeBuilderDialog._createDCPresetDropdown(inputGroup, this.partyLevel);
+    newDropdown.style.display = 'block';
+  }
+
+  static async _onRemoveDCPreset(_event, target) {
+    const presetId = target.dataset.presetId;
+
+    // Get current presets
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+
+    // Find and remove the preset
+    const presetIndex = allPresets.findIndex(p => (p.id || p.dc.toString()) === presetId);
+
+    if (presetIndex === -1) {
+      ui.notifications.warn('Preset not found');
+      return;
+    }
+
+    const removedPreset = allPresets[presetIndex];
+    allPresets.splice(presetIndex, 1);
+    await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
+
+    ui.notifications.info(`Removed preset: ${removedPreset.name}`);
+
+    // Recreate dropdown
+    const dropdown = target.closest('.dc-preset-dropdown');
+    const inputGroup = dropdown.closest('.dc-input-group');
+    dropdown.remove();
+    const newDropdown = ChallengeBuilderDialog._createDCPresetDropdown(inputGroup, this.partyLevel);
+    newDropdown.style.display = 'block';
   }
 }

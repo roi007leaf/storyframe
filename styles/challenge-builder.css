@@ -435,6 +435,14 @@
 }
 
 /* Preset Options */
+.storyframe.challenge-builder .preset-option-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  position: relative;
+  width: 100%;
+}
+
 .storyframe.challenge-builder .preset-option {
   padding: 6px 10px;
   background: rgba(94, 129, 172, 0.2);
@@ -448,6 +456,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: 1;
 }
 
 .storyframe.challenge-builder .preset-option:hover {
@@ -465,6 +474,94 @@
   font-size: 10px;
   font-weight: 500;
   opacity: 0.8;
+}
+
+.storyframe.challenge-builder .preset-remove-btn {
+  padding: 4px 6px;
+  background: rgba(191, 97, 106, 0.2);
+  border: 1px solid rgba(191, 97, 106, 0.3);
+  border-radius: 3px;
+  cursor: pointer;
+  color: #bf616a;
+  font-size: 10px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+}
+
+.storyframe.challenge-builder .preset-option-wrapper:hover .preset-remove-btn {
+  opacity: 1;
+}
+
+.storyframe.challenge-builder .preset-remove-btn:hover {
+  background: rgba(191, 97, 106, 0.4);
+  transform: scale(1.1);
+}
+
+/* Add Preset Form */
+.storyframe.challenge-builder .add-preset-form {
+  width: 100%;
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(94, 129, 172, 0.2);
+}
+
+.storyframe.challenge-builder .preset-name-input {
+  flex: 1;
+  padding: 6px 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 11px;
+  text-align: left;
+}
+
+.storyframe.challenge-builder .preset-name-input:focus {
+  border-color: rgba(94, 129, 172, 0.6);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.15);
+}
+
+.storyframe.challenge-builder .preset-dc-input {
+  width: 45px;
+  padding: 6px 4px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: 4px;
+  color: #e0e0e0;
+  font-size: 11px;
+  text-align: center;
+}
+
+.storyframe.challenge-builder .preset-dc-input:focus {
+  border-color: rgba(94, 129, 172, 0.6);
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.15);
+}
+
+.storyframe.challenge-builder .preset-add-btn {
+  padding: 6px 10px;
+  background: rgba(163, 190, 140, 0.3);
+  border: 1px solid rgba(163, 190, 140, 0.5);
+  border-radius: 4px;
+  cursor: pointer;
+  color: #a3be8c;
+  font-size: 11px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storyframe.challenge-builder .preset-add-btn:hover {
+  background: rgba(163, 190, 140, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .storyframe.challenge-builder .no-presets {
