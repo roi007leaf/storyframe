@@ -6,15 +6,12 @@
 /* Dropdown Container */
 .preset-dropdown,
 .dc-preset-dropdown {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  margin-top: 4px;
+  position: fixed;
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  z-index: 1000;
+  z-index: 10000;
   min-width: 260px;
   max-width: 320px;
 }

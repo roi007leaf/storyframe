@@ -141,8 +141,13 @@ export function createDCPresetDropdown({ inputGroup, partyLevel, calculateDCByLe
     }, 0);
   }
 
-  inputGroup.style.position = 'relative';
-  inputGroup.appendChild(dropdown);
+  // Position dropdown using fixed positioning to escape parent overflow constraints
+  document.body.appendChild(dropdown);
+
+  // Calculate position based on input group location
+  const rect = inputGroup.getBoundingClientRect();
+  dropdown.style.top = `${rect.bottom + 4}px`;
+  dropdown.style.right = `${window.innerWidth - rect.right}px`;
 
   return dropdown;
 }
