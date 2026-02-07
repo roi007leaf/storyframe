@@ -7,9 +7,9 @@
 .preset-dropdown,
 .dc-preset-dropdown {
   position: absolute;
-  bottom: 100%;
+  top: 100%;
   right: 0;
-  margin-bottom: 4px;
+  margin-top: 4px;
   background: var(--sf-surface-secondary);
   border: 1px solid var(--sf-border-primary);
   border-radius: 8px;
@@ -34,7 +34,7 @@
 .preset-dropdown .dc-tabs-body,
 .dc-preset-dropdown .dc-tabs-body {
   padding: 12px;
-  max-height: 220px;
+  max-height: 180px;
   overflow-y: auto;
 }
 
