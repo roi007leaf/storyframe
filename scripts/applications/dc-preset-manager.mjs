@@ -58,7 +58,6 @@ export class DCPresetManager extends foundry.applications.api.HandlebarsApplicat
 
     const preset = {
       id: foundry.utils.randomID(),
-      name: `DC ${dcValue}`,
       dc: dcValue,
       system: game.system.id,
       createdAt: Date.now(),

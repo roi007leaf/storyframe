@@ -1107,7 +1107,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
   static _onToggleDCPreset(_event, target) {
     // Close all other open dropdowns first
-    this.element.querySelectorAll('.dc-preset-dropdown').forEach(d => {
+    this.element.querySelectorAll('.preset-dropdown').forEach(d => {
       if (!target.closest('.dc-input-group')?.contains(d)) {
         d.style.display = 'none';
       }
@@ -1115,7 +1115,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     // Toggle this dropdown
     const inputGroup = target.closest('.dc-input-group');
-    let dropdown = inputGroup.querySelector('.dc-preset-dropdown');
+    let dropdown = inputGroup.querySelector('.preset-dropdown');
 
     if (!dropdown) {
       // Create dropdown if it doesn't exist using shared component
@@ -1159,14 +1159,14 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     }
 
     // Close dropdown
-    const dropdown = inputGroup.querySelector('.dc-preset-dropdown');
+    const dropdown = inputGroup.querySelector('.preset-dropdown');
     if (dropdown) {
       dropdown.style.display = 'none';
     }
   }
 
   static async _onAddDCPreset(_event, target) {
-    const dropdown = target.closest('.dc-preset-dropdown');
+    const dropdown = target.closest('.preset-dropdown');
     const dcInput = dropdown.querySelector('.preset-dc-input-new');
 
     const dc = parseInt(dcInput.value);
@@ -1235,7 +1235,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     ui.notifications.info(`Removed preset: ${removedPreset.name}`);
 
     // Recreate dropdown using shared component
-    const dropdown = target.closest('.dc-preset-dropdown');
+    const dropdown = target.closest('.preset-dropdown');
     const inputGroup = dropdown.closest('.dc-input-group');
     dropdown.remove();
     const newDropdown = createDCPresetDropdown({
