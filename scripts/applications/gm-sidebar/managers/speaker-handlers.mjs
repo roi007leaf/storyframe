@@ -93,6 +93,17 @@ export async function onRemoveSpeaker(event, target) {
 }
 
 /**
+ * Toggle speaker name visibility for players
+ */
+export async function onToggleSpeakerVisibility(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  await game.storyframe.socketManager.requestToggleSpeakerVisibility(speakerId);
+}
+
+/**
  * Clear the active speaker
  */
 export async function onClearSpeaker(_event, _target) {
@@ -159,6 +170,8 @@ export async function onSetActorAsSpeaker(event, target, sidebar) {
 
   // Check if ALT key is held to hide name from players
   const isNameHidden = event.altKey;
+
+  console.log('StoryFrame: onSetActorAsSpeaker called - Actor:', actor.name, 'ALT key:', event.altKey, 'Event:', event);
 
   await game.storyframe.socketManager.requestAddSpeaker({
     actorUuid: actor.uuid,

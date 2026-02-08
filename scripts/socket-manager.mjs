@@ -14,6 +14,7 @@ export class SocketManager {
     this.socket.register('setActiveJournal', this._handleSetActiveJournal);
     this.socket.register('addSpeaker', this._handleAddSpeaker);
     this.socket.register('removeSpeaker', this._handleRemoveSpeaker);
+    this.socket.register('toggleSpeakerVisibility', this._handleToggleSpeakerVisibility);
     this.socket.register('stateUpdate', this._handleStateUpdate);
 
     // Register participant and roll handlers
@@ -79,6 +80,14 @@ export class SocketManager {
    */
   async requestRemoveSpeaker(speakerId) {
     return await this.socket.executeAsGM('removeSpeaker', speakerId);
+  }
+
+  /**
+   * Request GM to toggle speaker name visibility.
+   * @param {string} speakerId
+   */
+  async requestToggleSpeakerVisibility(speakerId) {
+    return await this.socket.executeAsGM('toggleSpeakerVisibility', speakerId);
   }
 
   /**
@@ -265,6 +274,13 @@ export class SocketManager {
   }
 
   /**
+   * Handler: Toggle speaker name visibility.
+   */
+  async _handleToggleSpeakerVisibility(speakerId) {
+    await game.storyframe.stateManager?.toggleSpeakerNameVisibility(speakerId);
+  }
+
+  /**
    * Handler: State update broadcast.
    * Runs on all clients to sync state.
    */
@@ -273,7 +289,7 @@ export class SocketManager {
       game.storyframe.stateManager.state = state;
       // Trigger UI re-render
       game.storyframe.gmApp?.render();
-      game.storyframe.playerApp?.render();
+      game.storyframe.playerViewer?.render();
       game.storyframe.playerSidebar?.render();
     }
   }
@@ -355,7 +371,7 @@ export class SocketManager {
   _handleRollHistoryUpdate(_historyData) {
     // Update local UI displays
     game.storyframe.gmApp?.render();
-    game.storyframe.playerApp?.render();
+    game.storyframe.playerViewer?.render();
     game.storyframe.playerSidebar?.render();
   }
 

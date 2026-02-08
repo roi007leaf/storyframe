@@ -5,6 +5,91 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-02-08
+
+### Added
+
+#### Hidden Actor Names (Mystery NPCs)
+
+- **ALT+Drag/Click to Hide Names** - Add mystery NPCs whose identity is concealed from players
+  - Hold ALT while dragging actors to add them with hidden names
+  - Hold ALT while clicking journal actors to add with hidden names
+  - Players see "Unknown" instead of real name in all UI elements
+  - GMs always see the real name
+  - Works for both speakers (NPCs) and participants (PCs)
+
+- **Toggle Visibility Button** - Control when to reveal NPC identities
+  - Yellow eye/eye-slash button appears on hover (left of edit button)
+  - Click to toggle between hidden and revealed states
+  - Eye icon (👁️) when hidden → click to reveal
+  - Eye-slash icon (👁️‍🗨️) when visible → click to hide
+  - Instant synchronization to all connected players
+
+- **Visual Indicators** - Clear feedback for GMs about hidden names
+  - Eye-slash badge on bottom-right of speaker image (GM only)
+  - Badge appears in GM sidebar thumbnails
+  - Badge appears in speaker wheel
+  - Italicized label text in speaker wheel for hidden speakers
+  - Tooltips explain hidden state
+
+- **Speaker Wheel Support** - Hidden names work throughout the system
+  - Unknown speakers show "Unknown" label to players
+  - Eye-slash badge indicates hidden status (GM view)
+  - Clicking hidden speaker to activate reveals their name
+  - All saved scenes preserve hidden name flags
+
+### Fixed
+
+- **Player Viewer Synchronization** - Critical bug affecting all state updates
+  - Fixed incorrect reference: `playerApp` → `playerViewer`
+  - Affects 6 files: speaker-manager, participant-manager, socket-manager, challenge-manager, roll-tracker, state-manager
+  - Players now see real-time updates when speakers/participants change
+  - Scene selection in speaker wheel now properly updates player view
+  - All state changes now properly sync to players
+
+- **CTRL+Click Roll Requester** - Fixed broken journal inline check functionality
+  - Added `stopImmediatePropagation()` to prevent PF2e's handler from running
+  - Added event capture phase (`{ capture: true }`) to intercept before PF2e
+  - CTRL+clicking journal inline check repost buttons now opens Roll Requester Dialog
+  - Prevents unwanted repost-to-chat behavior
+  - Debug logging added to track event interception
+
+- **Speaker Wheel Label Width** - Long speaker names now display fully
+  - Increased max-width: 100px → 200px
+  - Removed 3-line clamp restriction (wraps as needed)
+  - Added `word-break: break-word` for proper wrapping
+  - Names like "Black Tear Cutthroat" now show completely
+
+### Technical
+
+- **New State Properties**
+  - `speaker.isNameHidden` - Boolean flag for name visibility
+  - `participant.isNameHidden` - Boolean flag for participant name visibility
+
+- **New Methods**
+  - `SpeakerManager.toggleSpeakerNameVisibility(speakerId)` - Toggle visibility state
+  - `StateManager.toggleSpeakerNameVisibility(speakerId)` - Facade method
+  - `SocketManager.requestToggleSpeakerVisibility(speakerId)` - Socket request
+
+- **New Socket Handlers**
+  - `toggleSpeakerVisibility` - GM-executed toggle handler
+
+- **New UI Actions**
+  - `toggleSpeakerVisibility` - Registered in GMSidebarAppBase actions
+
+- **Modified Methods**
+  - `SpeakerManager.addSpeaker()` - Accepts `isNameHidden` parameter
+  - `SpeakerManager.resolveSpeaker()` - Hides name from non-GM users
+  - `ParticipantManager.addParticipant()` - Accepts `isNameHidden` parameter
+  - `StateManager.addSpeaker()` - Passes through `isNameHidden` parameter
+  - All name resolution functions check `isNameHidden` flag and user permissions
+
+- **New Localization Keys**
+  - `STORYFRAME.UI.Labels.HiddenFromPlayers` - "Hidden from Players"
+  - `STORYFRAME.UI.Tooltips.NameHiddenFromPlayers` - "This name is hidden from players"
+  - `STORYFRAME.UI.Tooltips.ToggleNameVisibility` - "Toggle name visibility for players"
+  - `STORYFRAME.UI.Tooltips.HoldAltToHide` - "Hold ALT while dragging to hide name from players"
+
 ## [1.7.2] - 2026-02-07
 
 ### Added
@@ -893,5 +978,3 @@ This release focuses entirely on internal code organization and architecture imp
 - Integration with other narrative modules
 
 ---
-
-[1.0.0]: https://github.com/[author]/storyframe/releases/tag/v1.0.0

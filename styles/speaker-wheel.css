@@ -138,17 +138,15 @@
   border-radius: 6px;
   border: 1px solid rgba(94, 129, 172, 0.4);
   white-space: normal;
-  max-width: 100px;
-  line-height: 1.3;
+  max-width: 200px;
+  min-width: 80px;
+  line-height: 1.2;
   word-wrap: break-word;
+  word-break: break-word;
   box-shadow:
     0 2px 8px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
-  overflow: hidden;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
 }
 
 .speaker-wheel-item:hover .speaker-label {
@@ -371,4 +369,26 @@
   .storyframe-speaker-wheel {
     transform: translate(-50%, -50%) scale(0.85);
   }
+}
+
+/* Hidden name badge for speaker wheel */
+.speaker-wheel-hidden-badge {
+  position: absolute !important;
+  top: 56px !important;
+  left: auto !important;
+  right: 14px !important;
+  bottom: auto !important;
+  font-size: 0.65em;
+  background: rgba(0, 0, 0, 0.85);
+  padding: 3px 5px;
+  border-radius: 3px;
+  color: #fff;
+  pointer-events: none;
+  z-index: 10;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.7);
+}
+
+.speaker-wheel-item.name-hidden .speaker-label {
+  font-style: italic;
+  opacity: 0.8;
 }

@@ -104,12 +104,12 @@ export class StateManager {
 
   /**
    * Add a speaker to the list.
-   * @param {Object} speaker - Speaker data (actorUuid or imagePath, label)
+   * @param {Object} speaker - Speaker data (actorUuid or imagePath, label, isNameHidden)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
-  async addSpeaker({ actorUuid = null, imagePath = null, label }) {
+  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false }) {
     if (!this.speakerManager) return;
-    return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label });
+    return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label, isNameHidden });
   }
 
   /**
@@ -119,6 +119,15 @@ export class StateManager {
   async removeSpeaker(speakerId) {
     if (!this.speakerManager) return;
     return await this.speakerManager.removeSpeaker(speakerId);
+  }
+
+  /**
+   * Toggle speaker name visibility for players.
+   * @param {string} speakerId - Speaker ID to toggle
+   */
+  async toggleSpeakerNameVisibility(speakerId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.toggleSpeakerNameVisibility(speakerId);
   }
 
   /**
@@ -282,7 +291,7 @@ export class StateManager {
   _broadcast() {
     // ApplicationV2 instances render() when state changes
     game.storyframe.gmApp?.render();
-    game.storyframe.playerApp?.render();
+    game.storyframe.playerViewer?.render();
 
     // Also broadcast via socket for other clients
     if (game.storyframe.socketManager) {

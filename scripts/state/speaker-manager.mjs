@@ -73,6 +73,8 @@ export class SpeakerManager {
       isNameHidden,
     };
 
+    console.log('StoryFrame: Adding speaker with isNameHidden:', isNameHidden, 'Label:', label, 'Full speaker:', speaker);
+
     this.state.speakers.push(speaker);
     await this.updateSpeakers(this.state.speakers);
     return speaker;
@@ -91,6 +93,22 @@ export class SpeakerManager {
     if (this.state.activeSpeaker === speakerId) {
       this.state.activeSpeaker = null;
     }
+
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
+   * Toggle speaker name visibility for players.
+   * @param {string} speakerId - Speaker ID to toggle
+   */
+  async toggleSpeakerNameVisibility(speakerId) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find((s) => s.id === speakerId);
+    if (!speaker) return;
+
+    speaker.isNameHidden = !speaker.isNameHidden;
+    console.log('StoryFrame: Toggled speaker visibility:', speaker.label, 'isNameHidden:', speaker.isNameHidden);
 
     await this.updateSpeakers(this.state.speakers);
   }
@@ -134,7 +152,7 @@ export class SpeakerManager {
   _broadcast() {
     // ApplicationV2 instances render() when state changes
     game.storyframe.gmApp?.render();
-    game.storyframe.playerApp?.render();
+    game.storyframe.playerViewer?.render();
 
     // Also broadcast via socket for other clients
     if (this.socketManager) {

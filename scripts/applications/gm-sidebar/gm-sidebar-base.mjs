@@ -35,6 +35,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       setSpeaker: GMSidebarAppBase._onSetSpeaker,
       editSpeaker: GMSidebarAppBase._onEditSpeaker,
       removeSpeaker: GMSidebarAppBase._onRemoveSpeaker,
+      toggleSpeakerVisibility: GMSidebarAppBase._onToggleSpeakerVisibility,
       clearSpeaker: GMSidebarAppBase._onClearSpeaker,
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
       saveCurrentSpeakers: GMSidebarAppBase._onSaveCurrentSpeakers,
@@ -283,6 +284,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Check if ALT key is held to hide name from players
     const isNameHidden = event.altKey;
 
+    console.log('StoryFrame: Drop event - ALT key held?', isNameHidden, 'Actor:', actor.name);
+
     // Add actor as speaker (state manager handles duplicate notification)
     await game.storyframe.socketManager.requestAddSpeaker({
       actorUuid: actor.uuid,
@@ -382,6 +385,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           name: resolved.name,
           isNameHidden: speaker.isNameHidden || false,
         };
+
+        console.log('StoryFrame: Speaker context -', resolved.name, 'isNameHidden:', result.isNameHidden, 'Raw speaker:', speaker);
 
         if (speaker.actorUuid) {
           const actor = await fromUuid(speaker.actorUuid);
@@ -714,6 +719,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onRemoveSpeaker(event, target) {
     return SpeakerHandlers.onRemoveSpeaker(event, target);
+  }
+
+  static async _onToggleSpeakerVisibility(event, target) {
+    return SpeakerHandlers.onToggleSpeakerVisibility(event, target);
   }
 
   static async _onClearSpeaker(event, target) {

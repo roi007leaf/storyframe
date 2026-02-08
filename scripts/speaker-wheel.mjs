@@ -208,6 +208,7 @@ async function showSceneSpeakers(sceneId) {
           id: finalId,
           img: resolved.img,
           name: resolved.name,
+          isNameHidden: s.isNameHidden || false,
         };
       } else {
         // For image speakers, use resolved values
@@ -215,6 +216,7 @@ async function showSceneSpeakers(sceneId) {
           id: s.id,
           img: resolved.img,
           name: resolved.name,
+          isNameHidden: s.isNameHidden || false,
         };
       }
     }),
@@ -235,13 +237,18 @@ async function showSceneSpeakers(sceneId) {
     const isActive = state.activeSpeaker === speaker.id;
 
     const item = document.createElement('div');
-    item.className = `speaker-wheel-item ${isActive ? 'active' : ''}`;
+    item.className = `speaker-wheel-item ${isActive ? 'active' : ''} ${speaker.isNameHidden ? 'name-hidden' : ''}`;
     item.dataset.speakerId = speaker.id;
     item.dataset.sceneId = sceneId;
     item.style.transform = `translate(${x}px, ${y}px)`;
 
+    console.log('StoryFrame: Speaker wheel item -', speaker.name, 'isNameHidden:', speaker.isNameHidden, 'Full speaker:', speaker);
+
+    const hiddenBadge = speaker.isNameHidden ? '<i class="fas fa-eye-slash speaker-wheel-hidden-badge"></i>' : '';
+
     item.innerHTML = `
       <img src="${speaker.img}" alt="${speaker.name}" />
+      ${hiddenBadge}
       <span class="speaker-label">${speaker.name}</span>
     `;
 
