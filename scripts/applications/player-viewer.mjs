@@ -128,13 +128,19 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
             // Get participant and actor info
             const participant = state.participants.find(p => p.id === roll.participantId);
             const actor = participant ? await fromUuid(participant.actorUuid) : null;
+            let actorName = actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
+
+            // Hide name from players if flag is set
+            if (participant?.isNameHidden && !game.user.isGM) {
+              actorName = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
+            }
 
             return {
               ...roll,
               skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
               actionName: roll.actionSlug ? PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
               dc: showDCs ? roll.dc : null,
-              actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
+              actorName,
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
               actorId: participant?.actorUuid || 'unknown',
             };
@@ -288,30 +294,35 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   }
 
   async _resolveSpeaker(speaker) {
+    let name;
+    let img;
+
     if (speaker.actorUuid) {
       const actor = await fromUuid(speaker.actorUuid);
       if (actor) {
-        return {
-          id: speaker.id,
-          img: actor.img,
-          name: actor.name,
-        };
+        img = actor.img;
+        name = actor.name;
       } else {
         // Actor deleted - use fallback
-        return {
-          id: speaker.id,
-          img: 'icons/svg/mystery-man.svg',
-          name: speaker.label || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
-        };
+        img = 'icons/svg/mystery-man.svg';
+        name = speaker.label || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
       }
     } else {
       // Custom image path
-      return {
-        id: speaker.id,
-        img: speaker.imagePath || 'icons/svg/mystery-man.svg',
-        name: speaker.label,
-      };
+      img = speaker.imagePath || 'icons/svg/mystery-man.svg';
+      name = speaker.label;
     }
+
+    // Hide name from players if flag is set
+    if (speaker.isNameHidden && !game.user.isGM) {
+      name = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
+    }
+
+    return {
+      id: speaker.id,
+      img,
+      name,
+    };
   }
 
   async _onToggleLayout() {

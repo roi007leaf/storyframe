@@ -247,3 +247,27 @@
   box-shadow: 0 4px 12px rgba(191, 97, 106, 0.5);
 }
 
+/* Hidden name indicators */
+.hidden-name-indicator {
+  font-size: 0.8em;
+  opacity: 0.7;
+  margin-left: 4px;
+  color: var(--color-text-light-secondary);
+}
+
+.participant-hidden-indicator {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 0.7em;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 2px;
+  border-radius: 2px;
+  color: white;
+  pointer-events: none;
+}
+
+.participant-token.name-hidden {
+  border: 1px dashed var(--color-border-light-tertiary);
+}
+

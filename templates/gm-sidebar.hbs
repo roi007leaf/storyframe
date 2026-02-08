@@ -68,7 +68,12 @@
                  tabindex="0"
                  aria-selected="{{#if (eq ../activeSpeaker this.id)}}true{{else}}false{{/if}}">
               <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-              <div class="speaker-name">{{this.name}}</div>
+              <div class="speaker-name">
+                {{this.name}}
+                {{#if this.isNameHidden}}
+                  <i class="fas fa-eye-slash hidden-name-indicator" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.NameHiddenFromPlayers"}}" aria-label="{{localize "STORYFRAME.UI.Tooltips.NameHiddenFromPlayers"}}"></i>
+                {{/if}}
+              </div>
               <button type="button" class="edit-speaker" data-action="editSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.EditName" name=this.name}}">
                 <i class="fas fa-pen" aria-hidden="true"></i>
               </button>
@@ -164,14 +169,17 @@
       <div class="dc-controls-bar" role="toolbar" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DCControls"}}">
         <div class="participant-portraits participant-portraits-sticky" data-drop-zone="participant" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.PlayerCharacters"}}">
           {{#each participants}}
-            <div class="participant-token {{#if this.selected}}selected{{/if}}"
+            <div class="participant-token {{#if this.selected}}selected{{/if}} {{#if this.isNameHidden}}name-hidden{{/if}}"
                  data-action="toggleParticipantSelection"
                  data-participant-id="{{this.id}}"
-                 data-tooltip="{{this.name}}"
+                 data-tooltip="{{this.name}}{{#if this.isNameHidden}} ({{localize "STORYFRAME.UI.Labels.HiddenFromPlayers"}}){{/if}}"
                  role="listitem"
                  tabindex="0"
                  aria-selected="{{#if this.selected}}true{{else}}false{{/if}}">
               <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+              {{#if this.isNameHidden}}
+                <i class="fas fa-eye-slash participant-hidden-indicator"></i>
+              {{/if}}
               <button type="button" class="remove-btn"
                       data-action="removeParticipant"
                       data-participant-id="{{this.id}}"

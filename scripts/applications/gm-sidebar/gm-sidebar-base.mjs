@@ -280,11 +280,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       return;
     }
 
+    // Check if ALT key is held to hide name from players
+    const isNameHidden = event.altKey;
+
     // Add actor as speaker (state manager handles duplicate notification)
     await game.storyframe.socketManager.requestAddSpeaker({
       actorUuid: actor.uuid,
       imagePath: actor.img,
       label: actor.name,
+      isNameHidden,
     });
   }
 
@@ -376,6 +380,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           id: speaker.id,
           img: resolved.img,
           name: resolved.name,
+          isNameHidden: speaker.isNameHidden || false,
         };
 
         if (speaker.actorUuid) {

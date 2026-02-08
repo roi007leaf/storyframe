@@ -12,10 +12,10 @@ export class ParticipantManager {
 
   /**
    * Add a participant to the list.
-   * @param {Object} data - { actorUuid, userId }
+   * @param {Object} data - { actorUuid, userId, isNameHidden }
    * @returns {Object} Created participant with ID, or existing participant if duplicate
    */
-  async addParticipant({ actorUuid, userId }) {
+  async addParticipant({ actorUuid, userId, isNameHidden = false }) {
     if (!this.state) return null;
 
     // Check for duplicate by actorUuid
@@ -28,6 +28,7 @@ export class ParticipantManager {
       id: foundry.utils.randomID(),
       actorUuid,
       userId,
+      isNameHidden,
     };
 
     this.state.participants.push(participant);

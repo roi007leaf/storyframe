@@ -241,15 +241,17 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       return;
     }
 
-    // Add click listener to the repost icon
-    repostIcon.addEventListener('click', async (event) => {
-
+    // Add click listener to the repost icon (use capture phase to intercept before PF2e)
+    const handleCtrlClick = async (event) => {
       // Only intercept if ctrl key is pressed
       if (!event.ctrlKey) return;
 
       // Prevent default PF2e repost behavior
       event.preventDefault();
       event.stopPropagation();
+      event.stopImmediatePropagation();
+
+      console.log('StoryFrame: CTRL+click intercepted on repost button');
 
       // Extract check data from the inline check element
       const skillName = checkElement.dataset.pf2Check;
@@ -347,6 +349,9 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
         console.error('StoryFrame: Error sending request:', error);
         ui.notifications.error('Failed to send roll request: ' + error.message);
       }
-    });
+    };
+
+    // Attach the handler with capture: true to run before PF2e's handlers
+    repostIcon.addEventListener('click', handleCtrlClick, { capture: true });
   });
 }

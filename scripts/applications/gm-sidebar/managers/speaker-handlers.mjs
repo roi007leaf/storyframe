@@ -147,7 +147,7 @@ export async function onSetImageAsSpeaker(_event, target, sidebar) {
 /**
  * Set an actor from journal as speaker
  */
-export async function onSetActorAsSpeaker(_event, target, sidebar) {
+export async function onSetActorAsSpeaker(event, target, sidebar) {
   const actorId = target.dataset.actorId;
   if (!actorId) return;
 
@@ -157,10 +157,14 @@ export async function onSetActorAsSpeaker(_event, target, sidebar) {
     return;
   }
 
+  // Check if ALT key is held to hide name from players
+  const isNameHidden = event.altKey;
+
   await game.storyframe.socketManager.requestAddSpeaker({
     actorUuid: actor.uuid,
     imagePath: actor.img,
     label: actor.name,
+    isNameHidden,
   });
 }
 

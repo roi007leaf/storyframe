@@ -237,13 +237,21 @@ export async function prepareParticipantsContext(sidebar, state) {
   const participants = await Promise.all(
     (state.participants || []).map(async (p) => {
       const actor = await fromUuid(p.actorUuid);
+      let name = actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
+
+      // Hide name from players if flag is set
+      if (p.isNameHidden && !game.user.isGM) {
+        name = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
+      }
+
       return {
         id: p.id,
         actorUuid: p.actorUuid,
         userId: p.userId,
         img: actor?.img || 'icons/svg/mystery-man.svg',
-        name: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
+        name,
         selected: sidebar.selectedParticipants.has(p.id),
+        isNameHidden: p.isNameHidden || false,
       };
     }),
   );

@@ -42,10 +42,10 @@ export class SpeakerManager {
 
   /**
    * Add a speaker to the list.
-   * @param {Object} speaker - Speaker data (actorUuid or imagePath, label)
+   * @param {Object} speaker - Speaker data (actorUuid or imagePath, label, isNameHidden)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
-  async addSpeaker({ actorUuid = null, imagePath = null, label }) {
+  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false }) {
     if (!this.state) return null;
 
     // Check for duplicate by actorUuid or imagePath
@@ -70,6 +70,7 @@ export class SpeakerManager {
       actorUuid,
       imagePath,
       label,
+      isNameHidden,
     };
 
     this.state.speakers.push(speaker);
@@ -117,6 +118,11 @@ export class SpeakerManager {
       // Custom image path
       img = speaker.imagePath || 'icons/svg/mystery-man.svg';
       name = speaker.label;
+    }
+
+    // Hide name from players if flag is set
+    if (speaker.isNameHidden && !game.user.isGM) {
+      name = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
     }
 
     return { img, name };
