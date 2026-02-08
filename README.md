@@ -28,8 +28,10 @@ Quick Links:
 - **Smart NPC Detection** - Automatically detects NPCs from journal images and actor references
 - **Multiple Add Methods** - Drag & drop actors, click journal actors/images, or manual entry
 - **Active Speaker Selection** - Click portraits to highlight active speaker for all players
+- **Edit Speaker Names** - Hover over speaker to reveal edit button, click to rename
 - **Speaker Wheel** - Radial quick-selection menu (keybind) for rapid speaker switching
 - **Scene Management** - Save and load speaker configurations for recurring locations/NPCs
+- **Quick Scene Updates** - Update saved scenes with current speakers via sync button
 
 **For Players:**
 - **Synchronized Gallery** - See all NPCs with active speaker highlighted in real-time
@@ -38,18 +40,20 @@ Quick Links:
 
 [📖 Speaker Management Documentation](https://github.com/roi007leaf/storyframe/wiki/Speaker-Management)
 
-### 🎲 Skill Check Coordination
+### 🎲 Skill Check & Saving Throw Coordination
 
 **For GMs:**
 - **PC Management** - Add all PCs, party members, or individuals
-- **Batch Operations** - Select multiple PCs and request multiple checks at once
+- **Batch Operations** - Select multiple PCs and request multiple checks/saves at once
+- **Allow Only One** - Option to let players choose only one check from a batched group
 - **DC Management**:
   - Manual DC entry (1-60)
   - DC Presets - Save frequently-used DCs
   - System DC Tables - Auto-calculated difficulty based on party level
 - **Secret Rolls** - GM-only results for Perception, Insight, Stealth checks
-- **Quick Skill Buttons** - Customizable quick-access buttons for common skills
+- **Quick Buttons** - Customizable quick-access buttons for common skills and saves
 - **Skill Categories** - Physical, Magical, Social, Utility
+- **Saving Throws** - Request saves with orange accent theme (PF2e: Fort/Ref/Will, D&D 5e: All abilities)
 - **Journal Parsing** - Select text with skill checks and auto-request rolls (keybind)
 
 **For Players:**
@@ -62,15 +66,16 @@ Quick Links:
 
 ### 🏆 Challenge System
 
-Create multi-option skill challenges where players choose their approach:
+Create multi-option challenges where players choose their approach:
 
 **Features:**
 - **Multiple Options** - 2-4 different approaches per challenge (climb, sneak, persuade, etc.)
-- **Varied Skills** - Each option can require different skills at different DCs
+- **Skills & Saves** - Each option can require different skills or saving throws at different DCs
 - **Proficiency Requirements** (PF2e) - Lock options requiring Trained/Expert/Master/Legendary
 - **Challenge Library** - Save challenges for reuse
 - **Auto-Creation** - Create challenges from selected journal text (keybind)
 - **Visual Interface** - Players see all options and choose their approach
+- **Save Only Button** - Save challenges to library without presenting immediately
 
 **Example Challenge:**
 ```
@@ -78,6 +83,7 @@ Create multi-option skill challenges where players choose their approach:
 Option 1: Climb the Wall - Athletics DC 15
 Option 2: Pick the Lock - Sleight of Hand DC 18, Investigation DC 15
 Option 3: Bluff Past Guards - Deception DC 16, Persuasion DC 14
+Option 4: Resist Charm - Will Save DC 18 (saving throw option)
 ```
 
 [📖 Challenge System Documentation](https://github.com/roi007leaf/storyframe/wiki/Challenge-System)
@@ -88,6 +94,7 @@ Save speaker configurations for quick loading:
 - **Save Current Speakers** - One-click save of current NPC gallery
 - **Scene Editor** - Visual editor for building speaker scenes
 - **Quick Loading** - Click scene name to instantly load all speakers
+- **Quick Updates** - Update saved scenes with current speakers via sync button
 - **Perfect for**: Recurring taverns, councils, shops, party groups
 
 [📖 Scene Editor Documentation](https://github.com/roi007leaf/storyframe/wiki/Scene-Editor)
@@ -107,6 +114,7 @@ Radial quick-selection for rapid speaker switching:
 ### Pathfinder 2e
 
 - **Skills**: All 17 standard skills + custom lore skills
+- **Saving Throws**: Fortitude, Reflex, Will with orange accent theme
 - **Actions**: Right-click skills for specific actions (Demoralize, Seek, Recall Knowledge, etc.)
 - **Proficiency System**: Untrained, Trained, Expert, Master, Legendary
 - **DC Tables**: Level-based DCs (0-25) with difficulty modifiers (Trivial to Extreme)
@@ -144,7 +152,7 @@ Radial quick-selection for rapid speaker switching:
 ### From Manifest URL
 
 ```
-Manifest URL coming soon
+https://github.com/roi007leaf/storyframe/releases/latest/download/module.json
 ```
 
 [📖 Detailed Installation Guide](https://github.com/roi007leaf/storyframe/wiki/Installation)
@@ -284,7 +292,7 @@ A: Yes! Use the Scene Editor to save and load speaker configurations.
 
 ## 📦 Version
 
-Current Version: **1.6.1**
+Current Version: **1.7.2**
 
 See [Releases](https://github.com/roi007leaf/storyframe/releases) for changelog.
 
