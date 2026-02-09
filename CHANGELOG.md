@@ -5,6 +5,44 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.4] - 2026-02-09
+
+### Changed
+
+### Smart Player Window Management
+
+- **Viewer Auto-Open** - Opens only when speakers are added (shows NPCs)
+  - No longer opens for rolls/challenges without speakers
+  - Closes automatically when all speakers removed
+  - Players can manually open if speakers exist
+
+- **Sidebar Auto-Open** - Opens independently when rolls/challenges added
+  - Auto-opens for pending rolls or active challenges
+  - Stays open when viewer closes if content remains
+  - Independent from viewer lifecycle
+
+- **Selective Opening** - Only opens for players with relevant content
+  - Auto-opens only for players who have rolls/challenges targeted to them
+  - Other players don't see auto-opening unless they have content
+  - Manual open shows notification if no content
+
+- **GM Controls Split** - Separate buttons for viewer and sidebar
+  - NPCs tab: "Open viewer on players" button (TV icon)
+  - PCs tab: "Open sidebars on players" button (sidebar icon)
+  - Both support right-click to close
+
+### Fixed
+
+- **Sidebar Positioning** - Properly attaches sidebar to viewer when viewer opens
+  - Fixed sidebar not repositioning when viewer opens with sidebar already rendered
+  - Added delays to ensure viewer element exists before positioning
+  - Sidebar now correctly positions as drawer in all scenarios
+
+- **Scene Control Button** - Fixed deprecated onClick usage
+  - Updated to use onChange with proper button configuration
+  - Fixed button staying active preventing repeated clicks
+  - Button now clickable multiple times
+
 ## [1.7.3] - 2026-02-08
 
 ### Added

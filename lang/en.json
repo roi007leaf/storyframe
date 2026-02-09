@@ -117,7 +117,9 @@
         "NoPartyFound": "No party found",
         "NoMembersInParty": "No members in party",
         "NoValidMembersInParty": "No valid members in party",
-        "PartyMembersAdded": "Added {count} party member(s)"
+        "PartyMembersAdded": "Added {count} party member(s)",
+        "OpeningSidebarsForPlayers": "Opening StoryFrame sidebars on all player clients",
+        "ClosingSidebarsForPlayers": "Closing StoryFrame sidebars on all player clients"
       },
       "DC": {
         "PresetAdded": "Added DC {value} preset",
@@ -180,7 +182,9 @@
         "CheckCompleted": "{skill} check completed ({total})",
         "NA": "N/A",
         "GroupRollsDismissed": "{count} other roll(s) in group dismissed"
-      }
+      },
+      "NoContent": "No pending rolls, challenges or speakers to show you.",
+      "NoSpeakers": "No speakers to display. Check the sidebar for rolls and challenges."
     },
     "UI": {
       "Tabs": {
@@ -277,6 +281,8 @@
         "AddPartyMembers": "Add party members",
         "AddAllPCs": "Add all PCs",
         "OpenCloseOnPlayers": "Open/Close on players",
+        "OpenCloseViewerOnPlayers": "Open/Close viewer on players",
+        "OpenCloseSidebarsOnPlayers": "Open/Close sidebars on players",
         "ClearAllPCs": "Clear all PCs",
         "ConfigureQuickSkills": "Configure Quick Skills",
         "RequestRollsFromSelection": "Request Rolls from Selection",
@@ -307,6 +313,7 @@
         "AddPartyMembers": "Add all party members",
         "AddAllPCs": "Add all player characters",
         "OpenViewerOnPlayers": "Open StoryFrame viewer on all player clients",
+        "OpenSidebarsOnPlayers": "Open StoryFrame sidebars on all player clients",
         "RemoveAllPCs": "Remove all PCs",
         "ConfigureQuickSkills": "Configure quick skill buttons",
         "RequestRollsFromSelection": "Parse inline checks from selected text and request rolls",

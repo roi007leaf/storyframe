@@ -28,6 +28,8 @@ export class SocketManager {
     this.socket.register('rollHistoryUpdate', this._handleRollHistoryUpdate);
     this.socket.register('openPlayerViewer', this._handleOpenPlayerViewer);
     this.socket.register('closePlayerViewer', this._handleClosePlayerViewer);
+    this.socket.register('openPlayerSidebar', this._handleOpenPlayerSidebar);
+    this.socket.register('closePlayerSidebar', this._handleClosePlayerSidebar);
 
     // Register challenge handlers
     this.socket.register('setActiveChallenge', this._handleSetActiveChallenge);
@@ -190,6 +192,21 @@ export class SocketManager {
    */
   closeAllPlayerViewers() {
     this.socket.executeForEveryone('closePlayerViewer');
+  }
+
+  /**
+   * Open player sidebar on all player clients.
+   * Called by GM to open sidebars for rolls/challenges.
+   */
+  openAllPlayerSidebars() {
+    this.socket.executeForEveryone('openPlayerSidebar');
+  }
+
+  /**
+   * Close player sidebar on all player clients.
+   */
+  closeAllPlayerSidebars() {
+    this.socket.executeForEveryone('closePlayerSidebar');
   }
 
   // --- Challenge API ---
@@ -384,14 +401,27 @@ export class SocketManager {
     // Only open for non-GM users
     if (game.user.isGM) return;
 
+    const sidebar = game.storyframe.playerSidebar;
+    const sidebarWasRendered = sidebar?.rendered;
+
     // Import and create viewer if needed
     if (!game.storyframe.playerViewer) {
       import('./applications/player-viewer.mjs').then(({ PlayerViewerApp }) => {
         game.storyframe.playerViewer = new PlayerViewerApp();
         game.storyframe.playerViewer.render(true);
+        // Reposition sidebar if it was already open
+        if (sidebarWasRendered && sidebar) {
+          sidebar.parentViewer = game.storyframe.playerViewer;
+          setTimeout(() => sidebar._positionAsDrawer(3), 100);
+        }
       });
     } else if (!game.storyframe.playerViewer.rendered) {
       game.storyframe.playerViewer.render(true);
+      // Reposition sidebar if it was already open
+      if (sidebarWasRendered && sidebar) {
+        sidebar.parentViewer = game.storyframe.playerViewer;
+        setTimeout(() => sidebar._positionAsDrawer(3), 100);
+      }
     }
   }
 
@@ -406,6 +436,34 @@ export class SocketManager {
     // Close viewer if it exists and is rendered
     if (game.storyframe.playerViewer?.rendered) {
       game.storyframe.playerViewer.close();
+    }
+  }
+
+  /**
+   * Handler: Open player sidebar.
+   * Runs on all clients - opens the player sidebar for non-GM users.
+   */
+  _handleOpenPlayerSidebar() {
+    // Only open for non-GM users
+    if (game.user.isGM) return;
+
+    // Open sidebar if it exists and not already rendered
+    if (game.storyframe.playerSidebar && !game.storyframe.playerSidebar.rendered) {
+      game.storyframe.playerSidebar.render(true);
+    }
+  }
+
+  /**
+   * Handler: Close player sidebar.
+   * Runs on all clients - closes the player sidebar for non-GM users.
+   */
+  _handleClosePlayerSidebar() {
+    // Only close for non-GM users
+    if (game.user.isGM) return;
+
+    // Close sidebar if it exists and is rendered
+    if (game.storyframe.playerSidebar?.rendered) {
+      game.storyframe.playerSidebar.close();
     }
   }
 

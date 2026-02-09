@@ -441,13 +441,52 @@ Hooks.on('getSceneControlButtons', (controls) => {
       title: 'StoryFrame Viewer',
       icon: 'fas fa-book-open',
       visible: true,
-      onClick: () => {
-        if (!game.storyframe?.playerViewer) {
-          game.storyframe.playerViewer = new PlayerViewerApp();
-        }
-        game.storyframe.playerViewer.render(true);
-      },
       button: true,
+      onChange: (isActive) => {
+        // Immediately deactivate to allow repeated clicks
+        if (isActive) {
+          setTimeout(() => {
+            const control = ui.controls.controls.find(c => c.name === 'tokens');
+            if (control) control.activeTool = null;
+          }, 50);
+        }
+        const state = game.storyframe.stateManager?.getState();
+        const hasSpeakers = state?.speakers?.length > 0;
+        const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+
+        // Open viewer if there are speakers
+        if (hasSpeakers) {
+          if (!game.storyframe?.playerViewer) {
+            game.storyframe.playerViewer = new PlayerViewerApp();
+          }
+          const viewer = game.storyframe.playerViewer;
+          const sidebar = game.storyframe.playerSidebar;
+          const sidebarWasRendered = sidebar?.rendered;
+
+          // Always render viewer when speakers exist, even if sidebar is open
+          if (!viewer.rendered) {
+            viewer.render(true);
+            // If sidebar is already open, reposition it next to viewer
+            if (sidebarWasRendered && sidebar) {
+              setTimeout(() => sidebar._positionAsDrawer(3), 100);
+            }
+          } else {
+            viewer.bringToTop();
+          }
+          return;
+        }
+
+        // Open sidebar if there's content but no speakers
+        if (hasContent && game.storyframe?.playerSidebar) {
+          if (!game.storyframe.playerSidebar.rendered) {
+            game.storyframe.playerSidebar.render(true);
+          }
+          return;
+        }
+
+        // No content at all
+        ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.NoContent'));
+      },
     };
   }
 });
@@ -522,11 +561,18 @@ Hooks.once('ready', async () => {
     }
   }
 
-  // Initialize player viewer and sidebar for non-GM users (but don't auto-open)
+  // Initialize player viewer and sidebar for non-GM users
   if (!game.user.isGM) {
     game.storyframe.playerViewer = new PlayerViewerApp();
     game.storyframe.playerSidebar = new PlayerSidebarApp();
     game.storyframe.playerSidebar.parentViewer = game.storyframe.playerViewer;
+
+    // Check if sidebar should open based on content
+    const state = game.storyframe.stateManager?.getState();
+    const hasContent = state && PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+    if (hasContent) {
+      game.storyframe.playerSidebar.render(true);
+    }
   }
 });
 
@@ -562,16 +608,27 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   if (!game.user.isGM && game.storyframe.playerViewer) {
     const viewer = game.storyframe.playerViewer;
     const hasSpeakers = state?.speakers?.length > 0;
-    const hasPendingRolls = state?.pendingRolls?.length > 0;
-    const hasActiveChallenges = state?.activeChallenges?.length > 0;
-    const hasContent = hasSpeakers || hasPendingRolls || hasActiveChallenges;
 
-    if (hasContent && !viewer.rendered) {
-      viewer.render(true); // Auto-open when content added
-    } else if (!hasContent && viewer.rendered) {
-      viewer.close(); // Close only if no content
+    if (hasSpeakers && !viewer.rendered) {
+      viewer.render(true); // Auto-open when speakers added
+    } else if (!hasSpeakers && viewer.rendered) {
+      viewer.close(); // Close if no speakers
     } else if (viewer.rendered) {
       viewer.render(); // Update display
+    }
+  }
+
+  // Update player sidebar independently
+  if (!game.user.isGM && game.storyframe.playerSidebar) {
+    const sidebar = game.storyframe.playerSidebar;
+    const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+
+    if (hasContent && !sidebar.rendered) {
+      sidebar.render(true); // Auto-open when player has rolls/challenges
+    } else if (!hasContent && sidebar.rendered) {
+      sidebar.close(); // Close if no content
+    } else if (sidebar.rendered) {
+      sidebar.render(); // Update display
     }
   }
 });

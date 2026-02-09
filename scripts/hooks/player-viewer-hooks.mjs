@@ -3,6 +3,8 @@
  * Handlers for player viewer lifecycle and sidebar management
  */
 
+import { PlayerViewerApp } from '../applications/player-viewer.mjs';
+
 /**
  * Handle player viewer render
  * Opens and positions the player sidebar when viewer opens
@@ -14,19 +16,32 @@ export function handlePlayerViewerRender(viewer) {
     sidebar.parentViewer = viewer;
 
     if (!sidebar.rendered) {
-      sidebar.render(true);
+      // Check if there's content before rendering to avoid flash
+      const state = game.storyframe.stateManager?.getState();
+      const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+
+      if (hasContent) {
+        sidebar.render(true);
+      }
     } else {
-      sidebar._positionAsDrawer(3);
+      // Delay to ensure viewer element is ready
+      setTimeout(() => sidebar._positionAsDrawer(3), 100);
     }
   }
 }
 
 /**
  * Handle player viewer close
- * Closes the player sidebar when viewer closes
+ * Closes the player sidebar when viewer closes, unless there's still content
  */
 export function handlePlayerViewerClose() {
   if (!game.user.isGM && game.storyframe?.playerSidebar?.rendered) {
-    game.storyframe.playerSidebar.close();
+    const state = game.storyframe.stateManager?.getState();
+    const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+
+    // Only close sidebar if there's no content
+    if (!hasContent) {
+      game.storyframe.playerSidebar.close();
+    }
   }
 }

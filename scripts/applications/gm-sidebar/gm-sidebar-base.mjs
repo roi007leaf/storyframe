@@ -61,6 +61,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       cancelRoll: GMSidebarAppBase._onCancelRoll,
       openPlayerWindows: GMSidebarAppBase._onOpenPlayerWindows,
       closePlayerWindows: GMSidebarAppBase._onClosePlayerWindows,
+      openPlayerSidebars: GMSidebarAppBase._onOpenPlayerSidebars,
+      closePlayerSidebars: GMSidebarAppBase._onClosePlayerSidebars,
       showPendingRolls: GMSidebarAppBase._onShowPendingRolls,
       showActiveChallenges: GMSidebarAppBase._onShowActiveChallenges,
       togglePresetDropdown: GMSidebarAppBase._onTogglePresetDropdown,
@@ -630,6 +632,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach player windows context menu
     SpeakerHandlers.attachPlayerWindowsContextMenu(this);
 
+    // Attach player sidebars context menu
+    ParticipantHandlers.attachPlayerSidebarsContextMenu(this);
+
     // Setup journal check highlighting
     JournalHandlers.setupJournalCheckHighlighting(this);
 
@@ -755,6 +760,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onClosePlayerWindows(event, target) {
     return SpeakerHandlers.onClosePlayerWindows(event, target, this);
+  }
+
+  static async _onOpenPlayerSidebars(event, target) {
+    return ParticipantHandlers.onOpenPlayerSidebars(event, target, this);
+  }
+
+  static async _onClosePlayerSidebars(event, target) {
+    return ParticipantHandlers.onClosePlayerSidebars(event, target, this);
   }
 
   // Participant Handlers

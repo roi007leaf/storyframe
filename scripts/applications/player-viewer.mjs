@@ -63,6 +63,39 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     },
   };
 
+  /**
+   * Check if player has relevant content (rolls/challenges for them)
+   * @param {Object} state - StoryFrame state
+   * @param {string} userId - Player user ID
+   * @returns {boolean} True if player has pending rolls or relevant challenges
+   */
+  static hasPlayerRelevantContent(state, userId) {
+    if (!state) return false;
+
+    // Find player's participants
+    const myParticipantIds =
+      state.participants?.filter((p) => p.userId === userId).map((p) => p.id) || [];
+
+    if (myParticipantIds.length === 0) return false;
+
+    // Check pending rolls
+    const hasPendingRolls =
+      state.pendingRolls?.some((roll) => myParticipantIds.includes(roll.participantId)) || false;
+
+    // Check active challenges
+    const hasRelevantChallenges =
+      state.activeChallenges?.some((challenge) => {
+        // Empty selectedParticipants = broadcast to all
+        if (!challenge.selectedParticipants || challenge.selectedParticipants.length === 0) {
+          return true;
+        }
+        // Check intersection with player's participants
+        return challenge.selectedParticipants.some((id) => myParticipantIds.includes(id));
+      }) || false;
+
+    return hasPendingRolls || hasRelevantChallenges;
+  }
+
   constructor(options = {}) {
     super(options);
     this._stateRestored = false;

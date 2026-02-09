@@ -45,6 +45,9 @@
           <button type="button" data-action="clearAllSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllNPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllNPCs"}}">
             <i class="fas fa-trash" aria-hidden="true"></i>
           </button>
+          <button type="button" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseViewerOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
+            <i class="fas fa-tv" aria-hidden="true"></i>
+          </button>
           {{#if hasSpeakers}}
           <button type="button" data-action="saveCurrentSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SaveSpeakersAsScene"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SaveSpeakersAsScene"}}">
             <i class="fas fa-save" aria-hidden="true"></i>
@@ -150,8 +153,8 @@
         <button type="button" data-action="addAllPCs" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddAllPCs"}}">
           <i class="fas fa-users" aria-hidden="true"></i>
         </button>
-        <button type="button" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
-          <i class="fas fa-tv" aria-hidden="true"></i>
+        <button type="button" data-action="openPlayerSidebars" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseSidebarsOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenSidebarsOnPlayers"}}">
+          <i class="fas fa-sidebar" aria-hidden="true"></i>
         </button>
         {{#if hasParticipants}}
         <button type="button" data-action="clearAllParticipants" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllPCs"}}">

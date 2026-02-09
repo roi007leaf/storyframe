@@ -278,3 +278,33 @@ export async function prepareParticipantsContext(sidebar, state) {
     selectedParticipantData,
   };
 }
+
+/**
+ * Open player sidebars on all player clients
+ */
+export async function onOpenPlayerSidebars(_event, _target, _sidebar) {
+  game.storyframe.socketManager.openAllPlayerSidebars();
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Participant.OpeningSidebarsForPlayers'));
+}
+
+/**
+ * Close player sidebars on all player clients
+ */
+export async function onClosePlayerSidebars(_event, _target, _sidebar) {
+  game.storyframe.socketManager.closeAllPlayerSidebars();
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Participant.ClosingSidebarsForPlayers'));
+}
+
+/**
+ * Attach right-click handler to open player sidebars button (to close)
+ */
+export function attachPlayerSidebarsContextMenu(sidebar) {
+  const btn = sidebar.element.querySelector('[data-action="openPlayerSidebars"]');
+  if (btn) {
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClosePlayerSidebars(e, btn, sidebar);
+    });
+  }
+}
