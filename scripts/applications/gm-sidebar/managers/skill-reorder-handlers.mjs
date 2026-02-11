@@ -83,6 +83,8 @@ function makeCategoryDraggable(label, categoryEl) {
  * Set up drop zone for category reordering
  */
 function setupCategoryDropZone(container, sidebar) {
+  let lastSwappedCategory = null;
+
   const dragoverHandler = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -97,19 +99,35 @@ function setupCategoryDropZone(container, sidebar) {
       return e.clientY >= rect.top && e.clientY <= rect.bottom;
     });
 
-    // Swap positions if hovering over a different category
-    if (hoveredCategory && hoveredCategory !== dragging) {
-      const allCategories = [...container.querySelectorAll('.skill-category')];
-      const dragIndex = allCategories.indexOf(dragging);
-      const hoverIndex = allCategories.indexOf(hoveredCategory);
+    // True swap: exchange positions of dragging and hovered elements
+    if (hoveredCategory && hoveredCategory !== dragging && hoveredCategory !== lastSwappedCategory) {
+      // Get next siblings to preserve position references
+      const draggingNext = dragging.nextSibling;
+      const hoveredNext = hoveredCategory.nextSibling;
 
-      if (dragIndex < hoverIndex) {
-        hoveredCategory.parentNode.insertBefore(dragging, hoveredCategory.nextSibling);
+      // Swap positions
+      if (draggingNext === hoveredCategory) {
+        // Adjacent: dragging is before hovered
+        container.insertBefore(hoveredCategory, dragging);
+      } else if (hoveredNext === dragging) {
+        // Adjacent: hovered is before dragging
+        container.insertBefore(dragging, hoveredCategory);
       } else {
-        hoveredCategory.parentNode.insertBefore(dragging, hoveredCategory);
+        // Not adjacent: swap using references
+        container.insertBefore(dragging, hoveredNext);
+        container.insertBefore(hoveredCategory, draggingNext);
       }
+
+      lastSwappedCategory = hoveredCategory;
     }
   };
+
+  const dragendHandler = () => {
+    lastSwappedCategory = null;
+  };
+
+  container.addEventListener('dragover', dragoverHandler);
+  container.addEventListener('dragend', dragendHandler, true);
 
   const dropHandler = async (e) => {
     e.preventDefault();
@@ -157,6 +175,8 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
  * Set up drop zone for skills within a category
  */
 function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
+  let lastSwappedSkill = null;
+
   skillsContainer.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -172,19 +192,32 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
              e.clientY >= rect.top && e.clientY <= rect.bottom;
     });
 
-    // Swap positions if hovering over a different skill
-    if (hoveredSkill && hoveredSkill !== dragging) {
-      const allSkills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper')];
-      const dragIndex = allSkills.indexOf(dragging);
-      const hoverIndex = allSkills.indexOf(hoveredSkill);
+    // True swap: exchange positions of dragging and hovered elements
+    if (hoveredSkill && hoveredSkill !== dragging && hoveredSkill !== lastSwappedSkill) {
+      // Get next siblings to preserve position references
+      const draggingNext = dragging.nextSibling;
+      const hoveredNext = hoveredSkill.nextSibling;
 
-      if (dragIndex < hoverIndex) {
-        hoveredSkill.parentNode.insertBefore(dragging, hoveredSkill.nextSibling);
+      // Swap positions
+      if (draggingNext === hoveredSkill) {
+        // Adjacent: dragging is before hovered
+        skillsContainer.insertBefore(hoveredSkill, dragging);
+      } else if (hoveredNext === dragging) {
+        // Adjacent: hovered is before dragging
+        skillsContainer.insertBefore(dragging, hoveredSkill);
       } else {
-        hoveredSkill.parentNode.insertBefore(dragging, hoveredSkill);
+        // Not adjacent: swap using references
+        skillsContainer.insertBefore(dragging, hoveredNext);
+        skillsContainer.insertBefore(hoveredSkill, draggingNext);
       }
+
+      lastSwappedSkill = hoveredSkill;
     }
   });
+
+  skillsContainer.addEventListener('dragend', () => {
+    lastSwappedSkill = null;
+  }, true);
 
   skillsContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
