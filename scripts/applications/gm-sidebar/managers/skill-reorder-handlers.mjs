@@ -90,12 +90,24 @@ function setupCategoryDropZone(container, sidebar) {
     const dragging = container.querySelector('.skill-category.dragging');
     if (!dragging) return;
 
-    const afterElement = getDragAfterCategory(container, e.clientY, '.skill-category:not(.dragging):not(.saves-category)');
+    // Find the category being hovered over
+    const categories = [...container.querySelectorAll('.skill-category:not(.dragging):not(.saves-category)')];
+    const hoveredCategory = categories.find(cat => {
+      const rect = cat.getBoundingClientRect();
+      return e.clientY >= rect.top && e.clientY <= rect.bottom;
+    });
 
-    if (afterElement == null) {
-      container.appendChild(dragging);
-    } else {
-      container.insertBefore(dragging, afterElement);
+    // Swap positions if hovering over a different category
+    if (hoveredCategory && hoveredCategory !== dragging) {
+      const allCategories = [...container.querySelectorAll('.skill-category')];
+      const dragIndex = allCategories.indexOf(dragging);
+      const hoverIndex = allCategories.indexOf(hoveredCategory);
+
+      if (dragIndex < hoverIndex) {
+        hoveredCategory.parentNode.insertBefore(dragging, hoveredCategory.nextSibling);
+      } else {
+        hoveredCategory.parentNode.insertBefore(dragging, hoveredCategory);
+      }
     }
   };
 
@@ -152,12 +164,25 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
     const dragging = skillsContainer.querySelector('.skill-btn-wrapper.dragging');
     if (!dragging) return;
 
-    const afterElement = getDragAfterElement(skillsContainer, e.clientX, '.skill-btn-wrapper:not(.dragging)');
+    // Find the skill being hovered over
+    const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper:not(.dragging)')];
+    const hoveredSkill = skills.find(skill => {
+      const rect = skill.getBoundingClientRect();
+      return e.clientX >= rect.left && e.clientX <= rect.right &&
+             e.clientY >= rect.top && e.clientY <= rect.bottom;
+    });
 
-    if (afterElement == null) {
-      skillsContainer.appendChild(dragging);
-    } else {
-      skillsContainer.insertBefore(dragging, afterElement);
+    // Swap positions if hovering over a different skill
+    if (hoveredSkill && hoveredSkill !== dragging) {
+      const allSkills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper')];
+      const dragIndex = allSkills.indexOf(dragging);
+      const hoverIndex = allSkills.indexOf(hoveredSkill);
+
+      if (dragIndex < hoverIndex) {
+        hoveredSkill.parentNode.insertBefore(dragging, hoveredSkill.nextSibling);
+      } else {
+        hoveredSkill.parentNode.insertBefore(dragging, hoveredSkill);
+      }
     }
   });
 
@@ -167,44 +192,6 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
     const categoryKey = categoryEl.dataset.categoryKey;
     await saveSkillOrder(sidebar, categoryKey, categoryEl);
   });
-}
-
-/**
- * Get the element after which the dragged item should be inserted (for grid layouts)
- */
-function getDragAfterElement(container, clientX, selector) {
-  const draggableElements = [...container.querySelectorAll(selector)];
-
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const centerX = box.left + box.width / 2;
-    const offset = clientX - centerX;
-
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
-}
-
-/**
- * Get the element after which the dragged category should be inserted (vertical layout)
- */
-function getDragAfterCategory(container, clientY, selector) {
-  const draggableElements = [...container.querySelectorAll(selector)];
-
-  return draggableElements.reduce((closest, child) => {
-    const box = child.getBoundingClientRect();
-    const centerY = box.top + box.height / 2;
-    const offset = clientY - centerY;
-
-    if (offset < 0 && offset > closest.offset) {
-      return { offset: offset, element: child };
-    } else {
-      return closest;
-    }
-  }, { offset: Number.NEGATIVE_INFINITY }).element;
 }
 
 /**
