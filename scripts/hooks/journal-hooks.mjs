@@ -37,17 +37,33 @@ export async function handleJournalRender(sheet, html) {
     console.warn('StoryFrame: No content area found in journal');
   }
 
-  // Auto-open sidebar if setting enabled
+  // Handle sidebar state
   const sidebar = game.storyframe.gmSidebar;
   const autoOpen = game.settings.get(MODULE_ID, 'autoOpenSidebar');
 
-  if (autoOpen && !sidebar?.rendered) {
+  if (sidebar?.rendered) {
+    // Sidebar is already open
+    if (sidebar.parentInterface === sheet) {
+      // Already attached to this sheet, just refresh
+      sidebar.render();
+    } else if (!sidebar.parentInterface) {
+      // Sidebar is open standalone (not attached to any journal)
+      // Auto-attach it to this journal for better UX
+      sidebar.parentInterface = sheet;
+      sidebar.element.classList.add('drawer');
+      sidebar._stopTrackingParent();
+      sidebar._startTrackingParent();
+      sidebar._positionAsDrawer(3);
+      // Render to update UI state
+      sidebar.render();
+      // Update all journal toggle buttons
+      _updateAllJournalToggleButtons();
+      return; // Skip individual update below
+    }
+    // If attached to a different journal, leave it there
+  } else if (autoOpen) {
+    // Sidebar not open, auto-open if setting enabled
     await _attachSidebarToSheet(sheet);
-  }
-
-  // If sidebar is already open and attached to this sheet, refresh
-  if (sidebar?.rendered && sidebar.parentInterface === sheet) {
-    sidebar.render();
   }
 
   _updateToggleButtonState(sheet, element);
@@ -212,7 +228,7 @@ async function _attachSidebarToSheet(sheet) {
  * Update all journal toggle buttons to reflect current state
  * @private
  */
-function _updateAllJournalToggleButtons() {
+export function _updateAllJournalToggleButtons() {
   const openJournals = Object.values(ui.windows).filter(
     (app) =>
       app instanceof foundry.applications.sheets.journal.JournalEntrySheet && app.rendered,

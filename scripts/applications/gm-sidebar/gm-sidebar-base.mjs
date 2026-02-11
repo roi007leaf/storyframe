@@ -7,6 +7,7 @@ import * as DCHandlers from './managers/dc-handlers.mjs';
 import * as JournalHandlers from './managers/journal-handlers.mjs';
 import * as ParticipantHandlers from './managers/participant-handlers.mjs';
 import * as SkillCheckHandlers from './managers/skill-check-handlers.mjs';
+import * as SkillReorderHandlers from './managers/skill-reorder-handlers.mjs';
 import * as SpeakerHandlers from './managers/speaker-handlers.mjs';
 import * as UIHelpers from './managers/ui-helpers.mjs';
 
@@ -448,6 +449,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.utility, quickButtonSkills, participants),
     };
 
+    // Apply saved skill order within each category
+    categorizedSkills.physicalSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.physicalSkills, 'physical');
+    categorizedSkills.magicalSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.magicalSkills, 'magical');
+    categorizedSkills.socialSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.socialSkills, 'social');
+    categorizedSkills.utilitySkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.utilitySkills, 'utility');
+
     // Get lore skills from participants
     const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
 
@@ -654,6 +661,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Update batch highlights
     SkillCheckHandlers.updateBatchHighlights(this);
+
+    // Attach skill reordering handlers
+    SkillReorderHandlers.attachSkillReorderHandlers(this);
   }
 
   /**
@@ -685,6 +695,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _onClose(_options) {
     this._stopTrackingParent();
     JournalHandlers.cleanupJournalObservers(this);
+
+    // Clear parent interface to prevent stale references
+    this.parentInterface = null;
+
+    // Update all journal toggle buttons to reflect closed state
+    const { _updateAllJournalToggleButtons } = await import('../../hooks/journal-hooks.mjs');
+    _updateAllJournalToggleButtons?.();
 
     // Save visibility state
     await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);

@@ -150,6 +150,77 @@
   gap: 8px;
 }
 
+/* Drag and Drop Reordering */
+.gm-sidebar .skill-category {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gm-sidebar .skill-category.dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+  transition: none !important;
+}
+
+.gm-sidebar .skill-category.drag-over {
+  border: 2px dashed var(--sf-accent-primary);
+  background: rgba(94, 129, 172, 0.15);
+  border-radius: 8px;
+}
+
+.gm-sidebar .skill-btn-wrapper {
+  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.gm-sidebar .skill-btn-wrapper.dragging {
+  opacity: 0.5;
+  cursor: grabbing !important;
+  /* Disable transitions on the dragged item to prevent animation lag */
+  transition: none;
+}
+
+.gm-sidebar .skill-btn-wrapper.dragging .skill-btn {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transform: scale(1.1) rotate(-2deg);
+}
+
+.gm-sidebar .category-label[draggable="true"] {
+  user-select: none;
+  position: relative;
+  transition: all 0.2s ease;
+  padding-left: 16px;
+}
+
+.gm-sidebar .category-label[draggable="true"]::before {
+  content: "⋮⋮";
+  position: absolute;
+  left: 0;
+  opacity: 0.3;
+  font-size: 12px;
+  line-height: 0.8;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.gm-sidebar .category-label[draggable="true"]:hover {
+  color: var(--sf-text-primary);
+}
+
+.gm-sidebar .category-label[draggable="true"]:hover::before {
+  opacity: 0.8;
+  transform: translateX(-2px);
+}
+
+.gm-sidebar .skill-btn-wrapper[draggable="true"] {
+  user-select: none;
+}
+
+.gm-sidebar .skill-btn-wrapper[draggable="true"]:hover {
+  transform: translateY(-1px);
+}
+
+.gm-sidebar .skill-btn-wrapper[draggable="true"]:active {
+  cursor: grabbing;
+}
+
 /* Saves Category */
 .gm-sidebar .saves-category {
   border-top: 2px solid rgba(220, 118, 51, 0.3);

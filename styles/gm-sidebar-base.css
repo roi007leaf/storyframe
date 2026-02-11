@@ -14,6 +14,8 @@
   box-shadow:
     4px 0 20px rgba(0, 0, 0, 0.3),
     -2px 0 10px rgba(0, 0, 0, 0.2) !important;
+  /* Override Foundry core max-height constraint to allow full journal height */
+  max-height: none !important;
 }
 
 /* Hide resize handle for drawer */

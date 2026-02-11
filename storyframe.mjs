@@ -160,6 +160,24 @@ Hooks.once('init', () => {
     },
   });
 
+  game.settings.register(MODULE_ID, 'skillOrderByCategory', {
+    name: 'Skill Order By Category',
+    hint: 'Custom order of skills within each category (drag to reorder in GM Sidebar)',
+    scope: 'world',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.register(MODULE_ID, 'skillCategoryOrder', {
+    name: 'Skill Category Order',
+    hint: 'Custom order of skill categories (drag category labels to reorder in GM Sidebar)',
+    scope: 'world',
+    config: false,
+    type: Array,
+    default: [],
+  });
+
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'requestRollFromSelection', {
     name: 'Request Roll from Journal Selection',
@@ -524,6 +542,8 @@ Hooks.on('getSceneControlButtons', (controls) => {
         if (sidebar.rendered) {
           sidebar.close();
         } else {
+          // Clear parent interface to open standalone
+          sidebar.parentInterface = null;
           sidebar.render(true);
           game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
         }
