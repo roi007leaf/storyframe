@@ -83,7 +83,16 @@ function makeCategoryDraggable(label, categoryEl) {
  * Set up drop zone for category reordering
  */
 function setupCategoryDropZone(container, sidebar) {
-  let currentSwapTarget = null;
+  let targetCategory = null;
+  let startCategory = null;
+
+  const dragstartHandler = (e) => {
+    const dragging = e.target.closest('.skill-category');
+    if (dragging && !dragging.classList.contains('saves-category')) {
+      startCategory = dragging;
+      targetCategory = null;
+    }
+  };
 
   const dragoverHandler = (e) => {
     e.preventDefault();
@@ -94,7 +103,7 @@ function setupCategoryDropZone(container, sidebar) {
 
     // Find closest category to cursor
     const categories = [...container.querySelectorAll('.skill-category:not(.dragging):not(.saves-category)')];
-    let targetCategory = null;
+    let hoveredCategory = null;
     let minDistance = Infinity;
 
     for (const cat of categories) {
@@ -104,49 +113,55 @@ function setupCategoryDropZone(container, sidebar) {
 
       if (distance < minDistance) {
         minDistance = distance;
-        targetCategory = cat;
+        hoveredCategory = cat;
       }
     }
 
-    // Only swap if cursor is reasonably close (within category bounds)
-    if (targetCategory) {
-      const rect = targetCategory.getBoundingClientRect();
+    // Only consider if cursor is within category bounds
+    if (hoveredCategory) {
+      const rect = hoveredCategory.getBoundingClientRect();
       if (e.clientY < rect.top || e.clientY > rect.bottom) {
-        targetCategory = null;
+        hoveredCategory = null;
       }
     }
 
-    // Swap positions if hovering over a different category
-    if (targetCategory && targetCategory !== currentSwapTarget) {
-      // Get references before moving
-      const dragNext = dragging.nextSibling;
-      const targetNext = targetCategory.nextSibling;
-      const parent = dragging.parentNode;
-
-      // Swap the two elements
-      if (dragNext === targetCategory) {
-        // Adjacent: dragging is right before target
-        parent.insertBefore(targetCategory, dragging);
-      } else if (targetNext === dragging) {
-        // Adjacent: target is right before dragging
-        parent.insertBefore(dragging, targetCategory);
-      } else {
-        // Not adjacent
-        parent.insertBefore(dragging, targetNext);
-        parent.insertBefore(targetCategory, dragNext);
-      }
-
-      currentSwapTarget = targetCategory;
-    } else if (!targetCategory) {
-      // Reset swap target when not hovering over any category
-      currentSwapTarget = null;
+    // Track target category and add visual feedback
+    if (hoveredCategory) {
+      targetCategory = hoveredCategory;
+      categories.forEach(c => c.classList.remove('swap-target'));
+      hoveredCategory.classList.add('swap-target');
     }
   };
 
   const dragendHandler = () => {
-    currentSwapTarget = null;
+    // Perform swap only once on dragend
+    if (startCategory && targetCategory && startCategory !== targetCategory) {
+      const parent = startCategory.parentNode;
+      const startNext = startCategory.nextSibling;
+      const targetNext = targetCategory.nextSibling;
+
+      // Swap the two elements
+      if (startNext === targetCategory) {
+        // Adjacent: start is right before target
+        parent.insertBefore(targetCategory, startCategory);
+      } else if (targetNext === startCategory) {
+        // Adjacent: target is right before start
+        parent.insertBefore(startCategory, targetCategory);
+      } else {
+        // Not adjacent
+        parent.insertBefore(startCategory, targetNext);
+        parent.insertBefore(targetCategory, startNext);
+      }
+    }
+
+    // Clean up
+    const categories = [...container.querySelectorAll('.skill-category')];
+    categories.forEach(c => c.classList.remove('swap-target'));
+    targetCategory = null;
+    startCategory = null;
   };
 
+  container.addEventListener('dragstart', dragstartHandler, true);
   container.addEventListener('dragend', dragendHandler, true);
 
   const dropHandler = async (e) => {
@@ -194,7 +209,16 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
  * Set up drop zone for skills within a category
  */
 function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
-  let currentSwapTarget = null;
+  let targetSkill = null;
+  let startSkill = null;
+
+  skillsContainer.addEventListener('dragstart', (e) => {
+    const dragging = e.target.closest('.skill-btn-wrapper');
+    if (dragging) {
+      startSkill = dragging;
+      targetSkill = null;
+    }
+  }, true);
 
   skillsContainer.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -205,41 +229,47 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
 
     // Find skill directly under cursor
     const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper:not(.dragging)')];
-    const targetSkill = skills.find(skill => {
+    const hoveredSkill = skills.find(skill => {
       const rect = skill.getBoundingClientRect();
       return e.clientX >= rect.left && e.clientX <= rect.right &&
              e.clientY >= rect.top && e.clientY <= rect.bottom;
     });
 
-    // Swap positions if hovering over a different skill
-    if (targetSkill && targetSkill !== currentSwapTarget) {
-      // Get references before moving
-      const dragNext = dragging.nextSibling;
-      const targetNext = targetSkill.nextSibling;
-      const parent = dragging.parentNode;
-
-      // Swap the two elements
-      if (dragNext === targetSkill) {
-        // Adjacent: dragging is right before target
-        parent.insertBefore(targetSkill, dragging);
-      } else if (targetNext === dragging) {
-        // Adjacent: target is right before dragging
-        parent.insertBefore(dragging, targetSkill);
-      } else {
-        // Not adjacent
-        parent.insertBefore(dragging, targetNext);
-        parent.insertBefore(targetSkill, dragNext);
-      }
-
-      currentSwapTarget = targetSkill;
-    } else if (!targetSkill) {
-      // Reset swap target when not hovering over any skill
-      currentSwapTarget = null;
+    // Track the target skill for swap on drop
+    if (hoveredSkill) {
+      targetSkill = hoveredSkill;
+      // Add visual feedback
+      skills.forEach(s => s.classList.remove('swap-target'));
+      hoveredSkill.classList.add('swap-target');
     }
   });
 
   skillsContainer.addEventListener('dragend', () => {
-    currentSwapTarget = null;
+    // Perform swap only once on dragend
+    if (startSkill && targetSkill && startSkill !== targetSkill) {
+      const parent = startSkill.parentNode;
+      const startNext = startSkill.nextSibling;
+      const targetNext = targetSkill.nextSibling;
+
+      // Swap the two elements
+      if (startNext === targetSkill) {
+        // Adjacent: start is right before target
+        parent.insertBefore(targetSkill, startSkill);
+      } else if (targetNext === startSkill) {
+        // Adjacent: target is right before start
+        parent.insertBefore(startSkill, targetSkill);
+      } else {
+        // Not adjacent
+        parent.insertBefore(startSkill, targetNext);
+        parent.insertBefore(targetSkill, startNext);
+      }
+    }
+
+    // Clean up
+    const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper')];
+    skills.forEach(s => s.classList.remove('swap-target'));
+    targetSkill = null;
+    startSkill = null;
   }, true);
 
   skillsContainer.addEventListener('drop', async (e) => {
