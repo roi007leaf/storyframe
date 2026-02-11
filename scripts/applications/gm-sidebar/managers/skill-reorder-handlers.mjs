@@ -230,7 +230,7 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
     const hoveredSkill = skills.find(skill => {
       const rect = skill.getBoundingClientRect();
       return e.clientX >= rect.left && e.clientX <= rect.right &&
-             e.clientY >= rect.top && e.clientY <= rect.bottom;
+        e.clientY >= rect.top && e.clientY <= rect.bottom;
     });
 
     // Track the target skill for swap on drop
@@ -290,7 +290,6 @@ async function saveCategoryOrder(sidebar) {
   }).filter(Boolean);
 
   await game.settings.set(MODULE_ID, 'skillCategoryOrder', order);
-  ui.notifications.info('Category order saved');
 }
 
 /**
@@ -306,8 +305,6 @@ async function saveSkillOrder(sidebar, categoryKey, categoryEl) {
   allOrders[categoryKey] = skillSlugs;
 
   await game.settings.set(MODULE_ID, 'skillOrderByCategory', allOrders);
-  const categoryLabel = categoryEl.querySelector('.category-label')?.textContent.trim();
-  ui.notifications.info(`${categoryLabel} skills order saved`);
 }
 
 /**
