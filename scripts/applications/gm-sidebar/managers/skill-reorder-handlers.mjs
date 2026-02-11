@@ -71,7 +71,6 @@ function makeCategoryDraggable(label, categoryEl) {
     categoryEl.classList.remove('dragging');
 
     // Save on dragend since drop doesn't fire reliably when moving elements
-    console.log('StoryFrame: Category dragend - saving order');
     const container = categoryEl.parentElement;
     if (container && container.classList.contains('skill-categories')) {
       await saveCategoryOrder({ element: container.closest('.storyframe.gm-sidebar') });
@@ -197,7 +196,6 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
     wrapper.classList.remove('dragging');
 
     // Save on dragend since drop doesn't fire reliably when moving elements
-    console.log('StoryFrame: Skill dragend - saving order');
     const categoryKey = categoryEl.dataset.categoryKey;
     if (categoryKey) {
       await saveSkillOrder({ element: categoryEl.closest('.storyframe.gm-sidebar') }, categoryKey, categoryEl);
@@ -291,7 +289,6 @@ async function saveCategoryOrder(sidebar) {
     return cat.dataset.categoryKey;
   }).filter(Boolean);
 
-  console.log('StoryFrame: Saving category order:', order);
   await game.settings.set(MODULE_ID, 'skillCategoryOrder', order);
   ui.notifications.info('Category order saved');
 }
@@ -308,7 +305,6 @@ async function saveSkillOrder(sidebar, categoryKey, categoryEl) {
   const allOrders = game.settings.get(MODULE_ID, 'skillOrderByCategory') || {};
   allOrders[categoryKey] = skillSlugs;
 
-  console.log(`StoryFrame: Saving skill order for ${categoryKey}:`, skillSlugs);
   await game.settings.set(MODULE_ID, 'skillOrderByCategory', allOrders);
   const categoryLabel = categoryEl.querySelector('.category-label')?.textContent.trim();
   ui.notifications.info(`${categoryLabel} skills order saved`);
@@ -321,7 +317,6 @@ export function applySavedSkillOrder(skills, categoryKey) {
   const savedOrders = game.settings.get(MODULE_ID, 'skillOrderByCategory') || {};
   const savedOrder = savedOrders[categoryKey];
 
-  console.log(`StoryFrame: Loading skill order for ${categoryKey}:`, savedOrder);
   if (!savedOrder || savedOrder.length === 0) return skills;
 
   // Create a map of slug to skill
@@ -347,7 +342,6 @@ export function applySavedSkillOrder(skills, categoryKey) {
  */
 export function applySavedCategoryOrder(context) {
   const savedOrder = game.settings.get(MODULE_ID, 'skillCategoryOrder') || [];
-  console.log('StoryFrame: Loading category order:', savedOrder);
 
   // Category map
   const categoryMap = {
@@ -369,7 +363,6 @@ export function applySavedCategoryOrder(context) {
       .filter(cat => cat.skills && cat.skills.length > 0);
   }
 
-  console.log('StoryFrame: Ordered categories:', context.orderedCategories.map(c => c.key));
   return context;
 }
 
