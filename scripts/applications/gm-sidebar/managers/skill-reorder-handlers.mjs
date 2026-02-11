@@ -15,12 +15,15 @@ export function attachSkillReorderHandlers(sidebar) {
   const skillCategories = sidebar.element.querySelector('.skill-categories');
   if (!skillCategories) return;
 
+  // Set up category drop zone on container
+  setupCategoryDropZone(skillCategories, sidebar);
+
   // Make category labels draggable and set up drop zones
   const categoryElements = skillCategories.querySelectorAll('.skill-category');
   categoryElements.forEach((categoryEl) => {
     const label = categoryEl.querySelector('.category-label');
     if (label) {
-      makeCategoryDraggable(label, categoryEl, sidebar);
+      makeCategoryDraggable(label, categoryEl);
     }
 
     // Set up drop zone for skills within this category
@@ -32,7 +35,7 @@ export function attachSkillReorderHandlers(sidebar) {
     // Make skill buttons within this category draggable
     const skillWrappers = categoryEl.querySelectorAll('.skill-btn-wrapper');
     skillWrappers.forEach((wrapper) => {
-      makeSkillDraggable(wrapper, sidebar);
+      makeSkillDraggable(wrapper, sidebar, categoryEl);
     });
   });
 }
@@ -40,7 +43,7 @@ export function attachSkillReorderHandlers(sidebar) {
 /**
  * Make a category label draggable for reordering
  */
-function makeCategoryDraggable(label, categoryEl, sidebar) {
+function makeCategoryDraggable(label, categoryEl) {
   label.setAttribute('draggable', 'true');
   label.style.cursor = 'grab';
 
@@ -51,23 +54,31 @@ function makeCategoryDraggable(label, categoryEl, sidebar) {
     categoryEl.classList.add('dragging');
   });
 
-  label.addEventListener('dragend', (e) => {
+  label.addEventListener('dragend', async () => {
     label.style.cursor = 'grab';
     categoryEl.classList.remove('dragging');
-    document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
-  });
 
-  // Make category droppable
-  categoryEl.addEventListener('dragover', (e) => {
+    // Save on dragend since drop doesn't fire reliably when moving elements
+    console.log('StoryFrame: Category dragend - saving order');
+    const container = categoryEl.parentElement;
+    if (container && container.classList.contains('skill-categories')) {
+      await saveCategoryOrder({ element: container.closest('.storyframe.gm-sidebar') });
+    }
+  });
+}
+
+/**
+ * Set up drop zone for category reordering
+ */
+function setupCategoryDropZone(container, sidebar) {
+  container.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
-    const dragging = document.querySelector('.skill-category.dragging');
+    const dragging = container.querySelector('.skill-category.dragging');
     if (!dragging) return;
 
-    categoryEl.classList.add('drag-over');
-    const container = categoryEl.parentElement;
-    const afterElement = getDragAfterCategory(container, e.clientY, '.skill-category:not(.dragging)');
+    const afterElement = getDragAfterCategory(container, e.clientY, '.skill-category:not(.dragging):not(.saves-category)');
 
     if (afterElement == null) {
       container.appendChild(dragging);
@@ -76,16 +87,8 @@ function makeCategoryDraggable(label, categoryEl, sidebar) {
     }
   });
 
-  categoryEl.addEventListener('dragleave', (e) => {
-    if (e.target === categoryEl) {
-      categoryEl.classList.remove('drag-over');
-    }
-  });
-
-  categoryEl.addEventListener('drop', async (e) => {
+  container.addEventListener('drop', async (e) => {
     e.preventDefault();
-    categoryEl.classList.remove('drag-over');
-
     // Save new category order
     await saveCategoryOrder(sidebar);
   });
@@ -94,7 +97,7 @@ function makeCategoryDraggable(label, categoryEl, sidebar) {
 /**
  * Make a skill wrapper draggable for reordering within its category
  */
-function makeSkillDraggable(wrapper, sidebar) {
+function makeSkillDraggable(wrapper, sidebar, categoryEl) {
   wrapper.setAttribute('draggable', 'true');
   wrapper.style.cursor = 'grab';
 
@@ -105,9 +108,16 @@ function makeSkillDraggable(wrapper, sidebar) {
     wrapper.classList.add('dragging');
   });
 
-  wrapper.addEventListener('dragend', () => {
+  wrapper.addEventListener('dragend', async () => {
     wrapper.style.cursor = 'grab';
     wrapper.classList.remove('dragging');
+
+    // Save on dragend since drop doesn't fire reliably when moving elements
+    console.log('StoryFrame: Skill dragend - saving order');
+    const categoryKey = categoryEl.dataset.categoryKey;
+    if (categoryKey) {
+      await saveSkillOrder({ element: categoryEl.closest('.storyframe.gm-sidebar') }, categoryKey, categoryEl);
+    }
   });
 }
 
@@ -133,10 +143,9 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
 
   skillsContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
-
     // Save new skill order for this category
-    const categoryLabel = categoryEl.querySelector('.category-label')?.textContent.trim();
-    await saveSkillOrder(sidebar, categoryLabel, categoryEl);
+    const categoryKey = categoryEl.dataset.categoryKey;
+    await saveSkillOrder(sidebar, categoryKey, categoryEl);
   });
 }
 
@@ -183,13 +192,13 @@ function getDragAfterCategory(container, clientY, selector) {
  */
 async function saveCategoryOrder(sidebar) {
   const container = sidebar.element.querySelector('.skill-categories');
-  const categories = [...container.querySelectorAll('.skill-category')];
+  const categories = [...container.querySelectorAll('.skill-category:not(.saves-category)')];
 
   const order = categories.map(cat => {
-    const label = cat.querySelector('.category-label')?.textContent.trim();
-    return getCategoryKey(label);
+    return cat.dataset.categoryKey;
   }).filter(Boolean);
 
+  console.log('StoryFrame: Saving category order:', order);
   await game.settings.set(MODULE_ID, 'skillCategoryOrder', order);
   ui.notifications.info('Category order saved');
 }
@@ -197,31 +206,19 @@ async function saveCategoryOrder(sidebar) {
 /**
  * Save skill order within a category to settings
  */
-async function saveSkillOrder(sidebar, categoryLabel, categoryEl) {
+async function saveSkillOrder(sidebar, categoryKey, categoryEl) {
   const skillWrappers = [...categoryEl.querySelectorAll('.skill-btn-wrapper')];
   const skillSlugs = skillWrappers.map(wrapper => {
     return wrapper.querySelector('.skill-btn')?.dataset.skill;
   }).filter(Boolean);
 
-  const categoryKey = getCategoryKey(categoryLabel);
   const allOrders = game.settings.get(MODULE_ID, 'skillOrderByCategory') || {};
   allOrders[categoryKey] = skillSlugs;
 
+  console.log(`StoryFrame: Saving skill order for ${categoryKey}:`, skillSlugs);
   await game.settings.set(MODULE_ID, 'skillOrderByCategory', allOrders);
+  const categoryLabel = categoryEl.querySelector('.category-label')?.textContent.trim();
   ui.notifications.info(`${categoryLabel} skills order saved`);
-}
-
-/**
- * Get category key from label
- */
-function getCategoryKey(label) {
-  const mapping = {
-    'Physical': 'physical',
-    'Magical': 'magical',
-    'Social': 'social',
-    'Utility': 'utility',
-  };
-  return mapping[label] || label.toLowerCase();
 }
 
 /**
@@ -231,6 +228,7 @@ export function applySavedSkillOrder(skills, categoryKey) {
   const savedOrders = game.settings.get(MODULE_ID, 'skillOrderByCategory') || {};
   const savedOrder = savedOrders[categoryKey];
 
+  console.log(`StoryFrame: Loading skill order for ${categoryKey}:`, savedOrder);
   if (!savedOrder || savedOrder.length === 0) return skills;
 
   // Create a map of slug to skill
@@ -256,10 +254,9 @@ export function applySavedSkillOrder(skills, categoryKey) {
  */
 export function applySavedCategoryOrder(context) {
   const savedOrder = game.settings.get(MODULE_ID, 'skillCategoryOrder') || [];
+  console.log('StoryFrame: Loading category order:', savedOrder);
 
-  if (savedOrder.length === 0) return context;
-
-  // Reorder categories based on saved order
+  // Category map
   const categoryMap = {
     'physical': { skills: context.physicalSkills, label: 'Physical' },
     'magical': { skills: context.magicalSkills, label: 'Magical' },
@@ -267,9 +264,18 @@ export function applySavedCategoryOrder(context) {
     'utility': { skills: context.utilitySkills, label: 'Utility' },
   };
 
-  context.orderedCategories = savedOrder
-    .map(key => ({ key, ...categoryMap[key] }))
-    .filter(cat => cat.skills && cat.skills.length > 0);
+  if (savedOrder.length === 0) {
+    // Use default order if no saved order
+    context.orderedCategories = ['physical', 'magical', 'social', 'utility']
+      .map(key => ({ key, ...categoryMap[key] }))
+      .filter(cat => cat.skills && cat.skills.length > 0);
+  } else {
+    // Use saved order
+    context.orderedCategories = savedOrder
+      .map(key => ({ key, ...categoryMap[key] }))
+      .filter(cat => cat.skills && cat.skills.length > 0);
+  }
 
+  console.log('StoryFrame: Ordered categories:', context.orderedCategories.map(c => c.key));
   return context;
 }

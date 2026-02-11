@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.7.5] - 2026-02-11
 
+### Added
+
+- **Skill & Category Reordering** - Drag-and-drop reordering in GM sidebar
+  - Drag skill buttons to reorder within categories
+  - Drag category labels to reorder categories
+  - Custom order persisted to world settings
+  - Fast animations with smooth transitions
+
 ### Fixed
+
+- **Category Order Persistence** - Category order now properly persists when sidebar reopens
+  - Applied saved category order to template rendering
+  - Custom ordering now respected on every sidebar render
 
 - **Player Challenge Selection** - Fixed "Challenge no longer active" error when players select challenge options
   - Updated player-viewer to use new multi-challenge system (activeChallenges array)

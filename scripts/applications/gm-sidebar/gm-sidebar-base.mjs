@@ -455,6 +455,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     categorizedSkills.socialSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.socialSkills, 'social');
     categorizedSkills.utilitySkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.utilitySkills, 'utility');
 
+    // Apply saved category order
+    SkillReorderHandlers.applySavedCategoryOrder(categorizedSkills);
+
     // Get lore skills from participants
     const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
 

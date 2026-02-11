@@ -323,11 +323,11 @@
         {{/if}}
 
         <div class="skill-categories" role="group" aria-label="{{localize "STORYFRAME.UI.AriaLabels.SkillButtonsByCategory"}}">
-          {{#if physicalSkills.length}}
-          <div class="skill-category">
-            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Physical"}}</span>
+          {{#each orderedCategories}}
+          <div class="skill-category" data-category-key="{{this.key}}">
+            <span class="category-label">{{this.label}}</span>
             <div class="category-skills">
-              {{#each physicalSkills}}
+              {{#each this.skills}}
               <div class="skill-btn-wrapper">
                 <button type="button"
                         class="skill-btn"
@@ -342,70 +342,7 @@
               {{/each}}
             </div>
           </div>
-          {{/if}}
-
-          {{#if magicalSkills.length}}
-          <div class="skill-category">
-            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Magical"}}</span>
-            <div class="category-skills">
-              {{#each magicalSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-          {{/if}}
-
-          {{#if socialSkills.length}}
-          <div class="skill-category">
-            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Social"}}</span>
-            <div class="category-skills">
-              {{#each socialSkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-          {{/if}}
-
-          {{#if utilitySkills.length}}
-          <div class="skill-category">
-            <span class="category-label">{{localize "STORYFRAME.UI.Categories.Utility"}}</span>
-            <div class="category-skills">
-              {{#each utilitySkills}}
-              <div class="skill-btn-wrapper">
-                <button type="button"
-                        class="skill-btn"
-                        data-action="requestSkill"
-                        data-skill="{{this.slug}}"
-                        data-tooltip="{{this.name}}"
-                        aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestSkillCheck" skill=this.name}}">
-                  <i class="fas {{this.icon}}" aria-hidden="true"></i>
-                </button>
-                <span class="skill-label">{{this.name}}</span>
-              </div>
-              {{/each}}
-            </div>
-          </div>
-          {{/if}}
+          {{/each}}
 
           {{#if saves.length}}
           <div class="skill-category saves-category">
