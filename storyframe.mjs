@@ -170,7 +170,7 @@ Hooks.once('init', () => {
 
       const sidebar = game.storyframe?.gmSidebar;
       if (!sidebar) {
-        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        ui.notifications.warn('Open GM Sidebar first (click book icon in token controls)');
         return false;
       }
 
@@ -281,7 +281,7 @@ Hooks.once('init', () => {
 
       const sidebar = game.storyframe?.gmSidebar;
       if (!sidebar) {
-        ui.notifications.warn('GM Sidebar must be open to use this feature');
+        ui.notifications.warn('Open GM Sidebar first (click users icon in token controls)');
         return false;
       }
 
@@ -486,6 +486,47 @@ Hooks.on('getSceneControlButtons', (controls) => {
 
         // No content at all
         ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.NoContent'));
+      },
+    };
+  }
+
+  // GM button (GM only)
+  if (game.user?.isGM) {
+    controls.tokens.tools.storyframe_gm = {
+      name: 'storyframe_gm',
+      title: 'StoryFrame GM Sidebar',
+      icon: 'fas fa-book-open',
+      visible: true,
+      button: true,
+      onChange: async (isActive) => {
+        // Only act on activation
+        if (!isActive) return;
+
+        // Create sidebar if it doesn't exist
+        if (!game.storyframe.gmSidebar) {
+          const system = game.system.id;
+
+          if (system === 'pf2e') {
+            const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppPF2e();
+          } else if (system === 'dnd5e') {
+            const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+          } else {
+            const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppBase();
+          }
+        }
+
+        const sidebar = game.storyframe.gmSidebar;
+
+        // Toggle sidebar visibility
+        if (sidebar.rendered) {
+          sidebar.close();
+        } else {
+          sidebar.render(true);
+          game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
+        }
       },
     };
   }

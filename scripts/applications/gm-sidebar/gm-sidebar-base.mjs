@@ -19,12 +19,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 ) {
   static DEFAULT_OPTIONS = {
     id: 'storyframe-gm-sidebar',
-    classes: ['storyframe', 'gm-sidebar', 'drawer'],
+    classes: ['storyframe', 'gm-sidebar'],
     window: {
       title: 'STORYFRAME.WindowTitles.GMSidebar',
-      icon: 'fas fa-users',
-      resizable: false,
-      minimizable: false,
+      icon: 'fas fa-book-open',
+      resizable: true,
+      minimizable: true,
     },
     position: {
       width: 330,
@@ -601,11 +601,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    * Attach event handlers after render
    */
   async _onRender(context, _options) {
-    // Position as drawer
-    this._positionAsDrawer();
-
-    // Start tracking parent position
-    this._startTrackingParent();
+    // Position as drawer and track parent only if attached to a journal
+    if (this.parentInterface) {
+      this._positionAsDrawer();
+      this._startTrackingParent();
+    }
 
     // Set up drag-drop for actors (remove old listeners first)
     if (this._dropHandler) {
@@ -681,6 +681,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this._stopTrackingParent();
     JournalHandlers.cleanupJournalObservers(this);
 
+    // Save visibility state
+    await game.settings.set(MODULE_ID, 'gmSidebarVisible', false);
+
     // Remove shift key handler
     if (this._shiftKeyHandler) {
       document.removeEventListener('keydown', this._shiftKeyHandler);
@@ -689,11 +692,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
 
     // Remove drag/drop handlers
-    if (this._dropHandler) {
+    if (this._dropHandler && this.element) {
       this.element.removeEventListener('drop', this._dropHandler);
       this._dropHandler = null;
     }
-    if (this._dragoverHandler) {
+    if (this._dragoverHandler && this.element) {
       this.element.removeEventListener('dragover', this._dragoverHandler);
       this._dragoverHandler = null;
     }

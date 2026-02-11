@@ -41,7 +41,9 @@ export function extractJournalChecksFlat(sidebar) {
  * Returns the container with all journal content for check parsing
  */
 export function getJournalContent(sidebar) {
+  if (!sidebar.parentInterface) return null;
   const element = extractParentElement(sidebar.parentInterface);
+  if (!element || typeof element.querySelector !== 'function') return null;
   return findJournalContent(element);
 }
 

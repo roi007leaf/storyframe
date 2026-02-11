@@ -5,6 +5,25 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.5] - 2026-02-11
+
+### Fixed
+
+- **Player Challenge Selection** - Fixed "Challenge no longer active" error when players select challenge options
+  - Updated player-viewer to use new multi-challenge system (activeChallenges array)
+  - Challenge buttons now properly lookup challenge by ID
+
+- **GM Sidebar Independence** - GM sidebar no longer requires journal tab to be open
+  - Added token control button to open/close sidebar independently
+  - Sidebar works in standalone mode or attached to journals (drawer mode)
+  - Made sidebar resizable and minimizable in standalone mode
+  - Updated keybinding warnings for clearer instructions
+
+- **Standalone Mode Stability** - Fixed errors when GM sidebar opens without parent journal
+  - Added null checks for element cleanup in close handler
+  - Fixed journal content extraction to handle missing parent interface
+  - Prevented errors when toggling sidebar in standalone mode
+
 ## [1.7.4] - 2026-02-09
 
 ### Changed

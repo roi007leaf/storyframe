@@ -129,12 +129,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       showDCs = challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM);
     }
 
-    // Check if active challenge applies to this player
+    // Check if active challenges apply to this player (backward compatibility)
     let activeChallenge = null;
-    if (state?.activeChallenge && myParticipants.length > 0) {
-      // Show challenge to ALL players with participants
-      // Apply DC visibility based on system settings
-      const enrichedOptions = state.activeChallenge.options.map(opt => ({
+    if (state?.activeChallenges && state.activeChallenges.length > 0 && myParticipants.length > 0) {
+      // Use first challenge for backward compatibility
+      const firstChallenge = state.activeChallenges[0];
+      const enrichedOptions = firstChallenge.options.map(opt => ({
         ...opt,
         skillOptionsDisplay: opt.skillOptions.map(so => ({
           ...so,
@@ -146,7 +146,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }));
 
       activeChallenge = {
-        ...state.activeChallenge,
+        ...firstChallenge,
         options: enrichedOptions,
       };
     }
@@ -654,7 +654,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const actionSlug = target.dataset.actionSlug || null;
     const isSecret = target.dataset.isSecret === 'true';
     const state = game.storyframe.stateManager.getState();
-    const challenge = state?.activeChallenge;
+
+    // Find challenge ID from parent element
+    const challengeCard = target.closest('[data-challenge-id]');
+    const challengeId = challengeCard?.dataset.challengeId;
+
+    if (!challengeId) {
+      ui.notifications.error('Challenge ID not found');
+      return;
+    }
+
+    // Look up challenge from activeChallenges array
+    const challenge = state?.activeChallenges?.find(c => c.id === challengeId);
 
     if (!challenge) {
       ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Roll.ChallengeNoLongerActive'));
