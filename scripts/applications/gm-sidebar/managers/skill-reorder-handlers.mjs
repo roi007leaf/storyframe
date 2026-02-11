@@ -83,6 +83,8 @@ function makeCategoryDraggable(label, categoryEl) {
  * Set up drop zone for category reordering
  */
 function setupCategoryDropZone(container, sidebar) {
+  let currentSwapTarget = null;
+
   const dragoverHandler = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -90,34 +92,45 @@ function setupCategoryDropZone(container, sidebar) {
     const dragging = container.querySelector('.skill-category.dragging');
     if (!dragging) return;
 
-    // Find closest category to cursor position
+    // Find category directly under cursor
     const categories = [...container.querySelectorAll('.skill-category:not(.dragging):not(.saves-category)')];
-    let closestCategory = null;
-    let closestDistance = Infinity;
-
-    for (const cat of categories) {
+    const targetCategory = categories.find(cat => {
       const rect = cat.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-      const distance = Math.abs(e.clientY - centerY);
+      return e.clientY >= rect.top && e.clientY <= rect.bottom;
+    });
 
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestCategory = cat;
-      }
-    }
+    // Swap positions if hovering over a different category
+    if (targetCategory && targetCategory !== currentSwapTarget) {
+      // Get references before moving
+      const dragNext = dragging.nextSibling;
+      const targetNext = targetCategory.nextSibling;
+      const parent = dragging.parentNode;
 
-    if (closestCategory) {
-      const rect = closestCategory.getBoundingClientRect();
-      const centerY = rect.top + rect.height / 2;
-
-      // Insert before or after based on cursor position relative to center
-      if (e.clientY < centerY) {
-        closestCategory.parentNode.insertBefore(dragging, closestCategory);
+      // Swap the two elements
+      if (dragNext === targetCategory) {
+        // Adjacent: dragging is right before target
+        parent.insertBefore(targetCategory, dragging);
+      } else if (targetNext === dragging) {
+        // Adjacent: target is right before dragging
+        parent.insertBefore(dragging, targetCategory);
       } else {
-        closestCategory.parentNode.insertBefore(dragging, closestCategory.nextSibling);
+        // Not adjacent
+        parent.insertBefore(dragging, targetNext);
+        parent.insertBefore(targetCategory, dragNext);
       }
+
+      currentSwapTarget = targetCategory;
+    } else if (!targetCategory) {
+      // Reset swap target when not hovering over any category
+      currentSwapTarget = null;
     }
   };
+
+  const dragendHandler = () => {
+    currentSwapTarget = null;
+  };
+
+  container.addEventListener('dragend', dragendHandler, true);
 
   const dropHandler = async (e) => {
     e.preventDefault();
@@ -164,6 +177,8 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
  * Set up drop zone for skills within a category
  */
 function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
+  let currentSwapTarget = null;
+
   skillsContainer.addEventListener('dragover', (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -171,39 +186,44 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
     const dragging = skillsContainer.querySelector('.skill-btn-wrapper.dragging');
     if (!dragging) return;
 
-    // Find closest skill to cursor position
+    // Find skill directly under cursor
     const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper:not(.dragging)')];
-    let closestSkill = null;
-    let closestDistance = Infinity;
-
-    for (const skill of skills) {
+    const targetSkill = skills.find(skill => {
       const rect = skill.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const centerY = rect.top + rect.height / 2;
+      return e.clientX >= rect.left && e.clientX <= rect.right &&
+             e.clientY >= rect.top && e.clientY <= rect.bottom;
+    });
 
-      // Calculate distance from cursor to center of skill
-      const dx = e.clientX - centerX;
-      const dy = e.clientY - centerY;
-      const distance = Math.sqrt(dx * dx + dy * dy);
+    // Swap positions if hovering over a different skill
+    if (targetSkill && targetSkill !== currentSwapTarget) {
+      // Get references before moving
+      const dragNext = dragging.nextSibling;
+      const targetNext = targetSkill.nextSibling;
+      const parent = dragging.parentNode;
 
-      if (distance < closestDistance) {
-        closestDistance = distance;
-        closestSkill = skill;
-      }
-    }
-
-    if (closestSkill) {
-      const rect = closestSkill.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-
-      // Insert before or after based on cursor position relative to center
-      if (e.clientX < centerX) {
-        closestSkill.parentNode.insertBefore(dragging, closestSkill);
+      // Swap the two elements
+      if (dragNext === targetSkill) {
+        // Adjacent: dragging is right before target
+        parent.insertBefore(targetSkill, dragging);
+      } else if (targetNext === dragging) {
+        // Adjacent: target is right before dragging
+        parent.insertBefore(dragging, targetSkill);
       } else {
-        closestSkill.parentNode.insertBefore(dragging, closestSkill.nextSibling);
+        // Not adjacent
+        parent.insertBefore(dragging, targetNext);
+        parent.insertBefore(targetSkill, dragNext);
       }
+
+      currentSwapTarget = targetSkill;
+    } else if (!targetSkill) {
+      // Reset swap target when not hovering over any skill
+      currentSwapTarget = null;
     }
   });
+
+  skillsContainer.addEventListener('dragend', () => {
+    currentSwapTarget = null;
+  }, true);
 
   skillsContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
