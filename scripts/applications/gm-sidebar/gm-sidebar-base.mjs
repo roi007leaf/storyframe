@@ -603,8 +603,13 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _onRender(context, _options) {
     // Position as drawer and track parent only if attached to a journal
     if (this.parentInterface) {
+      // Add drawer class for drawer-specific styling
+      this.element.classList.add('drawer');
       this._positionAsDrawer();
       this._startTrackingParent();
+    } else {
+      // Remove drawer class for standalone mode
+      this.element.classList.remove('drawer');
     }
 
     // Set up drag-drop for actors (remove old listeners first)

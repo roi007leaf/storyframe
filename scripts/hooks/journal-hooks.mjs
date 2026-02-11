@@ -114,7 +114,7 @@ function _injectSidebarToggleButton(sheet, html) {
   toggleBtn.className = 'header-button control storyframe-sidebar-toggle';
   toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
   toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
-  toggleBtn.innerHTML = '<i class="fas fa-users"></i>';
+  toggleBtn.innerHTML = '<i class="fas fa-book-open"></i>';
 
   toggleBtn.onclick = async (e) => {
     e.preventDefault();
@@ -198,6 +198,10 @@ async function _attachSidebarToSheet(sheet) {
   if (!sidebar.rendered) {
     sidebar.render(true);
   } else {
+    // Add drawer class when reattaching
+    if (sidebar.element) {
+      sidebar.element.classList.add('drawer');
+    }
     sidebar._stopTrackingParent();
     sidebar._startTrackingParent();
     sidebar._positionAsDrawer(3);

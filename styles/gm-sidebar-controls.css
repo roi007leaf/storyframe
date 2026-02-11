@@ -568,6 +568,11 @@
   overflow: hidden;
 }
 
+/* Remove max-height constraints in drawer mode */
+.storyframe.gm-sidebar.drawer .npcs-section {
+  max-height: none;
+}
+
 .npcs-section.collapsed .panel-content {
   display: none;
 }
@@ -599,6 +604,11 @@
   padding: var(--sf-space-sm);
   scrollbar-width: thin;
   scrollbar-color: var(--sf-border-medium) transparent;
+}
+
+/* Remove max-height constraint in drawer mode */
+.storyframe.gm-sidebar.drawer .gm-sidebar-container .speaker-gallery {
+  max-height: none;
 }
 
 .gm-sidebar-container .speaker-gallery::-webkit-scrollbar {
