@@ -15,6 +15,18 @@ export function attachSkillReorderHandlers(sidebar) {
   const skillCategories = sidebar.element.querySelector('.skill-categories');
   if (!skillCategories) return;
 
+  // Clean up old handlers before attaching new ones
+  cleanupSkillReorderHandlers(sidebar);
+
+  // Initialize handler storage
+  if (!sidebar._reorderHandlers) {
+    sidebar._reorderHandlers = {
+      categoryDragover: null,
+      categoryDrop: null,
+      elements: []
+    };
+  }
+
   // Set up category drop zone on container
   setupCategoryDropZone(skillCategories, sidebar);
 
@@ -71,7 +83,7 @@ function makeCategoryDraggable(label, categoryEl) {
  * Set up drop zone for category reordering
  */
 function setupCategoryDropZone(container, sidebar) {
-  container.addEventListener('dragover', (e) => {
+  const dragoverHandler = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
@@ -85,13 +97,21 @@ function setupCategoryDropZone(container, sidebar) {
     } else {
       container.insertBefore(dragging, afterElement);
     }
-  });
+  };
 
-  container.addEventListener('drop', async (e) => {
+  const dropHandler = async (e) => {
     e.preventDefault();
     // Save new category order
     await saveCategoryOrder(sidebar);
-  });
+  };
+
+  container.addEventListener('dragover', dragoverHandler);
+  container.addEventListener('drop', dropHandler);
+
+  // Store handlers for cleanup
+  sidebar._reorderHandlers.categoryDragover = dragoverHandler;
+  sidebar._reorderHandlers.categoryDrop = dropHandler;
+  sidebar._reorderHandlers.container = container;
 }
 
 /**
@@ -278,4 +298,26 @@ export function applySavedCategoryOrder(context) {
 
   console.log('StoryFrame: Ordered categories:', context.orderedCategories.map(c => c.key));
   return context;
+}
+
+/**
+ * Clean up drag-and-drop handlers to prevent memory leaks
+ * @param {Object} sidebar - The sidebar instance
+ */
+export function cleanupSkillReorderHandlers(sidebar) {
+  if (!sidebar._reorderHandlers) return;
+
+  const handlers = sidebar._reorderHandlers;
+
+  // Remove container-level handlers
+  if (handlers.categoryDragover && handlers.container) {
+    handlers.container.removeEventListener('dragover', handlers.categoryDragover);
+    handlers.container.removeEventListener('drop', handlers.categoryDrop);
+  }
+
+  // Clear stored elements (event listeners will be garbage collected with elements)
+  handlers.elements = [];
+  handlers.categoryDragover = null;
+  handlers.categoryDrop = null;
+  handlers.container = null;
 }

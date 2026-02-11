@@ -698,6 +698,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _onClose(_options) {
     this._stopTrackingParent();
     JournalHandlers.cleanupJournalObservers(this);
+    SkillReorderHandlers.cleanupSkillReorderHandlers(this);
 
     // Clear parent interface to prevent stale references
     this.parentInterface = null;
