@@ -92,12 +92,29 @@ function setupCategoryDropZone(container, sidebar) {
     const dragging = container.querySelector('.skill-category.dragging');
     if (!dragging) return;
 
-    // Find category directly under cursor
+    // Find closest category to cursor
     const categories = [...container.querySelectorAll('.skill-category:not(.dragging):not(.saves-category)')];
-    const targetCategory = categories.find(cat => {
+    let targetCategory = null;
+    let minDistance = Infinity;
+
+    for (const cat of categories) {
       const rect = cat.getBoundingClientRect();
-      return e.clientY >= rect.top && e.clientY <= rect.bottom;
-    });
+      const centerY = rect.top + rect.height / 2;
+      const distance = Math.abs(e.clientY - centerY);
+
+      if (distance < minDistance) {
+        minDistance = distance;
+        targetCategory = cat;
+      }
+    }
+
+    // Only swap if cursor is reasonably close (within category bounds)
+    if (targetCategory) {
+      const rect = targetCategory.getBoundingClientRect();
+      if (e.clientY < rect.top || e.clientY > rect.bottom) {
+        targetCategory = null;
+      }
+    }
 
     // Swap positions if hovering over a different category
     if (targetCategory && targetCategory !== currentSwapTarget) {
