@@ -66,6 +66,9 @@ export async function handleJournalRender(sheet, html) {
     await _attachSidebarToSheet(sheet);
   }
 
+  // Listen for minimize/maximize events on this journal
+  _setupMinimizeMaximizeHandler(sheet);
+
   _updateToggleButtonState(sheet, element);
 }
 
@@ -77,8 +80,19 @@ export async function handleJournalRender(sheet, html) {
 export async function handleJournalClose(sheet) {
   if (!game.user.isGM) return;
 
+  // Clean up minimize observer
+  if (sheet._storyframeMinimizeObserver) {
+    sheet._storyframeMinimizeObserver.disconnect();
+    sheet._storyframeMinimizeObserver = null;
+  }
+
   const sidebar = game.storyframe.gmSidebar;
   if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+  // Reset minimize flag
+  if (sidebar._wasHiddenByMinimize) {
+    sidebar._wasHiddenByMinimize = false;
+  }
 
   // Find other open journals (all supported types)
   const openJournals = Object.values(ui.windows).filter(
@@ -94,6 +108,10 @@ export async function handleJournalClose(sheet) {
     // Reattach to most recent
     const newParent = openJournals[openJournals.length - 1];
     sidebar.parentInterface = newParent;
+    // Ensure sidebar is visible when reattaching
+    if (sidebar.element) {
+      sidebar.element.style.display = '';
+    }
     sidebar._stopTrackingParent();
     sidebar._startTrackingParent();
     sidebar._positionAsDrawer(3);
@@ -249,19 +267,18 @@ export function _updateAllJournalToggleButtons() {
 function _setupInlineCheckCtrlClickHandlers(contentArea) {
   if (!game.user.isGM) return;
 
-  // Find all inline checks with repost buttons (PF2e format)
-  const inlineChecks = contentArea.querySelectorAll('a.inline-check.with-repost[data-pf2-check][data-pf2-dc]');
+  // Find all inline checks (PF2e format)
+  const inlineChecks = contentArea.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
 
 
   inlineChecks.forEach((checkElement) => {
-    // Find the repost icon within this check
+    // Find the repost icon within this check (if it exists)
     const repostIcon = checkElement.querySelector('[data-pf2-repost]');
-    if (!repostIcon) {
-      console.warn('StoryFrame: No repost icon found for check', checkElement);
-      return;
-    }
 
-    // Add click listener to the repost icon (use capture phase to intercept before PF2e)
+    // Use repost icon if available, otherwise use the check element itself
+    const clickTarget = repostIcon || checkElement;
+
+    // Add click listener (use capture phase to intercept before PF2e)
     const handleCtrlClick = async (event) => {
       // Only intercept if ctrl key is pressed
       if (!event.ctrlKey) return;
@@ -372,6 +389,56 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
     };
 
     // Attach the handler with capture: true to run before PF2e's handlers
-    repostIcon.addEventListener('click', handleCtrlClick, { capture: true });
+    clickTarget.addEventListener('click', handleCtrlClick, { capture: true });
+  });
+}
+
+/**
+ * Setup minimize/maximize handler for a journal sheet
+ * Hides/shows the sidebar when the journal is minimized/maximized
+ * @private
+ */
+function _setupMinimizeMaximizeHandler(sheet) {
+  if (!sheet.element) return;
+
+  // Extract the actual DOM element
+  const element = extractElement(sheet.element, sheet);
+  if (!element) return;
+
+  // Clean up existing observer if present
+  if (sheet._storyframeMinimizeObserver) {
+    sheet._storyframeMinimizeObserver.disconnect();
+    sheet._storyframeMinimizeObserver = null;
+  }
+
+  // Use MutationObserver to watch for minimize/maximize state changes
+  sheet._storyframeMinimizeObserver = new MutationObserver((_mutations) => {
+    const sidebar = game.storyframe.gmSidebar;
+    if (!sidebar || sidebar.parentInterface !== sheet) return;
+
+    // Check if the window has the minimized class
+    const isMinimized = element.classList.contains('minimized');
+
+    if (isMinimized && !sidebar._wasHiddenByMinimize) {
+      // Hide sidebar when journal is minimized
+      if (sidebar.rendered && sidebar.element) {
+        sidebar.element.style.display = 'none';
+        sidebar._wasHiddenByMinimize = true;
+      }
+    } else if (!isMinimized && sidebar._wasHiddenByMinimize) {
+      // Show sidebar when journal is maximized
+      if (sidebar.element) {
+        sidebar.element.style.display = '';
+        sidebar._wasHiddenByMinimize = false;
+        // Reposition sidebar
+        sidebar._positionAsDrawer(3);
+      }
+    }
+  });
+
+  // Observe class changes on the journal window element
+  sheet._storyframeMinimizeObserver.observe(element, {
+    attributes: true,
+    attributeFilter: ['class'],
   });
 }

@@ -5,6 +5,33 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.6] - 2026-02-15
+
+### Added
+
+- **Journal Minimize/Maximize Support** - GM sidebar now hides/shows automatically when attached journal is minimized/maximized
+  - Sidebar hides when journal window is minimized (double-click title bar)
+  - Sidebar reappears and repositions when journal is maximized
+  - Uses MutationObserver to detect window state changes
+  - Proper cleanup of observers when journals close
+
+### Fixed
+
+- **PF2e Inline Check Ctrl+Click** - Fixed ctrl+click on PF2e inline checks to open Roll Requester dialog
+  - Removed restrictive `.with-repost` class requirement from selector
+  - Added fallback to check element if repost icon not found
+  - Event listener now properly intercepts clicks on both repost icons and check elements
+  - Works with all PF2e inline check formats in journal entries
+
+### Changed
+
+- **Player Sidebar Dimensions** - Improved default size and made resizable
+  - Increased default width: 340px → 380px
+  - Increased default height: 600px → 650px
+  - Added minimum constraints (320px width, 500px height)
+  - Made sidebar resizable for player customization
+  - Prevents cramped appearance on first open
+
 ## [1.7.5] - 2026-02-11
 
 ### Added

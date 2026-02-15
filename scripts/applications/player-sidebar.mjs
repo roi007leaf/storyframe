@@ -15,7 +15,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     window: {
       title: 'STORYFRAME.WindowTitles.PlayerSidebar',
       icon: 'fas fa-dice-d20',
-      resizable: false,
+      resizable: true,
       minimizable: false,
     },
     position: {
