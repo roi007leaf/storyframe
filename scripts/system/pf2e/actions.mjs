@@ -4,8 +4,10 @@
  */
 
 export const PF2E_ACTION_DISPLAY_NAMES = {
+  'follow-the-expert': 'Follow the Expert',
   seek: 'Seek',
   'sense-direction': 'Sense Direction',
+  'sense-motive': 'Sense Motive',
   balance: 'Balance',
   'tumble-through': 'Tumble Through',
   'maneuver-in-flight': 'Maneuver in Flight',
@@ -14,6 +16,7 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   'decipher-writing': 'Decipher Writing',
   'identify-magic': 'Identify Magic',
   'learn-spell': 'Learn a Spell',
+  'borrow-an-arcane-spell': 'Borrow an Arcane Spell',
   climb: 'Climb',
   'force-open': 'Force Open',
   grapple: 'Grapple',
@@ -23,6 +26,7 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   swim: 'Swim',
   trip: 'Trip',
   disarm: 'Disarm',
+  reposition: 'Reposition',
   repair: 'Repair',
   craft: 'Craft',
   'identify-alchemy': 'Identify Alchemy',
@@ -44,6 +48,7 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   'create-forgery': 'Create Forgery',
   subsist: 'Subsist',
   'conceal-an-object': 'Conceal an Object',
+  'avoid-notice': 'Avoid Notice',
   hide: 'Hide',
   sneak: 'Sneak',
   track: 'Track',
@@ -52,4 +57,31 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   steal: 'Steal',
   'pick-a-lock': 'Pick a Lock',
   'disable-device': 'Disable Device',
+};
+
+/**
+ * PF2e Action Variants
+ * Maps action slugs to their available variants with display names
+ */
+export const PF2E_ACTION_VARIANTS = {
+  'create-a-diversion': [
+    { slug: 'distracting-words', name: 'Distracting Words' },
+    { slug: 'gesture', name: 'Gesture' },
+    { slug: 'trick', name: 'Trick' },
+  ],
+  perform: [
+    { slug: 'acting', name: 'Acting' },
+    { slug: 'comedy', name: 'Comedy' },
+    { slug: 'dance', name: 'Dance' },
+    { slug: 'keyboards', name: 'Keyboards' },
+    { slug: 'oratory', name: 'Oratory' },
+    { slug: 'percussion', name: 'Percussion' },
+    { slug: 'singing', name: 'Singing' },
+    { slug: 'strings', name: 'Strings' },
+    { slug: 'winds', name: 'Winds' },
+  ],
+  'administer-first-aid': [
+    { slug: 'stabilize', name: 'Stabilize' },
+    { slug: 'stop-bleeding', name: 'Stop Bleeding' },
+  ],
 };

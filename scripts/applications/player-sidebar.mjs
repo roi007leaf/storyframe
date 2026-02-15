@@ -1,5 +1,6 @@
 import * as SystemAdapter from '../system-adapter.mjs';
 import { extractParentElement } from '../utils/element-utils.mjs';
+import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 
 /**
  * Player Sidebar for StoryFrame
@@ -203,6 +204,17 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       return 'extreme';
     };
 
+    // Get action display name helper
+    const getActionName = (actionSlug) => {
+      if (!actionSlug) return null;
+      // For PF2e, use the action display names mapping
+      if (game.system.id === 'pf2e' && PF2E_ACTION_DISPLAY_NAMES[actionSlug]) {
+        return PF2E_ACTION_DISPLAY_NAMES[actionSlug];
+      }
+      // Fallback: convert slug to title case
+      return actionSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    };
+
     // Active challenges (multi-challenge support)
     let activeChallenges = [];
     if (state?.activeChallenges && myParticipants.length > 0) {
@@ -255,7 +267,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               checkIcon = getSkillIcon(so.skill);
             }
 
-            const action = so.action || null;
+            const actionDisplayName = getActionName(so.action);
 
             // Build localized tooltip and aria-label
             let tooltip, ariaLabel;
@@ -264,8 +276,8 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
                 tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.RollSave', { save: checkName });
                 ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
               } else {
-                tooltip = action
-                  ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action })
+                tooltip = actionDisplayName
+                  ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action: actionDisplayName })
                   : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: checkName });
                 ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
               }
@@ -281,7 +293,8 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               checkType,  // NEW
               dc: so.dc,
               dcDifficulty: getDCDifficulty(so.dc),
-              action,
+              action: so.action, // Keep original slug for data attribute
+              actionName: actionDisplayName, // Add display name
               isSecret: so.isSecret || false,
               showDC: showDCs,
               canRoll,
@@ -320,7 +333,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
             // Get appropriate name based on check type
             const checkName = checkType === 'save' ? getSaveName(checkSlug) : getSkillName(checkSlug);
-            const actionName = roll.actionSlug || null;
+            const actionName = getActionName(roll.actionSlug);
 
             // Build localized tooltip and aria-label
             let tooltip, ariaLabel;

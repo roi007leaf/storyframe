@@ -476,6 +476,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       if (request.dc !== null && request.dc !== undefined) {
         rollOptions.dc = { value: request.dc };
       }
+      // Add action variant if provided
+      if (request.actionVariant) {
+        rollOptions.variant = request.actionVariant;
+      }
       // Add blind roll mode if secret
       if (request.isSecretRoll) {
         rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
@@ -826,13 +830,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * Try to execute a PF2e action using the game.pf2e.actions system.
    * @param {Actor} actor - The actor performing the action
    * @param {string} actionSlug - The action slug (e.g., 'demoralize', 'request')
-   * @param {Object} rollOptions - Roll options including DC
+   * @param {Object} rollOptions - Roll options including DC and optional variant
    * @returns {Object|null} The roll result or null if action couldn't be executed
    */
   static async _tryExecuteAction(actor, actionSlug, rollOptions) {
     try {
       // Map our action slugs to PF2e action identifiers
       const pf2eActionMap = {
+        'follow-the-expert': 'followTheExpert',
         demoralize: 'demoralize',
         feint: 'feint',
         grapple: 'grapple',
@@ -866,8 +871,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         'palm-an-object': 'palmAnObject',
         perform: 'perform',
         'recall-knowledge': 'recallKnowledge',
+        'decipher-writing': 'decipherWriting',
+        'identify-magic': 'identifyMagic',
+        'learn-spell': 'learnSpell',
+        'borrow-an-arcane-spell': 'borrowAnArcaneSpell',
         'sense-direction': 'senseDirection',
         track: 'track',
+        'cover-tracks': 'coverTracks',
+        'create-forgery': 'createForgery',
         subsist: 'subsist',
         craft: 'craft',
         repair: 'repair',
@@ -884,14 +895,22 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
       if (!pf2eActionSlug) {
+        console.warn(`StoryFrame: Action slug "${actionSlug}" not found in pf2eActionMap`);
         return null;
       }
 
       // Check if the action exists in game.pf2e.actions
       const actionFn = game.pf2e.actions[pf2eActionSlug];
       if (typeof actionFn !== 'function') {
+        console.warn(`StoryFrame: PF2e action "${pf2eActionSlug}" not found in game.pf2e.actions or is not a function`, {
+          actionSlug,
+          pf2eActionSlug,
+          available: Object.keys(game.pf2e?.actions || {})
+        });
         return null;
       }
+
+      console.log(`StoryFrame: Executing PF2e action "${pf2eActionSlug}" (${actionSlug})`, { actionOptions: rollOptions });
 
       // Build action options matching @check enricher behavior
       // PF2e actions handle their own dialogs and traits automatically
@@ -912,6 +931,21 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Add event parameter to support modifier keys (shift/ctrl/alt for adjustments)
       if (rollOptions.event) {
         actionOptions.event = rollOptions.event;
+      }
+
+      // Add variant if provided (required for actions like Create a Diversion, Perform, etc.)
+      if (rollOptions.variant) {
+        actionOptions.variant = rollOptions.variant;
+      } else {
+        // Default variants for actions that require them
+        const defaultVariants = {
+          'createADiversion': 'gesture',
+          'perform': 'dance',
+          'administerFirstAid': 'stabilize',
+        };
+        if (defaultVariants[pf2eActionSlug]) {
+          actionOptions.variant = defaultVariants[pf2eActionSlug];
+        }
       }
 
       // Execute the action - returns an array of results

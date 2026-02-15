@@ -124,8 +124,9 @@ export async function onSendBatch(_event, _target, sidebar) {
  * @param {string} checkType - 'skill' or 'save' (defaults to 'skill' for backward compatibility)
  * @param {string} batchGroupId - Optional group ID for "allow only one" feature
  * @param {boolean} allowOnlyOne - Whether this roll is part of an "allow only one" group
+ * @param {string} actionVariant - Optional action variant (e.g., 'gesture' for Create a Diversion)
  */
-export async function requestSkillCheck(sidebar, skillSlug, participantIds, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false) {
+export async function requestSkillCheck(sidebar, skillSlug, participantIds, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false, actionVariant = null) {
   const state = game.storyframe.stateManager.getState();
   if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
@@ -184,6 +185,7 @@ export async function requestSkillCheck(sidebar, skillSlug, participantIds, acti
       skillSlug,
       checkType, // 'skill' or 'save'
       actionSlug,
+      actionVariant, // Optional variant for actions that require it
       dc: sidebar.currentDC,
       isSecretRoll,
       timestamp: Date.now(),

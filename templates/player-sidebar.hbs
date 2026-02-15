@@ -65,7 +65,7 @@
                           aria-label="{{this.ariaLabel}}">
                     {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
                     <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
-                    <span class="skill-name-short">{{this.skillName}}</span>
+                    <span class="skill-name-short">{{#if this.actionName}}{{this.actionName}}{{else}}{{this.skillName}}{{/if}}</span>
                     {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
                   </button>
                   {{/each}}

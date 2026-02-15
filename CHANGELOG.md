@@ -17,6 +17,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **PF2e Action Variants Support** - Fixed "Unknown variant" errors for actions requiring variants ([#12](https://github.com/roi007leaf/storyframe/issues/12))
+  - Added variant support to roll request data flow (actionVariant parameter)
+  - Actions like "Create a Diversion" and "Perform" now execute without errors
+  - Default variants automatically applied (gesture for Create a Diversion, dance for Perform, stabilize for Administer First Aid)
+  - Variants passed through to PF2e action system correctly
+  - Ready for future UI enhancement for variant selection
+
+- **PF2e Action Names Display** - Actions now show proper names instead of generic skill tests ([#12](https://github.com/roi007leaf/storyframe/issues/12))
+  - Actions like "Create a Diversion" display correctly instead of showing as "Deception test"
+  - Added action name mapping from slugs to display names (e.g., "create-a-diversion" → "Create a Diversion")
+  - Challenge buttons show action name prominently when present
+  - Roll requests show action name in parentheses after skill (e.g., "Deception (Create a Diversion)")
+  - Tooltips updated to include action names for better clarity
+
 - **PF2e Inline Check Ctrl+Click** - Fixed ctrl+click on PF2e inline checks to open Roll Requester dialog
   - Removed restrictive `.with-repost` class requirement from selector
   - Added fallback to check element if repost icon not found
