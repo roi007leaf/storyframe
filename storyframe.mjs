@@ -6,6 +6,103 @@ import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hoo
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
 
+/**
+ * Setup global listener for PF2e inline check repost buttons
+ * Integrates with StoryFrame's roll tracking system
+ */
+function setupPF2eRepostIntegration() {
+  document.addEventListener('click', async (event) => {
+    // Only intercept when Ctrl/Cmd is held; otherwise let PF2e post to chat normally
+    if (!event.ctrlKey && !event.metaKey) return;
+
+    const repostBtn = event.target.closest('[data-pf2-repost]');
+    if (!repostBtn) return;
+
+    const checkElement = repostBtn.closest('.inline-check');
+    if (!checkElement) return;
+
+    // Prevent PF2e's chat post before its handler runs
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    // Extract check data
+    const dc = parseInt(checkElement.dataset.pf2Dc);
+    const checkSlug = checkElement.dataset.pf2Check;
+    const traits = checkElement.dataset.pf2Traits || '';
+
+    if (!checkSlug || isNaN(dc)) return;
+
+    // Secret only if 'secret' trait is explicitly present
+    const isSecret = traits.toLowerCase().split(',').map(t => t.trim()).includes('secret');
+
+    // Determine check type (save vs skill)
+    const saveTypes = new Set(['fortitude', 'reflex', 'will']);
+    const checkType = saveTypes.has(checkSlug.toLowerCase()) ? 'save' : 'skill';
+
+    // Get participants from state
+    const state = game.storyframe.stateManager.getState();
+    if (!state?.participants || state.participants.length === 0) {
+      ui.notifications.warn('No participants added. Add PCs to StoryFrame first.');
+      return;
+    }
+
+    // Map full skill/save names to slugs
+    const { PF2E_SKILL_NAME_MAP } = await import('./scripts/system/pf2e/skills.mjs');
+    const skillSlug = PF2E_SKILL_NAME_MAP[checkSlug] || checkSlug;
+
+    // Build check object for dialog
+    const checks = [{
+      skillName: checkSlug,
+      dc,
+      isSecret,
+      checkType,
+    }];
+
+    // Enrich participants with actor data
+    const enrichedParticipants = await Promise.all(
+      state.participants.map(async (p) => {
+        const actor = await fromUuid(p.actorUuid);
+        return {
+          id: p.id,
+          name: actor?.name || p.name || 'Unknown',
+          img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
+        };
+      }),
+    );
+
+    // Show roll request dialog
+    const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
+    const dialog = new RollRequestDialog(checks, enrichedParticipants);
+    dialog.render(true);
+    const result = await dialog.wait();
+
+    const selectedIds = result?.selectedIds || result || [];
+    const allowOnlyOne = result?.allowOnlyOne || false;
+    if (!selectedIds || selectedIds.length === 0) return;
+
+    // Need a sidebar instance for requestSkillCheck (used for DC/secret state)
+    if (!game.storyframe.gmSidebar) {
+      const system = game.system.id;
+      if (system === 'pf2e') {
+        const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppPF2e();
+      } else if (system === 'dnd5e') {
+        const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+      } else {
+        const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppBase();
+      }
+    }
+    const sidebar = game.storyframe.gmSidebar;
+    sidebar.currentDC = dc;
+    sidebar.secretRollEnabled = isSecret;
+
+    const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
+    await requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, checkType, null, allowOnlyOne);
+  }, { capture: true });
+}
+
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
 
@@ -584,6 +681,11 @@ Hooks.once('ready', async () => {
   // Initialize mouse tracking for speaker wheel positioning
   const { initMouseTracking } = await import('./scripts/speaker-wheel.mjs');
   initMouseTracking();
+
+  // Setup PF2e inline check repost integration (GM only)
+  if (game.user.isGM && game.system.id === 'pf2e') {
+    setupPF2eRepostIntegration();
+  }
 
   // Migration: Detect and perform migration from 1.x to 2.x
   const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');

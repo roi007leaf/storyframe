@@ -641,6 +641,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach skill action context menu
     UIHelpers.attachSkillActionContextMenu(this);
 
+    // Attach action variant hover handlers
+    UIHelpers.attachActionVariantHoverHandlers(this);
+
     // Attach image context menu
     SpeakerHandlers.attachImageContextMenu(this);
 

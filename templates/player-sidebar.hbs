@@ -48,6 +48,7 @@
             <div class="challenge-options-list">
               {{#each this.options}}
               <div class="challenge-option-group">
+                {{#if this.name}}<div class="option-name">{{this.name}}</div>{{/if}}
                 <div class="option-description">{{this.description}}</div>
                 <div class="option-skills-grid">
                   {{#each this.skillOptionsDisplay}}

@@ -20,6 +20,9 @@ function validatePosition(saved) {
   };
 }
 
+// Import action variant helpers
+import { showActionVariantsPopup, hideActionVariantsPopup } from './gm-sidebar/managers/ui-helpers.mjs';
+
 /**
  * Player Viewer for StoryFrame
  * Gallery view showing ALL speakers with active highlight
@@ -168,10 +171,20 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
               actorName = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
             }
 
+            // Build action name with variant if present
+            let actionName = null;
+            if (roll.actionSlug) {
+              actionName = PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null;
+              if (roll.actionVariant && actionName) {
+                const variantName = roll.actionVariant.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+                actionName = `${actionName}: ${variantName}`;
+              }
+            }
+
             return {
               ...roll,
               skillName: PlayerViewerApp._getSkillDisplayName(roll.skillSlug),
-              actionName: roll.actionSlug ? PF2E_ACTION_DISPLAY_NAMES[roll.actionSlug] || null : null,
+              actionName,
               dc: showDCs ? roll.dc : null,
               actorName,
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
@@ -232,6 +245,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // Attach right-click handler for image enlargement
     this._attachImageContextMenu();
+
+    // Attach action variant hover handlers
+    this._attachActionVariantHoverHandlers();
   }
 
   /**
@@ -320,6 +336,32 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     document.addEventListener('keydown', escHandler);
 
     document.body.appendChild(popup);
+  }
+
+  /**
+   * Attach action variant hover handlers
+   */
+  _attachActionVariantHoverHandlers() {
+    const actionButtons = this.element.querySelectorAll('[data-action-slug]');
+
+    actionButtons.forEach((btn) => {
+      let hoverTimeout = null;
+
+      btn.addEventListener('mouseenter', (e) => {
+        const actionSlug = btn.dataset.actionSlug;
+        if (!actionSlug) return;
+
+        // Delay showing popup slightly
+        hoverTimeout = setTimeout(() => {
+          showActionVariantsPopup(e, actionSlug, this);
+        }, 300);
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        clearTimeout(hoverTimeout);
+        hideActionVariantsPopup();
+      });
+    });
   }
 
   async _resolveSpeakers(speakers) {

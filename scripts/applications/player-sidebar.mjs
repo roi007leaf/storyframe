@@ -1,6 +1,7 @@
 import * as SystemAdapter from '../system-adapter.mjs';
 import { extractParentElement } from '../utils/element-utils.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
+import { showActionVariantsPopup, hideActionVariantsPopup } from './gm-sidebar/managers/ui-helpers.mjs';
 
 /**
  * Player Sidebar for StoryFrame
@@ -205,14 +206,25 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     };
 
     // Get action display name helper
-    const getActionName = (actionSlug) => {
+    const getActionName = (actionSlug, variantSlug = null) => {
       if (!actionSlug) return null;
+
+      let actionName;
       // For PF2e, use the action display names mapping
       if (game.system.id === 'pf2e' && PF2E_ACTION_DISPLAY_NAMES[actionSlug]) {
-        return PF2E_ACTION_DISPLAY_NAMES[actionSlug];
+        actionName = PF2E_ACTION_DISPLAY_NAMES[actionSlug];
+      } else {
+        // Fallback: convert slug to title case
+        actionName = actionSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
       }
-      // Fallback: convert slug to title case
-      return actionSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+
+      // Append variant if present
+      if (variantSlug) {
+        const variantName = variantSlug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        return `${actionName}: ${variantName}`;
+      }
+
+      return actionName;
     };
 
     // Active challenges (multi-challenge support)
@@ -333,7 +345,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
             // Get appropriate name based on check type
             const checkName = checkType === 'save' ? getSaveName(checkSlug) : getSkillName(checkSlug);
-            const actionName = getActionName(roll.actionSlug);
+            const actionName = getActionName(roll.actionSlug, roll.actionVariant);
 
             // Build localized tooltip and aria-label
             let tooltip, ariaLabel;
@@ -450,6 +462,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
     // Add keyboard shortcuts
     this._setupKeyboardShortcuts();
+
+    // Attach action variant hover handlers
+    this._attachActionVariantHoverHandlers();
   }
 
   /**
@@ -481,6 +496,32 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     };
 
     document.addEventListener('keydown', this._keyHandler);
+  }
+
+  /**
+   * Attach action variant hover handlers
+   */
+  _attachActionVariantHoverHandlers() {
+    const actionButtons = this.element.querySelectorAll('[data-action-slug]');
+
+    actionButtons.forEach((btn) => {
+      let hoverTimeout = null;
+
+      btn.addEventListener('mouseenter', (e) => {
+        const actionSlug = btn.dataset.actionSlug;
+        if (!actionSlug) return;
+
+        // Delay showing popup slightly
+        hoverTimeout = setTimeout(() => {
+          showActionVariantsPopup(e, actionSlug, this);
+        }, 300);
+      });
+
+      btn.addEventListener('mouseleave', () => {
+        clearTimeout(hoverTimeout);
+        hideActionVariantsPopup();
+      });
+    });
   }
 
   async _onClose(_options) {

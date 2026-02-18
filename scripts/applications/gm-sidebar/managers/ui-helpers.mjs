@@ -208,13 +208,23 @@ export async function onShowPendingRolls(_event, target, sidebar) {
         checkName = SkillCheckHandlers.getSkillName(r.skillSlug);
       }
 
+      // Build action name with variant if present
+      let actionName = null;
+      if (r.actionSlug) {
+        actionName = SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug);
+        if (r.actionVariant) {
+          const variantName = r.actionVariant.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+          actionName = `${actionName}: ${variantName}`;
+        }
+      }
+
       return {
         ...r,
         participantId: r.participantId,
         participantName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
         participantImg: actor?.img || 'icons/svg/mystery-man.svg',
         skillName: checkName,
-        actionName: r.actionSlug ? SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug) : null,
+        actionName,
         checkType: checkType,
       };
     }),
@@ -877,6 +887,30 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
 
   // Attach click handlers to action buttons with shift+click for batch
   menu.querySelectorAll('.action-option').forEach((btn) => {
+    // Attach hover handlers for action variants
+    let hoverTimeout = null;
+
+    btn.addEventListener('mouseenter', (e) => {
+      const actionSlug = btn.dataset.actionSlug;
+      if (!actionSlug) return;
+
+      // Cancel any pending hide
+      if (window._variantPopupHideTimeout) {
+        clearTimeout(window._variantPopupHideTimeout);
+        window._variantPopupHideTimeout = null;
+      }
+
+      // Delay showing popup slightly
+      hoverTimeout = setTimeout(() => {
+        showActionVariantsPopup(e, actionSlug, sidebar);
+      }, 300);
+    });
+
+    btn.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimeout);
+      hideActionVariantsPopup();
+    });
+
     btn.addEventListener('click', async (e) => {
       const actionSlug = btn.dataset.actionSlug;
       const actionSkill = btn.dataset.skill;
@@ -957,6 +991,138 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   if (menuRect.bottom > window.innerHeight) {
     menu.style.top = `${rect.top - menuRect.height - 4}px`;
   }
+}
+
+/**
+ * Show action variants popup on hover
+ */
+export function showActionVariantsPopup(event, actionSlug, sidebar) {
+  // Import PF2E_ACTION_VARIANTS at runtime
+  import('../../../system/pf2e/actions.mjs').then((module) => {
+    const { PF2E_ACTION_VARIANTS } = module;
+
+    const variants = PF2E_ACTION_VARIANTS[actionSlug];
+    if (!variants || variants.length === 0) return;
+
+    // Remove existing popup
+    document.querySelector('.storyframe-action-variants-popup')?.remove();
+
+    const popup = document.createElement('div');
+    popup.className = 'storyframe-action-variants-popup';
+
+    popup.innerHTML = `
+      <div class="variants-list">
+        ${variants.map(v => `
+          <div class="variant-item" data-variant-slug="${v.slug}">${v.name}</div>
+        `).join('')}
+      </div>
+    `;
+
+    // Position to the right of the button
+    const actionButton = event.target.closest('[data-action-slug]');
+    const rect = actionButton.getBoundingClientRect();
+    popup.style.top = `${rect.top}px`;
+    popup.style.left = `${rect.right + 8}px`;
+
+    document.body.appendChild(popup);
+
+    // Adjust if off-screen
+    const popupRect = popup.getBoundingClientRect();
+    if (popupRect.right > window.innerWidth - 10) {
+      popup.style.left = `${rect.left - popupRect.width - 8}px`;
+    }
+    if (popupRect.bottom > window.innerHeight - 10) {
+      popup.style.top = `${window.innerHeight - popupRect.height - 10}px`;
+    }
+    if (popupRect.top < 10) {
+      popup.style.top = '10px';
+    }
+
+    // Attach click handlers to variant items
+    popup.querySelectorAll('.variant-item').forEach((item) => {
+      item.addEventListener('click', async () => {
+        const skillSlug = actionButton.dataset.skill;
+        const variantSlug = item.dataset.variantSlug;
+
+        // Close all popups
+        popup.remove();
+        document.querySelector('.storyframe-skill-actions-menu')?.remove();
+
+        // Trigger action with variant
+        if (sidebar?.selectedParticipants?.size > 0) {
+          await SkillCheckHandlers.requestSkillCheck(
+            sidebar,
+            skillSlug,
+            Array.from(sidebar.selectedParticipants),
+            actionSlug,
+            false, // suppressNotifications
+            'skill', // checkType
+            null, // batchGroupId
+            false, // allowOnlyOne
+            variantSlug, // actionVariant
+          );
+        } else {
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
+        }
+      });
+    });
+
+    // Keep popup visible when hovering over it
+    popup.addEventListener('mouseenter', () => {
+      // Cancel any pending hide
+      if (window._variantPopupHideTimeout) {
+        clearTimeout(window._variantPopupHideTimeout);
+        window._variantPopupHideTimeout = null;
+      }
+    });
+
+    popup.addEventListener('mouseleave', () => {
+      hideActionVariantsPopup();
+    });
+  });
+}
+
+/**
+ * Hide action variants popup
+ */
+export function hideActionVariantsPopup() {
+  // Delay slightly to allow moving to popup
+  window._variantPopupHideTimeout = setTimeout(() => {
+    document.querySelector('.storyframe-action-variants-popup')?.remove();
+    window._variantPopupHideTimeout = null;
+  }, 100);
+}
+
+/**
+ * Attach action variant hover handlers
+ */
+export function attachActionVariantHoverHandlers(sidebar) {
+  const actionButtons = sidebar.element.querySelectorAll('[data-action-slug]');
+
+  actionButtons.forEach((btn) => {
+    let hoverTimeout = null;
+
+    btn.addEventListener('mouseenter', (e) => {
+      const actionSlug = btn.dataset.actionSlug;
+      if (!actionSlug) return;
+
+      // Cancel any pending hide
+      if (window._variantPopupHideTimeout) {
+        clearTimeout(window._variantPopupHideTimeout);
+        window._variantPopupHideTimeout = null;
+      }
+
+      // Delay showing popup slightly
+      hoverTimeout = setTimeout(() => {
+        showActionVariantsPopup(e, actionSlug, sidebar);
+      }, 300);
+    });
+
+    btn.addEventListener('mouseleave', () => {
+      clearTimeout(hoverTimeout);
+      hideActionVariantsPopup();
+    });
+  });
 }
 
 /**

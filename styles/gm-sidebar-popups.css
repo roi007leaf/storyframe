@@ -713,3 +713,45 @@
   background: rgba(191, 97, 106, 0.2);
   color: #bf616a;
 }
+
+/* ========================================
+   Action Variants Popup
+   ======================================== */
+
+.storyframe-action-variants-popup {
+  position: fixed;
+  z-index: 10000;
+  background: linear-gradient(135deg, rgba(30, 35, 45, 0.98), rgba(20, 25, 35, 0.95));
+  border: 2px solid rgba(94, 129, 172, 0.4);
+  border-radius: 8px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.6),
+    0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  min-width: 140px;
+  max-width: 220px;
+  overflow: hidden;
+}
+
+.storyframe-action-variants-popup .variants-list {
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
+}
+
+.storyframe-action-variants-popup .variant-item {
+  padding: 8px 12px;
+  color: #e0e0e0;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  cursor: default;
+  border-left: 3px solid transparent;
+}
+
+.storyframe-action-variants-popup .variant-item:hover {
+  background: rgba(94, 129, 172, 0.2);
+  border-left-color: rgba(94, 129, 172, 0.6);
+  color: #ffffff;
+}
