@@ -242,8 +242,6 @@ async function showSceneSpeakers(sceneId) {
     item.dataset.sceneId = sceneId;
     item.style.transform = `translate(${x}px, ${y}px)`;
 
-    console.log('StoryFrame: Speaker wheel item -', speaker.name, 'isNameHidden:', speaker.isNameHidden, 'Full speaker:', speaker);
-
     const hiddenBadge = speaker.isNameHidden ? '<i class="fas fa-eye-slash speaker-wheel-hidden-badge"></i>' : '';
 
     item.innerHTML = `

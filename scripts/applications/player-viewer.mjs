@@ -952,8 +952,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         return null;
       }
 
-      console.log(`StoryFrame: Executing PF2e action "${pf2eActionSlug}" (${actionSlug})`, { actionOptions: rollOptions });
-
       // Build action options matching @check enricher behavior
       // PF2e actions handle their own dialogs and traits automatically
       const actionOptions = {
