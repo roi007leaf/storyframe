@@ -12,7 +12,7 @@ import { extractParentElement } from '../../../utils/element-utils.mjs';
 /**
  * Present a new challenge
  */
-export async function onPresentChallenge(_event, _target, sidebar) {
+export async function onPresentChallenge(_event, _target, _sidebar) {
   // No participant requirement - challenge is broadcast to all players
   const builder = new ChallengeBuilderDialog(new Set());
   builder.render(true);
@@ -21,7 +21,7 @@ export async function onPresentChallenge(_event, _target, sidebar) {
 /**
  * Clear a challenge (or all challenges if no ID provided)
  */
-export async function onClearChallenge(_event, target, sidebar) {
+export async function onClearChallenge(_event, target, _sidebar) {
   // Support both old behavior (clear all) and new behavior (clear specific)
   const challengeId = target?.dataset?.challengeId;
 
@@ -37,7 +37,7 @@ export async function onClearChallenge(_event, target, sidebar) {
 /**
  * Remove a specific challenge
  */
-export async function onRemoveChallenge(_event, target, sidebar) {
+export async function onRemoveChallenge(_event, target, _sidebar) {
   const challengeId = target.dataset.challengeId;
   if (!challengeId) return;
 
@@ -48,7 +48,7 @@ export async function onRemoveChallenge(_event, target, sidebar) {
 /**
  * Clear all challenges
  */
-export async function onClearAllChallenges(_event, _target, sidebar) {
+export async function onClearAllChallenges(_event, _target, _sidebar) {
   const confirmed = await foundry.applications.api.DialogV2.confirm({
     window: { title: game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Title') },
     content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.ClearAllChallenges.Content')}</p>`,
@@ -132,7 +132,7 @@ export async function onToggleLibraryChallengeCollapse(_event, target, sidebar) 
 /**
  * Present a saved challenge from library
  */
-export async function onPresentSavedChallenge(_event, target, sidebar) {
+export async function onPresentSavedChallenge(_event, target, _sidebar) {
   const challengeId = target.dataset.challengeId;
   const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
   const template = savedChallenges.find(c => c.id === challengeId);
@@ -147,7 +147,7 @@ export async function onPresentSavedChallenge(_event, target, sidebar) {
     id: foundry.utils.randomID(),
     name: template.name,
     image: template.image,
-    selectedParticipants: [], // Broadcast to all players
+    // Challenge is broadcast to all players (no participant filtering)
     options: template.options,
   };
 
@@ -164,7 +164,7 @@ export async function onPresentSavedChallenge(_event, target, sidebar) {
 /**
  * Edit a saved challenge from library
  */
-export async function onEditChallenge(_event, target, sidebar) {
+export async function onEditChallenge(_event, target, _sidebar) {
   const challengeId = target.dataset.challengeId;
   const savedChallenges = game.settings.get(MODULE_ID, 'challengeLibrary') || [];
   const template = savedChallenges.find(c => c.id === challengeId);
@@ -186,7 +186,7 @@ export async function onEditChallenge(_event, target, sidebar) {
 /**
  * Delete a challenge from library
  */
-export async function onDeleteChallenge(_event, target, sidebar) {
+export async function onDeleteChallenge(_event, target, _sidebar) {
   const challengeId = target.dataset.challengeId;
 
   const confirmed = await foundry.applications.api.DialogV2.confirm({
@@ -337,28 +337,17 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     return;
   }
 
-  // Get current participants
-  const state = game.storyframe.stateManager.getState();
-  if (!state?.participants || state.participants.length === 0) {
-    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Challenge.NoParticipantsAdded'));
+  // Get all player PCs
+  const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
+  const pcs = await getAllPlayerPCs();
+  if (pcs.length === 0) {
+    ui.notifications.warn('No player-owned characters found in the world.');
     return;
   }
 
-  // Enrich participants with actor data
-  const enrichedParticipants = await Promise.all(
-    state.participants.map(async (p) => {
-      const actor = await fromUuid(p.actorUuid);
-      return {
-        id: p.id,
-        name: actor?.name || p.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
-        img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
-      };
-    }),
-  );
-
-  // Import and show the roll request dialog
+  // Show roll request dialog with all player PCs
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-  const dialog = new RollRequestDialog(checks, enrichedParticipants);
+  const dialog = new RollRequestDialog(checks, pcs);
   dialog.render(true);
 
   const result = await dialog.wait();
@@ -367,9 +356,9 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     return;
   }
 
-  // Handle both old format (array) and new format (object with selectedIds)
-  const participantIds = result?.selectedIds || result || [];
+  const selectedIds = result?.selectedIds || result || [];
   const allowOnlyOne = result?.allowOnlyOne || false;
+  if (!selectedIds || selectedIds.length === 0) return;
 
   // Generate ONE shared group ID for ALL checks if allow-only-one is enabled
   const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
@@ -388,7 +377,7 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     sidebar.secretRollEnabled = check.isSecret;
 
     // Send request with shared batch group ID
-    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, participantIds, null, false, 'skill', batchGroupId, allowOnlyOne);
+    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne);
   }
 
   // Reset secret toggle

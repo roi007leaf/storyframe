@@ -147,60 +147,13 @@
           <i class="fas fa-hourglass-half" aria-hidden="true"></i>
         </button>
         {{/if}}
-        <button type="button" data-action="addPartyPCs" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddPartyMembers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddPartyMembers"}}">
-          <i class="fas fa-user-group" aria-hidden="true"></i>
-        </button>
-        <button type="button" data-action="addAllPCs" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.AddAllPCs"}}">
-          <i class="fas fa-users" aria-hidden="true"></i>
-        </button>
-        <button type="button" data-action="openPlayerSidebars" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseSidebarsOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenSidebarsOnPlayers"}}">
-          <i class="fas fa-sidebar" aria-hidden="true"></i>
-        </button>
-        {{#if hasParticipants}}
-        <button type="button" data-action="clearAllParticipants" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllPCs"}}">
-          <i class="fas fa-trash" aria-hidden="true"></i>
-        </button>
-        {{/if}}
-        <button type="button" class="" data-action="openSkillConfig" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ConfigureQuickSkills"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.ConfigureQuickSkills"}}">
-          <i class="fas fa-cog" aria-hidden="true"></i>
-        </button>
         <button type="button" data-action="requestRollsFromSelection" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RequestRollsFromSelection"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestRollsFromSelection"}}">
           <i class="fas fa-wand-magic-sparkles" aria-hidden="true"></i>
         </button>
       </div>
 
-      {{#if hasParticipants}}
       <div class="dc-controls-bar" role="toolbar" aria-label="{{localize "STORYFRAME.UI.AriaLabels.DCControls"}}">
-        <div class="participant-portraits participant-portraits-sticky" data-drop-zone="participant" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.PlayerCharacters"}}">
-          {{#each participants}}
-            <div class="participant-token {{#if this.selected}}selected{{/if}} {{#if this.isNameHidden}}name-hidden{{/if}}"
-                 data-action="toggleParticipantSelection"
-                 data-participant-id="{{this.id}}"
-                 data-tooltip="{{this.name}}{{#if this.isNameHidden}} ({{localize "STORYFRAME.UI.Labels.HiddenFromPlayers"}}){{/if}}"
-                 role="listitem"
-                 tabindex="0"
-                 aria-selected="{{#if this.selected}}true{{else}}false{{/if}}">
-              <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-              {{#if this.isNameHidden}}
-                <i class="fas fa-eye-slash participant-hidden-indicator"></i>
-              {{/if}}
-              <button type="button" class="remove-btn"
-                      data-action="removeParticipant"
-                      data-participant-id="{{this.id}}"
-                      data-tooltip="{{localize "STORYFRAME.UI.Labels.Remove"}}"
-                      aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveName" name=this.name}}">
-                <i class="fas fa-times" aria-hidden="true"></i>
-              </button>
-            </div>
-          {{/each}}
-        </div>
-
         <div class="dc-controls-row">
-          <button type="button" data-action="toggleSelectAll" class="select-all-btn" data-tooltip="{{#if allSelected}}{{localize "STORYFRAME.UI.Tooltips.DeselectAll"}}{{else}}{{localize "STORYFRAME.UI.Tooltips.SelectAll"}}{{/if}}" aria-label="{{#if allSelected}}{{localize "STORYFRAME.UI.Tooltips.DeselectAll"}}{{else}}{{localize "STORYFRAME.UI.Tooltips.SelectAll"}}{{/if}}">
-            <i class="{{#if allSelected}}far fa-square{{else}}fas fa-check-double{{/if}}" aria-hidden="true"></i>
-            <span>{{#if allSelected}}{{localize "STORYFRAME.UI.Labels.Deselect"}}{{else}}{{localize "STORYFRAME.UI.Labels.SelectAll"}}{{/if}}</span>
-          </button>
-
           <div class="preset-selector">
             <div class="dc-input-group">
               <label class="dc-label" for="dc-input">{{localize "STORYFRAME.ChallengeBuilder.DC"}}</label>
@@ -237,23 +190,10 @@
             <i class="fas fa-paper-plane" aria-hidden="true"></i>
             <span class="batch-count">0</span>
           </button>
-
-          <label class="allow-only-one-toggle" style="display: none;">
-            <input type="checkbox"
-                   id="allow-only-one-toggle"
-                   data-action="toggleAllowOnlyOne"
-                   {{#if allowOnlyOneEnabled}}checked{{/if}}>
-            <span>{{localize "STORYFRAME.UI.Labels.AllowOnlyOne"}}</span>
-            <i class="fas fa-info-circle"
-               data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AllowOnlyOne"}}"
-               aria-hidden="true"></i>
-          </label>
         </div>
       </div>
-      {{/if}}
 
       <div class="tab-scroll-content">
-        {{#if hasParticipants}}
         {{#if hasJournalChecks}}
         <div class="journal-checks-inline">
           <div class="section-divider">
@@ -365,7 +305,6 @@
           </div>
           {{/if}}
         </div>
-        {{/if}}
       </div>
     </section>
 

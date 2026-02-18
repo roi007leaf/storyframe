@@ -80,6 +80,12 @@
   flex: 1;
 }
 
+.roll-request-dialog .check-action-name {
+  font-weight: 400;
+  opacity: 0.75;
+  font-size: 0.9em;
+}
+
 .roll-request-dialog .check-dc {
   background: var(--sf-accent-warning);
   color: #2e3440;
@@ -291,6 +297,15 @@
 .roll-request-dialog .submit-btn:active {
   transform: translateY(0);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.roll-request-dialog .submit-btn:disabled {
+  background: rgba(94, 129, 172, 0.2);
+  border-color: rgba(94, 129, 172, 0.2);
+  color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
 }
 
 /* Scrollbar styling */

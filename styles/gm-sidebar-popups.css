@@ -564,6 +564,18 @@
   color: #ffffff;
 }
 
+.storyframe-skill-actions-menu .action-option.selected {
+  background: rgba(235, 203, 139, 0.2);
+  color: #ebcb8b;
+  border-left: 3px solid rgba(235, 203, 139, 0.7);
+  padding-left: 9px;
+}
+
+.storyframe-skill-actions-menu .action-option.selected:hover {
+  background: rgba(235, 203, 139, 0.3);
+  color: #f0d89e;
+}
+
 /* ========================================
    Speaker Scenes Popup
    ======================================== */
@@ -754,4 +766,15 @@
   background: rgba(94, 129, 172, 0.2);
   border-left-color: rgba(94, 129, 172, 0.6);
   color: #ffffff;
+}
+
+.storyframe-action-variants-popup .variant-item.selected {
+  background: rgba(235, 203, 139, 0.15);
+  border-left-color: rgba(235, 203, 139, 0.7);
+  color: #ebcb8b;
+}
+
+.storyframe-action-variants-popup .variant-item.selected:hover {
+  background: rgba(235, 203, 139, 0.25);
+  color: #f0d89e;
 }

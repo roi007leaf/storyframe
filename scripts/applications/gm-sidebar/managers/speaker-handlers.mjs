@@ -6,7 +6,7 @@
 /**
  * Add a speaker from an image file picker
  */
-export async function onAddSpeakerFromImage(_event, _target, sidebar) {
+export async function onAddSpeakerFromImage(_event, _target, _sidebar) {
   new FilePicker({
     type: 'image',
     callback: async (path) => {
@@ -33,7 +33,7 @@ export async function onAddSpeakerFromImage(_event, _target, sidebar) {
 /**
  * Set a speaker as active
  */
-export async function onSetSpeaker(_event, target, sidebar) {
+export async function onSetSpeaker(_event, target, _sidebar) {
   const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
   if (speakerId) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
@@ -133,7 +133,7 @@ export async function onClearAllSpeakers(_event, _target) {
 /**
  * Set an image from journal as speaker
  */
-export async function onSetImageAsSpeaker(_event, target, sidebar) {
+export async function onSetImageAsSpeaker(_event, target, _sidebar) {
   const imageSrc = target.dataset.imageSrc;
   if (!imageSrc) return;
 
@@ -158,7 +158,7 @@ export async function onSetImageAsSpeaker(_event, target, sidebar) {
 /**
  * Set an actor from journal as speaker
  */
-export async function onSetActorAsSpeaker(event, target, sidebar) {
+export async function onSetActorAsSpeaker(event, target, _sidebar) {
   const actorId = target.dataset.actorId;
   if (!actorId) return;
 
@@ -410,7 +410,7 @@ export function attachPlayerWindowsContextMenu(sidebar) {
 /**
  * Open player windows
  */
-export async function onOpenPlayerWindows(_event, _target, sidebar) {
+export async function onOpenPlayerWindows(_event, _target, _sidebar) {
   game.storyframe.socketManager.openAllPlayerViewers();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.OpeningForPlayers'));
 }
@@ -418,7 +418,7 @@ export async function onOpenPlayerWindows(_event, _target, sidebar) {
 /**
  * Close player windows
  */
-export async function onClosePlayerWindows(_event, _target, sidebar) {
+export async function onClosePlayerWindows(_event, _target, _sidebar) {
   game.storyframe.socketManager.closeAllPlayerViewers();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingForPlayers'));
 }

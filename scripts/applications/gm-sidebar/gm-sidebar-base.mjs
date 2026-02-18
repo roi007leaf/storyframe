@@ -5,7 +5,6 @@ import * as SystemAdapter from '../../system-adapter.mjs';
 import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
 import * as DCHandlers from './managers/dc-handlers.mjs';
 import * as JournalHandlers from './managers/journal-handlers.mjs';
-import * as ParticipantHandlers from './managers/participant-handlers.mjs';
 import * as SkillCheckHandlers from './managers/skill-check-handlers.mjs';
 import * as SkillReorderHandlers from './managers/skill-reorder-handlers.mjs';
 import * as SpeakerHandlers from './managers/speaker-handlers.mjs';
@@ -41,22 +40,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
       saveCurrentSpeakers: GMSidebarAppBase._onSaveCurrentSpeakers,
       manageScenes: GMSidebarAppBase._onManageScenes,
-      clearAllParticipants: GMSidebarAppBase._onClearAllParticipants,
       switchTab: GMSidebarAppBase._onSwitchTab,
       toggleSecretRoll: GMSidebarAppBase._onToggleSecretRoll,
       toggleAllowOnlyOne: GMSidebarAppBase._onToggleAllowOnlyOne,
       toggleJournalChecksPanel: GMSidebarAppBase._onToggleJournalChecksPanel,
       toggleJournalImagesPanel: GMSidebarAppBase._onToggleJournalImagesPanel,
-      addAllPCs: GMSidebarAppBase._onAddAllPCs,
-      addPartyPCs: GMSidebarAppBase._onAddPartyPCs,
-      toggleParticipantSelection: GMSidebarAppBase._onToggleParticipantSelection,
-      removeParticipant: GMSidebarAppBase._onRemoveParticipant,
-      toggleSelectAll: GMSidebarAppBase._onToggleSelectAll,
       requestSkill: GMSidebarAppBase._onRequestSkill,
       requestSave: GMSidebarAppBase._onRequestSave,
       sendBatch: GMSidebarAppBase._onSendBatch,
       openSkillMenu: GMSidebarAppBase._onOpenSkillMenu,
-      openSkillConfig: GMSidebarAppBase._onOpenSkillConfig,
       setDCSelect: GMSidebarAppBase._onSetDCSelect,
       setDifficulty: GMSidebarAppBase._onSetDifficulty,
       cancelRoll: GMSidebarAppBase._onCancelRoll,
@@ -69,8 +61,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       togglePresetDropdown: GMSidebarAppBase._onTogglePresetDropdown,
       applyPreset: GMSidebarAppBase._onApplyPreset,
       applyPresetDC: GMSidebarAppBase._onApplyPresetDC,
-      addPresetQuick: GMSidebarAppBase._onAddPresetQuick,
-      deletePresetQuick: GMSidebarAppBase._onDeletePresetQuick,
       applyJournalCheck: GMSidebarAppBase._onApplyJournalCheck,
       showCheckDCsPopup: GMSidebarAppBase._onShowCheckDCsPopup,
       setImageAsSpeaker: GMSidebarAppBase._onSetImageAsSpeaker,
@@ -114,18 +104,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     this.journalChecksPanelCollapsed = false;
     this.journalImagesPanelCollapsed = true; // Collapsed by default
 
-    this.selectedParticipants = new Set();
     this.currentDC = null;
     this.currentDifficulty = 'standard'; // Default difficulty
     this.secretRollEnabled = false; // Secret roll toggle state
-    this.allowOnlyOneEnabled = false; // Allow-only-one toggle state
 
     // Track active speaker for change detection
     this._lastActiveSpeaker = null;
 
-    // Track speaker/participant lists for change detection
+    // Track speaker lists for change detection
     this._lastSpeakerIds = [];
-    this._lastParticipantIds = [];
 
     // Track visible journal checks for highlighting
     this._visibleChecks = new Map(); // skill -> Set of DCs
@@ -190,7 +177,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     if (state) {
       this._lastActiveSpeaker = state.activeSpeaker;
       this._lastSpeakerIds = (state.speakers || []).map(s => s.id);
-      this._lastParticipantIds = (state.participants || []).map(p => p.id);
     }
 
     // Restore scroll positions after render with multiple attempts to ensure it works
@@ -216,16 +202,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const newActiveSpeaker = state.activeSpeaker;
     const currentSpeakerIds = this._lastSpeakerIds;
     const newSpeakerIds = (state.speakers || []).map(s => s.id);
-    const currentParticipantIds = this._lastParticipantIds;
-    const newParticipantIds = (state.participants || []).map(p => p.id);
 
     // Check if speakers list changed (additions/removals)
     const speakersChanged = JSON.stringify(currentSpeakerIds.sort()) !== JSON.stringify(newSpeakerIds.sort());
-    const participantsChanged = JSON.stringify(currentParticipantIds.sort()) !== JSON.stringify(newParticipantIds.sort());
 
-    // If speakers or participants were added/removed, we need to re-render
-    // (DOM creation/removal is too complex to handle manually)
-    if (speakersChanged || participantsChanged) {
+    // If speakers were added/removed, we need to re-render
+    if (speakersChanged) {
       return false;
     }
 
@@ -363,10 +345,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         speakers: [],
         activeSpeaker: null,
         hasSpeakers: false,
-        participants: [],
-        hasParticipants: false,
-        selectedCount: 0,
-        allSelected: false,
         currentDC: null,
         pendingRolls: [],
         quickButtonSkills: [],
@@ -402,32 +380,23 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       }),
     );
 
-    // Resolve participants using participant handlers
-    const { participants } = await ParticipantHandlers.prepareParticipantsContext(this, state);
-
     // Pending rolls with names
     const pendingRolls = await Promise.all(
       (state.pendingRolls || []).map(async (r) => {
-        const participant = state.participants?.find((p) => p.id === r.participantId);
+        const actor = r.actorUuid ? await fromUuid(r.actorUuid) : null;
         const actionName = r.actionSlug ? SkillCheckHandlers.getActionName(r.skillSlug, r.actionSlug) : null;
         return {
           ...r,
-          participantName: participant
-            ? await this._resolveParticipantName(participant)
-            : 'Unknown',
+          participantName: actor?.name || 'Unknown',
           skillName: SkillCheckHandlers.getSkillName(r.skillSlug),
           actionName,
         };
       }),
     );
 
-    // Quick button skills from settings
-    const quickSkillsSetting = game.settings.get(MODULE_ID, 'quickButtonSkills');
-    const quickSkills = quickSkillsSetting
-      .split(',')
-      .map((s) => s.trim())
-      .filter(Boolean);
-    const quickButtonSkills = quickSkills.map((slug) => ({
+    // All system skills as skill objects
+    const systemSkillsMap = SystemAdapter.getSkills();
+    const allSkillsData = Object.entries(systemSkillsMap).map(([slug]) => ({
       slug,
       name: SkillCheckHandlers.getSkillName(slug),
       shortName: SkillCheckHandlers.getSkillShortName(slug),
@@ -443,10 +412,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     };
 
     const categorizedSkills = {
-      physicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.physical, quickButtonSkills, participants),
-      magicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.magical, quickButtonSkills, participants),
-      socialSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.social, quickButtonSkills, participants),
-      utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.utility, quickButtonSkills, participants),
+      physicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.physical, allSkillsData, null),
+      magicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.magical, allSkillsData, null),
+      socialSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.social, allSkillsData, null),
+      utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.utility, allSkillsData, null),
     };
 
     // Apply saved skill order within each category
@@ -458,20 +427,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Apply saved category order
     SkillReorderHandlers.applySavedCategoryOrder(categorizedSkills);
 
-    // Get lore skills from participants
-    const loreSkills = await this.constructor._getLoreSkills(state, this.selectedParticipants);
-
-    const selectedCount = this.selectedParticipants.size;
-    const allSelected = participants.length > 0 && selectedCount === participants.length;
-
-    // Get selected participant data for avatar display
-    const selectedParticipantData = participants
-      .filter(p => this.selectedParticipants.has(p.id))
-      .map(p => ({
-        id: p.id,
-        name: p.name,
-        img: p.img,
-      }));
+    // Get lore skills from all player PCs
+    const loreSkills = await this.constructor._getLoreSkills(null, null);
 
     // Get system-specific DC context using DC handlers
     const dcContext = await DCHandlers.prepareDCContext(this);
@@ -493,20 +450,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       activeSpeaker: state.activeSpeaker,
       hasSpeakers: speakers.length > 0,
       hasSpeakerScenes: speakerScenes.length > 0,
-      participants,
-      hasParticipants: participants.length > 0,
-      totalParticipants: participants.length,
-      selectedCount,
-      allSelected,
-      hasSelection: selectedCount > 0,
-      selectedParticipantData,
       ...dcContext,
       partyLevel,
       calculatedDC,
       currentDifficulty: this.currentDifficulty,
       difficultyOptions,
       pendingRolls,
-      quickButtonSkills,
       ...categorizedSkills,
       loreSkills,
       hasLoreSkills: loreSkills.length > 0,
@@ -610,7 +559,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   /**
    * Attach event handlers after render
    */
-  async _onRender(context, _options) {
+  async _onRender(_context, _options) {
     // Position as drawer and track parent only if attached to a journal
     if (this.parentInterface) {
       // Add drawer class for drawer-specific styling
@@ -650,9 +599,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach player windows context menu
     SpeakerHandlers.attachPlayerWindowsContextMenu(this);
 
-    // Attach player sidebars context menu
-    ParticipantHandlers.attachPlayerSidebarsContextMenu(this);
-
     // Setup journal check highlighting
     JournalHandlers.setupJournalCheckHighlighting(this);
 
@@ -661,9 +607,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Setup shift key tracking for batch selection
     this._setupShiftKeyTracking();
-
-    // Update select all checkbox state
-    ParticipantHandlers.updateSelectAllCheckbox(this);
 
     // Update batch highlights
     SkillCheckHandlers.updateBatchHighlights(this);
@@ -732,7 +675,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Clear data structures
     this.batchedChecks = [];
-    this.selectedParticipants.clear();
     this.collapsedChallenges.clear();
     this.collapsedLibraryChallenges.clear();
   }
@@ -794,39 +736,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return SpeakerHandlers.onClosePlayerWindows(event, target, this);
   }
 
-  static async _onOpenPlayerSidebars(event, target) {
-    return ParticipantHandlers.onOpenPlayerSidebars(event, target, this);
-  }
-
-  static async _onClosePlayerSidebars(event, target) {
-    return ParticipantHandlers.onClosePlayerSidebars(event, target, this);
-  }
-
-  // Participant Handlers
-  static async _onAddAllPCs(event, target) {
-    return ParticipantHandlers.onAddAllPCs(event, target, this);
-  }
-
-  static async _onAddPartyPCs(event, target) {
-    return ParticipantHandlers.onAddPartyPCs(event, target, this);
-  }
-
-  static async _onToggleParticipantSelection(event, target) {
-    return ParticipantHandlers.onToggleParticipantSelection(event, target, this);
-  }
-
-  static async _onRemoveParticipant(event, target) {
-    return ParticipantHandlers.onRemoveParticipant(event, target, this);
-  }
-
-  static async _onToggleSelectAll(event, target) {
-    return ParticipantHandlers.onToggleSelectAll(event, target, this);
-  }
-
-  static async _onClearAllParticipants(event, target) {
-    return ParticipantHandlers.onClearAllParticipants(event, target, this);
-  }
-
   // Skill Check Handlers
   static async _onRequestSkill(event, target) {
     return SkillCheckHandlers.onRequestSkill(event, target, this);
@@ -842,10 +751,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onOpenSkillMenu(event, target) {
     return SkillCheckHandlers.onOpenSkillMenu(event, target, this);
-  }
-
-  static async _onOpenSkillConfig(event, target) {
-    return SkillCheckHandlers.onOpenSkillConfig(event, target, this);
   }
 
   // DC Handlers
@@ -869,13 +774,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     return DCHandlers.onApplyPresetDC(event, target, this);
   }
 
-  static async _onAddPresetQuick(event, target) {
-    return DCHandlers.onAddPresetQuick(event, target, this);
-  }
-
-  static async _onDeletePresetQuick(event, target) {
-    return DCHandlers.onDeletePresetQuick(event, target, this);
-  }
 
   // UI Helpers
   static async _onShowPendingRolls(event, target) {
@@ -947,7 +845,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
-  static async _onToggleSecretRoll(event, target) {
+  static async _onToggleSecretRoll(_event, _target) {
     this.secretRollEnabled = !this.secretRollEnabled;
 
     // Update button state directly
@@ -963,22 +861,12 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
-  static async _onToggleAllowOnlyOne(event, target) {
-    this.allowOnlyOneEnabled = target.checked;
-
-    // Visual feedback on batch button
-    const batchBtn = this.element.querySelector('.send-batch-btn');
-    if (batchBtn) {
-      batchBtn.classList.toggle('allow-only-one-active', this.allowOnlyOneEnabled);
-    }
-  }
-
-  static async _onToggleJournalChecksPanel(event, target) {
+static async _onToggleJournalChecksPanel(_event, _target) {
     this.journalChecksPanelCollapsed = !this.journalChecksPanelCollapsed;
     this.render();
   }
 
-  static async _onToggleJournalImagesPanel(event, target) {
+  static async _onToggleJournalImagesPanel(_event, _target) {
     this.journalImagesPanelCollapsed = !this.journalImagesPanelCollapsed;
     this.render();
   }

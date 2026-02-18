@@ -1,6 +1,6 @@
 {
   "name": "storyframe",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "StoryFrame - GM Journal Reader and Player Viewer for Foundry VTT",
   "main": "storyframe.mjs",
   "scripts": {

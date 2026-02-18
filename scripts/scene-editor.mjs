@@ -13,7 +13,7 @@ import { MODULE_ID } from './constants.mjs';
  * @param {Array} options.speakers - Initial speakers array
  * @param {HTMLElement} options.journalElement - Journal element for images/actors
  */
-export async function showSceneEditor({ sceneId = null, sceneName = '', speakers = [], journalElement = null } = {}) {
+export async function showSceneEditor({ sceneId = null, sceneName = '', speakers = [], _journalElement = null } = {}) {
   // Remove existing editor if any
   document.querySelector('.storyframe-scene-editor')?.remove();
 

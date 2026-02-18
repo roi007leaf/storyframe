@@ -43,9 +43,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     },
   };
 
-  constructor(selectedParticipants, options = {}) {
+  constructor(_selectedParticipants, options = {}) {
     super(options);
-    this.selectedParticipants = selectedParticipants;
     this.editMode = options.editMode || false;
     this.templateId = options.templateId || null;
     this.templateData = options.templateData || null;
@@ -496,16 +495,18 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     };
   }
 
-  async _getLoreSkills(state) {
-    if (!state?.participants || state.participants.length === 0) return [];
-
+  async _getLoreSkills(_state) {
     const currentSystem = SystemAdapter.detectSystem();
     if (currentSystem !== 'pf2e') return [];
 
+    const { getAllPlayerPCs } = await import('../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return [];
+
     const loreSkillsSet = new Set();
 
-    for (const participant of state.participants) {
-      const actor = await fromUuid(participant.actorUuid);
+    for (const pc of pcs) {
+      const actor = await fromUuid(pc.actorUuid);
       if (!actor?.skills) continue;
 
       for (const [skillSlug, skillData] of Object.entries(actor.skills)) {
@@ -521,19 +522,14 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     return Array.from(loreSkillsSet).map(s => JSON.parse(s));
   }
 
-  async _calculatePartyLevel(state) {
-    if (!state?.participants?.length) return null;
-
-    // Filter to selected participants if any
-    const relevantParticipants = this.selectedParticipants && this.selectedParticipants.size > 0
-      ? state.participants.filter(p => this.selectedParticipants.has(p.id))
-      : state.participants;
-
-    if (relevantParticipants.length === 0) return null;
+  async _calculatePartyLevel(_state) {
+    const { getAllPlayerPCs } = await import('../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return null;
 
     const levels = await Promise.all(
-      relevantParticipants.map(async (p) => {
-        const actor = await fromUuid(p.actorUuid);
+      pcs.map(async (pc) => {
+        const actor = await fromUuid(pc.actorUuid);
         return actor?.system?.details?.level?.value ?? actor?.system?.level ?? null;
       }),
     );
@@ -569,7 +565,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       id: foundry.utils.randomID(),
       name: formData.challengeName || '',
       image: formData.challengeImage || null,
-      selectedParticipants: Array.from(this.selectedParticipants),
       options: [],
     };
 
@@ -694,9 +689,9 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     }
 
     if (this.editMode) {
-      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeUpdated', { name: challengeData.name, count: this.selectedParticipants.size || 'all' }));
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengeUpdated', { name: challengeData.name, count: 'all' }));
     } else {
-      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengePresentedPCs', { name: challengeData.name, count: this.selectedParticipants.size || 'all' }));
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Challenge.ChallengePresentedAll', { name: challengeData.name }));
     }
 
     this.close();
@@ -714,7 +709,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       id: foundry.utils.randomID(),
       name: formData.challengeName || '',
       image: formData.challengeImage || null,
-      selectedParticipants: Array.from(this.selectedParticipants),
       options: [],
     };
 

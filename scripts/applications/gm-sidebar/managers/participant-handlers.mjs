@@ -6,7 +6,7 @@
 /**
  * Add all player characters
  */
-export async function onAddAllPCs(_event, _target, sidebar) {
+export async function onAddAllPCs(_event, _target, _sidebar) {
   const pcs = getPlayerCharacters();
 
   if (pcs.length === 0) {

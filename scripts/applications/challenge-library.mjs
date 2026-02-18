@@ -31,9 +31,8 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
     },
   };
 
-  constructor(selectedParticipants, gmSidebar, options = {}) {
+  constructor(_selectedParticipants, gmSidebar, options = {}) {
     super(options);
-    this.selectedParticipants = selectedParticipants;
     this.gmSidebar = gmSidebar;
   }
 
@@ -107,7 +106,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
       id: foundry.utils.randomID(),
       name: template.name,
       image: template.image,
-      selectedParticipants: [], // Broadcast to all players
+      // Challenge is broadcast to all players
       options: template.options,
     };
 

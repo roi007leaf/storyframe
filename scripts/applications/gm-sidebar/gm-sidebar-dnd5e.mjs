@@ -1,6 +1,5 @@
 import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 import * as SkillCheckHandlers from './managers/skill-check-handlers.mjs';
-import * as ParticipantHandlers from './managers/participant-handlers.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
 
 /**
@@ -84,28 +83,24 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
   }
 
   /**
-   * Get available skills from selected participants (D&D 5e specific)
-   * Returns a Set of skill slugs (lowercase) that at least one selected PC has
+   * Get available skills from all player PCs (D&D 5e specific)
+   * Returns a Set of skill slugs (lowercase) that at least one player PC has
    */
-  static async _getAvailableSkills(state, selectedParticipants) {
-    if (!selectedParticipants?.size) return new Set();
-    if (!state?.participants?.length) return new Set();
+  static async _getAvailableSkills(_state, _selectedParticipants) {
+    const { getAllPlayerPCs } = await import('../../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return new Set();
 
     const availableSkills = new Set();
 
-    for (const participantId of selectedParticipants) {
-      const participant = state.participants.find((p) => p.id === participantId);
-      if (!participant) continue;
-
-      const actor = await fromUuid(participant.actorUuid);
+    for (const pc of pcs) {
+      const actor = await fromUuid(pc.actorUuid);
       if (!actor?.system?.skills) continue;
 
-      // Add all skills this actor has
       for (const [key] of Object.entries(actor.system.skills)) {
         availableSkills.add(key.toLowerCase());
       }
 
-      // D&D 5e also has abilities (for saving throws)
       if (actor.system?.abilities) {
         for (const [key] of Object.entries(actor.system.abilities)) {
           availableSkills.add(key.toLowerCase());
@@ -140,8 +135,6 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
     const state = game.storyframe.stateManager.getState();
     if (!state) return baseContext;
 
-    const { participants } = await ParticipantHandlers.prepareParticipantsContext(this, state);
-
     // Get all D&D 5e skills from system adapter
     const allSystemSkills = SystemAdapter.getSkills();
     const allSkills = Object.keys(allSystemSkills).map(slug => ({
@@ -159,10 +152,10 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
     };
 
     const categorizedSkills = {
-      physicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.physical, allSkills, participants),
-      magicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.mental, allSkills, participants),
-      socialSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.social, allSkills, participants),
-      utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.utility, allSkills, participants),
+      physicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.physical, allSkills, null),
+      magicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.mental, allSkills, null),
+      socialSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.social, allSkills, null),
+      utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.utility, allSkills, null),
     };
 
     // Get all D&D 5e saves from system adapter
@@ -209,13 +202,6 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
         }
       }
     });
-  }
-
-  /**
-   * D&D 5e doesn't have party actors - fall back to adding all PCs
-   */
-  static async _onAddPartyPCs(event, target) {
-    return GMSidebarAppDND5e._onAddAllPCs.call(this, event, target);
   }
 
   /**

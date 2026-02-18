@@ -5,7 +5,6 @@
 
 import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
-import { createDCPresetDropdown } from '../../../utils/dc-preset-dropdown.mjs';
 
 /**
  * Set DC from select dropdown
@@ -53,57 +52,173 @@ export async function onSetDifficulty(_event, target, sidebar) {
 }
 
 /**
- * Toggle preset dropdown visibility
+ * Toggle preset dropdown visibility (body-level fixed popup)
  */
 export function onTogglePresetDropdown(_event, target, sidebar) {
-  // Close all other open dropdowns first
-  sidebar.element.querySelectorAll('.preset-dropdown').forEach(d => {
-    if (!target.closest('.dc-input-group')?.contains(d)) {
-      d.style.display = 'none';
+  // Toggle off if already open
+  const existing = document.querySelector('.storyframe-dc-preset-popup');
+  if (existing) {
+    existing.remove();
+    return;
+  }
+
+  const popup = _buildPresetPopup(sidebar);
+  document.body.appendChild(popup);
+
+  // Position fixed relative to trigger button
+  const rect = target.getBoundingClientRect();
+  popup.style.left = `${rect.left}px`;
+  popup.style.top = `${rect.bottom + 4}px`;
+
+  // Adjust if off-screen after paint
+  requestAnimationFrame(() => {
+    const pr = popup.getBoundingClientRect();
+    if (pr.right > window.innerWidth - 10) {
+      popup.style.left = `${rect.right - pr.width}px`;
+    }
+    if (pr.bottom > window.innerHeight - 10) {
+      popup.style.top = `${rect.top - pr.height - 4}px`;
     }
   });
 
-  // Toggle this dropdown
-  const inputGroup = target.closest('.dc-input-group');
-  let dropdown = inputGroup.querySelector('.preset-dropdown');
+  // Tab switching
+  popup.querySelectorAll('.dc-tab-btn').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const tabId = btn.dataset.tab;
+      popup.querySelectorAll('.dc-tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      popup.querySelectorAll('.dc-tab-content').forEach(c => c.classList.remove('active'));
+      popup.querySelector(`[data-tab-content="${tabId}"]`).classList.add('active');
+    });
+  });
 
-  if (!dropdown) {
-    // Create dropdown if it doesn't exist
-    dropdown = _createPresetDropdown(inputGroup, sidebar);
-  }
+  // Apply preset
+  popup.querySelectorAll('.preset-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const presetId = btn.dataset.presetId;
+      const presets = game.settings.get(MODULE_ID, 'dcPresets');
+      const preset = presets.find(p => p.id === presetId);
+      if (!preset) return;
+      sidebar.currentDC = preset.dc;
+      const dcInput = sidebar.element.querySelector('#dc-input');
+      if (dcInput) dcInput.value = preset.dc;
+      popup.remove();
+    });
+  });
 
-  const isVisible = dropdown.style.display !== 'none';
-  dropdown.style.display = isVisible ? 'none' : 'block';
+  // Apply difficulty DC
+  popup.querySelectorAll('.difficulty-option-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const dc = parseInt(btn.dataset.dc);
+      if (isNaN(dc)) return;
+      sidebar.currentDC = dc;
+      const dcInput = sidebar.element.querySelector('#dc-input');
+      if (dcInput) dcInput.value = dc;
+      popup.remove();
+    });
+  });
 
-  if (!isVisible) {
-    // Click outside to close
-    const closeHandler = (e) => {
-      if (!dropdown.contains(e.target) && !target.contains(e.target)) {
-        dropdown.style.display = 'none';
-        document.removeEventListener('click', closeHandler);
+  // Remove preset
+  popup.querySelectorAll('.preset-remove-btn').forEach(btn => {
+    btn.addEventListener('click', async e => {
+      e.stopPropagation();
+      const presetId = btn.dataset.presetId;
+      const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+      const idx = allPresets.findIndex(p => (p.id || String(p.dc)) === presetId);
+      if (idx !== -1) {
+        allPresets.splice(idx, 1);
+        await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
       }
-    };
-    setTimeout(() => document.addEventListener('click', closeHandler), 0);
-  }
+      popup.remove();
+      onTogglePresetDropdown(_event, target, sidebar);
+    });
+  });
+
+  // Add preset
+  popup.querySelector('.preset-add-btn').addEventListener('click', async () => {
+    const dcInput = popup.querySelector('.preset-dc-input-new');
+    const dc = parseInt(dcInput.value);
+    if (!dc || dc < 1) { dcInput.focus(); return; }
+    const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+    allPresets.push({ id: foundry.utils.randomID(), name: `DC ${dc}`, dc, system: SystemAdapter.detectSystem() });
+    await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
+    popup.remove();
+    onTogglePresetDropdown(_event, target, sidebar);
+  });
+
+  // Close on click outside
+  const closeHandler = e => {
+    if (!popup.contains(e.target) && !target.contains(e.target)) {
+      popup.remove();
+      document.removeEventListener('click', closeHandler);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeHandler), 0);
 }
 
 /**
- * Create the tabbed preset dropdown (private helper)
+ * Build the preset popup element (private helper)
  */
-function _createPresetDropdown(inputGroup, sidebar) {
-  return createDCPresetDropdown({
-    inputGroup,
-    partyLevel: sidebar.partyLevel,
-    calculateDCByLevel: (level, difficultyId) => {
-      return sidebar._calculateDCByLevel(level, difficultyId);
-    },
-    actions: {
-      applyPreset: 'applyPreset',
-      applyDifficulty: 'applyPresetDC',
-      addPreset: 'addPresetQuick',
-      removePreset: 'deletePresetQuick',
-    },
-  });
+function _buildPresetPopup(sidebar) {
+  const popup = document.createElement('div');
+  popup.className = 'storyframe-dc-preset-popup preset-dropdown';
+  popup.style.position = 'fixed';
+  popup.style.zIndex = '10000';
+
+  const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
+  const currentSystem = SystemAdapter.detectSystem();
+  const dcPresets = allPresets.filter(p => !p.system || p.system === currentSystem);
+  const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
+  const partyLevel = sidebar.partyLevel;
+
+  const tabs = [{ id: 'presets', label: 'Presets' }];
+  if (partyLevel !== null && difficultyAdjustments?.length > 0) {
+    tabs.push({ id: 'party-level', label: `Party Lvl ${partyLevel}` });
+  }
+
+  const tabButtons = tabs.map((tab, idx) =>
+    `<button type="button" class="dc-tab-btn ${idx === 0 ? 'active' : ''}" data-tab="${tab.id}">${tab.label}</button>`
+  ).join('');
+
+  const presetsHtml = dcPresets.length > 0
+    ? dcPresets.map(preset => `
+        <div class="preset-option-wrapper">
+          <button type="button" class="preset-option preset-option-btn" data-preset-id="${preset.id}" data-dc="${preset.dc}" data-tooltip="${preset.name}">
+            ${preset.dc}
+          </button>
+          <button type="button" class="preset-remove-btn" data-preset-id="${preset.id || preset.dc}" data-tooltip="Remove ${preset.name}">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>`).join('')
+    : '<div class="no-presets">No custom presets yet</div>';
+
+  const addForm = `
+    <div class="add-preset-form">
+      <input type="number" class="preset-dc-input-new" placeholder="DC" min="1" max="99">
+      <button type="button" class="preset-add-btn"><i class="fas fa-plus"></i></button>
+    </div>`;
+
+  const difficultyHtml = (partyLevel !== null && difficultyAdjustments?.length > 0)
+    ? difficultyAdjustments.map(d => {
+        const dc = sidebar._calculateDCByLevel(partyLevel, d.id);
+        const label = game.i18n.localize(d.labelKey);
+        return `<button type="button" class="preset-option difficulty-option-btn" data-dc="${dc}" data-tooltip="${label} (DC ${dc})">
+          <span class="preset-dc">${dc}</span>
+          <span class="preset-label">${label}</span>
+        </button>`;
+      }).join('')
+    : '';
+
+  const tabContents = [
+    `<div class="dc-tab-content active" data-tab-content="presets">${presetsHtml}${addForm}</div>`,
+    partyLevel !== null && difficultyAdjustments?.length > 0
+      ? `<div class="dc-tab-content" data-tab-content="party-level">${difficultyHtml}</div>`
+      : '',
+  ].join('');
+
+  popup.innerHTML = `<div class="dc-tabs-header">${tabButtons}</div><div class="dc-tabs-body">${tabContents}</div>`;
+  return popup;
 }
 
 /**
@@ -141,75 +256,9 @@ export async function onApplyPresetDC(_event, target, sidebar) {
 }
 
 /**
- * Add a quick DC preset
- */
-export async function onAddPresetQuick(_event, target, sidebar) {
-  const dropdown = target.closest('.preset-dropdown');
-  const dcInput = dropdown.querySelector('.preset-dc-input-new');
-
-  const dc = parseInt(dcInput.value);
-
-  if (!dc || dc < 1) {
-    ui.notifications.warn('Please enter a valid DC value');
-    dcInput.focus();
-    return;
-  }
-
-  // Get current presets
-  const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
-  const currentSystem = SystemAdapter.detectSystem();
-
-  // Create new preset with auto-generated name
-  const newPreset = {
-    id: foundry.utils.randomID(),
-    name: `DC ${dc}`,
-    dc,
-    system: currentSystem,
-  };
-
-  // Add to presets
-  allPresets.push(newPreset);
-  await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
-
-  // Recreate dropdown using shared component
-  const inputGroup = dropdown.closest('.dc-input-group');
-  dropdown.remove();
-  const newDropdown = _createPresetDropdown(inputGroup, sidebar);
-  newDropdown.style.display = 'block';
-}
-
-/**
- * Delete a quick DC preset
- */
-export async function onDeletePresetQuick(_event, target, sidebar) {
-  const presetId = target.dataset.presetId;
-
-  // Get current presets
-  const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
-
-  // Find and remove the preset
-  const presetIndex = allPresets.findIndex(p => (p.id || p.dc.toString()) === presetId);
-
-  if (presetIndex === -1) {
-    ui.notifications.warn('Preset not found');
-    return;
-  }
-
-  allPresets.splice(presetIndex, 1);
-  await game.settings.set(MODULE_ID, 'dcPresets', allPresets);
-
-  // Recreate dropdown using shared component
-  const dropdown = target.closest('.preset-dropdown');
-  const inputGroup = dropdown.closest('.dc-input-group');
-  dropdown.remove();
-  const newDropdown = _createPresetDropdown(inputGroup, sidebar);
-  newDropdown.style.display = 'block';
-}
-
-/**
  * Attach system-specific DC handlers (override in subclass)
  */
-export function attachSystemDCHandlers(sidebar) {
+export function attachSystemDCHandlers(_sidebar) {
   // Base implementation does nothing
   // Subclasses can override to add system-specific handlers
 }
@@ -220,7 +269,7 @@ export function attachSystemDCHandlers(sidebar) {
  * @param {string} difficultyId - Difficulty ID
  * @returns {number|null}
  */
-export function calculateDCByLevel(level, difficultyId) {
+export function calculateDCByLevel(_level, _difficultyId) {
   // Base implementation returns null
   // Subclasses should override with system-specific logic
   return null;
@@ -230,7 +279,7 @@ export function calculateDCByLevel(level, difficultyId) {
  * Get party level for DC calculation (system-specific - override in subclass)
  * @returns {Promise<number|null>}
  */
-export async function getPartyLevel(sidebar) {
+export async function getPartyLevel(_sidebar) {
   // Base implementation returns null
   // Subclasses should override with system-specific logic
   return null;
@@ -292,7 +341,7 @@ export async function prepareDCContext(sidebar) {
  * Prepare system-specific context for template (override in subclass)
  * @returns {Promise<Object>} { partyLevel?, calculatedDC?, difficultyOptions? }
  */
-export async function prepareContextSystemSpecific(sidebar) {
+export async function prepareContextSystemSpecific(_sidebar) {
   // Base implementation returns empty object
   // Subclasses should override with system-specific logic
   return {};

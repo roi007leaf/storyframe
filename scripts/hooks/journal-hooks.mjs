@@ -288,8 +288,6 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       event.stopPropagation();
       event.stopImmediatePropagation();
 
-      console.log('StoryFrame: CTRL+click intercepted on repost button');
-
       // Extract check data from the inline check element
       const skillName = checkElement.dataset.pf2Check;
       const dc = parseInt(checkElement.dataset.pf2Dc);
@@ -300,24 +298,13 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       const saveTypes = new Set(['fortitude', 'reflex', 'will']);
       const checkType = saveTypes.has(skillName.toLowerCase()) ? 'save' : 'skill';
 
-      // Get state and validate participants exist
-      const state = game.storyframe.stateManager.getState();
-      if (!state?.participants || state.participants.length === 0) {
-        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
+      // Get all player PCs
+      const { getAllPlayerPCs } = await import('../system-adapter.mjs');
+      const pcs = await getAllPlayerPCs();
+      if (pcs.length === 0) {
+        ui.notifications.warn('No player-owned characters found in the world.');
         return;
       }
-
-      // Enrich participants with actor data
-      const enrichedParticipants = await Promise.all(
-        state.participants.map(async (p) => {
-          const actor = await fromUuid(p.actorUuid);
-          return {
-            id: p.id,
-            name: actor?.name || p.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
-            img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
-          };
-        })
-      );
 
       // Create check for dialog (single check)
       const checksForDialog = [{
@@ -329,7 +316,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
 
       // Import and show Roll Requester Dialog
       const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
-      const dialog = new RollRequestDialog(checksForDialog, enrichedParticipants);
+      const dialog = new RollRequestDialog(checksForDialog, pcs);
       dialog.render(true);
 
       // Wait for result

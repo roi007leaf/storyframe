@@ -75,26 +75,12 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   static hasPlayerRelevantContent(state, userId) {
     if (!state) return false;
 
-    // Find player's participants
-    const myParticipantIds =
-      state.participants?.filter((p) => p.userId === userId).map((p) => p.id) || [];
-
-    if (myParticipantIds.length === 0) return false;
-
-    // Check pending rolls
+    // Check pending rolls by userId
     const hasPendingRolls =
-      state.pendingRolls?.some((roll) => myParticipantIds.includes(roll.participantId)) || false;
+      state.pendingRolls?.some((roll) => roll.userId === userId) || false;
 
-    // Check active challenges
-    const hasRelevantChallenges =
-      state.activeChallenges?.some((challenge) => {
-        // Empty selectedParticipants = broadcast to all
-        if (!challenge.selectedParticipants || challenge.selectedParticipants.length === 0) {
-          return true;
-        }
-        // Check intersection with player's participants
-        return challenge.selectedParticipants.some((id) => myParticipantIds.includes(id));
-      }) || false;
+    // Check active challenges (broadcast to all players)
+    const hasRelevantChallenges = (state.activeChallenges?.length || 0) > 0;
 
     return hasPendingRolls || hasRelevantChallenges;
   }
@@ -114,9 +100,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const state = game.storyframe.stateManager.getState();
     const layout = game.settings.get(MODULE_ID, 'playerViewerLayout') || 'grid';
 
-    // Find ALL participants for this player (they may control multiple PCs)
-    const myParticipants = state?.participants?.filter((p) => p.userId === game.user.id) || [];
-    const myParticipantIds = new Set(myParticipants.map(p => p.id));
+    // Filter by current user ID
+    const myUserId = game.user.id;
 
     // Check if DCs should be shown to players based on system settings
     const currentSystem = SystemAdapter.detectSystem();
@@ -132,9 +117,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       showDCs = challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM);
     }
 
-    // Check if active challenges apply to this player (backward compatibility)
+    // Check if active challenges apply to this player
     let activeChallenge = null;
-    if (state?.activeChallenges && state.activeChallenges.length > 0 && myParticipants.length > 0) {
+    if (state?.activeChallenges && state.activeChallenges.length > 0) {
       // Use first challenge for backward compatibility
       const firstChallenge = state.activeChallenges[0];
       const enrichedOptions = firstChallenge.options.map(opt => ({
@@ -156,20 +141,14 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // Group pending rolls by actor
     let actorRollGroups = [];
-    if (myParticipantIds.size > 0 && state?.pendingRolls) {
+    if (state?.pendingRolls) {
       const rolls = await Promise.all(
         state.pendingRolls
-          .filter((roll) => myParticipantIds.has(roll.participantId))
+          .filter((roll) => roll.userId === myUserId)
           .map(async (roll) => {
-            // Get participant and actor info
-            const participant = state.participants.find(p => p.id === roll.participantId);
-            const actor = participant ? await fromUuid(participant.actorUuid) : null;
+            // Get actor info from roll's actorUuid
+            const actor = roll.actorUuid ? await fromUuid(roll.actorUuid) : null;
             let actorName = actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
-
-            // Hide name from players if flag is set
-            if (participant?.isNameHidden && !game.user.isGM) {
-              actorName = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
-            }
 
             // Build action name with variant if present
             let actionName = null;
@@ -188,7 +167,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
               dc: showDCs ? roll.dc : null,
               actorName,
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
-              actorId: participant?.actorUuid || 'unknown',
+              actorId: roll.actorUuid || 'unknown',
             };
           })
       );
@@ -483,17 +462,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Find participant and get actor
-    const participant = state.participants?.find((p) => p.id === request.participantId);
-    if (!participant) {
-      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ParticipantNotFound'));
-      if (request.isSecretRoll) {
-        await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
-      }
-      return;
-    }
-
-    const actor = await fromUuid(participant.actorUuid);
+    // Get actor directly from request
+    const actor = await fromUuid(request.actorUuid);
     if (!actor) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       if (request.isSecretRoll) {
@@ -630,7 +600,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Extract result data (handle both PF2e and D&D 5e formats)
       const result = {
         requestId: request.id,
-        participantId: request.participantId,
+        actorUuid: request.actorUuid,
         skillSlug: request.skillSlug,
         actionSlug: request.actionSlug,
         total: roll.total ?? 0,
@@ -643,11 +613,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       // Submit result to GM via socket
       await game.storyframe.socketManager.requestSubmitRollResult(result);
 
-      // If this roll was part of an "allow only one" group, dismiss other rolls for this participant
+      // If this roll was part of an "allow only one" group, dismiss other rolls for this actor
       if (request.batchGroupId && request.allowOnlyOne) {
         await PlayerViewerApp._dismissGroupRolls(
           request.batchGroupId,
-          request.participantId,
+          request.actorUuid,
           requestId
         );
       }
@@ -663,26 +633,26 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
   }
 
   /**
-   * Dismiss other rolls in an "allow only one" group for the same participant.
+   * Dismiss other rolls in an "allow only one" group for the same actor.
    * Called after a player successfully executes a roll from a grouped batch.
    * @param {string} batchGroupId - The shared group ID
-   * @param {string} participantId - The participant who rolled (only dismiss their other rolls)
+   * @param {string} actorUuid - The actor UUID who rolled (only dismiss their other rolls)
    * @param {string} executedRequestId - The request that was executed (don't dismiss this one)
    */
-  static async _dismissGroupRolls(batchGroupId, participantId, executedRequestId) {
+  static async _dismissGroupRolls(batchGroupId, actorUuid, executedRequestId) {
     const state = game.storyframe.stateManager.getState();
     if (!state?.pendingRolls) return;
 
-    // Find other rolls in the same group for the same participant
+    // Find other rolls in the same group for the same actor
     const otherRolls = state.pendingRolls.filter(
       r => r.batchGroupId === batchGroupId
-        && r.participantId === participantId
+        && r.actorUuid === actorUuid
         && r.id !== executedRequestId
     );
 
     if (otherRolls.length === 0) return;
 
-    // Remove all other rolls in group for this participant
+    // Remove all other rolls in group for this actor
     for (const roll of otherRolls) {
       await game.storyframe.socketManager.requestRemovePendingRoll(roll.id);
     }
@@ -723,32 +693,34 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Find my participant (any participant for this user)
-    const myParticipant = state.participants?.find(p => p.userId === game.user.id);
+    // Find an actor owned by this user
+    const myActor = game.actors?.find(a => a.hasPlayerOwner && a.testUserPermission?.(game.user, 'OWNER'));
 
-    if (!myParticipant) {
-      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.NoParticipantForUser'));
+    if (!myActor) {
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       return;
     }
 
+    const actorData = { actorUuid: myActor.uuid };
+
     // Execute appropriate roll based on check type
     if (checkType === 'save') {
-      await PlayerViewerApp._executeSaveRoll(myParticipant, checkSlug, dc, isSecret);
+      await PlayerViewerApp._executeSaveRoll(actorData, checkSlug, dc, isSecret);
     } else {
-      await PlayerViewerApp._executeSkillRoll(myParticipant, checkSlug, dc, actionSlug, isSecret);
+      await PlayerViewerApp._executeSkillRoll(actorData, checkSlug, dc, actionSlug, isSecret);
     }
   }
 
   /**
    * Execute skill roll for challenge option.
-   * @param {Object} participant - Participant data
+   * @param {Object} actorData - Object with actorUuid property
    * @param {string} skillSlug - Skill slug
    * @param {number} dc - DC value
    * @param {string|null} actionSlug - Optional action slug (PF2e only)
    * @param {boolean} isSecret - Whether this is a secret roll (GM only)
    */
-  static async _executeSkillRoll(participant, skillSlug, dc, actionSlug = null, isSecret = false) {
-    const actor = await fromUuid(participant.actorUuid);
+  static async _executeSkillRoll(actorData, skillSlug, dc, actionSlug = null, isSecret = false) {
+    const actor = await fromUuid(actorData.actorUuid);
     if (!actor) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       return;
@@ -822,13 +794,13 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
   /**
    * Execute save roll for challenge option.
-   * @param {Object} participant - Participant data
+   * @param {Object} actorData - Object with actorUuid property
    * @param {string} saveSlug - Save slug (e.g., 'fortitude', 'str')
    * @param {number} dc - DC value
    * @param {boolean} isSecret - Whether this is a secret roll (GM only)
    */
-  static async _executeSaveRoll(participant, saveSlug, dc, isSecret = false) {
-    const actor = await fromUuid(participant.actorUuid);
+  static async _executeSaveRoll(actorData, saveSlug, dc, isSecret = false) {
+    const actor = await fromUuid(actorData.actorUuid);
     if (!actor) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
       return;

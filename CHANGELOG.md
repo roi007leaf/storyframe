@@ -1,9 +1,40 @@
 # Changelog
+<!-- markdownlint-disable MD024 -->
 
 All notable changes to StoryFrame will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.8.1] - 2026-02-18
+
+### Added
+
+- **Action/variant batch highlighting** - Action menu items and variant popup items show gold highlight when batched; re-opening popup pre-marks already-batched items
+- **Roll Requester send button disabled** when no participant selected; enables on first selection
+- **Ctrl/Cmd+click intercepts any chat post** - Holding Ctrl/Cmd while clicking any "post to chat" button opens Roll Requester instead of posting directly
+
+### Changed
+
+- **All skills shown by default** - Removed "configure quick skills" button; all system skills now always visible in the PCs tab skill grid
+- **Allow Only One moved to Roll Requester** - Removed the toggle from the sidebar controls bar; use the checkbox in the Roll Requester dialog instead
+- **Per-check secret capture** - Secret toggle state captured at shift-click time per batch item; dialog also shows correct per-check secret badge
+- **Journal skill shift-click toggle** - Shift-clicking a journal skill button when all its checks are already batched now removes them (full toggle)
+
+## [1.8.0] - 2026-02-18
+
+### Added
+
+- **Batch skill actions & variants** - Shift+click actions in the skill actions menu or variants in the variant popup to add them to the batch queue
+- **Per-check DC capture** - Each item shift-clicked into a batch captures the current DC and secret toggle at that moment; different checks in the same batch can now have different DCs
+
+### Changed
+
+- **PCs tab simplified** - Removed participant selection; skill/save buttons now open Roll Requester directly with all player-owned PCs (or PF2e party members), no pre-selection needed
+- **DC preset popup** - Now renders as a body-level fixed popup, no longer clipped by the journal window
+- **PF2e party members in Roll Requester** - Roll Requester uses PF2e party actor members when a party exists, falls back to all player-owned characters
+- **PF2e inline check Cmd+Click** - Cmd/Ctrl+click on an inline check repost button opens Roll Requester without posting to chat
+- **Challenge option names** - Player sidebar now shows option names above skill buttons
 
 ## [1.7.6] - 2026-02-15
 

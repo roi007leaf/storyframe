@@ -5,11 +5,7 @@ import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
  * PF2e-specific GM Sidebar implementation
  */
 export class GMSidebarAppPF2e extends GMSidebarAppBase {
-  static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {
-    actions: {
-      addPartyPCs: GMSidebarAppPF2e._onAddPartyPCs,
-    },
-  }, { inplace: false });
+  static DEFAULT_OPTIONS = foundry.utils.mergeObject(super.DEFAULT_OPTIONS, {}, { inplace: false });
 
   /**
    * Parse PF2e inline checks from journal content
@@ -49,67 +45,57 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
   }
 
   /**
-   * Get lore skills from participants (PF2e specific)
-   * Returns lore skills from all selected participants
+   * Get lore skills from all player PCs (PF2e specific)
    */
-  static async _getLoreSkills(state, selectedParticipants) {
-    if (!selectedParticipants?.size) return [];
-    if (!state?.participants?.length) return [];
+  static async _getLoreSkills(_state, _selectedParticipants) {
+    const { getAllPlayerPCs } = await import('../../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return [];
 
     const lores = new Map(); // Use Map to store key->label pairs
 
-    // Collect lore skills from all selected participants
-    for (const participantId of selectedParticipants) {
-      const participant = state.participants.find((p) => p.id === participantId);
-      if (!participant) continue;
-
-      const actor = await fromUuid(participant.actorUuid);
+    // Collect lore skills from all player PCs
+    for (const pc of pcs) {
+      const actor = await fromUuid(pc.actorUuid);
       if (!actor?.skills) continue;
 
       // PF2e stores lore skills with keys containing "-lore"
       for (const [key, skill] of Object.entries(actor.skills)) {
         if (key.includes('-lore') && skill.label) {
-          lores.set(key, skill.label); // Store actual key from PF2e
+          lores.set(key, skill.label);
         }
       }
     }
 
     return Array.from(lores.entries())
-      .sort((a, b) => a[1].localeCompare(b[1])) // Sort by label
+      .sort((a, b) => a[1].localeCompare(b[1]))
       .map(([key, label]) => ({
-        slug: key, // Use the actual PF2e skill key (e.g., "academia-lore")
-        name: label, // Use the display label (e.g., "Academia Lore")
+        slug: key,
+        name: label,
         isLore: true,
       }));
   }
 
   /**
-   * Get available skills from selected participants (PF2e specific)
-   * Returns a Set of skill slugs (lowercase) that at least one selected PC has
+   * Get available skills from all player PCs (PF2e specific)
+   * Returns a Set of skill slugs (lowercase) that at least one player PC has
    */
-  static async _getAvailableSkills(state, selectedParticipants) {
-    if (!selectedParticipants?.size) return new Set();
-    if (!state?.participants?.length) return new Set();
+  static async _getAvailableSkills(_state, _selectedParticipants) {
+    const { getAllPlayerPCs } = await import('../../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return new Set();
 
     const availableSkills = new Set();
-
-    // Get all standard PF2e skills
     const systemSkills = SystemAdapter.getSkills();
 
-    for (const participantId of selectedParticipants) {
-      const participant = state.participants.find((p) => p.id === participantId);
-      if (!participant) continue;
-
-      const actor = await fromUuid(participant.actorUuid);
+    for (const pc of pcs) {
+      const actor = await fromUuid(pc.actorUuid);
       if (!actor?.skills) continue;
 
-      // Add all skills this actor has
       for (const [key] of Object.entries(actor.skills)) {
-        // Standard skills - check if they exist in the system skills
         if (systemSkills[key]) {
           availableSkills.add(key.toLowerCase());
         }
-        // Lore skills - use the key as-is (already in "politics-lore" format)
         if (key.includes('-lore')) {
           availableSkills.add(key.toLowerCase());
         }
@@ -213,15 +199,16 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
   }
 
   /**
-   * Get party level (average of participants)
+   * Get party level (average of all player PCs)
    */
   async _getPartyLevel() {
-    const state = game.storyframe.stateManager.getState();
-    if (!state?.participants?.length) return null;
+    const { getAllPlayerPCs } = await import('../../system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) return null;
 
     const levels = await Promise.all(
-      state.participants.map(async (p) => {
-        const actor = await fromUuid(p.actorUuid);
+      pcs.map(async (pc) => {
+        const actor = await fromUuid(pc.actorUuid);
         return actor?.system?.details?.level?.value ?? actor?.system?.level ?? null;
       }),
     );
@@ -318,52 +305,6 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
         }
       }
     });
-  }
-
-  /**
-   * Add party members (PF2e party actor)
-   */
-  static async _onAddPartyPCs(_event, _target) {
-    const party = game.actors.find((a) => a.type === 'party');
-
-    if (!party) {
-      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoPartyFound'));
-      return;
-    }
-
-    const memberRefs = party.system.details.members || [];
-
-    if (memberRefs.length === 0) {
-      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoMembersInParty'));
-      return;
-    }
-
-    // Resolve member references to actual actors
-    const partyMembers = [];
-    for (const memberRef of memberRefs) {
-      const actor = await fromUuid(memberRef.uuid);
-      if (actor) {
-        partyMembers.push(actor);
-      }
-    }
-
-    if (partyMembers.length === 0) {
-      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Participant.NoValidMembersInParty'));
-      return;
-    }
-
-    for (const actor of partyMembers) {
-      const owningUser = game.users.find(
-        (user) => !user.isGM && actor.testUserPermission(user, 'OWNER'),
-      );
-
-      if (owningUser) {
-        await game.storyframe.socketManager.requestAddParticipant({
-          actorUuid: actor.uuid,
-          userId: owningUser.id,
-        });
-      }
-    }
   }
 
   /**

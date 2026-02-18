@@ -5,6 +5,7 @@
  */
 
 // PF2e imports
+import { getPF2ePartyPCs } from './system/pf2e/party.mjs';
 import {
   PF2E_SKILLS,
   PF2E_SKILL_SHORT_NAMES,
@@ -217,6 +218,30 @@ export function getSaveNameMap() {
   }
 }
 
+/**
+ * Get player PCs for roll requester.
+ * PF2e: returns party actor members. Other systems: all player-owned characters.
+ * @returns {Array<{id: string, name: string, img: string, actorUuid: string, userId: string|undefined}>}
+ */
+export async function getAllPlayerPCs() {
+  if (!game.actors) return [];
+
+  const toEntry = (a) => {
+    const owner = game.users.find(u => !u.isGM && a.testUserPermission(u, 'OWNER'));
+    return { id: a.uuid, name: a.name, img: a.img, actorUuid: a.uuid, userId: owner?.id };
+  };
+
+  if (game.system.id === 'pf2e') {
+    const partyPCs = await getPF2ePartyPCs(toEntry);
+    if (partyPCs) return partyPCs;
+    // Fallback: all player-owned characters if no party found
+  }
+
+  return game.actors
+    .filter(a => a.type === 'character' && a.hasPlayerOwner)
+    .map(toEntry);
+}
+
 export default {
   detectSystem,
   getSkills,
@@ -229,4 +254,5 @@ export default {
   getSaveShortName,
   getSkillNameMap,
   getSaveNameMap,
+  getAllPlayerPCs,
 };

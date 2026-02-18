@@ -39,13 +39,6 @@ function setupPF2eRepostIntegration() {
     const saveTypes = new Set(['fortitude', 'reflex', 'will']);
     const checkType = saveTypes.has(checkSlug.toLowerCase()) ? 'save' : 'skill';
 
-    // Get participants from state
-    const state = game.storyframe.stateManager.getState();
-    if (!state?.participants || state.participants.length === 0) {
-      ui.notifications.warn('No participants added. Add PCs to StoryFrame first.');
-      return;
-    }
-
     // Map full skill/save names to slugs
     const { PF2E_SKILL_NAME_MAP } = await import('./scripts/system/pf2e/skills.mjs');
     const skillSlug = PF2E_SKILL_NAME_MAP[checkSlug] || checkSlug;
@@ -58,21 +51,17 @@ function setupPF2eRepostIntegration() {
       checkType,
     }];
 
-    // Enrich participants with actor data
-    const enrichedParticipants = await Promise.all(
-      state.participants.map(async (p) => {
-        const actor = await fromUuid(p.actorUuid);
-        return {
-          id: p.id,
-          name: actor?.name || p.name || 'Unknown',
-          img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
-        };
-      }),
-    );
+    // Get all player PCs for the dialog
+    const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (pcs.length === 0) {
+      ui.notifications.warn('No player-owned characters found in the world.');
+      return;
+    }
 
     // Show roll request dialog
     const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
-    const dialog = new RollRequestDialog(checks, enrichedParticipants);
+    const dialog = new RollRequestDialog(checks, pcs);
     dialog.render(true);
     const result = await dialog.wait();
 
@@ -322,28 +311,17 @@ Hooks.once('init', () => {
         return false;
       }
 
-      // Get current participants
-      const state = game.storyframe.stateManager.getState();
-      if (!state?.participants || state.participants.length === 0) {
-        ui.notifications.warn('No participants added. Add PCs first.');
+      // Get all player PCs for the dialog
+      const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
+      const pcs = await getAllPlayerPCs();
+      if (pcs.length === 0) {
+        ui.notifications.warn('No player-owned characters found in the world.');
         return false;
       }
 
-      // Enrich participants with actor data
-      const enrichedParticipants = await Promise.all(
-        state.participants.map(async (p) => {
-          const actor = await fromUuid(p.actorUuid);
-          return {
-            id: p.id,
-            name: actor?.name || p.name || 'Unknown',
-            img: actor?.img || p.img || 'icons/svg/mystery-man.svg',
-          };
-        }),
-      );
-
       // Import and show the roll request dialog
       const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
-      const dialog = new RollRequestDialog(checks, enrichedParticipants);
+      const dialog = new RollRequestDialog(checks, pcs);
       dialog.render(true);
 
       const result = await dialog.wait();

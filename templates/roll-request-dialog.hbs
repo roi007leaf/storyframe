@@ -7,8 +7,8 @@
         <li class="check-item">
           <div class="check-info">
             <i class="fas {{this.skillIcon}}"></i>
-            <span class="check-skill">{{this.skillName}}</span>
-            <span class="check-dc">DC {{this.dc}}</span>
+            <span class="check-skill">{{this.skillName}}{{#if this.actionName}}<span class="check-action-name"> ({{this.actionName}}{{#if this.variantName}}: {{this.variantName}}{{/if}})</span>{{/if}}</span>
+            {{#if this.dc}}<span class="check-dc">DC {{this.dc}}</span>{{/if}}
             {{#if this.isSecret}}
             <span class="check-secret-badge">
               <i class="fas fa-eye-slash"></i>

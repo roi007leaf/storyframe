@@ -25,7 +25,7 @@
   display: flex;
   gap: var(--sf-space-sm);
   align-items: center;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   overflow: visible;
 }
 
@@ -1450,46 +1450,6 @@
 }
 
 /* Allow Only One Toggle */
-.gm-sidebar .allow-only-one-toggle {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  background: rgba(163, 190, 140, 0.15);
-  border: 1px solid rgba(163, 190, 140, 0.3);
-  border-radius: var(--sf-radius-md);
-  font-size: 11px;
-  color: var(--sf-text-secondary);
-  cursor: pointer;
-  transition: all 0.2s;
-  user-select: none;
-}
-
-.gm-sidebar .allow-only-one-toggle:hover {
-  background: rgba(163, 190, 140, 0.25);
-  border-color: rgba(163, 190, 140, 0.5);
-}
-
-.gm-sidebar .allow-only-one-toggle input[type='checkbox'] {
-  cursor: pointer;
-  margin: 0;
-}
-
-.gm-sidebar .allow-only-one-toggle input[type='checkbox']:checked ~ span {
-  color: #a3be8c;
-  font-weight: 600;
-}
-
-.gm-sidebar .allow-only-one-toggle i {
-  font-size: 10px;
-  color: rgba(163, 190, 140, 0.7);
-}
-
-.gm-sidebar .send-batch-btn.allow-only-one-active {
-  background: linear-gradient(135deg, rgba(163, 190, 140, 0.5), rgba(163, 190, 140, 0.4));
-  border-color: rgba(163, 190, 140, 0.8);
-  box-shadow: 0 0 8px rgba(163, 190, 140, 0.4);
-}
 
 /* Pending Rolls Section */
 .pending-rolls-section {

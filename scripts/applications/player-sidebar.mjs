@@ -126,9 +126,8 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       };
     }
 
-    // Get current user's participants
-    const myParticipants = state?.participants?.filter((p) => p.userId === game.user.id) || [];
-    const myParticipantIds = new Set(myParticipants.map(p => p.id));
+    // Filter content by current user ID (no longer uses participants)
+    const myUserId = game.user.id;
 
     // Check if DCs should be shown
     const currentSystem = game.pf2e ? 'pf2e' : (game.dnd5e ? 'dnd5e' : 'unknown');
@@ -229,7 +228,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
     // Active challenges (multi-challenge support)
     let activeChallenges = [];
-    if (state?.activeChallenges && myParticipants.length > 0) {
+    if (state?.activeChallenges) {
       // Get system-specific GM sidebar class for proficiency checking (once)
       let GMSidebar;
       if (game.system.id === 'pf2e') {
@@ -253,13 +252,12 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
             // Check if player meets proficiency requirement (skills only, not saves)
             let canRoll = true;
             if (checkType === 'skill' && so.minProficiency && so.minProficiency > 0) {
-              // Check proficiency for this player's participant(s)
+              // Check proficiency for this player's actors
               canRoll = false;
 
-              for (const p of myParticipants) {
-                const actor = await fromUuid(p.actorUuid);
-                if (!actor) continue;
-
+              // Find all actors owned by this user
+              const myActors = game.actors?.filter(a => a.type === 'character' && a.testUserPermission(game.user, 'OWNER')) || [];
+              for (const actor of myActors) {
                 const rank = await GMSidebar._getActorProficiencyRank(actor, so.skill);
                 if (rank >= so.minProficiency) {
                   canRoll = true;
@@ -331,13 +329,12 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
     // Group pending rolls by actor
     let actorRollGroups = [];
-    if (myParticipantIds.size > 0 && state?.pendingRolls) {
+    if (state?.pendingRolls) {
       const rolls = await Promise.all(
         state.pendingRolls
-          .filter((roll) => myParticipantIds.has(roll.participantId))
+          .filter((roll) => roll.userId === myUserId)
           .map(async (roll) => {
-            const participant = state.participants.find(p => p.id === roll.participantId);
-            const actor = participant ? await fromUuid(participant.actorUuid) : null;
+            const actor = roll.actorUuid ? await fromUuid(roll.actorUuid) : null;
 
             // Determine if this is a save or skill check
             const checkType = roll.checkType || 'skill';
@@ -368,7 +365,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               dcDifficulty: getDCDifficulty(roll.dc),
               actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
               actorImg: actor?.img || 'icons/svg/mystery-man.svg',
-              actorId: participant?.actorUuid || 'unknown',
+              actorId: roll.actorUuid || 'unknown',
               checkType,
               tooltip,
               ariaLabel,

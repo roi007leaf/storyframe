@@ -46,6 +46,18 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
   async _onRender(_context, _options) {
     super._onRender(_context, _options);
 
+    // Wire up participant checkboxes to enable/disable submit button
+    const submitBtn = this.element.querySelector('.submit-btn');
+    const checkboxes = this.element.querySelectorAll('input[name="participant"]');
+
+    const updateSubmit = () => {
+      const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
+      submitBtn.disabled = !anyChecked;
+    };
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateSubmit));
+    updateSubmit();
+
     if (this._autoSized) return;
     this._autoSized = true;
 
@@ -89,11 +101,26 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
         }
       }
 
+      // Compute action display name
+      let actionName = null;
+      if (check.actionSlug) {
+        const skillData = systemSkills[check.skillName];
+        const action = skillData?.actions?.find(a => a.slug === check.actionSlug);
+        actionName = action?.name || null;
+      }
+
+      // Compute variant display name
+      const variantName = check.actionVariant
+        ? check.actionVariant.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+        : null;
+
       return {
         ...check,
         skillIcon: checkData?.icon || 'fa-dice-d20',
         skillName: checkData?.name || check.skillName,
         checkType,
+        actionName,
+        variantName,
       };
     });
 

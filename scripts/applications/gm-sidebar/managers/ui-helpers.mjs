@@ -195,8 +195,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   // Build pending rolls data with names
   const rollsData = await Promise.all(
     pendingRolls.map(async (r) => {
-      const participant = state.participants?.find((p) => p.id === r.participantId);
-      const actor = participant ? await fromUuid(participant.actorUuid) : null;
+      const actor = r.actorUuid ? await fromUuid(r.actorUuid) : null;
 
       // Get appropriate name based on check type
       const checkType = r.checkType || 'skill';
@@ -220,9 +219,9 @@ export async function onShowPendingRolls(_event, target, sidebar) {
 
       return {
         ...r,
-        participantId: r.participantId,
-        participantName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
-        participantImg: actor?.img || 'icons/svg/mystery-man.svg',
+        actorUuid: r.actorUuid,
+        actorName: actor?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown'),
+        actorImg: actor?.img || 'icons/svg/mystery-man.svg',
         skillName: checkName,
         actionName,
         checkType: checkType,
@@ -237,15 +236,15 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   rollsData.forEach(roll => {
     if (roll.allowOnlyOne && roll.batchGroupId) {
       // Part of an allow-only-one group
-      const groupKey = `${roll.participantId}:${roll.batchGroupId}`;
+      const groupKey = `${roll.actorUuid}:${roll.batchGroupId}`;
       if (!batchGroups.has(groupKey)) {
         batchGroups.set(groupKey, {
           id: roll.batchGroupId,  // Use group ID for cancel operations
           isAllowOnlyOne: true,
           batchGroupId: roll.batchGroupId,
-          participantId: roll.participantId,
-          participantName: roll.participantName,
-          participantImg: roll.participantImg,
+          actorUuid: roll.actorUuid,
+          actorName: roll.actorName,
+          actorImg: roll.actorImg,
           groupedRolls: [],
           skillName: `Choose One (${0})`,  // Will update count
           dc: null,  // Multiple DCs
@@ -359,11 +358,11 @@ export async function onShowPendingRolls(_event, target, sidebar) {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const batchGroupId = btn.dataset.batchGroupId;
-      const participantId = btn.dataset.participantId;
+      const actorUuid = btn.dataset.actorUuid;
 
-      // Find all rolls in this group for this participant
+      // Find all rolls in this group for this actor
       const groupRolls = rollsData.filter(r =>
-        r.batchGroupId === batchGroupId && r.participantId === participantId && !r.isAllowOnlyOne
+        r.batchGroupId === batchGroupId && r.actorUuid === actorUuid && !r.isAllowOnlyOne
       );
 
       // Remove all rolls in group
@@ -396,8 +395,6 @@ export async function onShowPendingRolls(_event, target, sidebar) {
     btn.addEventListener('click', async (e) => {
       e.stopPropagation();
       const requestId = btn.dataset.requestId;
-      const batchGroupId = btn.dataset.batchGroupId;
-
       await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
 
       // Remove this sub-item
@@ -480,7 +477,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
 /**
  * Show active challenges popup
  */
-export async function onShowActiveChallenges(_event, target, sidebar) {
+export async function onShowActiveChallenges(_event, target, _sidebar) {
   const state = game.storyframe.stateManager.getState();
   const activeChallenges = state?.activeChallenges || [];
 
@@ -632,7 +629,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
 /**
  * Show proficiency filter popup (stub - system-specific implementation)
  */
-export async function onShowProficiencyFilter(_event, target, skillSlug, sidebar) {
+export async function onShowProficiencyFilter(_event, _target, _skillSlug, _sidebar) {
   ui.notifications.info(game.i18n.localize('STORYFRAME.Errors.ProficiencyFilteringNotImplemented'));
 }
 
@@ -663,35 +660,32 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
   // Shift+click: add all checks for this skill/save to batch
   if (_event.shiftKey) {
-    if (sidebar.selectedParticipants.size === 0) {
-      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
-      return;
-    }
-
     // Use appropriate slug converter based on check type
     const checkSlug = checkType === 'save'
       ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
       : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
 
-    // Add all checks for this skill/save to batch
-    skillGroup.checks.forEach((check) => {
-      const checkId = `journal:${checkSlug}:${check.dc}`;
+    // Toggle: if all checks already batched, remove them; otherwise add missing ones
+    const checkIds = skillGroup.checks.map(check => `journal:${checkSlug}:${check.dc}`);
+    const allBatched = checkIds.every(id => sidebar.batchedChecks.some(c => c.checkId === id));
 
-      // Check if already in batch
-      const existingIndex = sidebar.batchedChecks.findIndex(c => c.checkId === checkId);
-
-      if (existingIndex === -1) {
-        // Add to batch if not already there
-        sidebar.batchedChecks.push({
-          skill: checkSlug,
-          dc: check.dc,
-          isSecret: check.isSecret || false,
-          actionSlug: null,
-          checkType: checkType,
-          checkId,
-        });
-      }
-    });
+    if (allBatched) {
+      sidebar.batchedChecks = sidebar.batchedChecks.filter(c => !checkIds.includes(c.checkId));
+    } else {
+      skillGroup.checks.forEach((check) => {
+        const checkId = `journal:${checkSlug}:${check.dc}`;
+        if (!sidebar.batchedChecks.some(c => c.checkId === checkId)) {
+          sidebar.batchedChecks.push({
+            skill: checkSlug,
+            dc: check.dc,
+            isSecret: check.isSecret || false,
+            actionSlug: null,
+            checkType: checkType,
+            checkId,
+          });
+        }
+      });
+    }
 
     // Update batch highlights
     SkillCheckHandlers.updateBatchHighlights(sidebar);
@@ -787,16 +781,28 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
       const secretToggle = sidebar.element.querySelector('#secret-roll-toggle');
       if (secretToggle) secretToggle.checked = isSecret;
 
-      if (sidebar.selectedParticipants.size > 0) {
-        // Use appropriate slug converter based on check type
-        const checkSlug = checkType === 'save'
-          ? (SystemAdapter.getSaveSlugFromName(skill) || skill.toLowerCase())
-          : (SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase());
-        if (checkSlug) {
-          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, Array.from(sidebar.selectedParticipants), null, false, checkType);
+      // Use appropriate slug converter based on check type
+      const checkSlug = checkType === 'save'
+        ? (SystemAdapter.getSaveSlugFromName(skill) || skill.toLowerCase())
+        : (SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase());
+      if (checkSlug) {
+        // Open roll requester dialog then send
+        const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
+        const pcs = await getAllPlayerPCs();
+        if (pcs.length === 0) {
+          ui.notifications.warn('No player-owned characters found in the world.');
+          return;
         }
-      } else {
-        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
+        const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+        const checks = [{ skillName: checkSlug, dc, isSecret, checkType }];
+        const dlg = new RollRequestDialog(checks, pcs);
+        dlg.render(true);
+        const result = await dlg.wait();
+        const selectedIds = result?.selectedIds || result || [];
+        const allowOnlyOne = result?.allowOnlyOne || false;
+        if (selectedIds && selectedIds.length > 0) {
+          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, null, allowOnlyOne);
+        }
       }
     });
 
@@ -835,18 +841,30 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
   const dcInput = sidebar.element.querySelector('#dc-input');
   if (dcInput) dcInput.value = dc;
 
-  // If PCs are selected and we have a skill, request the roll
-  if (sidebar.selectedParticipants.size > 0 && skillName) {
-    // Map skill name to slug using SystemAdapter
+  // If we have a skill, open roll requester and request the roll
+  if (skillName) {
     const skillSlug = SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase();
 
     if (skillSlug) {
-      await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, Array.from(sidebar.selectedParticipants));
+      const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
+      const pcs = await getAllPlayerPCs();
+      if (pcs.length === 0) {
+        ui.notifications.warn('No player-owned characters found in the world.');
+        return;
+      }
+      const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+      const checks = [{ skillName: skillSlug, dc, isSecret: false, checkType: 'skill' }];
+      const dlg = new RollRequestDialog(checks, pcs);
+      dlg.render(true);
+      const result = await dlg.wait();
+      const selectedIds = result?.selectedIds || result || [];
+      const allowOnlyOne = result?.allowOnlyOne || false;
+      if (selectedIds && selectedIds.length > 0) {
+        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', null, allowOnlyOne);
+      }
     } else {
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.UnknownSkill', { skillName }));
     }
-  } else if (sidebar.selectedParticipants.size === 0) {
-    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsFirst'));
   } else {
     ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.DC.DCSet', { dc }));
   }
@@ -917,11 +935,6 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
 
       // Shift-click: add to global batch
       if (e.shiftKey) {
-        if (sidebar.selectedParticipants.size === 0) {
-          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.SelectPCsForBatch'));
-          return;
-        }
-
         const checkId = `action:${actionSkill}:${actionSlug}`;
 
         // Check if already in global batch
@@ -935,9 +948,10 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
           // Add to global batch
           sidebar.batchedChecks.push({
             skill: actionSkill,
-            dc: null,
-            isSecret: false,
+            dc: sidebar.currentDC,
+            isSecret: sidebar.secretRollEnabled || false,
             actionSlug,
+            checkType: 'skill',
             checkId,
           });
           btn.classList.add('selected');
@@ -948,21 +962,25 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
         return;
       }
 
-      // Normal click: send immediately
+      // Normal click: open roll requester then send
       menu.remove();
 
-      if (sidebar.selectedParticipants.size === 0) {
-        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
+      const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
+      const pcs = await getAllPlayerPCs();
+      if (pcs.length === 0) {
+        ui.notifications.warn('No player-owned characters found in the world.');
         return;
       }
-
-      // Request skill check with action context
-      await SkillCheckHandlers.requestSkillCheck(
-        sidebar,
-        actionSkill,
-        Array.from(sidebar.selectedParticipants),
-        actionSlug,
-      );
+      const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+      const checks = [{ skillName: actionSkill, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType: 'skill', actionSlug }];
+      const dlg = new RollRequestDialog(checks, pcs);
+      dlg.render(true);
+      const result = await dlg.wait();
+      const selectedIds = result?.selectedIds || result || [];
+      const allowOnlyOne = result?.allowOnlyOne || false;
+      if (selectedIds && selectedIds.length > 0) {
+        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', null, allowOnlyOne);
+      }
     });
 
     // Mark as selected if already in global batch
@@ -1038,31 +1056,73 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
       popup.style.top = '10px';
     }
 
+    // Pre-mark variants already in batch
+    popup.querySelectorAll('.variant-item').forEach((item) => {
+      const checkId = `action:${actionButton.dataset.skill}:${actionSlug}:${item.dataset.variantSlug}`;
+      if (sidebar?.batchedChecks.some(c => c.checkId === checkId)) {
+        item.classList.add('selected');
+      }
+    });
+
     // Attach click handlers to variant items
     popup.querySelectorAll('.variant-item').forEach((item) => {
-      item.addEventListener('click', async () => {
+      item.addEventListener('click', async (e) => {
         const skillSlug = actionButton.dataset.skill;
         const variantSlug = item.dataset.variantSlug;
+
+        // Shift-click: add to batch
+        if (e.shiftKey) {
+          const checkId = `action:${skillSlug}:${actionSlug}:${variantSlug}`;
+          const existingIndex = sidebar?.batchedChecks.findIndex(c => c.checkId === checkId) ?? -1;
+          if (existingIndex !== -1) {
+            sidebar.batchedChecks.splice(existingIndex, 1);
+          } else {
+            sidebar?.batchedChecks.push({
+              skill: skillSlug,
+              dc: sidebar?.currentDC ?? null,
+              isSecret: sidebar?.secretRollEnabled || false,
+              actionSlug,
+              actionVariant: variantSlug,
+              checkType: 'skill',
+              checkId,
+            });
+          }
+          popup.remove();
+          document.querySelector('.storyframe-skill-actions-menu')?.remove();
+          if (sidebar) SkillCheckHandlers.updateBatchHighlights(sidebar);
+          return;
+        }
 
         // Close all popups
         popup.remove();
         document.querySelector('.storyframe-skill-actions-menu')?.remove();
 
-        // Trigger action with variant
-        if (sidebar?.selectedParticipants?.size > 0) {
+        // Open roll requester then trigger action with variant
+        const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
+        const pcs = await getAllPlayerPCs();
+        if (pcs.length === 0) {
+          ui.notifications.warn('No player-owned characters found in the world.');
+          return;
+        }
+        const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+        const checks = [{ skillName: skillSlug, dc: sidebar?.currentDC, isSecret: sidebar?.secretRollEnabled, checkType: 'skill', actionSlug, actionVariant: variantSlug }];
+        const dlg = new RollRequestDialog(checks, pcs);
+        dlg.render(true);
+        const result = await dlg.wait();
+        const selectedIds = result?.selectedIds || result || [];
+        const allowOnlyOne = result?.allowOnlyOne || false;
+        if (selectedIds && selectedIds.length > 0) {
           await SkillCheckHandlers.requestSkillCheck(
             sidebar,
             skillSlug,
-            Array.from(sidebar.selectedParticipants),
+            selectedIds,
             actionSlug,
             false, // suppressNotifications
             'skill', // checkType
             null, // batchGroupId
-            false, // allowOnlyOne
+            allowOnlyOne,
             variantSlug, // actionVariant
           );
-        } else {
-          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.SkillCheck.NoPCsSelected'));
         }
       });
     });
@@ -1151,15 +1211,16 @@ export function groupPendingRollsByActor(rollsData) {
   const grouped = {};
 
   rollsData.forEach(roll => {
-    if (!grouped[roll.participantId]) {
-      grouped[roll.participantId] = {
-        id: roll.participantId,
-        name: roll.participantName,
-        img: roll.participantImg || 'icons/svg/mystery-man.svg',
+    const key = roll.actorUuid || 'unknown';
+    if (!grouped[key]) {
+      grouped[key] = {
+        id: key,
+        name: roll.actorName,
+        img: roll.actorImg || 'icons/svg/mystery-man.svg',
         rolls: [],
       };
     }
-    grouped[roll.participantId].rolls.push(roll);
+    grouped[key].rolls.push(roll);
   });
 
   return Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name));
@@ -1208,7 +1269,7 @@ export function renderPendingRollsGroups(groups, mode) {
                   <i class="fas fa-hand-pointer allow-only-one-icon"></i>
                   <span class="skill-name">${roll.skillName}</span>
                 </div>
-                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-participant-id="${roll.participantId}">
+                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-actor-uuid="${roll.actorUuid}">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -1253,10 +1314,10 @@ export function renderPendingRollsGroups(groups, mode) {
               <div class="pending-roll-item allow-only-one-group-item" data-batch-group-id="${roll.batchGroupId}">
                 <div class="roll-info">
                   <i class="fas fa-hand-pointer allow-only-one-icon"></i>
-                  <img src="${roll.participantImg}" alt="${roll.participantName}" class="participant-avatar-small" />
-                  <span class="participant-name">${roll.participantName} - Choose One (${roll.groupedRolls.length})</span>
+                  <img src="${roll.actorImg}" alt="${roll.actorName}" class="participant-avatar-small" />
+                  <span class="participant-name">${roll.actorName} - Choose One (${roll.groupedRolls.length})</span>
                 </div>
-                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-participant-id="${roll.participantId}">
+                <button type="button" class="cancel-group-btn" data-batch-group-id="${roll.batchGroupId}" data-actor-uuid="${roll.actorUuid}">
                   <i class="fas fa-times"></i>
                 </button>
               </div>
@@ -1274,8 +1335,8 @@ export function renderPendingRollsGroups(groups, mode) {
             ` : `
               <div class="pending-roll-item" data-request-id="${roll.id}">
                 <div class="roll-info">
-                  <img src="${roll.participantImg || 'icons/svg/mystery-man.svg'}" alt="${roll.participantName}" class="participant-avatar-small" />
-                  <span class="participant-name">${roll.participantName}</span>
+                  <img src="${roll.actorImg || 'icons/svg/mystery-man.svg'}" alt="${roll.actorName}" class="participant-avatar-small" />
+                  <span class="participant-name">${roll.actorName}</span>
                   ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
                 </div>
                 <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
