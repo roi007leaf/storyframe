@@ -648,7 +648,10 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
   if (checkType === 'save') {
     groupList = context.journalSaveGroups;
   } else {
-    groupList = context.journalSkillGroups || context.journalCheckGroups;
+    groupList = [
+      ...(context.journalSkillGroups || context.journalCheckGroups || []),
+      ...(context.journalLoreGroups || []),
+    ];
   }
 
   const skillGroup = groupList?.find((g) => g.skillName === skillName);
@@ -795,13 +798,12 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
         }
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
         const checks = [{ skillName: checkSlug, dc, isSecret, checkType }];
-        const dlg = new RollRequestDialog(checks, pcs);
-        dlg.render(true);
-        const result = await dlg.wait();
+        const result = await RollRequestDialog.subscribe(checks, pcs);
         const selectedIds = result?.selectedIds || result || [];
         const allowOnlyOne = result?.allowOnlyOne || false;
+        const batchGroupId = result?.batchGroupId ?? null;
         if (selectedIds && selectedIds.length > 0) {
-          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, null, allowOnlyOne);
+          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne);
         }
       }
     });
@@ -854,13 +856,12 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
       }
       const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
       const checks = [{ skillName: skillSlug, dc, isSecret: false, checkType: 'skill' }];
-      const dlg = new RollRequestDialog(checks, pcs);
-      dlg.render(true);
-      const result = await dlg.wait();
+      const result = await RollRequestDialog.subscribe(checks, pcs);
       const selectedIds = result?.selectedIds || result || [];
       const allowOnlyOne = result?.allowOnlyOne || false;
+      const batchGroupId = result?.batchGroupId ?? null;
       if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', null, allowOnlyOne);
+        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne);
       }
     } else {
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.UnknownSkill', { skillName }));
@@ -973,13 +974,12 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       }
       const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
       const checks = [{ skillName: actionSkill, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType: 'skill', actionSlug }];
-      const dlg = new RollRequestDialog(checks, pcs);
-      dlg.render(true);
-      const result = await dlg.wait();
+      const result = await RollRequestDialog.subscribe(checks, pcs);
       const selectedIds = result?.selectedIds || result || [];
       const allowOnlyOne = result?.allowOnlyOne || false;
+      const batchGroupId = result?.batchGroupId ?? null;
       if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', null, allowOnlyOne);
+        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne);
       }
     });
 
@@ -1106,22 +1106,21 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
         }
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
         const checks = [{ skillName: skillSlug, dc: sidebar?.currentDC, isSecret: sidebar?.secretRollEnabled, checkType: 'skill', actionSlug, actionVariant: variantSlug }];
-        const dlg = new RollRequestDialog(checks, pcs);
-        dlg.render(true);
-        const result = await dlg.wait();
+        const result = await RollRequestDialog.subscribe(checks, pcs);
         const selectedIds = result?.selectedIds || result || [];
         const allowOnlyOne = result?.allowOnlyOne || false;
+        const batchGroupId = result?.batchGroupId ?? null;
         if (selectedIds && selectedIds.length > 0) {
           await SkillCheckHandlers.requestSkillCheck(
             sidebar,
             skillSlug,
             selectedIds,
             actionSlug,
-            false, // suppressNotifications
-            'skill', // checkType
-            null, // batchGroupId
+            false,
+            'skill',
+            batchGroupId,
             allowOnlyOne,
-            variantSlug, // actionVariant
+            variantSlug,
           );
         }
       });

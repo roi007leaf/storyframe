@@ -74,9 +74,13 @@
 }
 
 .journal-skill-btn.in-view {
-  background: linear-gradient(135deg, rgba(94, 129, 172, 0.5), rgba(94, 129, 172, 0.35));
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.8), rgba(94, 129, 172, 0.6));
   border-color: var(--sf-accent-primary);
-  box-shadow: 0 0 8px rgba(94, 129, 172, 0.4);
+  box-shadow:
+    0 0 24px rgba(94, 129, 172, 0.9),
+    0 0 12px rgba(94, 129, 172, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .journal-skill-btn .dc-badge {
@@ -87,6 +91,13 @@
   padding: 1px 4px;
   border-radius: 3px;
   line-height: 1;
+}
+
+/* Journal Lore Inline */
+.journal-lore-inline {
+  margin-top: var(--sf-space-md);
+  padding-top: var(--sf-space-sm);
+  width: 100%;
 }
 
 /* Journal Saves Inline */
@@ -142,9 +153,13 @@
 }
 
 .journal-save-btn.in-view {
-  background: linear-gradient(135deg, rgba(220, 118, 51, 0.5), rgba(220, 118, 51, 0.35));
-  border-color: rgba(220, 118, 51, 0.7);
-  box-shadow: 0 0 8px rgba(220, 118, 51, 0.4);
+  background: linear-gradient(135deg, rgba(220, 118, 51, 0.8), rgba(220, 118, 51, 0.6));
+  border-color: var(--sf-accent-primary);
+  box-shadow:
+    0 0 24px rgba(220, 118, 51, 0.9),
+    0 0 12px rgba(220, 118, 51, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .journal-save-wrapper.batched .journal-save-btn {
@@ -374,7 +389,7 @@
   background: #1a1a2e;
   border: 1px solid #3d3d5c;
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-height: 500px;
   display: flex;
   flex-direction: column;
@@ -384,4 +399,3 @@
 .storyframe-challenges-popup {
   width: 360px;
 }
-

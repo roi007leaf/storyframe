@@ -7,6 +7,22 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.1] - 2026-02-21
+
+### Added
+
+- **Roll Requester singleton** — only one Roll Requester dialog can be open at a time; Cmd+clicking a second inline check or clicking a skill button while the dialog is already open adds the check to it instead of opening a second dialog
+- **Check stacking via subscribe pattern** — all entry points (inline checks, journal skills, sidebar skill/save/action/variant buttons, batch send, challenge requests) now share the same singleton dialog via `RollRequestDialog.subscribe()`; every caller awaits the shared result and sends its own check independently
+- **Deduplication** — re-clicking the same check (same skill, action, variant, DC, secret) while the dialog is open silently drops the duplicate
+- **Shared `batchGroupId`** — the dialog generates one group ID on submit so all concurrent subscribers honour "Allow Only One" as a unified group
+- **Journal Lore section** — lore skills extracted from journal content appear in a dedicated "Journal Lore" section below Journal Skills, with "-lore" suffix stripped from button labels for compact display
+- **Roll Requester resizes with window** — participant grid fills available height when the window is dragged taller; whole content area scrolls when checks overflow
+
+### Changed
+
+- **Inline `@Check` action & label now forwarded** — `action:xxx` embedded in the PF2e `data-pf2-traits` attribute and the `name:` label (`data-pf2-label`) are extracted at click time; the action slug is passed through to `requestSkillCheck` so the player executes the correct action (e.g. Sense Motive instead of plain Perception); the Roll Requester dialog displays the label as the action name
+- **Roll Requester add-checks is flicker-free** — new checks are injected directly into the DOM without re-rendering; window grows by the exact overflow pixel amount instead of resetting to `height: auto`
+
 ## [1.8.0] - 2026-02-18
 
 ### Added

@@ -217,6 +217,29 @@
         </div>
         {{/if}}
 
+        {{#if hasJournalLore}}
+        <div class="journal-lore-inline">
+          <div class="section-divider">
+            <span>{{localize "STORYFRAME.UI.Labels.JournalLore"}}</span>
+          </div>
+          <div class="journal-checks-grid">
+          {{#each journalLoreGroups}}
+            <div class="journal-check-wrapper">
+              <button type="button"
+                      class="journal-skill-btn"
+                      data-action="showCheckDCsPopup"
+                      data-skill="{{this.skillName}}"
+                      data-check-type="skill"
+                      data-tooltip="{{localize "STORYFRAME.UI.Tooltips.SkillChecks" skill=this.skillName}}"
+                      aria-label="{{localize "STORYFRAME.UI.AriaLabels.SkillChecks" skill=this.skillName}}">
+                {{this.displayName}}
+              </button>
+            </div>
+          {{/each}}
+          </div>
+        </div>
+        {{/if}}
+
         {{#if hasJournalSaves}}
         <div class="journal-saves-inline">
           <div class="section-divider">

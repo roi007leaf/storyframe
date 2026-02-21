@@ -6,6 +6,9 @@ import * as SystemAdapter from '../system-adapter.mjs';
 export class RollRequestDialog extends foundry.applications.api.HandlebarsApplicationMixin(
   foundry.applications.api.ApplicationV2,
 ) {
+  /** Currently open instance — only one roll request dialog at a time */
+  static _instance = null;
+
   static DEFAULT_OPTIONS = {
     id: 'storyframe-roll-request-{id}',
     window: {
@@ -69,60 +72,79 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     this.setPosition({ height: 'auto' });
   }
 
-  async _prepareContext(_options) {
+  /**
+   * Enrich a single check with display data (icon, display name, action name, variant).
+   * Shared by _prepareContext (initial render) and addChecks (DOM injection).
+   */
+  _enrichCheck(check) {
     const systemSkills = SystemAdapter.getSkills();
     const systemSaves = SystemAdapter.getSaves();
 
-    // Enrich checks with skill/save icons and display names
-    const enrichedChecks = this.checks.map(check => {
-      // Determine if this is a save or skill check
-      const checkType = check.checkType || 'skill';
-      const lookupTable = checkType === 'save' ? systemSaves : systemSkills;
+    const checkType = check.checkType || 'skill';
+    const lookupTable = checkType === 'save' ? systemSaves : systemSkills;
 
-      // Try to find check data by various methods
-      let checkData = null;
+    // Try to find check data by various methods
+    let checkData = lookupTable[check.skillName]
+      || lookupTable[check.skillName.toLowerCase()]
+      || null;
 
-      // First try using the check name as-is (might be short slug like "thi" or "fortitude")
-      checkData = lookupTable[check.skillName];
-
-      // If not found, try lowercase
-      if (!checkData) {
-        checkData = lookupTable[check.skillName.toLowerCase()];
-      }
-
-      // If still not found, search through all checks for a match
-      if (!checkData) {
-        const searchName = check.skillName.toLowerCase();
-        for (const [key, data] of Object.entries(lookupTable)) {
-          if (data.name?.toLowerCase() === searchName || key === searchName) {
-            checkData = data;
-            break;
-          }
+    if (!checkData) {
+      const searchName = check.skillName.toLowerCase();
+      for (const [key, data] of Object.entries(lookupTable)) {
+        if (data.name?.toLowerCase() === searchName || key === searchName) {
+          checkData = data;
+          break;
         }
       }
+    }
 
-      // Compute action display name
-      let actionName = null;
-      if (check.actionSlug) {
-        const skillData = systemSkills[check.skillName];
-        const action = skillData?.actions?.find(a => a.slug === check.actionSlug);
-        actionName = action?.name || null;
-      }
+    // Compute action display name — prefer system action table, fall back to inline label
+    let actionName = null;
+    if (check.actionSlug) {
+      const skillData = systemSkills[check.skillName];
+      const action = skillData?.actions?.find(a => a.slug === check.actionSlug);
+      actionName = action?.name || check.label || null;
+    } else if (check.label) {
+      actionName = check.label;
+    }
 
-      // Compute variant display name
-      const variantName = check.actionVariant
-        ? check.actionVariant.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
-        : null;
+    // Compute variant display name
+    const variantName = check.actionVariant
+      ? check.actionVariant.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')
+      : null;
 
-      return {
-        ...check,
-        skillIcon: checkData?.icon || 'fa-dice-d20',
-        skillName: checkData?.name || check.skillName,
-        checkType,
-        actionName,
-        variantName,
-      };
-    });
+    return {
+      ...check,
+      skillIcon: checkData?.icon || 'fa-dice-d20',
+      skillName: checkData?.name || check.skillName,
+      checkType,
+      actionName,
+      variantName,
+    };
+  }
+
+  /**
+   * Build the inner HTML for a single check list item (mirrors roll-request-dialog.hbs).
+   */
+  _renderCheckItemHTML(enriched) {
+    const actionPart = enriched.actionName
+      ? `<span class="check-action-name"> (${enriched.actionName}${enriched.variantName ? ': ' + enriched.variantName : ''})</span>`
+      : '';
+    const dcPart = enriched.dc ? `<span class="check-dc">DC ${enriched.dc}</span>` : '';
+    const secretLabel = game.i18n.localize('STORYFRAME.Dialogs.RollRequest.Secret');
+    const secretBadge = enriched.isSecret
+      ? `<span class="check-secret-badge"><i class="fas fa-eye-slash"></i> ${secretLabel}</span>`
+      : '';
+    return `<div class="check-info">
+      <i class="fas ${enriched.skillIcon}"></i>
+      <span class="check-skill">${enriched.skillName}${actionPart}</span>
+      ${dcPart}
+      ${secretBadge}
+    </div>`;
+  }
+
+  async _prepareContext(_options) {
+    const enrichedChecks = this.checks.map(check => this._enrichCheck(check));
 
     // Ensure participants have required properties with fallbacks
     const unknownLabel = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
@@ -138,13 +160,10 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
     let foundChecksText;
     if (hasSkills && hasSaves) {
-      // Mixed: both skills and saves
       foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecksAndSaves', { count: enrichedChecks.length });
     } else if (hasSaves) {
-      // Only saves
       foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundSaves', { count: enrichedChecks.length });
     } else {
-      // Only skills/checks
       foundChecksText = game.i18n.format('STORYFRAME.Dialogs.RollRequest.FoundChecks', { count: enrichedChecks.length });
     }
 
@@ -171,6 +190,86 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     return this.promise;
   }
 
+  /**
+   * Subscribe to a roll request dialog.
+   * If one is already open, adds the checks to it and returns its existing promise
+   * so the caller still receives the result when the dialog closes.
+   * If not, opens a new dialog.
+   * Every subscriber gets the same {selectedIds, allowOnlyOne, batchGroupId} result
+   * and is responsible for sending only its own check(s).
+   * @param {Array} checks
+   * @param {Array} pcs  Only used when creating a new dialog.
+   */
+  static async subscribe(checks, pcs) {
+    if (RollRequestDialog._instance) {
+      await RollRequestDialog._instance.addChecks(checks);
+      return RollRequestDialog._instance.promise;
+    }
+    const dialog = new RollRequestDialog(checks, pcs);
+    RollRequestDialog._instance = dialog;
+    dialog.render(true);
+    return dialog.wait();
+  }
+
+  /**
+   * Add checks to the open dialog without re-rendering.
+   * Duplicates (same skill, action, variant, dc, secret) are silently dropped.
+   */
+  async addChecks(newChecks) {
+    // Drop duplicates of checks already in the dialog
+    const deduped = newChecks.filter(nc => !this.checks.some(ec =>
+      ec.skillName === nc.skillName &&
+      (ec.actionSlug ?? null) === (nc.actionSlug ?? null) &&
+      (ec.actionVariant ?? null) === (nc.actionVariant ?? null) &&
+      ec.dc === nc.dc &&
+      Boolean(ec.isSecret) === Boolean(nc.isSecret),
+    ));
+
+    if (deduped.length === 0) {
+      this.bringToTop?.();
+      return;
+    }
+
+    this.checks = [...this.checks, ...deduped];
+
+    // Inject new items directly into the DOM — no full re-render
+    const checksList = this.element?.querySelector('.checks-list');
+    if (checksList) {
+      for (const check of deduped) {
+        const enriched = this._enrichCheck(check);
+        const li = document.createElement('li');
+        li.className = 'check-item';
+        li.innerHTML = this._renderCheckItemHTML(enriched);
+        checksList.appendChild(li);
+      }
+
+      // Update the header count
+      const header = this.element?.querySelector('.checks-summary h3');
+      if (header) {
+        const hasSkills = this.checks.some(c => c.checkType !== 'save');
+        const hasSaves = this.checks.some(c => c.checkType === 'save');
+        let key;
+        if (hasSkills && hasSaves) key = 'STORYFRAME.Dialogs.RollRequest.FoundChecksAndSaves';
+        else if (hasSaves) key = 'STORYFRAME.Dialogs.RollRequest.FoundSaves';
+        else key = 'STORYFRAME.Dialogs.RollRequest.FoundChecks';
+        header.textContent = game.i18n.format(key, { count: this.checks.length });
+      }
+    }
+
+    // Grow the window by however much the new items overflow the current visible area.
+    // We do this with a direct pixel increment rather than setPosition({ height: 'auto' })
+    // to avoid the collapse-then-expand flicker that 'auto' causes.
+    const inner = this.element?.querySelector('.window-content');
+    if (inner) {
+      const overflow = inner.scrollHeight - inner.clientHeight;
+      if (overflow > 0) {
+        this.setPosition({ height: (this.position?.height ?? this.element.offsetHeight) + overflow });
+      }
+    }
+
+    this.bringToTop?.();
+  }
+
   static async _onSubmit(event, target) {
     event.preventDefault();
     const form = target.closest('form');
@@ -184,21 +283,28 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
     // Get allow-only-one checkbox state
     const allowOnlyOne = data.allowOnlyOne || false;
+    // One shared batchGroupId so all concurrent subscribers use the same group
+    const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
 
-    // Return object with both selectedIds and allowOnlyOne
-    this.resolve({ selectedIds, allowOnlyOne });
+    const resolve = this.resolve;
+    this.resolve = null;
+    resolve({ selectedIds, allowOnlyOne, batchGroupId, checks: this.checks });
     this.close();
   }
 
   static async _onCancel(_event, _target) {
-    this.resolve(null);
+    const resolve = this.resolve;
+    this.resolve = null;
+    resolve(null);
     this.close();
   }
 
   async close(options = {}) {
+    RollRequestDialog._instance = null;
     // Ensure promise resolves even if closed via X button
     if (this.resolve) {
       this.resolve(null);
+      this.resolve = null;
     }
     return super.close(options);
   }

@@ -93,16 +93,15 @@ async function openRollRequesterAndSend(sidebar, skillSlug, checkType, actionSlu
   }
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType }];
-  const dialog = new RollRequestDialog(checks, pcs);
-  dialog.render(true);
-  const result = await dialog.wait();
+  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant }];
+  const result = await RollRequestDialog.subscribe(checks, pcs);
 
   const selectedIds = result?.selectedIds || result || [];
   const allowOnlyOne = result?.allowOnlyOne || false;
+  const batchGroupId = result?.batchGroupId ?? null;
   if (!selectedIds || selectedIds.length === 0) return;
 
-  await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, null, allowOnlyOne, actionVariant);
+  await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant);
 }
 
 /**
@@ -237,12 +236,11 @@ export async function sendBatchSkillCheck(sidebar) {
   }));
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-  const dialog = new RollRequestDialog(checksForDialog, pcs);
-  dialog.render(true);
-  const result = await dialog.wait();
+  const result = await RollRequestDialog.subscribe(checksForDialog, pcs);
 
   const selectedIds = result?.selectedIds || result || [];
   const allowOnlyOne = result?.allowOnlyOne || false;
+  const batchGroupId = result?.batchGroupId ?? null;
   if (!selectedIds || selectedIds.length === 0) return;
 
   // Track unique IDs and names across all checks
@@ -258,8 +256,7 @@ export async function sendBatchSkillCheck(sidebar) {
   const hasSkills = sidebar.batchedChecks.some(check => check.checkType !== 'save');
   const hasSaves = sidebar.batchedChecks.some(check => check.checkType === 'save');
 
-  // Get allow-only-one state and generate group ID
-  const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
+  // batchGroupId comes from the dialog result (shared across all concurrent subscribers)
   const effectiveAllowOnlyOne = allowOnlyOne || false;
 
   for (const check of sidebar.batchedChecks) {

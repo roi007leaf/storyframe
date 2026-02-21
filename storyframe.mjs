@@ -33,7 +33,15 @@ function setupPF2eRepostIntegration() {
     if (!checkSlug || isNaN(dc)) return;
 
     // Secret only if 'secret' trait is explicitly present
-    const isSecret = traits.toLowerCase().split(',').map(t => t.trim()).includes('secret');
+    const parsedTraits = traits.toLowerCase().split(',').map(t => t.trim());
+    const isSecret = parsedTraits.includes('secret');
+
+    // Extract action slug from traits (e.g., "action:sense-motive")
+    const actionTrait = parsedTraits.find(t => t.startsWith('action:'));
+    const actionSlug = actionTrait ? actionTrait.slice('action:'.length) : null;
+
+    // Extract custom display label (from name:xxx parameter → data-pf2-label attribute)
+    const label = checkElement.dataset.pf2Label || null;
 
     // Determine check type (save vs skill)
     const saveTypes = new Set(['fortitude', 'reflex', 'will']);
@@ -43,30 +51,31 @@ function setupPF2eRepostIntegration() {
     const { PF2E_SKILL_NAME_MAP } = await import('./scripts/system/pf2e/skills.mjs');
     const skillSlug = PF2E_SKILL_NAME_MAP[checkSlug] || checkSlug;
 
-    // Build check object for dialog
+    // Build check object (store slug so we can send it after dialog closes)
     const checks = [{
       skillName: checkSlug,
+      skillSlug,
       dc,
       isSecret,
       checkType,
+      actionSlug,
+      label,
     }];
 
-    // Get all player PCs for the dialog
+    // Subscribe to (or open) the singleton roll request dialog
+    const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
     const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
-    const pcs = await getAllPlayerPCs();
-    if (pcs.length === 0) {
+    const pcs = getAllPlayerPCs();
+    if (!RollRequestDialog._instance && pcs.length === 0) {
       ui.notifications.warn('No player-owned characters found in the world.');
       return;
     }
 
-    // Show roll request dialog
-    const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
-    const dialog = new RollRequestDialog(checks, pcs);
-    dialog.render(true);
-    const result = await dialog.wait();
+    const result = await RollRequestDialog.subscribe(checks, pcs);
 
     const selectedIds = result?.selectedIds || result || [];
     const allowOnlyOne = result?.allowOnlyOne || false;
+    const batchGroupId = result?.batchGroupId ?? null;
     if (!selectedIds || selectedIds.length === 0) return;
 
     // Need a sidebar instance for requestSkillCheck (used for DC/secret state)
@@ -84,11 +93,12 @@ function setupPF2eRepostIntegration() {
       }
     }
     const sidebar = game.storyframe.gmSidebar;
-    sidebar.currentDC = dc;
-    sidebar.secretRollEnabled = isSecret;
 
     const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
-    await requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, checkType, null, allowOnlyOne);
+    // Each subscriber sends only its own check
+    sidebar.currentDC = dc;
+    sidebar.secretRollEnabled = isSecret;
+    await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne);
   }, { capture: true });
 }
 
@@ -319,16 +329,13 @@ Hooks.once('init', () => {
         return false;
       }
 
-      // Import and show the roll request dialog
+      // Subscribe to (or open) the singleton roll request dialog
       const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
-      const dialog = new RollRequestDialog(checks, pcs);
-      dialog.render(true);
+      const result = await RollRequestDialog.subscribe(checks, pcs);
 
-      const result = await dialog.wait();
-
-      // Handle both old format (array) and new format (object)
       const selectedIds = result?.selectedIds || result || [];
       const allowOnlyOne = result?.allowOnlyOne || false;
+      const batchGroupId = result?.batchGroupId ?? null;
 
       if (!selectedIds || selectedIds.length === 0) {
         return true;
@@ -337,9 +344,6 @@ Hooks.once('init', () => {
       // Import requestSkillCheck function
       const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
       const SystemAdapter = await import('./scripts/system-adapter.mjs');
-
-      // Generate batch group ID if allow-only-one is enabled
-      const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
 
       // Send roll requests for each check
       for (const check of checks) {

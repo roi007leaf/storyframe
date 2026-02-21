@@ -294,37 +294,46 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       const traits = checkElement.dataset.pf2Traits || '';
       const isSecret = traits.includes('secret');
 
+      // Extract action slug from traits (e.g., "concentrate,secret,action:sense-motive" → "sense-motive")
+      const actionTrait = traits.split(',').map(t => t.trim()).find(t => t.startsWith('action:'));
+      const actionSlug = actionTrait ? actionTrait.slice('action:'.length) : null;
+
+      // Extract custom display label (from name:xxx parameter → data-pf2-label attribute)
+      const label = checkElement.dataset.pf2Label || null;
+
       // Determine if this is a save or skill check (before dialog)
       const saveTypes = new Set(['fortitude', 'reflex', 'will']);
       const checkType = saveTypes.has(skillName.toLowerCase()) ? 'save' : 'skill';
 
-      // Get all player PCs
-      const { getAllPlayerPCs } = await import('../system-adapter.mjs');
-      const pcs = await getAllPlayerPCs();
-      if (pcs.length === 0) {
+      // Pre-compute the slug now so it's stored in the check object for later sending
+      const SystemAdapter = await import('../system-adapter.mjs');
+      const checkSlug = checkType === 'save'
+        ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
+        : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
+
+      const checksForDialog = [{
+        skillName: skillName,
+        skillSlug: checkSlug,
+        dc: dc,
+        isSecret: isSecret,
+        checkType: checkType,
+        actionSlug: actionSlug,
+        label: label,
+      }];
+
+      // Subscribe to (or open) the singleton roll request dialog
+      const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
+      const pcs = SystemAdapter.getAllPlayerPCs();
+      if (!RollRequestDialog._instance && pcs.length === 0) {
         ui.notifications.warn('No player-owned characters found in the world.');
         return;
       }
 
-      // Create check for dialog (single check)
-      const checksForDialog = [{
-        skillName: skillName,
-        dc: dc,
-        isSecret: isSecret,
-        checkType: checkType
-      }];
+      const result = await RollRequestDialog.subscribe(checksForDialog, pcs);
 
-      // Import and show Roll Requester Dialog
-      const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
-      const dialog = new RollRequestDialog(checksForDialog, pcs);
-      dialog.render(true);
-
-      // Wait for result
-      const result = await dialog.wait();
-
-      // Handle both old format (array) and new format (object)
       const selectedIds = result?.selectedIds || result || [];
       const allowOnlyOne = result?.allowOnlyOne || false;
+      const batchGroupId = result?.batchGroupId ?? null;
 
       if (!selectedIds || selectedIds.length === 0) {
         return;
@@ -339,28 +348,15 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       }
 
       try {
-        // Import skill check handlers
         const { requestSkillCheck } = await import('../applications/gm-sidebar/managers/skill-check-handlers.mjs');
-        const SystemAdapter = await import('../system-adapter.mjs');
 
-        // Convert skill/save name to slug (checkType already determined above)
-        const checkSlug = checkType === 'save'
-          ? (SystemAdapter.getSaveSlugFromName(skillName) || skillName.toLowerCase())
-          : (SystemAdapter.getSkillSlugFromName(skillName) || skillName.toLowerCase());
-
-        // Generate group ID if allow-only-one is enabled
-        const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
-
-
-        // Set DC and secret state
+        // Each subscriber sends only its own check
         sidebar.currentDC = dc;
         const dcInput = sidebar.element.querySelector('#dc-input');
         if (dcInput) dcInput.value = dc;
-
         sidebar.secretRollEnabled = isSecret;
 
-        // Send request with correct check type and group ID
-        await requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne);
+        await requestSkillCheck(sidebar, checkSlug, selectedIds, actionSlug || null, false, checkType, batchGroupId, allowOnlyOne);
 
         // Reset secret toggle
         sidebar.secretRollEnabled = false;

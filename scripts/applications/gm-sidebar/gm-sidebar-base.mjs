@@ -287,6 +287,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   _groupJournalChecksByType(checkGroups) {
     const skillGroups = [];
+    const loreGroups = [];
     const saveGroups = [];
 
     checkGroups.forEach(group => {
@@ -297,10 +298,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       if (hasSkills) {
         const skillChecks = group.checks.filter(check => check.checkType === 'skill' || !check.checkType);
         if (skillChecks.length > 0) {
-          skillGroups.push({
-            ...group,
-            checks: skillChecks,
-          });
+          const isLore = group.skillSlug?.includes('-lore');
+          if (isLore) {
+            // Strip the trailing "-lore" / " Lore" for a compact display name.
+            // skillName (used as data-skill) stays unchanged for popup/batch compat.
+            const displayName = group.skillName.replace(/[- ]?lore$/i, '');
+            loreGroups.push({ ...group, displayName, checks: skillChecks });
+          } else {
+            skillGroups.push({ ...group, checks: skillChecks });
+          }
         }
       }
 
@@ -317,8 +323,10 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     return {
       journalSkillGroups: skillGroups,
+      journalLoreGroups: loreGroups,
       journalSaveGroups: saveGroups,
       hasJournalChecks: skillGroups.length > 0,
+      hasJournalLore: loreGroups.length > 0,
       hasJournalSaves: saveGroups.length > 0,
     };
   }
