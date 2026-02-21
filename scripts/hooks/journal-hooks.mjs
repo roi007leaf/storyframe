@@ -356,7 +356,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
         if (dcInput) dcInput.value = dc;
         sidebar.secretRollEnabled = isSecret;
 
-        await requestSkillCheck(sidebar, checkSlug, selectedIds, actionSlug || null, false, checkType, batchGroupId, allowOnlyOne);
+        await requestSkillCheck(sidebar, checkSlug, selectedIds, actionSlug || null, false, checkType, batchGroupId, allowOnlyOne, null, isSecret);
 
         // Reset secret toggle
         sidebar.secretRollEnabled = false;

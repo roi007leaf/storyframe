@@ -107,14 +107,15 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       }
     }
 
-    // Compute action display name — prefer system action table, fall back to inline label
+    // Compute action display name — prefer system action table, fall back to formatting the slug.
+    // Never use data-pf2-label as the action name: labels like "thievery DC" describe the check,
+    // not the action being performed.
     let actionName = null;
     if (check.actionSlug) {
       const skillData = systemSkills[check.skillName];
       const action = skillData?.actions?.find(a => a.slug === check.actionSlug);
-      actionName = action?.name || check.label || null;
-    } else if (check.label) {
-      actionName = check.label;
+      actionName = action?.name
+        ?? check.actionSlug.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
     }
 
     // Compute variant display name
@@ -252,7 +253,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       .map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
 
     if (deduped.length === 0) {
-      this.bringToTop?.();
+      if (this.element) this.bringToTop?.();
       return;
     }
 
@@ -294,7 +295,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       }
     }
 
-    this.bringToTop?.();
+    if (this.element) this.bringToTop?.();
   }
 
   /**

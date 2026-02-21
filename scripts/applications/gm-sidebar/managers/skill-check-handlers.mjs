@@ -120,13 +120,18 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
   const state = game.storyframe.stateManager.getState();
   if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
-  // Use explicit override when provided (per-check secret state from dialog).
-  // Fall back to sidebar toggle for callers that set it before calling.
-  let isSecretRoll = isSecretOverride !== null ? isSecretOverride : (sidebar.secretRollEnabled || false);
-
-  // Auto-detect actions with secret trait in PF2e
-  if (!isSecretRoll && actionSlug && game.pf2e) {
-    isSecretRoll = await actionHasSecretTrait(actionSlug);
+  let isSecretRoll;
+  if (isSecretOverride !== null) {
+    // Explicit value from caller — honour it and skip compendium auto-detection.
+    // Inline @Check clicks pass the traits-based boolean so the author's intent is
+    // respected (e.g. a Recall Knowledge check without 'secret' in traits is not secret).
+    isSecretRoll = isSecretOverride;
+  } else {
+    // No explicit value — use sidebar toggle, then auto-detect from PF2e action compendium.
+    isSecretRoll = sidebar.secretRollEnabled || false;
+    if (!isSecretRoll && actionSlug && game.pf2e) {
+      isSecretRoll = await actionHasSecretTrait(actionSlug);
+    }
   }
 
   let sentCount = 0;

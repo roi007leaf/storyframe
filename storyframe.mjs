@@ -43,6 +43,7 @@ function setupPF2eRepostIntegration() {
     // Extract custom display label (from name:xxx parameter → data-pf2-label attribute)
     const label = checkElement.dataset.pf2Label || null;
 
+
     // Determine check type (save vs skill)
     const saveTypes = new Set(['fortitude', 'reflex', 'will']);
     const checkType = saveTypes.has(checkSlug.toLowerCase()) ? 'save' : 'skill';
@@ -65,7 +66,7 @@ function setupPF2eRepostIntegration() {
     // Subscribe to (or open) the singleton roll request dialog
     const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
     const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
-    const pcs = getAllPlayerPCs();
+    const pcs = await getAllPlayerPCs();
     if (!RollRequestDialog._instance && pcs.length === 0) {
       ui.notifications.warn('No player-owned characters found in the world.');
       return;
@@ -98,7 +99,7 @@ function setupPF2eRepostIntegration() {
     // Each subscriber sends only its own check
     sidebar.currentDC = dc;
     sidebar.secretRollEnabled = isSecret;
-    await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne);
+    await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, null, isSecret);
   }, { capture: true });
 }
 
@@ -543,7 +544,8 @@ Hooks.on('getSceneControlButtons', (controls) => {
         // Immediately deactivate to allow repeated clicks
         if (isActive) {
           setTimeout(() => {
-            const control = ui.controls.controls.find(c => c.name === 'tokens');
+            const controls = ui.controls.controls;
+            const control = controls?.get?.('tokens') ?? controls?.find?.(c => c.name === 'tokens');
             if (control) control.activeTool = null;
           }, 50);
         }
