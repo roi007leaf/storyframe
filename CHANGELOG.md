@@ -7,6 +7,17 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.4] - 2026-02-21
+
+### Added
+
+- **Challenge option rolls use selected token** — when a player clicks a challenge skill option, the roll now uses the selected token's actor if it belongs to the valid actor pool (party members in PF2e, owned characters otherwise); falls back to the first valid pool member, then any owned character
+
+### Fixed
+
+- **Challenge builder secret button renders black area** — `position: relative` added to `.secret-checkbox` in both skill and save rows to properly contain the hidden `position: absolute` checkbox input; `will-change: box-shadow` added to the animated checked label to give it its own GPU compositing layer and prevent the Chromium/Electron rendering bug where an `overflow-y: auto` scroll container paints black below an animated element
+- **Challenge builder skill and save secret buttons now match** — save row secret button active highlight updated to match the cyan style used by the skill row
+
 ## [1.8.3] - 2026-02-21
 
 ### Fixed
