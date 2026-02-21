@@ -693,8 +693,26 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return;
     }
 
-    // Find an actor owned by this user
-    const myActor = game.actors?.find(a => a.hasPlayerOwner && a.testUserPermission?.(game.user, 'OWNER'));
+    // Build the valid actor pool: party members for PF2e, all owned characters elsewhere.
+    // This mirrors the same logic used to populate the Roll Requester participant list.
+    const allPCs = await SystemAdapter.getAllPlayerPCs();
+    const myPCs = allPCs.filter(p => p.userId === game.user.id);
+
+    // Prefer a selected token that belongs to the valid pool.
+    const selectedToken = canvas?.tokens?.controlled?.[0];
+    let myActor = null;
+    if (selectedToken?.actor) {
+      const uuid = selectedToken.actor.uuid;
+      if (myPCs.some(p => p.actorUuid === uuid)) myActor = selectedToken.actor;
+    }
+
+    // Fall back to the first valid pool member, then any owned character.
+    if (!myActor && myPCs.length > 0) {
+      myActor = await fromUuid(myPCs[0].actorUuid);
+    }
+    if (!myActor) {
+      myActor = game.actors?.find(a => a.type === 'character' && a.testUserPermission?.(game.user, 'OWNER'));
+    }
 
     if (!myActor) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
