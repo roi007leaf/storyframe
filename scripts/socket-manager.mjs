@@ -303,7 +303,7 @@ export class SocketManager {
    */
   _handleStateUpdate(state) {
     if (game.storyframe.stateManager) {
-      game.storyframe.stateManager.state = state;
+      game.storyframe.stateManager.syncState(state);
       // Trigger UI re-render
       game.storyframe.gmApp?.render();
       game.storyframe.playerViewer?.render();

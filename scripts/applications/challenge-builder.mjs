@@ -331,7 +331,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionName}" placeholder="${i18n.optionPlaceholder}">
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionName && optionName !== game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 }) ? optionName : ''}" placeholder="${game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: this.optionCount + 1 })}">
         ${this.optionCount > 0 ? `<button type="button" class="challenge-option-remove" data-action="removeOption"><i class="fas fa-times"></i> ${i18n.remove}</button>` : ''}
       </div>
       <div class="challenge-option-fields">
@@ -669,14 +669,22 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       ui.notifications.info(game.i18n.format('STORYFRAME.ChallengeBuilder.SavedToLibrary', { name: challengeData.name }));
     }
 
+    // Carry the library templateId forward so future edits can find this challenge reliably
+    if (this.templateId) {
+      challengeData.templateId = this.templateId;
+    }
+
     // Present challenge (multi-challenge support)
-    // If editing and a challenge with this name exists, remove it first
+    // If editing and a matching active challenge exists, remove it first
     if (this.editMode) {
       const state = game.storyframe.stateManager.getState();
-      const existingChallenge = state?.activeChallenges?.find(c => c.name.toLowerCase() === challengeData.name.toLowerCase());
+      // Prefer templateId match (stable across renames); fall back to name match
+      const existingChallenge = state?.activeChallenges?.find(c =>
+        (this.templateId && c.templateId === this.templateId) ||
+        c.name.toLowerCase() === challengeData.name.toLowerCase(),
+      );
 
       if (existingChallenge) {
-        // Remove the old version before adding the updated one
         await game.storyframe.socketManager.requestRemoveChallenge(existingChallenge.id);
       }
     }
@@ -1084,7 +1092,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     newOption.dataset.optionIndex = this.optionCount;
     newOption.innerHTML = `
       <div class="challenge-option-header">
-        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="${optionLabel}" placeholder="${i18n.optionPlaceholder}">
+        <input type="text" name="option-${this.optionCount}-name" class="option-name-input" value="" placeholder="${optionLabel}">
         <button type="button" class="challenge-option-remove" data-action="removeOption">
           <i class="fas fa-times"></i> ${i18n.remove}
         </button>
@@ -1179,10 +1187,6 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
     if (cards.length > 1) {
       optionCard.remove();
-      // Renumber
-      optionsList.querySelectorAll('.challenge-option-card').forEach((card, idx) => {
-        card.querySelector('.option-name-input').value = game.i18n.format('STORYFRAME.ChallengeBuilder.OptionLabel', { num: idx + 1 });
-      });
     } else {
       ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.AtLeastOneOption'));
     }

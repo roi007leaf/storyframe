@@ -22,7 +22,8 @@
         "SelectPCs": "Select PCs to request rolls from:",
         "SendRollRequests": "Send Roll Requests",
         "Secret": "Secret",
-        "AllowOnlyOne": "Allow only one roll (dismiss others when one is rolled)"
+        "AllowOnlyOne": "Allow only one roll (dismiss others when one is rolled)",
+        "RemoveCheck": "Remove check"
       },
       "AddSpeaker": {
         "Title": "Add Speaker",

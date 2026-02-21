@@ -4,7 +4,7 @@
       <h3>{{i18n.foundChecks}}</h3>
       <ul class="checks-list">
         {{#each checks}}
-        <li class="check-item">
+        <li class="check-item" data-uid="{{this._uid}}">
           <div class="check-info">
             <i class="fas {{this.skillIcon}}"></i>
             <span class="check-skill">{{this.skillName}}{{#if this.actionName}}<span class="check-action-name"> ({{this.actionName}}{{#if this.variantName}}: {{this.variantName}}{{/if}})</span>{{/if}}</span>
@@ -15,6 +15,7 @@
               {{@root.i18n.secret}}
             </span>
             {{/if}}
+            <button type="button" class="check-remove-btn" data-uid="{{this._uid}}" aria-label="{{localize "STORYFRAME.Dialogs.RollRequest.RemoveCheck"}}"><i class="fas fa-times"></i></button>
           </div>
         </li>
         {{/each}}

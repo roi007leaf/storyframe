@@ -60,6 +60,8 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
           }
 
           const actionName = so.action ? this.gmSidebar._getActionName(so.skill, so.action) : null;
+          const minProf = so.minProficiency || 0;
+          const profLabels = ['', 'T', 'E', 'M', 'L'];
           return {
             skillName: checkName,
             actionName,
@@ -67,6 +69,8 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
             isSecret: so.isSecret || false,
             checkType,
             displayText: actionName ? `${checkName} (${actionName})` : checkName,
+            minProficiency: minProf,
+            minProficiencyLabel: minProf > 0 ? (profLabels[minProf] ?? String(minProf)) : null,
           };
         });
 

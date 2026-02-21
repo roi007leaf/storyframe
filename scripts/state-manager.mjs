@@ -60,6 +60,20 @@ export class StateManager {
   }
 
   /**
+   * Replace the current state and update all domain managers to reference the new object.
+   * Must be used instead of direct `stateManager.state = x` assignment so that
+   * challengeManager, speakerManager, etc. stay in sync.
+   * @param {Object} newState
+   */
+  syncState(newState) {
+    this.state = newState;
+    if (this.speakerManager) this.speakerManager.state = this.state;
+    if (this.participantManager) this.participantManager.state = this.state;
+    if (this.rollTracker) this.rollTracker.state = this.state;
+    if (this.challengeManager) this.challengeManager.state = this.state;
+  }
+
+  /**
    * Get current state (synchronous).
    * Returns the shared state object that all managers reference.
    */

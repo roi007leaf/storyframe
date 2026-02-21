@@ -457,6 +457,47 @@
   color: #888;
 }
 
+.gm-sidebar .skill-dc-pill .prof-badge,
+.storyframe.challenge-library .skill-dc-pill .prof-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  /* Trained (1) — blue */
+  background: rgba(94, 129, 172, 0.25);
+  color: #5e81ac;
+  border: 1px solid rgba(94, 129, 172, 0.4);
+}
+
+/* Expert (2) — green */
+.gm-sidebar .skill-dc-pill .prof-badge[data-prof="2"],
+.storyframe.challenge-library .skill-dc-pill .prof-badge[data-prof="2"] {
+  background: rgba(163, 190, 140, 0.25);
+  color: #a3be8c;
+  border-color: rgba(163, 190, 140, 0.4);
+}
+
+/* Master (3) — purple */
+.gm-sidebar .skill-dc-pill .prof-badge[data-prof="3"],
+.storyframe.challenge-library .skill-dc-pill .prof-badge[data-prof="3"] {
+  background: rgba(180, 142, 173, 0.25);
+  color: #b48ead;
+  border-color: rgba(180, 142, 173, 0.4);
+}
+
+/* Legendary (4) — gold */
+.gm-sidebar .skill-dc-pill .prof-badge[data-prof="4"],
+.storyframe.challenge-library .skill-dc-pill .prof-badge[data-prof="4"] {
+  background: rgba(235, 203, 139, 0.25);
+  color: #ebcb8b;
+  border-color: rgba(235, 203, 139, 0.4);
+}
+
 /* Save Pills - Orange Accent */
 .gm-sidebar .skill-dc-pill[data-check-type='save'] {
   background: linear-gradient(135deg, rgba(220, 118, 51, 0.25), rgba(220, 118, 51, 0.15));

@@ -253,6 +253,14 @@
   border-radius: 4px;
 }
 
+.storyframe-pending-rolls-popup .secret-badge-popup {
+  font-size: 10px;
+  color: var(--sf-accent-danger, #bf616a);
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+}
+
 .storyframe-pending-rolls-popup .cancel-roll-btn {
   background: transparent;
   border: none;

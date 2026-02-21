@@ -803,7 +803,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
         const allowOnlyOne = result?.allowOnlyOne || false;
         const batchGroupId = result?.batchGroupId ?? null;
         if (selectedIds && selectedIds.length > 0) {
-          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne);
+          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
         }
       }
     });
@@ -861,7 +861,7 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
       const allowOnlyOne = result?.allowOnlyOne || false;
       const batchGroupId = result?.batchGroupId ?? null;
       if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne);
+        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
       }
     } else {
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.UnknownSkill', { skillName }));
@@ -979,7 +979,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       const allowOnlyOne = result?.allowOnlyOne || false;
       const batchGroupId = result?.batchGroupId ?? null;
       if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne);
+        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
       }
     });
 
@@ -1121,6 +1121,7 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
             batchGroupId,
             allowOnlyOne,
             variantSlug,
+            result.checks[0].isSecret ?? false,
           );
         }
       });
@@ -1277,6 +1278,7 @@ export function renderPendingRollsGroups(groups, mode) {
                   <div class="sub-roll-item">
                     <span class="sub-skill-name">${subRoll.skillName}${subRoll.actionName ? ` (${subRoll.actionName})` : ''}</span>
                     ${subRoll.dc ? `<span class="dc-badge">DC ${subRoll.dc}</span>` : ''}
+                    ${subRoll.isSecretRoll ? `<span class="secret-badge-popup"><i class="fas fa-eye-slash"></i></span>` : ''}
                     <button type="button" class="cancel-sub-roll-btn" data-request-id="${subRoll.id}" data-batch-group-id="${roll.batchGroupId}">
                       <i class="fas fa-times"></i>
                     </button>
@@ -1288,6 +1290,7 @@ export function renderPendingRollsGroups(groups, mode) {
                 <div class="roll-info">
                   <span class="skill-name">${roll.skillName}${roll.actionName ? ` (${roll.actionName})` : ''}</span>
                   ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                  ${roll.isSecretRoll ? `<span class="secret-badge-popup"><i class="fas fa-eye-slash"></i></span>` : ''}
                 </div>
                 <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
                   <i class="fas fa-times"></i>
@@ -1325,6 +1328,7 @@ export function renderPendingRollsGroups(groups, mode) {
                   <div class="sub-roll-item">
                     <span class="sub-skill-name">${subRoll.skillName}${subRoll.actionName ? ` (${subRoll.actionName})` : ''}</span>
                     ${subRoll.dc ? `<span class="dc-badge">DC ${subRoll.dc}</span>` : ''}
+                    ${subRoll.isSecretRoll ? `<span class="secret-badge-popup"><i class="fas fa-eye-slash"></i></span>` : ''}
                     <button type="button" class="cancel-sub-roll-btn" data-request-id="${subRoll.id}" data-batch-group-id="${roll.batchGroupId}">
                       <i class="fas fa-times"></i>
                     </button>
@@ -1337,6 +1341,7 @@ export function renderPendingRollsGroups(groups, mode) {
                   <img src="${roll.actorImg || 'icons/svg/mystery-man.svg'}" alt="${roll.actorName}" class="participant-avatar-small" />
                   <span class="participant-name">${roll.actorName}</span>
                   ${roll.dc ? `<span class="dc-badge">DC ${roll.dc}</span>` : ''}
+                  ${roll.isSecretRoll ? `<span class="secret-badge-popup"><i class="fas fa-eye-slash"></i></span>` : ''}
                 </div>
                 <button type="button" class="cancel-roll-btn" data-request-id="${roll.id}">
                   <i class="fas fa-times"></i>

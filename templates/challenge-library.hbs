@@ -20,13 +20,13 @@
       <div class="lib-card-body">
         {{#each this.options}}
         <div class="lib-option-preview">
-          <div class="opt-num">{{localize "STORYFRAME.ChallengeBuilder.OptionLabel" num=this.index}}</div>
-          <div class="opt-desc">{{this.name}}</div>
+          <div class="opt-desc">{{#if this.name}}{{this.name}}{{else}}{{localize "STORYFRAME.ChallengeBuilder.OptionLabel" num=this.index}}{{/if}}</div>
           <div class="opt-skills">
             {{#each this.skillOptions}}
             <span class="skill-dc-pill" data-check-type="{{this.checkType}}">
               {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
               {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
+              {{#if this.minProficiencyLabel}}<span class="prof-badge" data-prof="{{this.minProficiency}}">{{this.minProficiencyLabel}}</span>{{/if}}
             </span>
             {{/each}}
           </div>

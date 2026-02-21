@@ -101,7 +101,7 @@ async function openRollRequesterAndSend(sidebar, skillSlug, checkType, actionSlu
   const batchGroupId = result?.batchGroupId ?? null;
   if (!selectedIds || selectedIds.length === 0) return;
 
-  await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant);
+  await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant, result.checks[0].isSecret ?? false);
 }
 
 /**
@@ -116,12 +116,13 @@ async function openRollRequesterAndSend(sidebar, skillSlug, checkType, actionSlu
  * @param {boolean} allowOnlyOne - Whether this roll is part of an "allow only one" group
  * @param {string} actionVariant - Optional action variant (e.g., 'gesture' for Create a Diversion)
  */
-export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false, actionVariant = null) {
+export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false, actionVariant = null, isSecretOverride = null) {
   const state = game.storyframe.stateManager.getState();
   if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
-  // Check if secret roll is enabled (toggle button or action with secret trait)
-  let isSecretRoll = sidebar.secretRollEnabled || false;
+  // Use explicit override when provided (per-check secret state from dialog).
+  // Fall back to sidebar toggle for callers that set it before calling.
+  let isSecretRoll = isSecretOverride !== null ? isSecretOverride : (sidebar.secretRollEnabled || false);
 
   // Auto-detect actions with secret trait in PF2e
   if (!isSecretRoll && actionSlug && game.pf2e) {
@@ -251,22 +252,24 @@ export async function sendBatchSkillCheck(sidebar) {
   const participantMissingSkills = new Map();
 
   const systemSkills = SystemAdapter.getSkills();
-  const checkCount = sidebar.batchedChecks.length;
+  // Use result.checks (surviving checks after any removals) rather than the original batchedChecks
+  const survivingChecks = result.checks || [];
+  const checkCount = survivingChecks.length;
 
-  const hasSkills = sidebar.batchedChecks.some(check => check.checkType !== 'save');
-  const hasSaves = sidebar.batchedChecks.some(check => check.checkType === 'save');
+  const hasSkills = survivingChecks.some(check => check.checkType !== 'save');
+  const hasSaves = survivingChecks.some(check => check.checkType === 'save');
 
   // batchGroupId comes from the dialog result (shared across all concurrent subscribers)
   const effectiveAllowOnlyOne = allowOnlyOne || false;
 
-  for (const check of sidebar.batchedChecks) {
+  for (const check of survivingChecks) {
     const previousDC = sidebar.currentDC;
     const previousSecret = sidebar.secretRollEnabled;
 
     sidebar.currentDC = check.dc;
     sidebar.secretRollEnabled = check.isSecret || false;
 
-    const checkResult = await requestSkillCheck(sidebar, check.skill, selectedIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, effectiveAllowOnlyOne, check.actionVariant ?? null);
+    const checkResult = await requestSkillCheck(sidebar, check.skillName, selectedIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, effectiveAllowOnlyOne, check.actionVariant ?? null);
 
     sidebar.currentDC = previousDC;
     sidebar.secretRollEnabled = previousSecret;
@@ -284,9 +287,9 @@ export async function sendBatchSkillCheck(sidebar) {
       let cn;
       if (ct === 'save') {
         const systemSaves = SystemAdapter.getSaves();
-        cn = systemSaves[check.skill]?.name || check.skill;
+        cn = systemSaves[check.skillName]?.name || check.skillName;
       } else {
-        cn = systemSkills[check.skill]?.name || check.skill;
+        cn = systemSkills[check.skillName]?.name || check.skillName;
       }
       participantMissingSkills.get(name).add(cn);
     });

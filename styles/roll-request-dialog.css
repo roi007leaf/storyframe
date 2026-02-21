@@ -53,6 +53,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--sf-space-xs);
+  max-height: calc(10 * 38px);
+  overflow-y: auto;
 }
 
 .roll-request-dialog .check-item {
@@ -113,6 +115,31 @@
 .roll-request-dialog .check-secret-badge i {
   font-size: 10px;
   width: auto;
+}
+
+/* Per-row remove button */
+.roll-request-dialog .check-remove-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 11px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.roll-request-dialog .check-remove-btn:hover {
+  color: var(--sf-accent-danger);
+  background: rgba(191, 97, 106, 0.15);
+}
+
+.roll-request-dialog .check-remove-btn i {
+  width: auto;
+  font-size: 11px;
+  color: inherit;
 }
 
 /* Participants Selection */
@@ -316,23 +343,27 @@
 }
 
 /* Scrollbar styling */
+.roll-request-dialog .checks-list::-webkit-scrollbar,
 .roll-request-dialog .participants-grid::-webkit-scrollbar,
 .roll-request-dialog .dialog-content::-webkit-scrollbar {
   width: 8px;
 }
 
+.roll-request-dialog .checks-list::-webkit-scrollbar-track,
 .roll-request-dialog .participants-grid::-webkit-scrollbar-track,
 .roll-request-dialog .dialog-content::-webkit-scrollbar-track {
   background: var(--sf-surface-secondary);
   border-radius: 4px;
 }
 
+.roll-request-dialog .checks-list::-webkit-scrollbar-thumb,
 .roll-request-dialog .participants-grid::-webkit-scrollbar-thumb,
 .roll-request-dialog .dialog-content::-webkit-scrollbar-thumb {
   background: var(--sf-border-primary);
   border-radius: 4px;
 }
 
+.roll-request-dialog .checks-list::-webkit-scrollbar-thumb:hover,
 .roll-request-dialog .participants-grid::-webkit-scrollbar-thumb:hover,
 .roll-request-dialog .dialog-content::-webkit-scrollbar-thumb:hover {
   background: var(--sf-accent-primary);

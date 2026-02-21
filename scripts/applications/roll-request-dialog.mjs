@@ -36,7 +36,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
   constructor(checks, participants, options = {}) {
     super(options);
-    this.checks = checks;
+    this.checks = checks.map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
     this.participants = participants;
     this.allowOnlyOne = false; // Allow-only-one toggle state
     this._autoSized = false;
@@ -60,6 +60,15 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
     checkboxes.forEach(cb => cb.addEventListener('change', updateSubmit));
     updateSubmit();
+
+    // Delegate remove-button clicks on the checks list
+    const checksList = this.element.querySelector('.checks-list');
+    checksList?.addEventListener('click', (e) => {
+      const btn = e.target.closest('.check-remove-btn');
+      if (!btn) return;
+      const uid = btn.dataset.uid;
+      if (uid) this._removeCheck(uid);
+    });
 
     if (this._autoSized) return;
     this._autoSized = true;
@@ -135,11 +144,14 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     const secretBadge = enriched.isSecret
       ? `<span class="check-secret-badge"><i class="fas fa-eye-slash"></i> ${secretLabel}</span>`
       : '';
+    const removeBtnAriaLabel = game.i18n.localize('STORYFRAME.Dialogs.RollRequest.RemoveCheck');
+    const removeBtn = `<button type="button" class="check-remove-btn" data-uid="${enriched._uid}" aria-label="${removeBtnAriaLabel}"><i class="fas fa-times"></i></button>`;
     return `<div class="check-info">
       <i class="fas ${enriched.skillIcon}"></i>
       <span class="check-skill">${enriched.skillName}${actionPart}</span>
       ${dcPart}
       ${secretBadge}
+      ${removeBtn}
     </div>`;
   }
 
@@ -201,14 +213,26 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
    * @param {Array} pcs  Only used when creating a new dialog.
    */
   static async subscribe(checks, pcs) {
+    // Pre-assign UIDs so we can identify this subscriber's checks in the resolved result.
+    const myChecks = checks.map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
+    const myUids = new Set(myChecks.map(c => c._uid));
+
+    // Filter the shared result down to only the checks that belong to this subscriber
+    // and that survived removal. If none survived, return null (treated as cancel by callers).
+    const filterForSubscriber = (result) => {
+      if (!result) return null;
+      const surviving = (result.checks || []).filter(c => myUids.has(c._uid));
+      return surviving.length === 0 ? null : { ...result, checks: surviving };
+    };
+
     if (RollRequestDialog._instance) {
-      await RollRequestDialog._instance.addChecks(checks);
-      return RollRequestDialog._instance.promise;
+      await RollRequestDialog._instance.addChecks(myChecks);
+      return RollRequestDialog._instance.promise.then(filterForSubscriber);
     }
-    const dialog = new RollRequestDialog(checks, pcs);
+    const dialog = new RollRequestDialog(myChecks, pcs);
     RollRequestDialog._instance = dialog;
     dialog.render(true);
-    return dialog.wait();
+    return dialog.promise.then(filterForSubscriber);
   }
 
   /**
@@ -217,13 +241,15 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
    */
   async addChecks(newChecks) {
     // Drop duplicates of checks already in the dialog
-    const deduped = newChecks.filter(nc => !this.checks.some(ec =>
-      ec.skillName === nc.skillName &&
-      (ec.actionSlug ?? null) === (nc.actionSlug ?? null) &&
-      (ec.actionVariant ?? null) === (nc.actionVariant ?? null) &&
-      ec.dc === nc.dc &&
-      Boolean(ec.isSecret) === Boolean(nc.isSecret),
-    ));
+    const deduped = newChecks
+      .filter(nc => !this.checks.some(ec =>
+        ec.skillName === nc.skillName &&
+        (ec.actionSlug ?? null) === (nc.actionSlug ?? null) &&
+        (ec.actionVariant ?? null) === (nc.actionVariant ?? null) &&
+        ec.dc === nc.dc &&
+        Boolean(ec.isSecret) === Boolean(nc.isSecret),
+      ))
+      .map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
 
     if (deduped.length === 0) {
       this.bringToTop?.();
@@ -239,6 +265,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
         const enriched = this._enrichCheck(check);
         const li = document.createElement('li');
         li.className = 'check-item';
+        li.dataset.uid = enriched._uid;
         li.innerHTML = this._renderCheckItemHTML(enriched);
         checksList.appendChild(li);
       }
@@ -268,6 +295,35 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     }
 
     this.bringToTop?.();
+  }
+
+  /**
+   * Remove a single check row by its unique id.
+   * If the last check is removed the dialog closes (resolves null).
+   */
+  _removeCheck(uid) {
+    this.checks = this.checks.filter(c => c._uid !== uid);
+    this.element?.querySelector(`.check-item[data-uid="${uid}"]`)?.remove();
+
+    // Update header count
+    const header = this.element?.querySelector('.checks-summary h3');
+    if (header) {
+      const hasSkills = this.checks.some(c => c.checkType !== 'save');
+      const hasSaves = this.checks.some(c => c.checkType === 'save');
+      let key;
+      if (hasSkills && hasSaves) key = 'STORYFRAME.Dialogs.RollRequest.FoundChecksAndSaves';
+      else if (hasSaves) key = 'STORYFRAME.Dialogs.RollRequest.FoundSaves';
+      else key = 'STORYFRAME.Dialogs.RollRequest.FoundChecks';
+      header.textContent = game.i18n.format(key, { count: this.checks.length });
+    }
+
+    // Close (cancel) when all checks have been removed
+    if (this.checks.length === 0) {
+      const resolve = this.resolve;
+      this.resolve = null;
+      resolve(null);
+      this.close();
+    }
   }
 
   static async _onSubmit(event, target) {

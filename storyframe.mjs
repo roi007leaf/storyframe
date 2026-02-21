@@ -345,8 +345,8 @@ Hooks.once('init', () => {
       const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
       const SystemAdapter = await import('./scripts/system-adapter.mjs');
 
-      // Send roll requests for each check
-      for (const check of checks) {
+      // Send roll requests for each surviving check (respects per-row removals in the dialog)
+      for (const check of (result.checks || [])) {
         // Map skill name to slug using SystemAdapter
         const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase();
 
