@@ -7,9 +7,11 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.8.3] - 2026-02-21
+## [1.8.2] - 2026-02-21
 
 ### Added
+
+- **Proficiency badges on challenge library cards** — each skill pill in the GM sidebar library and standalone challenge library now shows a colour-coded proficiency requirement badge when `minProficiency > 0`: blue=Trained (T), green=Expert (E), purple=Master (M), gold=Legendary (L)
 
 - **Per-row check removal in Roll Requester** — each check row in the Roll Requester dialog now has a subtle × button on the right; clicking it removes that check from the dialog without closing it; removing the last check cancels the dialog; removed checks are never sent even when multiple subscribers are sharing the dialog
 - **Secret indicator in Pending Rolls popup** — roll rows in the GM's Pending Rolls popup now show a red `fa-eye-slash` icon next to the DC badge when the roll is secret; applies to both "By PC" and "By Skill" grouping modes and to sub-rows inside allow-only-one groups
@@ -17,20 +19,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **Removed checks still sending** — the subscribe pattern meant each caller held its own `checks` variable and sent it regardless of what was removed in the dialog; `subscribe()` now pre-assigns UIDs to each caller's checks and wraps the resolved promise to filter `result.checks` down to only that subscriber's surviving checks; returning `null` when all are removed so the existing cancel guard catches it; multi-check callers (`sendBatchedChecks`, challenge requests, chat card actions) updated to loop `result.checks` instead of their original arrays
-- **Per-check secret state ignored** — `requestSkillCheck` read `sidebar.secretRollEnabled` at call-time rather than the `isSecret` captured when each check was added to the dialog; added `isSecretOverride` parameter and updated the five single-check callers (`openRollRequesterAndSend`, three skill/action button handlers in `ui-helpers`, and the action-variant handler) to pass `result.checks[0].isSecret` explicitly
-
-## [1.8.2] - 2026-02-21
-
-### Added
-
-- **Proficiency badges on challenge library cards** — each skill pill in the GM sidebar library and standalone challenge library now shows a colour-coded proficiency requirement badge when `minProficiency > 0`: blue=Trained (T), green=Expert (E), purple=Master (M), gold=Legendary (L)
-
-### Fixed
-
 - **Challenge update not syncing to players** — `_handleStateUpdate` replaced `stateManager.state` with a new object but left all domain managers (`challengeManager`, etc.) pointing at the stale reference; added `StateManager.syncState()` which updates all managers atomically and switched the socket handler to use it
 - **Challenge directory showing "Option 1/2/3"** — renaming an option in the builder then removing another option reset all names back to "Option N"; the renumber step on remove now only removes the card and leaves custom names untouched; new option inputs use placeholder instead of value so blank names are no longer pre-filled with "Option N"
 - **Challenge update matched by `templateId`** — the edit+save flow now identifies the live active challenge via `templateId` (stamped when presenting from library) instead of fragile name-matching; name fallback retained for older data
+
+- **Removed checks still sending** — the subscribe pattern meant each caller held its own `checks` variable and sent it regardless of what was removed in the dialog; `subscribe()` now pre-assigns UIDs to each caller's checks and wraps the resolved promise to filter `result.checks` down to only that subscriber's surviving checks; returning `null` when all are removed so the existing cancel guard catches it; multi-check callers (`sendBatchedChecks`, challenge requests, chat card actions) updated to loop `result.checks` instead of their original arrays
+- **Per-check secret state ignored** — `requestSkillCheck` read `sidebar.secretRollEnabled` at call-time rather than the `isSecret` captured when each check was added to the dialog; added `isSecretOverride` parameter and updated the five single-check callers (`openRollRequesterAndSend`, three skill/action button handlers in `ui-helpers`, and the action-variant handler) to pass `result.checks[0].isSecret` explicitly
 
 ## [1.8.1] - 2026-02-21
 
