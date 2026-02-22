@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Player viewer layout** — spotlight occupies ~30% of the width (min 180px, max 380px) as a fixed left column; the speaker gallery fills the remaining 70% and scales with the window
+- **Player viewer layout** — spotlight occupies ~50% of the width (min 180px, max 380px) as a fixed left column; the speaker gallery fills the remaining 70% and scales with the window
 - **Image nav controls** — add/remove/cycle image buttons are grouped in a centered row at the bottom of each GM sidebar thumbnail, always visible on hover; `+` opens file picker, `🗑` removes the current custom image, `<`/`>` cycle through all images
 - **Speaker action buttons** — all five action buttons (hide-from-players, hide-name, edit, remove, add-image) are now in a single centered flex row above the thumbnail, preventing overflow on narrow thumbnails
 
