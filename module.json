@@ -2,7 +2,7 @@
   "id": "storyframe",
   "title": "Storyframe",
   "description": "Journal-integrated speaker and skill check manager with synchronized player portraits",
-  "version": "1.9.0",
+  "version": "1.10.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -31,7 +31,8 @@
     "styles/player-sidebar.css",
     "styles/challenge-builder.css",
     "styles/challenge-library.css",
-    "styles/roll-request-dialog.css"
+    "styles/roll-request-dialog.css",
+    "styles/target-selector-dialog.css"
   ],
   "socket": true,
   "relationships": {

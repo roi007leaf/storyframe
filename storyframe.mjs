@@ -103,6 +103,42 @@ function setupPF2eRepostIntegration() {
   }, { capture: true });
 }
 
+/**
+ * Setup global Ctrl+click listener for inline damage roll links.
+ * Opens the Target Selector dialog so the GM can pick targets before rolling.
+ */
+function setupDamageRollTargetInterception() {
+  document.addEventListener('click', async (event) => {
+    // Only intercept when Ctrl/Cmd is held
+    if (!event.ctrlKey && !event.metaKey) return;
+    if (!game.user.isGM) return;
+
+    const rollLink = event.target.closest('a.inline-roll[data-damage-roll]');
+    if (!rollLink) return;
+
+    // Prevent the default roll from firing
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const formula = rollLink.dataset.formula;
+    const flavor = rollLink.dataset.flavor || rollLink.dataset.tooltipText || '';
+    if (!formula) return;
+
+    const { TargetSelectorDialog } = await import('./scripts/applications/target-selector-dialog.mjs');
+    const result = await TargetSelectorDialog.open({ formula, flavor });
+    if (!result) return;
+
+    // Apply FoundryVTT targeting
+    game.user.targets.forEach((t) => t.setTarget(false, { releaseOthers: false }));
+    for (const id of result.tokenIds) {
+      canvas.tokens?.get(id)?.setTarget(true, { releaseOthers: false });
+    }
+
+    // Re-dispatch a plain click (no Ctrl) so the system rolls normally
+    rollLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+  }, { capture: true });
+}
+
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
 
@@ -669,6 +705,11 @@ Hooks.once('ready', async () => {
   // Setup PF2e inline check repost integration (GM only)
   if (game.user.isGM && game.system.id === 'pf2e') {
     setupPF2eRepostIntegration();
+  }
+
+  // Setup damage roll target interception (GM only, all systems)
+  if (game.user.isGM) {
+    setupDamageRollTargetInterception();
   }
 
   // Migration: Detect and perform migration from 1.x to 2.x

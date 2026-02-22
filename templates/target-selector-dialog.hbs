@@ -1,0 +1,46 @@
+<form class="target-selector-dialog">
+  <div class="dialog-content">
+
+    <section class="roll-info">
+      <div class="roll-formula-display">
+        <span class="roll-label">{{i18n.rollingLabel}}</span>
+        <code class="roll-dice-expr">{{diceExpr}}</code>
+        {{#each damageTypes}}
+        <span class="dmg-badge dmg-{{this.slug}}">{{this.label}}</span>
+        {{/each}}
+      </div>
+    </section>
+
+    <section class="targets-selection">
+      <h3>{{i18n.selectTargets}}</h3>
+      {{#if tokens.length}}
+      <div class="tokens-grid">
+        {{#each tokens}}
+        <label class="token-card" data-token-id="{{this.id}}">
+          <input type="checkbox" name="target" value="{{this.id}}">
+          <div class="token-content">
+            <img src="{{this.img}}" alt="{{this.name}}">
+            <span class="token-name">{{this.name}}</span>
+            <i class="fas fa-check-circle check-icon"></i>
+          </div>
+        </label>
+        {{/each}}
+      </div>
+      {{else}}
+      <p class="no-tokens-message">{{i18n.noTokens}}</p>
+      {{/if}}
+    </section>
+
+  </div>
+
+  <footer class="dialog-footer">
+    <button type="button" class="cancel-btn" data-action="cancel">
+      <i class="fas fa-times"></i>
+      {{i18n.cancel}}
+    </button>
+    <button type="submit" class="submit-btn" data-action="submit">
+      <i class="fas fa-dice"></i>
+      {{i18n.rollDamage}}
+    </button>
+  </footer>
+</form>

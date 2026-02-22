@@ -7,6 +7,14 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.0] - 2026-02-22
+
+### Added
+
+- **Target Selector for damage rolls** — Ctrl+click (or Cmd+click on Mac) any inline damage roll link (`data-damage-roll`) in a journal entry to open the Target Selector dialog instead of rolling immediately; works on all game systems
+- **Target Selector dialog** — shows all player-owned PC tokens on the current scene as portrait cards; left-click to select/deselect targets; click **Roll Damage** to set `game.user.targets` and execute the roll normally
+- **Damage formula display** — parses raw FoundryVTT formulas into a structured header: monospace dice expression + coloured damage-type badge(s) in Pascal case (e.g. `{2d6[fire]}` → `2d6` + orange **Fire** badge); covers all dnd5e and PF2e damage types with per-type colours (fire, cold, lightning/electricity, acid, necrotic/negative/void, radiant/positive/vitality, psychic/mental, force, thunder/sonic, slashing, bludgeoning, piercing, poison, bleed, good, evil, chaotic, lawful, spirit)
+
 ## [1.9.0] - 2026-02-22
 
 ### Added
