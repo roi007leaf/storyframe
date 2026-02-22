@@ -454,6 +454,163 @@
   opacity: 0.9;
 }
 
+/* Active speaker spotlight — left sidebar column */
+.storyframe.player-viewer .speaker-spotlight {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-sm);
+  width: 50%;
+  min-width: 180px;
+  max-width: 380px;
+  flex-shrink: 0;
+  height: 100%;
+  padding: var(--sf-space-lg) var(--sf-space-md);
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    rgba(94, 129, 172, 0.05) 0%,
+    rgba(94, 129, 172, 0.15) 50%,
+    rgba(94, 129, 172, 0.05) 100%
+  );
+  border-right: 1px solid rgba(94, 129, 172, 0.3);
+  animation: spotlight-entrance 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Sweeping shimmer — vertical now */
+.storyframe.player-viewer .speaker-spotlight::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    180deg,
+    transparent 20%,
+    rgba(94, 129, 172, 0.06) 50%,
+    transparent 80%
+  );
+  animation: spotlight-sweep 5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes spotlight-sweep {
+  0%,
+  100% {
+    transform: translateY(-100%);
+  }
+  50% {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes spotlight-entrance {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Portrait wrapper — fills available height */
+.storyframe.player-viewer .spotlight-portrait-wrap {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.storyframe.player-viewer .spotlight-glow {
+  position: absolute;
+  inset: -20px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(94, 129, 172, 0.45) 0%,
+    rgba(94, 129, 172, 0.15) 50%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  animation: spotlight-glow-pulse 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 0;
+}
+
+@keyframes spotlight-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
+.storyframe.player-viewer .speaker-spotlight img {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: var(--sf-radius-lg);
+  border: 2px solid rgba(94, 129, 172, 0.7);
+  box-shadow:
+    0 0 0 1px rgba(94, 129, 172, 0.25),
+    0 0 24px rgba(94, 129, 172, 0.55),
+    0 6px 24px rgba(0, 0, 0, 0.55);
+  background: rgba(0, 0, 0, 0.3);
+  animation: spotlight-img-pulse 2.5s ease-in-out infinite;
+}
+
+@keyframes spotlight-img-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(94, 129, 172, 0.25),
+      0 0 20px rgba(94, 129, 172, 0.45),
+      0 6px 24px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(94, 129, 172, 0.5),
+      0 0 36px rgba(94, 129, 172, 0.75),
+      0 6px 32px rgba(0, 0, 0, 0.6);
+  }
+}
+
+.storyframe.player-viewer .spotlight-eyebrow {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-light-primary, #ddd);
+  opacity: 0.85;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.storyframe.player-viewer .spotlight-name {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-light-primary, #e8e8e8);
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+  flex-shrink: 0;
+}
+
 /* Active speaker highlight */
 .storyframe.player-viewer .speaker-item.active {
   border-color: var(--sf-accent-primary);

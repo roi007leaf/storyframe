@@ -104,6 +104,106 @@ export async function onToggleSpeakerVisibility(event, target) {
 }
 
 /**
+ * Toggle speaker hidden from player view entirely
+ */
+export async function onToggleSpeakerHidden(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  await game.storyframe.socketManager.requestToggleSpeakerHidden(speakerId);
+}
+
+/**
+ * Build the full ordered image list for a speaker.
+ * Actor portrait and token image are always present (derived live from the actor).
+ * Custom images (altImages) are appended after.
+ */
+async function _buildSpeakerImageList(speaker) {
+  const images = [];
+  if (speaker.actorUuid) {
+    const actor = await fromUuid(speaker.actorUuid);
+    if (actor) {
+      images.push(actor.img);
+      const tokenImg = actor.prototypeToken?.texture?.src;
+      if (tokenImg && tokenImg !== actor.img) images.push(tokenImg);
+    }
+  } else if (speaker.imagePath) {
+    images.push(speaker.imagePath);
+  }
+  (speaker.altImages || []).forEach((img) => { if (!images.includes(img)) images.push(img); });
+  return images;
+}
+
+/**
+ * Cycle to next alt image for a speaker
+ */
+export async function onCycleSpeakerImageNext(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  const state = game.storyframe.stateManager.getState();
+  const speaker = state?.speakers?.find((s) => s.id === speakerId);
+  if (!speaker) return;
+
+  const images = await _buildSpeakerImageList(speaker);
+  if (images.length <= 1) return;
+
+  const currentIdx = images.indexOf(speaker.imagePath || images[0]);
+  const nextImg = images[(currentIdx + 1) % images.length];
+  await game.storyframe.socketManager.requestSetSpeakerImage(speakerId, nextImg);
+}
+
+/**
+ * Cycle to previous alt image for a speaker
+ */
+export async function onCycleSpeakerImagePrev(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  const state = game.storyframe.stateManager.getState();
+  const speaker = state?.speakers?.find((s) => s.id === speakerId);
+  if (!speaker) return;
+
+  const images = await _buildSpeakerImageList(speaker);
+  if (images.length <= 1) return;
+
+  const currentIdx = images.indexOf(speaker.imagePath || images[0]);
+  const prevImg = images[(currentIdx - 1 + images.length) % images.length];
+  await game.storyframe.socketManager.requestSetSpeakerImage(speakerId, prevImg);
+}
+
+/**
+ * Add a custom alternate image to a speaker via file picker
+ */
+export async function onAddSpeakerAltImage(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  if (!speakerId) return;
+
+  new FilePicker({
+    type: 'image',
+    callback: async (path) => {
+      await game.storyframe.socketManager.requestAddSpeakerAltImage(speakerId, path);
+    },
+  }).render(true);
+}
+
+/**
+ * Remove the current custom alternate image from a speaker
+ */
+export async function onRemoveSpeakerAltImage(event, target) {
+  event.stopPropagation();
+  const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+  const img = target.closest('[data-image-path]')?.dataset.imagePath;
+  if (!speakerId || !img) return;
+
+  await game.storyframe.socketManager.requestRemoveSpeakerAltImage(speakerId, img);
+}
+
+/**
  * Clear the active speaker
  */
 export async function onClearSpeaker(_event, _target) {
@@ -173,6 +273,7 @@ export async function onSetActorAsSpeaker(event, target, _sidebar) {
 
   console.log('StoryFrame: onSetActorAsSpeaker called - Actor:', actor.name, 'ALT key:', event.altKey, 'Event:', event);
 
+  // Token image is derived dynamically at render time — no need to store it
   await game.storyframe.socketManager.requestAddSpeaker({
     actorUuid: actor.uuid,
     imagePath: actor.img,

@@ -1,15 +1,27 @@
 <div class="player-viewer-container">
   {{#unless empty}}
-    <div class="speaker-gallery layout-{{layout}}" role="list" aria-label="NPCs">
-      {{#each speakers}}
-        <div class="speaker-item {{#if (eq this.id ../activeSpeakerId)}}active{{/if}}"
-             role="listitem"
-             data-tooltip="{{this.name}}"
-             aria-current="{{#if (eq this.id ../activeSpeakerId)}}true{{/if}}">
-          <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
-          <span class="speaker-name">{{this.name}}</span>
-        </div>
-      {{/each}}
+    {{#if activeSpeaker}}
+    <div class="speaker-spotlight" aria-label="Active speaker">
+      <span class="spotlight-eyebrow">{{localize "STORYFRAME.UI.Labels.NowSpeaking"}}</span>
+      <div class="spotlight-portrait-wrap">
+        <div class="spotlight-glow"></div>
+        <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" loading="lazy">
+      </div>
+      <span class="spotlight-name">{{activeSpeaker.name}}</span>
+    </div>
+    {{/if}}
+    <div class="main-content">
+      <div class="speaker-gallery layout-{{layout}}" role="list" aria-label="NPCs">
+        {{#each speakers}}
+          <div class="speaker-item {{#if (eq this.id ../activeSpeakerId)}}active{{/if}}"
+               role="listitem"
+               data-tooltip="{{this.name}}"
+               aria-current="{{#if (eq this.id ../activeSpeakerId)}}true{{/if}}">
+            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+            <span class="speaker-name">{{this.name}}</span>
+          </div>
+        {{/each}}
+      </div>
     </div>
   {{/unless}}
 </div>

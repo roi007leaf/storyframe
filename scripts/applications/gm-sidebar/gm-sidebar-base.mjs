@@ -36,6 +36,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       editSpeaker: GMSidebarAppBase._onEditSpeaker,
       removeSpeaker: GMSidebarAppBase._onRemoveSpeaker,
       toggleSpeakerVisibility: GMSidebarAppBase._onToggleSpeakerVisibility,
+      toggleSpeakerHidden: GMSidebarAppBase._onToggleSpeakerHidden,
+      cycleSpeakerImageNext: GMSidebarAppBase._onCycleSpeakerImageNext,
+      cycleSpeakerImagePrev: GMSidebarAppBase._onCycleSpeakerImagePrev,
+      addSpeakerAltImage: GMSidebarAppBase._onAddSpeakerAltImage,
+      removeSpeakerAltImage: GMSidebarAppBase._onRemoveSpeakerAltImage,
       clearSpeaker: GMSidebarAppBase._onClearSpeaker,
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
       saveCurrentSpeakers: GMSidebarAppBase._onSaveCurrentSpeakers,
@@ -272,6 +277,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     console.log('StoryFrame: Drop event - ALT key held?', isNameHidden, 'Actor:', actor.name);
 
     // Add actor as speaker (state manager handles duplicate notification)
+    // Token image is derived dynamically at render time — no need to store it
     await game.storyframe.socketManager.requestAddSpeaker({
       actorUuid: actor.uuid,
       imagePath: actor.img,
@@ -368,11 +374,32 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     const speakers = await Promise.all(
       state.speakers.map(async (speaker) => {
         const resolved = await game.storyframe.stateManager.resolveSpeaker(speaker);
+
+        // Build full image list: actor portrait + token image (if different) + custom images
+        // Actor/token images are always available regardless of current selection
+        const allImages = [];
+        if (speaker.actorUuid) {
+          const actor = await fromUuid(speaker.actorUuid);
+          if (actor) {
+            allImages.push(actor.img);
+            const tokenImg = actor.prototypeToken?.texture?.src;
+            if (tokenImg && tokenImg !== actor.img) allImages.push(tokenImg);
+          }
+        } else if (resolved.img) {
+          allImages.push(resolved.img);
+        }
+        (speaker.altImages || []).forEach((img) => { if (!allImages.includes(img)) allImages.push(img); });
+
+        const currentImg = resolved.img;
         const result = {
           id: speaker.id,
-          img: resolved.img,
+          img: currentImg,
           name: resolved.name,
           isNameHidden: speaker.isNameHidden || false,
+          isHidden: speaker.isHidden || false,
+          hasAltImages: allImages.length > 1,
+          canRemoveCurrentImage: (speaker.altImages || []).includes(currentImg),
+          currentImagePath: currentImg,
         };
 
         console.log('StoryFrame: Speaker context -', resolved.name, 'isNameHidden:', result.isNameHidden, 'Raw speaker:', speaker);
@@ -710,6 +737,26 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onToggleSpeakerVisibility(event, target) {
     return SpeakerHandlers.onToggleSpeakerVisibility(event, target);
+  }
+
+  static async _onToggleSpeakerHidden(event, target) {
+    return SpeakerHandlers.onToggleSpeakerHidden(event, target);
+  }
+
+  static async _onCycleSpeakerImageNext(event, target) {
+    return SpeakerHandlers.onCycleSpeakerImageNext(event, target);
+  }
+
+  static async _onCycleSpeakerImagePrev(event, target) {
+    return SpeakerHandlers.onCycleSpeakerImagePrev(event, target);
+  }
+
+  static async _onAddSpeakerAltImage(event, target) {
+    return SpeakerHandlers.onAddSpeakerAltImage(event, target);
+  }
+
+  static async _onRemoveSpeakerAltImage(event, target) {
+    return SpeakerHandlers.onRemoveSpeakerAltImage(event, target);
   }
 
   static async _onClearSpeaker(event, target) {

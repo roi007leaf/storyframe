@@ -7,6 +7,23 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-22
+
+### Added
+
+- **Token image as alternate** — dragging an actor whose token image differs from their portrait auto-populates it as a cycling option; actor portrait and token image are always available regardless of cycling state
+- **Alternate images per speaker** — GM can add custom images to any speaker via a file picker (`+` button in the image nav); cycle with `<`/`>` arrows; remove custom images with the trash button (only available for custom images, not built-in actor/token images)
+- **Hide speaker from players** — new toggle (`fa-user-slash`) in the speaker thumbnail hover controls hides a speaker entirely from the player viewer; hidden speakers appear blurred in the GM sidebar; GM always sees all speakers
+- **Active speaker spotlight** — when a speaker is set active, a dedicated spotlight panel appears on the left side of the player viewer showing their portrait large; the active speaker is removed from the gallery to avoid duplication
+- **Spotlight setting** — new client setting "Active Speaker Spotlight" (default on) to toggle the spotlight panel
+- **"Now Speaking" label** — spotlight panel shows an "NOW SPEAKING" eyebrow label and the speaker's name below their portrait
+
+### Changed
+
+- **Player viewer layout** — spotlight occupies ~30% of the width (min 180px, max 380px) as a fixed left column; the speaker gallery fills the remaining 70% and scales with the window
+- **Image nav controls** — add/remove/cycle image buttons are grouped in a centered row at the bottom of each GM sidebar thumbnail, always visible on hover; `+` opens file picker, `🗑` removes the current custom image, `<`/`>` cycle through all images
+- **Speaker action buttons** — all five action buttons (hide-from-players, hide-name, edit, remove, add-image) are now in a single centered flex row above the thumbnail, preventing overflow on narrow thumbnails
+
 ## [1.8.4] - 2026-02-21
 
 ### Added

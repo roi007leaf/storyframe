@@ -194,12 +194,32 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return { empty: true, layout, actorRollGroups, activeChallenge };
     }
 
-    // Resolve ALL speakers
-    const speakers = await this._resolveSpeakers(state.speakers);
+    // Filter hidden speakers from player view (GM always sees all)
+    const visibleSpeakers = game.user.isGM
+      ? state.speakers
+      : state.speakers.filter((s) => !s.isHidden);
+
+    // Resolve active speaker for spotlight
+    let activeSpeaker = null;
+    if (state.activeSpeaker) {
+      const activeSpeakerData = visibleSpeakers.find((s) => s.id === state.activeSpeaker);
+      if (activeSpeakerData) {
+        activeSpeaker = await this._resolveSpeaker(activeSpeakerData);
+      }
+    }
+
+    // Active speaker is shown in spotlight — exclude from gallery
+    const gallerySpeakers = activeSpeaker
+      ? visibleSpeakers.filter((s) => s.id !== state.activeSpeaker)
+      : visibleSpeakers;
+
+    const speakers = await this._resolveSpeakers(gallerySpeakers);
+    const activeSpeakerId = activeSpeaker ? null : state.activeSpeaker;
 
     return {
       speakers,
-      activeSpeakerId: state.activeSpeaker,
+      activeSpeakerId,
+      activeSpeaker,
       layout,
       empty: false,
       actorRollGroups,
@@ -354,7 +374,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     if (speaker.actorUuid) {
       const actor = await fromUuid(speaker.actorUuid);
       if (actor) {
-        img = actor.img;
+        // Use imagePath override if set, otherwise fall back to actor portrait
+        img = speaker.imagePath || actor.img;
         name = actor.name;
       } else {
         // Actor deleted - use fallback

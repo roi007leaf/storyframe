@@ -15,6 +15,10 @@ export class SocketManager {
     this.socket.register('addSpeaker', this._handleAddSpeaker);
     this.socket.register('removeSpeaker', this._handleRemoveSpeaker);
     this.socket.register('toggleSpeakerVisibility', this._handleToggleSpeakerVisibility);
+    this.socket.register('toggleSpeakerHidden', this._handleToggleSpeakerHidden);
+    this.socket.register('setSpeakerImage', this._handleSetSpeakerImage);
+    this.socket.register('addSpeakerAltImage', this._handleAddSpeakerAltImage);
+    this.socket.register('removeSpeakerAltImage', this._handleRemoveSpeakerAltImage);
     this.socket.register('stateUpdate', this._handleStateUpdate);
 
     // Register participant and roll handlers
@@ -90,6 +94,36 @@ export class SocketManager {
    */
   async requestToggleSpeakerVisibility(speakerId) {
     return await this.socket.executeAsGM('toggleSpeakerVisibility', speakerId);
+  }
+
+  /**
+   * Request GM to toggle speaker hidden from player view.
+   * @param {string} speakerId
+   */
+  async requestToggleSpeakerHidden(speakerId) {
+    return await this.socket.executeAsGM('toggleSpeakerHidden', speakerId);
+  }
+
+  /**
+   * Request GM to set active image for a speaker.
+   * @param {string} speakerId
+   * @param {string} imagePath
+   */
+  async requestSetSpeakerImage(speakerId, imagePath) {
+    return await this.socket.executeAsGM('setSpeakerImage', { speakerId, imagePath });
+  }
+
+  /**
+   * Request GM to add an alternate image to a speaker.
+   * @param {string} speakerId
+   * @param {string} img
+   */
+  async requestAddSpeakerAltImage(speakerId, img) {
+    return await this.socket.executeAsGM('addSpeakerAltImage', { speakerId, img });
+  }
+
+  async requestRemoveSpeakerAltImage(speakerId, img) {
+    return await this.socket.executeAsGM('removeSpeakerAltImage', { speakerId, img });
   }
 
   /**
@@ -295,6 +329,31 @@ export class SocketManager {
    */
   async _handleToggleSpeakerVisibility(speakerId) {
     await game.storyframe.stateManager?.toggleSpeakerNameVisibility(speakerId);
+  }
+
+  /**
+   * Handler: Toggle speaker hidden from player view.
+   */
+  async _handleToggleSpeakerHidden(speakerId) {
+    await game.storyframe.stateManager?.toggleSpeakerHidden(speakerId);
+  }
+
+  /**
+   * Handler: Set active image for a speaker.
+   */
+  async _handleSetSpeakerImage({ speakerId, imagePath }) {
+    await game.storyframe.stateManager?.setSpeakerImage(speakerId, imagePath);
+  }
+
+  /**
+   * Handler: Add alternate image to a speaker.
+   */
+  async _handleAddSpeakerAltImage({ speakerId, img }) {
+    await game.storyframe.stateManager?.addSpeakerAltImage(speakerId, img);
+  }
+
+  async _handleRemoveSpeakerAltImage({ speakerId, img }) {
+    await game.storyframe.stateManager?.removeSpeakerAltImage(speakerId, img);
   }
 
   /**

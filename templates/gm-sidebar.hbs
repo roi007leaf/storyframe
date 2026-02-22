@@ -63,7 +63,7 @@
         <div class="speaker-gallery" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.NPCSpeakers"}}">
         {{#if hasSpeakers}}
           {{#each speakers}}
-            <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}}"
+            <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}} {{#if this.isHidden}}speaker-hidden{{/if}}"
                  data-action="setSpeaker"
                  data-speaker-id="{{this.id}}"
                  data-tooltip="{{this.name}}{{#if this.actorDeleted}} ({{localize "STORYFRAME.UI.Labels.ActorDeleted"}}){{/if}}"
@@ -74,16 +74,44 @@
               {{#if this.isNameHidden}}
                 <i class="fas fa-eye-slash speaker-hidden-badge" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.NameHiddenFromPlayers"}}" aria-label="{{localize "STORYFRAME.UI.Tooltips.NameHiddenFromPlayers"}}"></i>
               {{/if}}
+              {{#if this.isHidden}}
+                <i class="fas fa-user-slash speaker-invisible-badge" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.HiddenFromPlayers"}}" aria-label="{{localize "STORYFRAME.UI.Tooltips.HiddenFromPlayers"}}"></i>
+              {{/if}}
               <div class="speaker-name">{{this.name}}</div>
-              <button type="button" class="toggle-visibility" data-action="toggleSpeakerVisibility" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ToggleNameVisibility"}}" aria-label="{{localize "STORYFRAME.UI.Tooltips.ToggleNameVisibility"}}">
-                <i class="fas {{#if this.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
-              </button>
-              <button type="button" class="edit-speaker" data-action="editSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.EditName" name=this.name}}">
-                <i class="fas fa-pen" aria-hidden="true"></i>
-              </button>
-              <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RemoveName" name=this.name}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveName" name=this.name}}">
-                <i class="fas fa-times" aria-hidden="true"></i>
-              </button>
+              <div class="speaker-image-nav" data-image-path="{{this.currentImagePath}}">
+                {{#if this.hasAltImages}}
+                <button type="button" class="img-prev" data-action="cycleSpeakerImagePrev" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.PrevImage"}}">
+                  <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                </button>
+                {{/if}}
+                <button type="button" class="add-alt-image" data-action="addSpeakerAltImage" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.AddAltImage"}}">
+                  <i class="fas fa-plus" aria-hidden="true"></i>
+                </button>
+                {{#if this.canRemoveCurrentImage}}
+                <button type="button" class="remove-alt-image" data-action="removeSpeakerAltImage" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RemoveAltImage"}}">
+                  <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
+                {{/if}}
+                {{#if this.hasAltImages}}
+                <button type="button" class="img-next" data-action="cycleSpeakerImageNext" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.NextImage"}}">
+                  <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                </button>
+                {{/if}}
+              </div>
+              <div class="speaker-controls">
+                <button type="button" class="toggle-hidden" data-action="toggleSpeakerHidden" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ToggleSpeakerHidden"}}">
+                  <i class="fas {{#if this.isHidden}}fa-user-plus{{else}}fa-user-slash{{/if}}" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="toggle-visibility" data-action="toggleSpeakerVisibility" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ToggleNameVisibility"}}">
+                  <i class="fas {{#if this.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="edit-speaker" data-action="editSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.EditName" name=this.name}}">
+                  <i class="fas fa-pen" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="remove-speaker" data-action="removeSpeaker" data-speaker-id="{{this.id}}" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RemoveName" name=this.name}}">
+                  <i class="fas fa-times" aria-hidden="true"></i>
+                </button>
+              </div>
             </div>
           {{/each}}
         {{else}}

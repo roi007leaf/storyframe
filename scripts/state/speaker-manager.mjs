@@ -45,7 +45,7 @@ export class SpeakerManager {
    * @param {Object} speaker - Speaker data (actorUuid or imagePath, label, isNameHidden)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
-  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false }) {
+  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false, altImages = [] }) {
     if (!this.state) return null;
 
     // Check for duplicate by actorUuid or imagePath
@@ -71,6 +71,8 @@ export class SpeakerManager {
       imagePath,
       label,
       isNameHidden,
+      isHidden: false,
+      altImages: Array.isArray(altImages) ? altImages : [],
     };
 
     console.log('StoryFrame: Adding speaker with isNameHidden:', isNameHidden, 'Label:', label, 'Full speaker:', speaker);
@@ -114,6 +116,69 @@ export class SpeakerManager {
   }
 
   /**
+   * Toggle speaker hidden from player view entirely.
+   * @param {string} speakerId - Speaker ID to toggle
+   */
+  async toggleSpeakerHidden(speakerId) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find((s) => s.id === speakerId);
+    if (!speaker) return;
+
+    speaker.isHidden = !speaker.isHidden;
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
+   * Set the active image for a speaker (cycling through altImages).
+   * @param {string} speakerId - Speaker ID
+   * @param {string} imagePath - New active image path
+   */
+  async setSpeakerImage(speakerId, imagePath) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find((s) => s.id === speakerId);
+    if (!speaker) return;
+
+    // Just set the active image — actor portrait and token image are derived dynamically,
+    // so we never need to rotate them in/out of altImages (which holds only custom images)
+    speaker.imagePath = imagePath;
+
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
+   * Add an alternate image to a speaker's collection.
+   * @param {string} speakerId - Speaker ID
+   * @param {string} img - Image path to add
+   */
+  async addSpeakerAltImage(speakerId, img) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find((s) => s.id === speakerId);
+    if (!speaker) return;
+
+    if (!speaker.altImages) speaker.altImages = [];
+    if (!speaker.altImages.includes(img) && speaker.imagePath !== img) {
+      speaker.altImages.push(img);
+      await this.updateSpeakers(this.state.speakers);
+    }
+  }
+
+  async removeSpeakerAltImage(speakerId, img) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find((s) => s.id === speakerId);
+    if (!speaker) return;
+
+    speaker.altImages = (speaker.altImages || []).filter((i) => i !== img);
+    // If the removed image was active, fall back to actor portrait
+    if (speaker.imagePath === img) speaker.imagePath = null;
+
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
    * Resolve speaker to displayable data.
    * Handles deleted actors gracefully.
    * @param {Object} speaker - Speaker object
@@ -125,7 +190,8 @@ export class SpeakerManager {
     if (speaker.actorUuid) {
       const actor = await fromUuid(speaker.actorUuid);
       if (actor) {
-        img = actor.img;
+        // Use imagePath override if set, otherwise fall back to actor portrait
+        img = speaker.imagePath || actor.img;
         name = actor.name;
       } else {
         // Actor deleted - use fallback

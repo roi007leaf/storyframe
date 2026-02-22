@@ -121,9 +121,9 @@ export class StateManager {
    * @param {Object} speaker - Speaker data (actorUuid or imagePath, label, isNameHidden)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
    */
-  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false }) {
+  async addSpeaker({ actorUuid = null, imagePath = null, label, isNameHidden = false, altImages = [] }) {
     if (!this.speakerManager) return;
-    return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label, isNameHidden });
+    return await this.speakerManager.addSpeaker({ actorUuid, imagePath, label, isNameHidden, altImages });
   }
 
   /**
@@ -142,6 +142,26 @@ export class StateManager {
   async toggleSpeakerNameVisibility(speakerId) {
     if (!this.speakerManager) return;
     return await this.speakerManager.toggleSpeakerNameVisibility(speakerId);
+  }
+
+  async toggleSpeakerHidden(speakerId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.toggleSpeakerHidden(speakerId);
+  }
+
+  async setSpeakerImage(speakerId, imagePath) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.setSpeakerImage(speakerId, imagePath);
+  }
+
+  async addSpeakerAltImage(speakerId, img) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.addSpeakerAltImage(speakerId, img);
+  }
+
+  async removeSpeakerAltImage(speakerId, img) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.removeSpeakerAltImage(speakerId, img);
   }
 
   /**
