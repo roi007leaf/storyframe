@@ -172,9 +172,13 @@ function _buildPresetPopup(sidebar) {
   const difficultyAdjustments = SystemAdapter.getDifficultyAdjustments();
   const partyLevel = sidebar.partyLevel;
 
+  const dcOptions = SystemAdapter.getDCOptions();
   const tabs = [{ id: 'presets', label: 'Presets' }];
   if (partyLevel !== null && difficultyAdjustments?.length > 0) {
     tabs.push({ id: 'party-level', label: `Party Lvl ${partyLevel}` });
+  }
+  if (currentSystem === 'dnd5e' && dcOptions.length > 0) {
+    tabs.push({ id: 'difficulty', label: 'Difficulty' });
   }
 
   const tabButtons = tabs.map((tab, idx) =>
@@ -210,10 +214,23 @@ function _buildPresetPopup(sidebar) {
       }).join('')
     : '';
 
+  const dnd5eDifficultyHtml = (currentSystem === 'dnd5e' && dcOptions.length > 0)
+    ? dcOptions.map(opt => {
+        const name = opt.label.replace(/ \(DC \d+\)$/, '');
+        return `<button type="button" class="preset-option difficulty-option-btn" data-dc="${opt.dc}" data-tooltip="${opt.label}">
+          <span class="preset-dc">${opt.dc}</span>
+          <span class="preset-label">${name}</span>
+        </button>`;
+      }).join('')
+    : '';
+
   const tabContents = [
     `<div class="dc-tab-content active" data-tab-content="presets">${presetsHtml}${addForm}</div>`,
     partyLevel !== null && difficultyAdjustments?.length > 0
       ? `<div class="dc-tab-content" data-tab-content="party-level">${difficultyHtml}</div>`
+      : '',
+    currentSystem === 'dnd5e' && dcOptions.length > 0
+      ? `<div class="dc-tab-content" data-tab-content="difficulty">${dnd5eDifficultyHtml}</div>`
       : '',
   ].join('');
 

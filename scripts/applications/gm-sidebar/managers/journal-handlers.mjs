@@ -66,12 +66,18 @@ export function groupChecksBySkill(checks) {
   const grouped = {};
   unique.forEach((check) => {
     const skill = check.skillName;
-    // Get full skill name from system adapter
-    const allSkills = SystemAdapter.getSkills();
-    const skillData = allSkills[skill.toLowerCase()];
-    const skillDisplay = skillData?.name || (skill.charAt(0).toUpperCase() + skill.slice(1));
-    // Convert skill name to proper slug for batch highlighting
-    const skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
+    // Get full display name — saves and skills live in different lookup tables
+    const isSave = check.checkType === 'save';
+    let skillDisplay, skillSlug;
+    if (isSave) {
+      const saveData = SystemAdapter.getSaves()[skill.toLowerCase()];
+      skillDisplay = saveData?.name || (skill.charAt(0).toUpperCase() + skill.slice(1));
+      skillSlug = SystemAdapter.getSaveSlugFromName(skill) || skill.toLowerCase();
+    } else {
+      const skillData = SystemAdapter.getSkills()[skill.toLowerCase()];
+      skillDisplay = skillData?.name || (skill.charAt(0).toUpperCase() + skill.slice(1));
+      skillSlug = SystemAdapter.getSkillSlugFromName(skill) || skill.toLowerCase();
+    }
     if (!grouped[skill]) {
       grouped[skill] = {
         skillName: skillDisplay,
@@ -86,6 +92,36 @@ export function groupChecksBySkill(checks) {
   return Object.values(grouped).sort((a, b) =>
     a.skillName.localeCompare(b.skillName)
   );
+}
+
+/**
+ * Extract the normalised skill name (display name, lowercase) and DC string from an
+ * inline-check element, supporting both PF2e and D&D 5e enricher formats.
+ * Returns { skillName, dc } or null if the element can't be parsed.
+ */
+function _getCheckElementInfo(el) {
+  // PF2e format: a.inline-check[data-pf2-check][data-pf2-dc]
+  if (el.dataset.pf2Check) {
+    return { skillName: el.dataset.pf2Check.toLowerCase(), dc: el.dataset.pf2Dc };
+  }
+
+  // D&D 5e format: span.roll-link-group[data-type][data-skill/data-ability][data-dc]
+  const isSave = el.dataset.type === 'save';
+  const rawSlug = isSave
+    ? el.dataset.ability
+    : (el.dataset.skill || el.dataset.ability);
+  const dc = el.dataset.dc;
+  if (!rawSlug || !dc) return null;
+
+  // Use the first slug for pipe-separated groups (e.g., "acr|ath")
+  const firstSlug = rawSlug.split('|')[0].trim().toLowerCase();
+
+  // Convert slug → display name so it matches what the sidebar buttons use as data-skill
+  const entries = isSave ? SystemAdapter.getSaves() : SystemAdapter.getSkills();
+  const entry = entries[firstSlug];
+  const displayName = entry?.name || (firstSlug.charAt(0).toUpperCase() + firstSlug.slice(1));
+
+  return { skillName: displayName.toLowerCase(), dc };
 }
 
 /**
@@ -116,8 +152,12 @@ export function setupJournalCheckHighlighting(sidebar) {
 
   if (!scrollContainer) return;
 
-  // Get all inline check elements (PF2e format)
-  const checkElements = scrollContainer.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
+  // Get all inline check elements — support both PF2e and D&D 5e enricher formats
+  const pf2eElements = scrollContainer.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
+  const dnd5eElements = scrollContainer.querySelectorAll(
+    'span.roll-link-group[data-type="check"], span.roll-link-group[data-type="skill"], span.roll-link-group[data-type="save"]',
+  );
+  const checkElements = [...pf2eElements, ...dnd5eElements];
   if (checkElements.length === 0) return;
 
   // Initialize visible checks Map on instance (persists across callbacks)
@@ -148,12 +188,9 @@ export function setupJournalCheckHighlighting(sidebar) {
       let changed = false;
 
       entries.forEach((entry) => {
-        const skillName = entry.target.dataset.pf2Check;
-        const dc = entry.target.dataset.pf2Dc;
-        if (!skillName || !dc) return;
-
-        // Normalize skill name to match button data-skill format
-        const normalizedSkill = skillName.toLowerCase();
+        const info = _getCheckElementInfo(entry.target);
+        if (!info) return;
+        const { skillName: normalizedSkill, dc } = info;
 
         if (entry.isIntersecting) {
           // Add skill and DC to visible set
@@ -208,11 +245,10 @@ export function forceCheckVisibility(sidebar, scrollContainer, checkElements, up
   const containerRect = scrollContainer.getBoundingClientRect();
 
   checkElements.forEach((el) => {
-    const skillName = el.dataset.pf2Check;
-    const dc = el.dataset.pf2Dc;
-    if (!skillName || !dc) return;
+    const info = _getCheckElementInfo(el);
+    if (!info) return;
+    const { skillName: normalizedSkill, dc } = info;
 
-    const normalizedSkill = skillName.toLowerCase();
     const elRect = el.getBoundingClientRect();
 
     // Check if element is visible within the scroll container (with small buffer)

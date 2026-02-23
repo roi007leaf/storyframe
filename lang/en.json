@@ -117,7 +117,9 @@
         "NoSpeakersToSave": "No speakers to save",
         "NoNPCsAvailable": "No NPCs available",
         "SceneHasNoSpeakers": "Scene has no speakers",
-        "NoScenesRemaining": "No scenes remaining. Show speakers directly next time."
+        "NoScenesRemaining": "No scenes remaining. Show speakers directly next time.",
+        "OpeningSidebarsForPlayers": "Opening StoryFrame sidebars on all player clients",
+        "ClosingSidebarsForPlayers": "Closing StoryFrame sidebars on all player clients"
       },
       "Participant": {
         "NoPCsFound": "No player characters found",

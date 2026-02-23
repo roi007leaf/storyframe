@@ -880,7 +880,6 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   const actions = skill?.actions;
 
   if (!actions || actions.length === 0) {
-    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoSpecificActions', { skillName: SkillCheckHandlers.getSkillName(skillSlug) }));
     return;
   }
 

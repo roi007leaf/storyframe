@@ -594,14 +594,15 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
         let rollResult;
         if (checkType === 'save') {
-          // D&D 5e: Saving throw (ability save)
-          rollResult = await actor.rollAbilitySave(fullSlug, { ...config, ...dialogConfig, ...messageConfig });
+          // D&D 5e: Saving throw
+          config.ability = fullSlug;
+          rollResult = await actor.rollSavingThrow(config, dialogConfig, messageConfig);
         } else {
           // D&D 5e: Skill check
           config.skill = fullSlug;
           rollResult = await actor.rollSkill(config, dialogConfig, messageConfig);
         }
-        // D&D 5e rollSkill/rollAbilitySave may return an array or single roll
+        // D&D 5e rollSkill/rollSavingThrow may return an array or single roll
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
@@ -864,8 +865,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         }
         roll = await save.roll(rollOptions);
       } else if (currentSystem === 'dnd5e') {
-        const config = { target: dc };
-        const rollResult = await actor.rollAbilitySave(saveSlug, config);
+        const config = { ability: saveSlug };
+        if (dc !== null && dc !== undefined) config.target = dc;
+        const rollResult = await actor.rollSavingThrow(config, {}, {});
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));

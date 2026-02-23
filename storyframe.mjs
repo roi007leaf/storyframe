@@ -104,6 +104,83 @@ function setupPF2eRepostIntegration() {
 }
 
 /**
+ * Setup global listener for D&D 5e inline check "Request Roll" buttons
+ * Intercepts the native enricher button and routes through StoryFrame's roll tracking
+ */
+function setupDND5eRequestRollIntegration() {
+  document.addEventListener('click', async (event) => {
+    if (!game.user.isGM) return;
+
+    // Only intercept D&D 5e "Request Roll" buttons
+    const requestBtn = event.target.closest('a.enricher-action[data-action="request"]');
+    if (!requestBtn) return;
+
+    const groupElement = requestBtn.closest('span.roll-link-group');
+    if (!groupElement) return;
+
+    // Prevent D&D 5e's native request behavior
+    event.preventDefault();
+    event.stopImmediatePropagation();
+
+    const isSave = groupElement.dataset.type === 'save';
+    const checkType = isSave ? 'save' : 'skill';
+    // For saves use data-ability; for skills prefer data-skill, fall back to data-ability
+    const rawSlug = isSave
+      ? groupElement.dataset.ability
+      : (groupElement.dataset.skill || groupElement.dataset.ability);
+    const dc = parseInt(groupElement.dataset.dc);
+
+    if (!rawSlug) return;
+
+    // Handle pipe-separated skills (e.g., "acr|ath")
+    const slugs = rawSlug.split('|').map(s => s.trim().toLowerCase());
+
+    const checks = slugs.map(slug => ({
+      skillName: slug,
+      skillSlug: slug,
+      dc: isNaN(dc) ? null : dc,
+      isSecret: false,
+      checkType,
+    }));
+
+    // Subscribe to (or open) the singleton roll request dialog
+    const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
+    const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
+    const pcs = await getAllPlayerPCs();
+    if (!RollRequestDialog._instance && pcs.length === 0) {
+      ui.notifications.warn('No player-owned characters found in the world.');
+      return;
+    }
+
+    const result = await RollRequestDialog.subscribe(checks, pcs);
+
+    const selectedIds = result?.selectedIds || result || [];
+    const allowOnlyOne = result?.allowOnlyOne || false;
+    const batchGroupId = result?.batchGroupId ?? null;
+    if (!selectedIds || selectedIds.length === 0) return;
+
+    // Need a sidebar instance for requestSkillCheck (used for DC/secret state)
+    if (!game.storyframe.gmSidebar) {
+      const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+    }
+    const sidebar = game.storyframe.gmSidebar;
+
+    const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
+
+    if (!isNaN(dc)) {
+      sidebar.currentDC = dc;
+      const dcInput = sidebar.element?.querySelector('#dc-input');
+      if (dcInput) dcInput.value = dc;
+    }
+
+    for (const check of checks) {
+      await requestSkillCheck(sidebar, check.skillSlug, selectedIds, null, false, check.checkType, batchGroupId, allowOnlyOne, null, false);
+    }
+  }, { capture: true });
+}
+
+/**
  * Setup global Ctrl+click listener for inline damage roll links.
  * Opens the Target Selector dialog so the GM can pick targets before rolling.
  */
@@ -702,9 +779,13 @@ Hooks.once('ready', async () => {
   const { initMouseTracking } = await import('./scripts/speaker-wheel.mjs');
   initMouseTracking();
 
-  // Setup PF2e inline check repost integration (GM only)
-  if (game.user.isGM && game.system.id === 'pf2e') {
-    setupPF2eRepostIntegration();
+  // Setup inline check integrations (GM only)
+  if (game.user.isGM) {
+    if (game.system.id === 'pf2e') {
+      setupPF2eRepostIntegration();
+    } else if (game.system.id === 'dnd5e') {
+      setupDND5eRequestRollIntegration();
+    }
   }
 
   // Setup damage roll target interception (GM only, all systems)

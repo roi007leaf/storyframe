@@ -508,6 +508,17 @@ export function attachPlayerWindowsContextMenu(sidebar) {
   }
 }
 
+export function attachPlayerSidebarsContextMenu(sidebar) {
+  const btn = sidebar.element.querySelector('[data-action="openPlayerSidebars"]');
+  if (btn) {
+    btn.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onClosePlayerSidebars(e, btn, sidebar);
+    });
+  }
+}
+
 /**
  * Open player windows
  */
@@ -522,6 +533,22 @@ export async function onOpenPlayerWindows(_event, _target, _sidebar) {
 export async function onClosePlayerWindows(_event, _target, _sidebar) {
   game.storyframe.socketManager.closeAllPlayerViewers();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingForPlayers'));
+}
+
+/**
+ * Open player sidebars
+ */
+export async function onOpenPlayerSidebars(_event, _target, _sidebar) {
+  game.storyframe.socketManager.openAllPlayerSidebars();
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.OpeningSidebarsForPlayers'));
+}
+
+/**
+ * Close player sidebars
+ */
+export async function onClosePlayerSidebars(_event, _target, _sidebar) {
+  game.storyframe.socketManager.closeAllPlayerSidebars();
+  ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingSidebarsForPlayers'));
 }
 
 // --- Helper Functions ---

@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.1] - 2026-02-23
+
+### Fixed
+
+- **D&D 5e "Request Roll" button opens StoryFrame dialog** — clicking the chat-bubble icon on a `[[/check]]` or `[[/save]]` inline enricher now opens StoryFrame's Roll Requester Dialog instead of D&D 5e's native handler; implemented via a document-level capture-phase listener registered at module ready, mirroring the existing PF2e Ctrl+click pattern
+- **Journal check highlighting works for D&D 5e** — `IntersectionObserver` and manual visibility fallback now detect both PF2e `a.inline-check` and D&D 5e `span.roll-link-group` elements; a shared `_getCheckElementInfo` helper normalises skill name and DC from either format
+- **Journal save highlighting works for D&D 5e** — `groupChecksBySkill` now looks up save names from `getSaves()` (e.g. `"Dexterity Save"`) rather than falling back to the raw slug (`"Dex"`), so the `in-view` highlight on sidebar save buttons correctly activates when a saving throw is scrolled into view
+- **Missing D&D 5e skill icons** — `fa-fist-raised` (Intimidation, renamed in FA 6) corrected to `fa-hand-fist`; `fa-mouth` (Persuasion, non-existent in FA 6 Free) corrected to `fa-comments`
+- **Missing i18n keys** — `STORYFRAME.Notifications.Speaker.OpeningSidebarsForPlayers` and `ClosingSidebarsForPlayers` were referenced in code but absent from `en.json`; both keys added to the `Speaker` notification group
+
 ## [1.10.0] - 2026-02-22
 
 ### Added

@@ -634,6 +634,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach player windows context menu
     SpeakerHandlers.attachPlayerWindowsContextMenu(this);
 
+    // Attach player sidebars context menu
+    SpeakerHandlers.attachPlayerSidebarsContextMenu(this);
+
     // Setup journal check highlighting
     JournalHandlers.setupJournalCheckHighlighting(this);
 
@@ -789,6 +792,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onClosePlayerWindows(event, target) {
     return SpeakerHandlers.onClosePlayerWindows(event, target, this);
+  }
+
+  static async _onOpenPlayerSidebars(event, target) {
+    return SpeakerHandlers.onOpenPlayerSidebars(event, target, this);
+  }
+
+  static async _onClosePlayerSidebars(event, target) {
+    return SpeakerHandlers.onClosePlayerSidebars(event, target, this);
   }
 
   // Skill Check Handlers

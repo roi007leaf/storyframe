@@ -1,5 +1,6 @@
 import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 import * as SkillCheckHandlers from './managers/skill-check-handlers.mjs';
+import * as SkillReorderHandlers from './managers/skill-reorder-handlers.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
 
 /**
@@ -157,6 +158,14 @@ export class GMSidebarAppDND5e extends GMSidebarAppBase {
       socialSkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.social, allSkills, null),
       utilitySkills: await SkillCheckHandlers.mapSkillsWithProficiency(dnd5eSkillCategories.utility, allSkills, null),
     };
+
+    // Apply saved skill order and rebuild orderedCategories for D&D 5e
+    // (base class sets orderedCategories using PF2e slugs, so we must override it)
+    categorizedSkills.physicalSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.physicalSkills, 'physical');
+    categorizedSkills.magicalSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.magicalSkills, 'magical');
+    categorizedSkills.socialSkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.socialSkills, 'social');
+    categorizedSkills.utilitySkills = SkillReorderHandlers.applySavedSkillOrder(categorizedSkills.utilitySkills, 'utility');
+    SkillReorderHandlers.applySavedCategoryOrder(categorizedSkills);
 
     // Get all D&D 5e saves from system adapter
     const allSystemSaves = SystemAdapter.getSaves();
