@@ -58,11 +58,11 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   'pick-a-lock': 'Pick a Lock',
   'disable-device': 'Disable Device',
   'access-infosphere': 'Access Infosphere',
-  'disable-a-device': 'Disable a Device',
   hack: 'Hack',
   'operate-device': 'Operate Device',
   drive: 'Drive',
   navigate: 'Navigate',
+  'plot-course': 'Plot Course',
   'run-over': 'Run Over',
   stop: 'Stop',
   stunt: 'Stunt',
@@ -93,5 +93,20 @@ export const PF2E_ACTION_VARIANTS = {
   'administer-first-aid': [
     { slug: 'stabilize', name: 'Stabilize' },
     { slug: 'stop-bleeding', name: 'Stop Bleeding' },
+  ],
+  // sf2e-anachronism variants
+  drive: [
+    { slug: 'drive1', name: 'Drive (1 action)' },
+    { slug: 'drive2', name: 'Drive (2 actions)' },
+    { slug: 'drive3', name: 'Drive (3 actions)' },
+  ],
+  stunt: [
+    { slug: 'back-off', name: 'Back Off' },
+    { slug: 'barrel-roll', name: 'Barrel Roll' },
+    { slug: 'drift', name: 'Drift' },
+    { slug: 'evade', name: 'Evade' },
+    { slug: 'flip-and-burn', name: 'Flip and Burn' },
+    { slug: 'flyby', name: 'Flyby' },
+    { slug: 'turn-in-place', name: 'Turn in Place' },
   ],
 };

@@ -165,7 +165,7 @@ export const SF2E_SKILLS = {
     actions: [
       { slug: 'access-infosphere', name: 'Access Infosphere' },
       { slug: 'decipher-writing', name: 'Decipher Writing' },
-      { slug: 'disable-a-device', name: 'Disable a Device' },
+      { slug: 'disable-device', name: 'Disable Device' },
       { slug: 'hack', name: 'Hack' },
       { slug: 'operate-device', name: 'Operate Device' },
       { slug: 'recall-knowledge', name: 'Recall Knowledge' },
@@ -176,6 +176,7 @@ export const SF2E_SKILLS = {
     actions: [
       { slug: 'drive', name: 'Drive' },
       { slug: 'navigate', name: 'Navigate' },
+      { slug: 'plot-course', name: 'Plot Course' },
       { slug: 'recall-knowledge', name: 'Recall Knowledge' },
       { slug: 'run-over', name: 'Run Over' },
       { slug: 'stop', name: 'Stop' },

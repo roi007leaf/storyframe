@@ -946,18 +946,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         reposition: 'reposition',
         'avoid-notice': 'avoidNotice',
         'grab-an-edge': 'grabAnEdge',
-        // sf2e-anachronism actions (Computers)
-        'access-infosphere': 'accessInfosphere',
-        'disable-a-device': 'disableADevice',
+        // sf2e-anachronism actions (Computers) — registered via game.pf2e.actions.set(slug)
+        'access-infosphere': 'access-infosphere',
         hack: 'hack',
-        'operate-device': 'operateDevice',
-        // sf2e-anachronism actions (Piloting)
+        'operate-device': 'operate-device',
+        // sf2e-anachronism actions (Piloting) — registered via game.pf2e.actions.set(slug)
         drive: 'drive',
         navigate: 'navigate',
-        'run-over': 'runOver',
+        'plot-course': 'plot-course',
+        'run-over': 'run-over',
         stop: 'stop',
         stunt: 'stunt',
-        'take-control': 'takeControl',
+        'take-control': 'take-control',
       };
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
@@ -967,12 +967,19 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }
 
       // Check if the action exists in game.pf2e.actions
-      const actionFn = game.pf2e.actions[pf2eActionSlug];
-      if (typeof actionFn !== 'function') {
-        console.warn(`StoryFrame: PF2e action "${pf2eActionSlug}" not found in game.pf2e.actions or is not a function`, {
+      // Support both Collection API (.get) used by sf2e-anachronism and legacy property access
+      const actionFn = game.pf2e.actions.get?.(pf2eActionSlug) ?? game.pf2e.actions[pf2eActionSlug];
+      // Accept both legacy function actions and new BaseAction instances (which use .use())
+      const isCallable = typeof actionFn === 'function';
+      const isBaseAction = actionFn && typeof actionFn.use === 'function';
+      if (!isCallable && !isBaseAction) {
+        // Fallback: try to load action from compendium (for sf2e-anachronism actions)
+        const compendiumResult = await PlayerViewerApp._tryExecuteActionFromCompendium(actor, actionSlug, rollOptions);
+        if (compendiumResult !== undefined) return compendiumResult;
+
+        console.warn(`StoryFrame: PF2e action "${pf2eActionSlug}" not found in game.pf2e.actions`, {
           actionSlug,
           pf2eActionSlug,
-          available: Object.keys(game.pf2e?.actions || {})
         });
         return null;
       }
@@ -1013,8 +1020,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         }
       }
 
-      // Execute the action - returns an array of results
-      const results = await actionFn(actionOptions);
+      // Execute the action — BaseAction instances use .use(), legacy actions are called directly
+      const results = await (isBaseAction ? actionFn.use(actionOptions) : actionFn(actionOptions));
 
       // Return the first roll result if available
       if (results && results.length > 0 && results[0].roll) {
@@ -1032,6 +1039,59 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     } catch (error) {
       console.warn(`${MODULE_ID} | Failed to execute PF2e action ${actionSlug}:`, error);
       return null;
+    }
+  }
+
+  /**
+   * Fallback: execute a PF2e action by loading it from the compendium and rolling the actor's statistic.
+   * Used for sf2e-anachronism actions that may not yet be present in game.pf2e.actions.
+   * @param {Actor} actor - The actor performing the action
+   * @param {string} actionSlug - The action slug (e.g., 'access-infosphere')
+   * @param {Object} rollOptions - Roll options (dc, rollMode, skipDialog)
+   * @returns {Object|undefined} Roll result / executed sentinel, or undefined if not a known sf2e action
+   */
+  static async _tryExecuteActionFromCompendium(actor, actionSlug, rollOptions) {
+    // Map sf2e-anachronism action slugs to their compendium sourceIds and actor statistics.
+    // sourceIds sourced from pf2e-hud constants.ts for cross-module consistency.
+    const SF2E_ACTION_SOURCES = {
+      'access-infosphere': { sourceId: 'Compendium.sf2e-anachronism.actions.Item.Yn4jLPVWVE1vtAaF', statistic: 'computers' },
+      hack: { sourceId: 'Compendium.sf2e-anachronism.actions.Item.RF8xNJ8QsMwogerB', statistic: 'computers' },
+      'operate-device': { sourceId: 'Compendium.sf2e-anachronism.actions.Item.wWtBcshahm11stMY', statistic: 'computers' },
+      drive: { sourceId: 'Compendium.pf2e.actionspf2e.Item.uS3qDAgOkZ7b8ERL', statistic: 'piloting' },
+      navigate: { sourceId: 'Compendium.sf2e-anachronism.actions.Item.hsUKPqTdAvWwsqH2', statistic: 'piloting' },
+      'plot-course': { sourceId: 'Compendium.sf2e-anachronism.actions.Item.LXqcXRayK58inaKoo', statistic: 'piloting' },
+      'run-over': { sourceId: 'Compendium.pf2e.actionspf2e.Item.lID4rJHAVZB6tavf', statistic: 'piloting' },
+      stop: { sourceId: 'Compendium.pf2e.actionspf2e.Item.9gDMkIfDifh61yLz', statistic: 'piloting' },
+      stunt: { sourceId: 'Compendium.sf2e-anachronism.actions.Item.7KMyRISNqp7JTzMn', statistic: 'piloting' },
+      'take-control': { sourceId: 'Compendium.pf2e.actionspf2e.Item.yh9O9BQjwWrAIiuf', statistic: 'piloting' },
+    };
+
+    const source = SF2E_ACTION_SOURCES[actionSlug];
+    if (!source) return undefined; // Not a known sf2e action — let caller decide next step
+
+    try {
+      const item = await fromUuid(source.sourceId);
+      if (!item) {
+        console.warn(`${MODULE_ID} | Compendium item not found: ${source.sourceId}`);
+        return undefined;
+      }
+
+      const stat = actor.getStatistic?.(source.statistic) ?? actor.skills?.[source.statistic];
+      if (!stat) {
+        console.warn(`${MODULE_ID} | Actor "${actor.name}" has no "${source.statistic}" statistic`);
+        return undefined;
+      }
+
+      const statRollOptions = { item, skipDialog: rollOptions.skipDialog ?? false };
+      if (rollOptions.dc) statRollOptions.dc = rollOptions.dc;
+      if (rollOptions.rollMode) statRollOptions.rollMode = rollOptions.rollMode;
+
+      const result = await stat.roll(statRollOptions);
+      // Return result if rolled, or executed sentinel if cancelled (prevents fallback to basic skill roll)
+      return result ?? { executed: true };
+    } catch (error) {
+      console.warn(`${MODULE_ID} | Compendium fallback failed for "${actionSlug}":`, error);
+      return undefined;
     }
   }
 }
