@@ -236,6 +236,23 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
   }
 
   /**
+   * PF2e skill categories, extended with sf2e-anachronism skills when that module is active
+   */
+  _getSkillCategories() {
+    const categories = {
+      physical: ['acr', 'ath', 'ste', 'thi'],
+      magical: ['arc', 'nat', 'occ', 'rel'],
+      social: ['dec', 'dip', 'itm', 'prf', 'soc'],
+      utility: ['cra', 'med', 'per', 'sur'],
+    };
+    if (game.modules.get('sf2e-anachronism')?.active) {
+      categories.physical.push('pil');
+      categories.utility.push('com');
+    }
+    return categories;
+  }
+
+  /**
    * Prepare PF2e-specific context
    */
   async _prepareContext(_options) {
@@ -335,6 +352,8 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       ste: 'stealth',
       sur: 'survival',
       thi: 'thievery',
+      com: 'computers',
+      pil: 'piloting',
     };
 
     // Map short slug to full slug

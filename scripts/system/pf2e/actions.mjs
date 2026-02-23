@@ -57,6 +57,16 @@ export const PF2E_ACTION_DISPLAY_NAMES = {
   steal: 'Steal',
   'pick-a-lock': 'Pick a Lock',
   'disable-device': 'Disable Device',
+  'access-infosphere': 'Access Infosphere',
+  'disable-a-device': 'Disable a Device',
+  hack: 'Hack',
+  'operate-device': 'Operate Device',
+  drive: 'Drive',
+  navigate: 'Navigate',
+  'run-over': 'Run Over',
+  stop: 'Stop',
+  stunt: 'Stunt',
+  'take-control': 'Take Control',
 };
 
 /**

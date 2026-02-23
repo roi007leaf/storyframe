@@ -10,6 +10,7 @@ import {
   PF2E_SKILLS,
   PF2E_SKILL_SHORT_NAMES,
   PF2E_SKILL_NAME_MAP,
+  SF2E_SKILLS,
 } from './system/pf2e/skills.mjs';
 import {
   PF2E_SAVES,
@@ -52,8 +53,12 @@ export function getSkills() {
   const system = detectSystem();
 
   switch (system) {
-    case 'pf2e':
+    case 'pf2e': {
+      if (game.modules.get('sf2e-anachronism')?.active) {
+        return { ...PF2E_SKILLS, ...SF2E_SKILLS };
+      }
       return PF2E_SKILLS;
+    }
     case 'dnd5e':
       return DND5E_SKILLS;
     default:

@@ -645,6 +645,9 @@ export function getSkillIcon(slug) {
     ste: 'fa-user-secret',
     sur: 'fa-compass',
     thi: 'fa-hand-holding',
+    // sf2e-anachronism skills
+    com: 'fa-computer',
+    pil: 'fa-jet-fighter-up',
     // D&D 5e additional
     ani: 'fa-paw',
     his: 'fa-scroll',

@@ -156,6 +156,36 @@ export const PF2E_SKILLS = {
 };
 
 /**
+ * Additional skills from the sf2e-anachronism module (Starfinder 2e crossover)
+ * Only used when game.modules.get('sf2e-anachronism')?.active is true
+ */
+export const SF2E_SKILLS = {
+  com: {
+    name: 'Computers',
+    actions: [
+      { slug: 'access-infosphere', name: 'Access Infosphere' },
+      { slug: 'decipher-writing', name: 'Decipher Writing' },
+      { slug: 'disable-a-device', name: 'Disable a Device' },
+      { slug: 'hack', name: 'Hack' },
+      { slug: 'operate-device', name: 'Operate Device' },
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+    ],
+  },
+  pil: {
+    name: 'Piloting',
+    actions: [
+      { slug: 'drive', name: 'Drive' },
+      { slug: 'navigate', name: 'Navigate' },
+      { slug: 'recall-knowledge', name: 'Recall Knowledge' },
+      { slug: 'run-over', name: 'Run Over' },
+      { slug: 'stop', name: 'Stop' },
+      { slug: 'stunt', name: 'Stunt' },
+      { slug: 'take-control', name: 'Take Control' },
+    ],
+  },
+};
+
+/**
  * Short name abbreviations for PF2e skills
  */
 export const PF2E_SKILL_SHORT_NAMES = {
@@ -176,6 +206,8 @@ export const PF2E_SKILL_SHORT_NAMES = {
   ste: 'Ste',
   sur: 'Sur',
   thi: 'Thi',
+  com: 'Com',
+  pil: 'Pil',
 };
 
 /**
@@ -199,6 +231,8 @@ export const PF2E_SKILL_SLUG_MAP = {
   ste: 'stealth',
   sur: 'survival',
   thi: 'thievery',
+  com: 'computers',
+  pil: 'piloting',
 };
 
 /**
@@ -222,4 +256,6 @@ export const PF2E_SKILL_NAME_MAP = {
   stealth: 'ste',
   survival: 'sur',
   thievery: 'thi',
+  computers: 'com',
+  piloting: 'pil',
 };

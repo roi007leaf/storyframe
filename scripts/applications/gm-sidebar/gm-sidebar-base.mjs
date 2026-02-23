@@ -438,13 +438,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       icon: SkillCheckHandlers.getSkillIcon(slug),
     }));
 
-    // Categorize skills
-    const skillCategories = {
-      physical: ['acr', 'ath', 'ste', 'thi'],
-      magical: ['arc', 'nat', 'occ', 'rel'],
-      social: ['dec', 'dip', 'itm', 'prf', 'soc'],
-      utility: ['cra', 'med', 'per', 'sur'],
-    };
+    // Categorize skills (system-specific, provided by subclass)
+    const skillCategories = this._getSkillCategories();
 
     const categorizedSkills = {
       physicalSkills: await SkillCheckHandlers.mapSkillsWithProficiency(skillCategories.physical, allSkillsData, null),
@@ -540,6 +535,19 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   _calculateDCByLevel(_level, _difficultyId) {
     return null;
+  }
+
+  /**
+   * Get skill category slugs for the current system (override in system-specific subclass)
+   * @returns {{ physical: string[], magical: string[], social: string[], utility: string[] }}
+   */
+  _getSkillCategories() {
+    return {
+      physical: ['acr', 'ath', 'ste', 'thi'],
+      magical: ['arc', 'nat', 'occ', 'rel'],
+      social: ['dec', 'dip', 'itm', 'prf', 'soc'],
+      utility: ['cra', 'med', 'per', 'sur'],
+    };
   }
 
   /**
