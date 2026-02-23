@@ -946,6 +946,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         reposition: 'reposition',
         'avoid-notice': 'avoidNotice',
         'grab-an-edge': 'grabAnEdge',
+        // sf2e-anachronism actions (Computers)
+        'access-infosphere': 'accessInfosphere',
+        'disable-a-device': 'disableADevice',
+        hack: 'hack',
+        'operate-device': 'operateDevice',
+        // sf2e-anachronism actions (Piloting)
+        drive: 'drive',
+        navigate: 'navigate',
+        'run-over': 'runOver',
+        stop: 'stop',
+        stunt: 'stunt',
+        'take-control': 'takeControl',
       };
 
       const pf2eActionSlug = pf2eActionMap[actionSlug];
