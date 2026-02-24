@@ -33,6 +33,9 @@ export async function handleJournalRender(sheet, html) {
 
     // Set up ctrl+click handlers for inline check repost buttons
     _setupInlineCheckCtrlClickHandlers(contentArea);
+
+    // Set up journal transparency when dragging actor links to canvas
+    _setupActorDragTransparency(sheet, element, contentArea);
   } else {
     console.warn('StoryFrame: No content area found in journal');
   }
@@ -427,6 +430,271 @@ function _setupMinimizeMaximizeHandler(sheet) {
     attributes: true,
     attributeFilter: ['class'],
   });
+}
+
+// Active populate mode cleanup reference
+let _activePopulateCleanup = null;
+
+/**
+ * Setup actor drag-to-populate for all actor links in journal content.
+ * Dragging an actor link past a threshold enters "populate mode" where
+ * left-clicks on the canvas create tokens. Right-click pans the canvas,
+ * Escape or the cancel button exits populate mode.
+ * @param {Object} sheet - The journal sheet instance
+ * @param {HTMLElement} element - The journal window DOM element
+ * @param {HTMLElement} contentArea - The scrollable content area
+ * @private
+ */
+function _setupActorDragTransparency(sheet, element, contentArea) {
+  const ACTOR_LINK_SELECTOR =
+    'a.content-link[data-type="Actor"], a.content-link[data-uuid*="Actor."]';
+  const actorLinks = contentArea.querySelectorAll(ACTOR_LINK_SELECTOR);
+  if (!actorLinks.length) return;
+
+  const DRAG_THRESHOLD = 5;
+
+  for (const link of actorLinks) {
+    link.classList.add('sf-draggable-actor');
+
+    link.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      // Block ProseMirror from starting text selection
+      e.preventDefault();
+      e.stopPropagation();
+
+      const startX = e.clientX;
+      const startY = e.clientY;
+      let activated = false;
+
+      const onDragMove = (me) => {
+        if (activated) return;
+        if (
+          Math.abs(me.clientX - startX) > DRAG_THRESHOLD ||
+          Math.abs(me.clientY - startY) > DRAG_THRESHOLD
+        ) {
+          activated = true;
+          document.removeEventListener('mousemove', onDragMove);
+          document.removeEventListener('mouseup', onDragUp);
+          _enterPopulateMode(sheet, element, link, me.clientX, me.clientY);
+        }
+      };
+
+      const onDragUp = () => {
+        if (!activated) {
+          // Was a click, not a drag — trigger the content link normally
+          document.removeEventListener('mousemove', onDragMove);
+          document.removeEventListener('mouseup', onDragUp);
+          link.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, cancelable: true }),
+          );
+        }
+      };
+
+      document.addEventListener('mousemove', onDragMove);
+      document.addEventListener('mouseup', onDragUp);
+    });
+  }
+}
+
+/**
+ * Enter populate mode: hides the journal window, shows a ghost cursor label
+ * and cancel button, then listens for left-clicks on the canvas to create
+ * tokens. Each click places token(s); right-click panning is preserved.
+ * @param {Object} sheet - The journal sheet instance
+ * @param {HTMLElement} element - The journal window DOM element
+ * @param {HTMLElement} link - The actor content link element
+ * @param {number} initialX - Initial cursor X position
+ * @param {number} initialY - Initial cursor Y position
+ * @private
+ */
+function _enterPopulateMode(sheet, element, link, initialX, initialY) {
+  // Exit any existing populate mode first
+  if (_activePopulateCleanup) {
+    _activePopulateCleanup();
+    _activePopulateCleanup = null;
+  }
+
+  const sidebar = game.storyframe?.gmSidebar;
+  const sidebarEl =
+    sidebar?.rendered && sidebar.parentInterface === sheet
+      ? sidebar.element
+      : null;
+  const windowEl = element.closest('.window-app') || element;
+  const boardEl = document.getElementById('board');
+
+  // --- Visibility helpers ---
+  const hideEl = (el) => {
+    el.style.opacity = '0';
+    el.style.pointerEvents = 'none';
+    el.style.transition = 'opacity 0.2s ease-out';
+  };
+  const showEl = (el) => {
+    el.style.opacity = '';
+    el.style.pointerEvents = '';
+    el.style.transition = '';
+  };
+
+  // Hide journal + sidebar, set crosshair on canvas
+  hideEl(windowEl);
+  if (sidebarEl) hideEl(sidebarEl);
+  if (boardEl) boardEl.classList.add('sf-populating');
+
+  // --- Parse actor info from link ---
+  const uuid = link.dataset.uuid;
+  const linkText = link.textContent.trim();
+  const countMatch = linkText.match(/^(\d+)\s+(.+)$/);
+  const total = Math.min(countMatch ? parseInt(countMatch[1]) : 1, 24);
+  const actorName = countMatch ? countMatch[2] : linkText;
+  const iconEl = link.querySelector('i');
+  const iconClass = iconEl?.className || 'fa-solid fa-user';
+  let remaining = total;
+
+  // Pre-resolve actor token data (cached across placements)
+  const tokenDataPromise = (async () => {
+    try {
+      const actor = await fromUuid(uuid);
+      return actor ? (await actor.getTokenDocument()).toObject() : null;
+    } catch (err) {
+      console.error('StoryFrame: Error resolving actor:', err);
+      return null;
+    }
+  })();
+
+  // --- Create UI elements ---
+  const ghost = document.createElement('div');
+  ghost.className = 'sf-drag-ghost';
+  const ghostLabel = () =>
+    total > 1
+      ? `<i class="${iconClass}"></i> ${remaining}/${total} ${actorName}`
+      : `<i class="${iconClass}"></i> ${actorName}`;
+  ghost.innerHTML = ghostLabel();
+  ghost.style.left = `${initialX + 14}px`;
+  ghost.style.top = `${initialY + 14}px`;
+  document.body.appendChild(ghost);
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'sf-populate-cancel';
+  cancelBtn.innerHTML = '<i class="fa-solid fa-trash-can"></i>';
+  cancelBtn.title = 'Exit populate mode (Escape)';
+  document.body.appendChild(cancelBtn);
+
+  // --- Token placement (one per click) ---
+  const placeToken = async (clientX, clientY) => {
+    if (!boardEl || remaining <= 0) return;
+    const boardRect = boardEl.getBoundingClientRect();
+    if (
+      clientX < boardRect.left || clientX > boardRect.right ||
+      clientY < boardRect.top || clientY > boardRect.bottom
+    ) return;
+
+    const baseToken = await tokenDataPromise;
+    if (!baseToken) return;
+
+    try {
+      // Convert client coords → canvas world coords
+      const t = canvas.stage.worldTransform;
+      const wx = ((clientX - boardRect.left) - t.tx) / t.a;
+      const wy = ((clientY - boardRect.top) - t.ty) / t.d;
+
+      const gridSize = canvas.grid.size;
+      const tokenW = (baseToken.width || 1) * gridSize;
+      const tokenH = (baseToken.height || 1) * gridSize;
+
+      // Snap single token centered on cursor
+      const snapped = canvas.grid.getSnappedPoint(
+        { x: wx - tokenW / 2, y: wy - tokenH / 2 },
+        { mode: CONST.GRID_SNAPPING_MODES.TOP_LEFT_VERTEX },
+      );
+
+      await canvas.scene.createEmbeddedDocuments('Token', [{
+        ...baseToken,
+        x: snapped.x,
+        y: snapped.y,
+      }]);
+
+      remaining--;
+
+      // Brief green flash as placement confirmation
+      ghost.classList.add('sf-ghost-pulse');
+      setTimeout(() => ghost.classList.remove('sf-ghost-pulse'), 300);
+
+      if (remaining <= 0) {
+        cleanup();
+      } else {
+        ghost.innerHTML = ghostLabel();
+      }
+    } catch (err) {
+      console.error('StoryFrame: Error creating token:', err);
+    }
+  };
+
+  // --- Event handlers ---
+  const onMove = (e) => {
+    ghost.style.left = `${e.clientX + 14}px`;
+    ghost.style.top = `${e.clientY + 14}px`;
+  };
+
+  // Left-click on canvas → place tokens (capture phase blocks PIXI)
+  const onBoardPointerDown = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+    placeToken(e.clientX, e.clientY);
+  };
+
+  // Block residual click events from reaching Foundry
+  const onBoardClick = (e) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation();
+  };
+
+  // Suppress context menu popup but allow right-click panning
+  const onContextMenu = (e) => {
+    e.preventDefault();
+  };
+
+  const onEscape = (ke) => {
+    if (ke.key === 'Escape') {
+      ke.preventDefault();
+      ke.stopPropagation();
+      cleanup();
+    }
+  };
+
+  const cleanup = () => {
+    _activePopulateCleanup = null;
+    if (boardEl) {
+      boardEl.removeEventListener('pointerdown', onBoardPointerDown, true);
+      boardEl.removeEventListener('click', onBoardClick, true);
+      boardEl.classList.remove('sf-populating');
+    }
+    document.removeEventListener('mousemove', onMove);
+    document.removeEventListener('keydown', onEscape, true);
+    document.removeEventListener('contextmenu', onContextMenu, true);
+    ghost.remove();
+    cancelBtn.remove();
+    showEl(windowEl);
+    if (sidebarEl) showEl(sidebarEl);
+  };
+
+  // --- Attach listeners ---
+  if (boardEl) {
+    boardEl.addEventListener('pointerdown', onBoardPointerDown, true);
+    boardEl.addEventListener('click', onBoardClick, true);
+  }
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('keydown', onEscape, true);
+  document.addEventListener('contextmenu', onContextMenu, true);
+  cancelBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    cleanup();
+  });
+
+  _activePopulateCleanup = cleanup;
 }
 
 /**

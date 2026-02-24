@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.13.0] - 2026-02-24
+
+### Added
+
+- **Actor populate mode** — drag any `@Actor` link from a journal entry to enter populate mode: the journal fades out, a ghost label follows the cursor showing the actor name and remaining count, and left-clicking on the canvas places one token per click snapped to the grid; right-click panning is preserved; Escape or the floating trash-can button exits populate mode early; numbered links (e.g. "4 Bloom Cultists") place one token per click with a countdown that auto-exits when all are placed
+
 ## [1.12.0] - 2026-02-24
 
 ### Added
