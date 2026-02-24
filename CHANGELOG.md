@@ -7,6 +7,13 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.14.0] - 2026-02-24
+
+### Added
+
+- **Peek at canvas** — bind a key in Configure Controls > StoryFrame > "Peek at Canvas", then hold it to fade the journal away for a quick look at the canvas; release to restore; works reliably even while interacting with sidebar form elements
+- **Peek hides sidebar setting** — client setting to control whether the StoryFrame sidebar also fades during peek (default: yes)
+
 ## [1.13.0] - 2026-02-24
 
 ### Added

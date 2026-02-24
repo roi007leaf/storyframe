@@ -22,6 +22,13 @@ export async function handleJournalRender(sheet, html) {
     return;
   }
 
+  // Re-apply peek state if active (re-render replaces DOM, losing the class)
+  if (sheet._sfPeeking) {
+    const windowEl = element?.closest('.window-app') || element;
+    windowEl.style.transition = 'opacity 0.2s ease-out';
+    windowEl.classList.add('sf-peeking');
+  }
+
   // Inject sidebar toggle button
   _injectSidebarToggleButton(sheet, element);
 
@@ -695,6 +702,116 @@ function _enterPopulateMode(sheet, element, link, initialX, initialY) {
   });
 
   _activePopulateCleanup = cleanup;
+}
+
+// ============================================================================
+// Journal Peek Mode
+// ============================================================================
+
+/**
+ * Find the active journal sheet and its associated sidebar element.
+ * Priority: sidebar's parentInterface (if rendered), then topmost open journal.
+ * @returns {{ sheet: Object|null, windowEl: HTMLElement|null, sidebarEl: HTMLElement|null }}
+ * @private
+ */
+function _getActiveJournalAndSidebar() {
+  const sidebar = game.storyframe?.gmSidebar;
+  let sheet = null;
+
+  // Priority 1: sidebar's parent interface
+  if (sidebar?.rendered && sidebar.parentInterface?.element) {
+    sheet = sidebar.parentInterface;
+  }
+
+  // Priority 2: topmost open journal
+  if (!sheet) {
+    const openJournals = Object.values(ui.windows).filter(
+      (app) =>
+        (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+          app.constructor.name === 'JournalEntrySheet5e' ||
+          app.constructor.name === 'MetaMorphicJournalEntrySheet') &&
+        app.rendered,
+    );
+    if (openJournals.length > 0) {
+      sheet = openJournals[openJournals.length - 1];
+    }
+  }
+
+  if (!sheet) return { sheet: null, windowEl: null, sidebarEl: null };
+
+  const element = extractElement(sheet.element, sheet);
+  const windowEl = element?.closest('.window-app') || element;
+  const sidebarEl =
+    sidebar?.rendered && sidebar.parentInterface === sheet
+      ? sidebar.element
+      : null;
+
+  return { sheet, windowEl, sidebarEl };
+}
+
+/** @private Raw keyup handler — stored so we can remove it on peek end. */
+let _peekKeyupHandler = null;
+
+/**
+ * Start peeking at the canvas — journal fades out.
+ * Sidebar visibility controlled by the peekHidesSidebar setting.
+ * Uses a raw document keyup listener to detect release, because Foundry's
+ * keybinding onUp fires spuriously when focus enters form elements.
+ * @export
+ */
+export function peekCanvasStart() {
+  const { sheet, windowEl, sidebarEl } = _getActiveJournalAndSidebar();
+  if (!sheet || !windowEl) return;
+
+  if (sheet._sfPeeking) return;
+  sheet._sfPeeking = true;
+
+  const TRANSITION = 'opacity 0.2s ease-out';
+
+  windowEl.style.transition = TRANSITION;
+  windowEl.classList.add('sf-peeking');
+
+  const hideSidebar = game.settings.get(MODULE_ID, 'peekHidesSidebar') ?? true;
+  if (sidebarEl && hideSidebar) {
+    sidebarEl.style.transition = TRANSITION;
+    sidebarEl.classList.add('sf-peeking');
+  }
+
+  // Determine which key to listen for from the keybinding config
+  const bindings = game.keybindings.get(MODULE_ID, 'peekCanvas');
+  const boundKey = bindings?.[0]?.key;
+  if (boundKey) {
+    _peekKeyupHandler = (e) => {
+      if (e.code === boundKey) _peekCanvasEnd();
+    };
+    document.addEventListener('keyup', _peekKeyupHandler, true);
+  }
+}
+
+/**
+ * Stop peeking — journal fades back in.
+ * @private
+ */
+function _peekCanvasEnd() {
+  const { sheet, windowEl, sidebarEl } = _getActiveJournalAndSidebar();
+  if (!sheet || !windowEl) return;
+
+  if (!sheet._sfPeeking) return;
+  sheet._sfPeeking = false;
+
+  windowEl.classList.remove('sf-peeking');
+  setTimeout(() => { windowEl.style.transition = ''; }, 250);
+
+  if (sidebarEl) {
+    sidebarEl.classList.remove('sf-peeking');
+    setTimeout(() => { sidebarEl.style.transition = ''; }, 250);
+  }
+
+  // Clean up raw listener
+  if (_peekKeyupHandler) {
+    document.removeEventListener('keyup', _peekKeyupHandler, true);
+    _peekKeyupHandler = null;
+  }
 }
 
 /**

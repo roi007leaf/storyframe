@@ -1,7 +1,8 @@
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { MODULE_ID } from './scripts/constants.mjs';
-import { handleJournalClose, handleJournalRender, handleDaggerheartPageRender } from './scripts/hooks/journal-hooks.mjs';
+import { handleJournalClose, handleJournalRender, handleDaggerheartPageRender,
+  peekCanvasStart } from './scripts/hooks/journal-hooks.mjs';
 import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
@@ -313,6 +314,15 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'peekHidesSidebar', {
+    name: 'Peek Hides Sidebar',
+    hint: 'When peeking at the canvas, also hide the StoryFrame sidebar',
+    scope: 'client',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
@@ -602,6 +612,19 @@ Hooks.once('init', () => {
       hideSpeakerWheel();
       return true;
     },
+  });
+
+  game.keybindings.register(MODULE_ID, 'peekCanvas', {
+    name: 'Peek at Canvas',
+    hint: 'Hold to temporarily hide the journal and see the canvas. Release to restore.',
+    editable: [],
+    onDown: () => {
+      if (!game.user.isGM) return false;
+      // Raw keyup listener handles release — Foundry's onUp fires spuriously on focus change
+      peekCanvasStart();
+      return true;
+    },
+    onUp: () => false,
   });
 });
 
