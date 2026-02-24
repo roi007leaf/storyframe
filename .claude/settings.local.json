@@ -26,7 +26,8 @@
       "WebFetch(domain:github.com)",
       "Bash(git commit:*)",
       "Bash(grep:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "WebFetch(domain:api.github.com)"
     ]
   }
 }

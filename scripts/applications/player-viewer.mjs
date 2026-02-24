@@ -3,11 +3,14 @@ import SystemAdapter from '../system-adapter.mjs';
 import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
+import { DAGGERHEART_TRAIT_FULL_NAMES } from '../system/daggerheart/skills.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
   const system = SystemAdapter.detectSystem();
-  return system === 'dnd5e' ? DND5E_SKILL_SLUG_MAP : PF2E_SKILL_SLUG_MAP;
+  if (system === 'dnd5e') return DND5E_SKILL_SLUG_MAP;
+  if (system === 'daggerheart') return DAGGERHEART_TRAIT_FULL_NAMES;
+  return PF2E_SKILL_SLUG_MAP;
 }
 
 // Inline validatePosition
@@ -604,6 +607,21 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         }
         // D&D 5e rollSkill/rollSavingThrow may return an array or single roll
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else if (currentSystem === 'daggerheart') {
+        // Daggerheart: Use actor.diceRoll() with trait config
+        // fullSlug is the full trait name (e.g., 'agility') from DAGGERHEART_TRAIT_FULL_NAMES
+        const dhConfig = {
+          roll: {
+            trait: fullSlug,
+            type: 'trait',
+          },
+          hasRoll: true,
+          actionType: null,
+        };
+        if (request.dc !== null && request.dc !== undefined) {
+          dhConfig.roll.difficulty = request.dc;
+        }
+        roll = await actor.diceRoll(dhConfig);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         if (request.isSecretRoll) {
@@ -819,6 +837,22 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         }
         const rollResult = await actor.rollSkill(config, {}, {});
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else if (currentSystem === 'daggerheart') {
+        const dhConfig = {
+          roll: {
+            trait: fullSlug,
+            type: 'trait',
+          },
+          hasRoll: true,
+          actionType: null,
+        };
+        if (dc !== null && dc !== undefined) {
+          dhConfig.roll.difficulty = dc;
+        }
+        if (rollOptions.rollMode) {
+          dhConfig.rollMode = rollOptions.rollMode;
+        }
+        roll = await actor.diceRoll(dhConfig);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;
@@ -869,6 +903,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         if (dc !== null && dc !== undefined) config.target = dc;
         const rollResult = await actor.rollSavingThrow(config, {}, {});
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
+      } else if (currentSystem === 'daggerheart') {
+        // Daggerheart has no saving throws
+        return;
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;

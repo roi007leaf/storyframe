@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.12.0] - 2026-02-24
+
+### Added
+
+- **Daggerheart system support** — StoryFrame now works with the [Daggerheart](https://foundryvtt.com/packages/daggerheart) game system; the GM sidebar shows six core traits in two categories: **Physical** (Agility, Strength, Finesse) and **Mental** (Instinct, Presence, Knowledge); no saves section (Daggerheart has no saving throws)
+- **Daggerheart journal integration** — the StoryFrame sidebar toggle button is injected into Daggerheart journal headers; Ctrl+clicking a `.duality-roll-button` (e.g. `[[/dr trait=strength difficulty=14]]`) opens the Roll Requester Dialog with trait and DC pre-populated; journal content is scanned for both StoryFrame text-enriched spans and native duality roll buttons
+- **Daggerheart difficulty presets** — the DC preset popup now includes a **Difficulty** tab for Daggerheart with six fixed tiers: Very Easy (DC 8), Easy (DC 11), Standard (DC 15), Hard (DC 18), Very Hard (DC 22), Extreme (DC 26)
+- **Daggerheart secret rolls** — blind/secret roll mode is forwarded to `actor.diceRoll` so Daggerheart trait rolls respect the GM's secret toggle
+- **Daggerheart player-side roll execution** — players receive trait roll requests and execute them via `actor.diceRoll({ roll: { trait, type: 'trait', difficulty } })` with the correct full trait name (agility, strength, finesse, instinct, presence, knowledge)
+
 ## [1.11.0] - 2026-02-23
 
 ### Added

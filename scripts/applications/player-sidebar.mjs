@@ -237,6 +237,9 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       } else if (game.system.id === 'dnd5e') {
         const { GMSidebarAppDND5e } = await import('./gm-sidebar/gm-sidebar-dnd5e.mjs');
         GMSidebar = GMSidebarAppDND5e;
+      } else if (game.system.id === 'daggerheart') {
+        const { GMSidebarAppDaggerheart } = await import('./gm-sidebar/gm-sidebar-daggerheart.mjs');
+        GMSidebar = GMSidebarAppDaggerheart;
       } else {
         const { GMSidebarAppBase } = await import('./gm-sidebar/gm-sidebar-base.mjs');
         GMSidebar = GMSidebarAppBase;

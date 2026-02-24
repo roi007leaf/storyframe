@@ -655,6 +655,12 @@ export function getSkillIcon(slug) {
     inv: 'fa-search',
     prc: 'fa-eye',
     slt: 'fa-hand-sparkles',
+    // Daggerheart traits
+    agi: 'fa-person-running',
+    str: 'fa-dumbbell',
+    fin: 'fa-hand-sparkles',
+    pre: 'fa-comments',
+    kno: 'fa-book',
   };
   return iconMap[slug] || 'fa-dice-d20';
 }

@@ -219,6 +219,9 @@ async function _attachSidebarToSheet(sheet) {
     } else if (system === 'dnd5e') {
       const { GMSidebarAppDND5e } = await import('../applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+    } else if (system === 'daggerheart') {
+      const { GMSidebarAppDaggerheart } = await import('../applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
     } else {
       const { GMSidebarAppBase } = await import('../applications/gm-sidebar/gm-sidebar-base.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -323,7 +326,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
 
       // Subscribe to (or open) the singleton roll request dialog
       const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
-      const pcs = SystemAdapter.getAllPlayerPCs();
+      const pcs = await SystemAdapter.getAllPlayerPCs();
       if (!RollRequestDialog._instance && pcs.length === 0) {
         ui.notifications.warn('No player-owned characters found in the world.');
         return;
@@ -423,5 +426,117 @@ function _setupMinimizeMaximizeHandler(sheet) {
   sheet._storyframeMinimizeObserver.observe(element, {
     attributes: true,
     attributeFilter: ['class'],
+  });
+}
+
+/**
+ * Handler for renderJournalEntryPageProseMirrorSheet hook (Daggerheart)
+ * Sets up ctrl+click handlers on Daggerheart duality roll buttons
+ * @param {Object} sheet - The page sheet instance
+ * @param {*} html - The HTML element
+ */
+export async function handleDaggerheartPageRender(sheet, html) {
+  if (!game.user.isGM) return;
+
+  const element = extractElement(html, sheet);
+  if (!element) return;
+
+  _setupDaggerheartCheckCtrlClickHandlers(element);
+}
+
+/**
+ * Setup ctrl+click handlers for Daggerheart duality roll buttons
+ * Ctrl+clicking a .duality-roll-button opens the Roll Requester Dialog
+ * @private
+ */
+function _setupDaggerheartCheckCtrlClickHandlers(contentArea) {
+  if (!game.user.isGM) return;
+
+  const dualityButtons = contentArea.querySelectorAll(
+    'button.duality-roll-button[data-trait][data-difficulty]',
+  );
+
+  dualityButtons.forEach((button) => {
+    button.addEventListener(
+      'click',
+      async (event) => {
+        if (!event.ctrlKey) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+
+        const traitFullName = button.dataset.trait?.toLowerCase();
+        const dc = parseInt(button.dataset.difficulty);
+
+        if (!traitFullName || isNaN(dc)) return;
+
+        const { DAGGERHEART_TRAIT_NAME_MAP } = await import('../system/daggerheart/skills.mjs');
+        const skillSlug = DAGGERHEART_TRAIT_NAME_MAP[traitFullName] || traitFullName;
+        const skillName = traitFullName.charAt(0).toUpperCase() + traitFullName.slice(1);
+
+        const checksForDialog = [
+          {
+            skillName: skillSlug,
+            skillSlug: skillSlug,
+            dc: dc,
+            isSecret: false,
+            checkType: 'skill',
+            label: button.dataset.label || skillName,
+          },
+        ];
+
+        const SystemAdapter = await import('../system-adapter.mjs');
+        const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
+        const pcs = await SystemAdapter.getAllPlayerPCs();
+        if (!RollRequestDialog._instance && pcs.length === 0) {
+          ui.notifications.warn('No player-owned characters found in the world.');
+          return;
+        }
+
+        const result = await RollRequestDialog.subscribe(checksForDialog, pcs);
+
+        const selectedIds = result?.selectedIds || result || [];
+        const allowOnlyOne = result?.allowOnlyOne || false;
+        const batchGroupId = result?.batchGroupId ?? null;
+
+        if (!selectedIds || selectedIds.length === 0) return;
+
+        const sidebar = game.storyframe.gmSidebar;
+        if (!sidebar) {
+          console.error('StoryFrame: Sidebar not available');
+          ui.notifications.error('StoryFrame sidebar not available');
+          return;
+        }
+
+        try {
+          const { requestSkillCheck } = await import(
+            '../applications/gm-sidebar/managers/skill-check-handlers.mjs'
+          );
+
+          sidebar.currentDC = dc;
+          const dcInput = sidebar.element.querySelector('#dc-input');
+          if (dcInput) dcInput.value = dc;
+          sidebar.secretRollEnabled = false;
+
+          await requestSkillCheck(
+            sidebar,
+            skillSlug,
+            selectedIds,
+            null,
+            false,
+            'skill',
+            batchGroupId,
+            allowOnlyOne,
+            null,
+            false,
+          );
+        } catch (error) {
+          console.error('StoryFrame: Error sending request:', error);
+          ui.notifications.error('Failed to send roll request: ' + error.message);
+        }
+      },
+      { capture: true },
+    );
   });
 }

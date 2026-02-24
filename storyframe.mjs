@@ -1,7 +1,7 @@
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { MODULE_ID } from './scripts/constants.mjs';
-import { handleJournalClose, handleJournalRender } from './scripts/hooks/journal-hooks.mjs';
+import { handleJournalClose, handleJournalRender, handleDaggerheartPageRender } from './scripts/hooks/journal-hooks.mjs';
 import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
@@ -88,6 +88,9 @@ function setupPF2eRepostIntegration() {
       } else if (system === 'dnd5e') {
         const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+      } else if (system === 'daggerheart') {
+        const { GMSidebarAppDaggerheart } = await import('./scripts/applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
       } else {
         const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -354,8 +357,10 @@ Hooks.once('init', () => {
 
   // System-specific default skills
   const defaultSkills = game.system.id === 'dnd5e'
-    ? 'prc,ins,ste,per,inv,ath' // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
-    : 'per,dec,dip,itm,ste,prf'; // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
+    ? 'prc,ins,ste,per,inv,ath'     // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
+    : game.system.id === 'daggerheart'
+      ? 'agi,str,fin,ins,pre,kno'   // Daggerheart: all 6 traits
+      : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
 
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'Quick Button Skills',
@@ -724,6 +729,9 @@ Hooks.on('getSceneControlButtons', (controls) => {
           } else if (system === 'dnd5e') {
             const { GMSidebarAppDND5e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-dnd5e.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppDND5e();
+          } else if (system === 'daggerheart') {
+            const { GMSidebarAppDaggerheart } = await import('./scripts/applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
           } else {
             const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -786,6 +794,7 @@ Hooks.once('ready', async () => {
     } else if (game.system.id === 'dnd5e') {
       setupDND5eRequestRollIntegration();
     }
+    // Daggerheart: no native "Request Roll" button integration needed
   }
 
   // Setup damage roll target interception (GM only, all systems)
@@ -904,8 +913,11 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
 
 // Hook: renderJournalSheet (handle all journal types)
 Hooks.on('renderJournalSheet', handleJournalRender);
+Hooks.on('renderJournalEntrySheet', handleJournalRender);
 Hooks.on('renderJournalEntrySheet5e', handleJournalRender);
 Hooks.on('renderMetaMorphicJournalEntrySheet', handleJournalRender);
+// Hook: renderJournalEntryPageProseMirrorSheet (Daggerheart - fires per page render)
+Hooks.on('renderJournalEntryPageProseMirrorSheet', handleDaggerheartPageRender);
 
 // Hook: closeJournalSheet (handle sidebar reattachment)
 Hooks.on('closeJournalSheet', handleJournalClose);

@@ -377,6 +377,14 @@
         "VeryHard": "Very Hard",
         "NearlyImpossible": "Nearly Impossible",
         "SaveLabel": "{ability} Save"
+      },
+      "Daggerheart": {
+        "VeryEasy": "Very Easy",
+        "Easy": "Easy",
+        "Standard": "Standard",
+        "Hard": "Hard",
+        "VeryHard": "Very Hard",
+        "Extreme": "Extreme"
       }
     },
     "Errors": {

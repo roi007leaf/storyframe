@@ -32,6 +32,19 @@ import {
 } from './system/dnd5e/saves.mjs';
 import { getDND5eDCOptions } from './system/dnd5e/dc-tables.mjs';
 
+// Daggerheart imports
+import {
+  DAGGERHEART_TRAITS,
+  DAGGERHEART_TRAIT_SHORT_NAMES,
+  DAGGERHEART_TRAIT_NAME_MAP,
+} from './system/daggerheart/skills.mjs';
+import {
+  DAGGERHEART_SAVES,
+  DAGGERHEART_SAVE_SHORT_NAMES,
+  DAGGERHEART_SAVE_NAME_MAP,
+} from './system/daggerheart/saves.mjs';
+import { getDaggerheartDCOptions } from './system/daggerheart/dc-tables.mjs';
+
 /**
  * Detect the current game system
  * @returns {'pf2e'|'dnd5e'|'other'}
@@ -41,6 +54,7 @@ export function detectSystem() {
 
   if (systemId === 'pf2e') return 'pf2e';
   if (systemId === 'dnd5e') return 'dnd5e';
+  if (systemId === 'daggerheart') return 'daggerheart';
 
   return 'other';
 }
@@ -61,6 +75,8 @@ export function getSkills() {
     }
     case 'dnd5e':
       return DND5E_SKILLS;
+    case 'daggerheart':
+      return DAGGERHEART_TRAITS;
     default:
       return {}; // No skills for unsupported systems
   }
@@ -78,6 +94,8 @@ export function getDCOptions() {
       return getPF2eDCOptions();
     case 'dnd5e':
       return getDND5eDCOptions();
+    case 'daggerheart':
+      return getDaggerheartDCOptions();
     default:
       return [];
   }
@@ -95,6 +113,8 @@ export function getDifficultyAdjustments() {
       return PF2E_DIFFICULTY_ADJUSTMENTS;
     case 'dnd5e':
       return null; // D&D 5e doesn't use adjustments, DCs are absolute
+    case 'daggerheart':
+      return null; // Daggerheart doesn't use adjustments, DCs are absolute
     default:
       return null;
   }
@@ -130,6 +150,7 @@ export function getSkillShortName(slug) {
   const shortNames = {
     pf2e: PF2E_SKILL_SHORT_NAMES,
     dnd5e: DND5E_SKILL_SHORT_NAMES,
+    daggerheart: DAGGERHEART_TRAIT_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -148,6 +169,8 @@ export function getSkillNameMap() {
       return PF2E_SKILL_NAME_MAP;
     case 'dnd5e':
       return DND5E_SKILL_NAME_MAP;
+    case 'daggerheart':
+      return DAGGERHEART_TRAIT_NAME_MAP;
     default:
       return {};
   }
@@ -165,6 +188,8 @@ export function getSaves() {
       return PF2E_SAVES;
     case 'dnd5e':
       return DND5E_SAVES;
+    case 'daggerheart':
+      return DAGGERHEART_SAVES;
     default:
       return {}; // No saves for unsupported systems
   }
@@ -200,6 +225,7 @@ export function getSaveShortName(slug) {
   const shortNames = {
     pf2e: PF2E_SAVE_SHORT_NAMES,
     dnd5e: DND5E_SAVE_SHORT_NAMES,
+    daggerheart: DAGGERHEART_SAVE_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -218,6 +244,8 @@ export function getSaveNameMap() {
       return PF2E_SAVE_NAME_MAP;
     case 'dnd5e':
       return DND5E_SAVE_NAME_MAP;
+    case 'daggerheart':
+      return DAGGERHEART_SAVE_NAME_MAP;
     default:
       return {};
   }
