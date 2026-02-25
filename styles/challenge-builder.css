@@ -349,6 +349,15 @@
   width: 100%;
 }
 
+.storyframe.challenge-builder .skill-dc-row .variant-select {
+  flex: 0 1 auto;
+  min-width: clamp(6rem, 16vw, 10rem);
+}
+
+.storyframe.challenge-builder .skill-dc-row .variant-select .variant-dropdown {
+  width: 100%;
+}
+
 .storyframe.challenge-builder .skill-dc-row .dc-input-group {
   display: flex;
   gap: 4px;

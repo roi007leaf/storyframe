@@ -8,6 +8,7 @@ import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
 import * as SkillCheckHandlers from './skill-check-handlers.mjs';
 import { extractParentElement } from '../../../utils/element-utils.mjs';
+import { PF2E_ACTION_VARIANTS } from '../../../system/pf2e/actions.mjs';
 
 /**
  * Present a new challenge
@@ -272,7 +273,8 @@ export async function onCreateChallengeFromSelection(_event, _target, sidebar) {
         skill: checkSlug,
         checkType: checkType,  // NEW: Preserve check type
         dc: check.dc,
-        action: null,
+        action: check.actionSlug || null,
+        actionVariant: check.actionVariant || null,
         isSecret: check.isSecret || false,
       }],
     };
@@ -363,7 +365,10 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
   // Send roll requests for each surviving check (respects per-row removals in the dialog)
   for (const check of (result.checks || [])) {
     // Map skill name to slug using SystemAdapter
-    const skillSlug = SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase();
+    const checkType = check.checkType || 'skill';
+    const skillSlug = checkType === 'save'
+      ? (SystemAdapter.getSaveSlugFromName(check.skillName) || check.skillName.toLowerCase())
+      : (SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase());
 
     // Set DC
     sidebar.currentDC = check.dc;
@@ -373,8 +378,8 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
     // Set secret roll toggle
     sidebar.secretRollEnabled = check.isSecret;
 
-    // Send request with shared batch group ID
-    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne);
+    // Send request with shared batch group ID, including action/variant from enrichers
+    await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, check.actionSlug || null, false, checkType, batchGroupId, allowOnlyOne, check.actionVariant || null);
   }
 
   // Reset secret toggle
@@ -425,11 +430,14 @@ export async function prepareChallengesContext(sidebar, state) {
         }
 
         const actionName = so.action ? getActionName(so.skill, so.action) : null;
-        const displayText = actionName ? `${checkName} (${actionName})` : checkName;
+        const variantName = getVariantName(so.action, so.actionVariant);
+        let displayText = checkName;
+        if (actionName) displayText += variantName ? ` (${actionName}: ${variantName})` : ` (${actionName})`;
         return {
           ...so,
           skillName: checkName,
           actionName,
+          variantName,
           displayText,
           checkType,
           isSecret: so.isSecret || false,
@@ -459,15 +467,19 @@ export async function prepareChallengesContext(sidebar, state) {
         }
 
         const actionName = so.action ? getActionName(so.skill, so.action) : null;
+        const variantName = getVariantName(so.action, so.actionVariant);
+        let displayText = checkName;
+        if (actionName) displayText += variantName ? ` (${actionName}: ${variantName})` : ` (${actionName})`;
         const minProf = so.minProficiency || 0;
         const profLabels = ['', 'T', 'E', 'M', 'L'];
         return {
           skillName: checkName,
           actionName,
+          variantName,
           dc: so.dc,
           isSecret: so.isSecret || false,
           checkType,
-          displayText: actionName ? `${checkName} (${actionName})` : checkName,
+          displayText,
           minProficiency: minProf,
           minProficiencyLabel: minProf > 0 ? (profLabels[minProf] ?? String(minProf)) : null,
         };
@@ -510,6 +522,7 @@ function getJournalContent(sidebar) {
   // Try multiple selectors for different journal sheet types
   return element.querySelector('.journal-entry-pages') ||
     element.querySelector('.journal-entry-content') ||
+    element.querySelector('.enhanced-journal .content > section') ||
     element.querySelector('.scrollable') ||
     element.querySelector('.journal-page-content')?.parentElement ||
     element;
@@ -541,4 +554,12 @@ function getActionName(skillSlug, actionSlug) {
   if (!actions) return null;
   const action = actions.find((a) => a.slug === actionSlug);
   return action?.name || null;
+}
+
+function getVariantName(actionSlug, variantSlug) {
+  if (!actionSlug || !variantSlug) return null;
+  const variants = PF2E_ACTION_VARIANTS[actionSlug];
+  if (!variants) return null;
+  const v = variants.find((v) => v.slug === variantSlug);
+  return v?.name || null;
 }

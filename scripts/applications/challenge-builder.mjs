@@ -1,6 +1,7 @@
 import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 import { createDCPresetDropdown } from '../utils/dc-preset-dropdown.mjs';
+import { PF2E_ACTION_VARIANTS } from '../system/pf2e/actions.mjs';
 
 /**
  * Challenge Builder Dialog
@@ -405,10 +406,16 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const row = skillSelect.closest('.skill-dc-row');
         const actionSelect = row?.querySelector('.action-select');
         const actionDropdown = row?.querySelector('.action-dropdown');
+        const variantSelect = row?.querySelector('.variant-select');
+        const variantDropdown = row?.querySelector('.variant-dropdown');
         if (!actionSelect || !actionDropdown) return;
 
         const selectedOption = skillSelect.selectedOptions[0];
         if (!selectedOption) return;
+
+        // Hide variant when skill changes
+        if (variantSelect) { variantSelect.style.display = 'none'; }
+        if (variantDropdown) { variantDropdown.value = ''; }
 
         const actionsData = selectedOption.dataset.actions;
         if (actionsData && actionsData !== '[]' && actionsData !== 'null') {
@@ -427,6 +434,36 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         }
         actionSelect.style.display = 'none';
         actionDropdown.value = '';
+      });
+    });
+
+    // Attach action→variant change handlers
+    this._attachActionVariantHandlers();
+  }
+
+  _attachActionVariantHandlers() {
+    const actionDropdowns = this.element.querySelectorAll('.action-dropdown');
+    actionDropdowns.forEach(actionDropdown => {
+      if (actionDropdown.dataset.sfVariantBound === '1') return;
+      actionDropdown.dataset.sfVariantBound = '1';
+
+      actionDropdown.addEventListener('change', () => {
+        const row = actionDropdown.closest('.skill-dc-row');
+        const variantSelect = row?.querySelector('.variant-select');
+        const variantDropdown = row?.querySelector('.variant-dropdown');
+        if (!variantSelect || !variantDropdown) return;
+
+        const actionSlug = actionDropdown.value;
+        const variants = actionSlug ? PF2E_ACTION_VARIANTS[actionSlug] : null;
+
+        if (variants && variants.length > 0) {
+          variantDropdown.innerHTML = `<option value="">—</option>` +
+            variants.map(v => `<option value="${v.slug}">${v.name}</option>`).join('');
+          variantSelect.style.display = 'block';
+        } else {
+          variantSelect.style.display = 'none';
+          variantDropdown.value = '';
+        }
       });
     });
   }
@@ -582,6 +619,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         const skill = formData[`option-${idx}-skill-${skillIdx}`];
         const dc = formData[`option-${idx}-dc-${skillIdx}`];
         const action = formData[`option-${idx}-action-${skillIdx}`] || null;
+        const actionVariant = formData[`option-${idx}-variant-${skillIdx}`] || null;
         const isSecret = formData[`option-${idx}-secret-${skillIdx}`] || false;
         const minProficiency = formData[`option-${idx}-proficiency-${skillIdx}`];
 
@@ -594,9 +632,10 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
         if (skill) {
           skillOptions.push({
             skill,
-            checkType,  // NEW
+            checkType,
             dc: dc ? parseInt(dc) : null,
             action,
+            actionVariant,
             isSecret,
             minProficiency: minProficiency ? parseInt(minProficiency) : 0,
           });
@@ -897,6 +936,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           <option value="">${i18n.noAction}</option>
         </select>
       </div>
+      <div class="variant-select" style="display: none;">
+        <select name="option-${optionIdx}-variant-${skillCount}" class="variant-dropdown">
+          <option value="">—</option>
+        </select>
+      </div>
       ` : ''}
       <div class="dc-input-group">
         <input type="number" name="option-${optionIdx}-dc-${skillCount}" class="dc-number-input" min="1" placeholder="${i18n.dc}" required>
@@ -937,15 +981,21 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     this._attachSelectionVisibilityHandlers();
     this._updateSkillRowSelectionUI(newSkillRow);
 
-    // Attach skill change handler to show/hide action dropdown
+    // Attach skill change handler to show/hide action + variant dropdowns
     if (isPF2e) {
       const skillSelect = newSkillRow.querySelector('.skill-dropdown');
       const actionSelect = newSkillRow.querySelector('.action-select');
       const actionDropdown = newSkillRow.querySelector('.action-dropdown');
+      const variantSelect = newSkillRow.querySelector('.variant-select');
+      const variantDropdown = newSkillRow.querySelector('.variant-dropdown');
 
       skillSelect.addEventListener('change', () => {
         const selectedOption = skillSelect.selectedOptions[0];
         if (!selectedOption) return;
+
+        // Hide variant when skill changes
+        if (variantSelect) { variantSelect.style.display = 'none'; }
+        if (variantDropdown) { variantDropdown.value = ''; }
 
         const actionsData = selectedOption.dataset.actions;
         if (actionsData && actionsData !== '[]') {
@@ -959,6 +1009,8 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
           actionDropdown.value = '';
         }
       });
+
+      this._attachActionVariantHandlers();
     }
 
     this.skillCounts.set(optionIdx, skillCount + 1);
@@ -1113,6 +1165,11 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
               <div class="action-select" style="display: none;">
                 <select name="option-${this.optionCount}-action-0" class="action-dropdown">
                   <option value="">${i18n.noAction}</option>
+                </select>
+              </div>
+              <div class="variant-select" style="display: none;">
+                <select name="option-${this.optionCount}-variant-0" class="variant-dropdown">
+                  <option value="">—</option>
                 </select>
               </div>
               ` : ''}

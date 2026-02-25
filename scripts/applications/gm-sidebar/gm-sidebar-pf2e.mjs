@@ -1,5 +1,6 @@
 import * as SystemAdapter from '../../system-adapter.mjs';
 import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
+import { PF2E_ACTION_DISPLAY_NAMES } from '../../system/pf2e/actions.mjs';
 
 /**
  * PF2e-specific GM Sidebar implementation
@@ -29,16 +30,47 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       if (dc && type) {
         // Determine if this is a save or skill check
         const checkType = saveTypes.has(type.toLowerCase()) ? 'save' : 'skill';
+        const parsedDc = parseInt(dc);
 
         checks.push({
           label,
           skillName: type,
-          dc: parseInt(dc),
+          dc: isNaN(parsedDc) ? null : parsedDc,
           isSecret: traits.toLowerCase().includes('secret'),
-          checkType, // Add check type
+          checkType,
           id: foundry.utils.randomID(),
         });
       }
+    });
+
+    // Find PF2e action enricher elements: [[/act action-slug variant=...]]
+    const actionElements = content.querySelectorAll('span[data-pf2-action]');
+    const actionToSkill = _buildActionToSkillMap();
+
+    actionElements.forEach((el) => {
+      const actionSlug = el.dataset.pf2Action;
+      if (!actionSlug) return;
+
+      const variant = el.dataset.pf2Variant || null;
+      const dc = el.dataset.pf2Dc ? parseInt(el.dataset.pf2Dc) : null;
+      const skillSlug = actionToSkill[actionSlug] || null;
+
+      // Build label from inner text (strip repost icon text)
+      const innerSpan = el.querySelector('span');
+      const label = innerSpan ? innerSpan.textContent.trim() : el.textContent.trim();
+
+      const actionName = PF2E_ACTION_DISPLAY_NAMES[actionSlug] || actionSlug;
+
+      checks.push({
+        label: label || actionName,
+        skillName: skillSlug || actionSlug,
+        dc,
+        isSecret: false,
+        checkType: 'skill',
+        actionSlug,
+        actionVariant: variant,
+        id: foundry.utils.randomID(),
+      });
     });
 
     return checks;
@@ -388,4 +420,18 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
     // PF2e actors have saves.fortitude, saves.reflex, saves.will
     return !!actor.saves[saveSlug];
   }
+}
+
+/**
+ * Build reverse map: action slug → skill slug (e.g. 'demoralize' → 'itm')
+ */
+function _buildActionToSkillMap() {
+  const skills = SystemAdapter.getSkills();
+  const map = {};
+  for (const [slug, skill] of Object.entries(skills)) {
+    for (const action of (skill.actions || [])) {
+      map[action.slug] = slug;
+    }
+  }
+  return map;
 }

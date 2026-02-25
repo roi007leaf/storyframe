@@ -105,6 +105,19 @@ function _getCheckElementInfo(el) {
     return { skillName: el.dataset.pf2Check.toLowerCase(), dc: el.dataset.pf2Dc };
   }
 
+  // PF2e action format: span[data-pf2-action]
+  if (el.dataset.pf2Action) {
+    // Map action → skill for highlighting
+    const skills = SystemAdapter.getSkills();
+    for (const [slug, skill] of Object.entries(skills)) {
+      if (skill.actions?.some(a => a.slug === el.dataset.pf2Action)) {
+        return { skillName: slug, dc: el.dataset.pf2Dc || null };
+      }
+    }
+    // Unknown action — use action slug as skill name
+    return { skillName: el.dataset.pf2Action, dc: el.dataset.pf2Dc || null };
+  }
+
   // D&D 5e format: span.roll-link-group[data-type][data-skill/data-ability][data-dc]
   const isSave = el.dataset.type === 'save';
   const rawSlug = isSave
@@ -153,12 +166,13 @@ export function setupJournalCheckHighlighting(sidebar) {
 
   if (!scrollContainer) return;
 
-  // Get all inline check elements — support both PF2e and D&D 5e enricher formats
+  // Get all inline check elements — support PF2e checks, PF2e actions, and D&D 5e enrichers
   const pf2eElements = scrollContainer.querySelectorAll('a.inline-check[data-pf2-check][data-pf2-dc]');
+  const pf2eActionElements = scrollContainer.querySelectorAll('span[data-pf2-action]');
   const dnd5eElements = scrollContainer.querySelectorAll(
     'span.roll-link-group[data-type="check"], span.roll-link-group[data-type="skill"], span.roll-link-group[data-type="save"]',
   );
-  const checkElements = [...pf2eElements, ...dnd5eElements];
+  const checkElements = [...pf2eElements, ...pf2eActionElements, ...dnd5eElements];
   if (checkElements.length === 0) return;
 
   // Initialize visible checks Map on instance (persists across callbacks)

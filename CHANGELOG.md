@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.1] - 2026-02-25
+
+### Fixed
+
+- **PF2e action enricher ctrl-click** — moved to document-level capture handler so ctrl-click reliably triggers roll requests
+- **NaN DC display** — action enrichers and inline checks with missing or non-numeric DC values now show "—" instead of NaN; fallback to sidebar's current DC on apply
+- **PF2e action enricher support** — `[[/act ...]]` enrichers (`span[data-pf2-action]`) now parsed for check panel, ctrl-click roll requests, in-view highlighting, and challenge creation from journal; includes DC and variant extraction
+- **Challenge action variants** — challenge skill options support PF2e action variants; variant dropdown in challenge builder auto-populates from action selection
+- **Player variant restriction** — players see variant names on challenge buttons but cannot access variant popup (roll-only)
+
 ## [1.16.0] - 2026-02-25
 
 ### Added

@@ -60,13 +60,14 @@
                           data-check-type="{{this.checkType}}"
                           data-dc="{{this.dc}}"
                           data-action-slug="{{this.action}}"
+                          data-action-variant="{{this.actionVariant}}"
                           data-is-secret="{{this.isSecret}}"
                           {{#unless this.canRoll}}disabled{{/unless}}
                           data-tooltip="{{this.tooltip}}"
                           aria-label="{{this.ariaLabel}}">
                     {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
                     <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
-                    <span class="skill-name-short">{{#if this.actionName}}{{this.actionName}}{{else}}{{this.skillName}}{{/if}}</span>
+                    <span class="skill-name-short">{{#if this.variantDisplayName}}{{this.variantDisplayName}}{{else if this.actionName}}{{this.actionName}}{{else}}{{this.skillName}}{{/if}}</span>
                     {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
                   </button>
                   {{/each}}

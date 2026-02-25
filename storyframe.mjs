@@ -108,6 +108,84 @@ function setupPF2eRepostIntegration() {
 }
 
 /**
+ * Setup global listener for PF2e action enricher elements (span[data-pf2-action]).
+ * Ctrl-clicking anywhere on an action enricher opens the Roll Requester Dialog.
+ * Must be a document-level capture handler to intercept before PF2e's own delegation.
+ */
+function setupPF2eActionEnricherIntegration() {
+  document.addEventListener('click', async (event) => {
+    if (!event.ctrlKey && !event.metaKey) return;
+    if (!game.user.isGM) return;
+
+    const actionEl = event.target.closest('span[data-pf2-action]');
+    if (!actionEl) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    event.stopImmediatePropagation();
+
+    const actionSlug = actionEl.dataset.pf2Action;
+    if (!actionSlug) return;
+
+    const variant = actionEl.dataset.pf2Variant || null;
+    const rawDc = actionEl.dataset.pf2Dc;
+    const dc = rawDc ? parseInt(rawDc) : null;
+    const validDc = (dc !== null && !isNaN(dc)) ? dc : null;
+
+    // Map action → skill
+    const SystemAdapter = await import('./scripts/system-adapter.mjs');
+    const skills = SystemAdapter.getSkills();
+    let skillSlug = null;
+    for (const [slug, skill] of Object.entries(skills)) {
+      if (skill.actions?.some(a => a.slug === actionSlug)) { skillSlug = slug; break; }
+    }
+
+    const innerSpan = actionEl.querySelector('span');
+    const label = innerSpan ? innerSpan.textContent.trim() : null;
+
+    const checks = [{
+      skillName: skillSlug || actionSlug,
+      skillSlug: skillSlug || actionSlug,
+      dc: validDc,
+      isSecret: false,
+      checkType: 'skill',
+      actionSlug,
+      actionVariant: variant,
+      label,
+    }];
+
+    const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
+    const pcs = await SystemAdapter.getAllPlayerPCs();
+    if (!RollRequestDialog._instance && pcs.length === 0) {
+      ui.notifications.warn('No player-owned characters found in the world.');
+      return;
+    }
+
+    const result = await RollRequestDialog.subscribe(checks, pcs);
+
+    const selectedIds = result?.selectedIds || result || [];
+    const allowOnlyOne = result?.allowOnlyOne || false;
+    const batchGroupId = result?.batchGroupId ?? null;
+    if (!selectedIds || selectedIds.length === 0) return;
+
+    if (!game.storyframe.gmSidebar) {
+      const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppPF2e();
+    }
+    const sidebar = game.storyframe.gmSidebar;
+    const { requestSkillCheck } = await import('./scripts/applications/gm-sidebar/managers/skill-check-handlers.mjs');
+
+    if (validDc) {
+      sidebar.currentDC = validDc;
+      const dcInput = sidebar.element?.querySelector('#dc-input');
+      if (dcInput) dcInput.value = validDc;
+    }
+
+    await requestSkillCheck(sidebar, skillSlug || actionSlug, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne, variant, false);
+  }, { capture: true });
+}
+
+/**
  * Setup global listener for D&D 5e inline check "Request Roll" buttons
  * Intercepts the native enricher button and routes through StoryFrame's roll tracking
  */
@@ -830,6 +908,7 @@ Hooks.once('ready', async () => {
   if (game.user.isGM) {
     if (game.system.id === 'pf2e') {
       setupPF2eRepostIntegration();
+      setupPF2eActionEnricherIntegration();
     } else if (game.system.id === 'dnd5e') {
       setupDND5eRequestRollIntegration();
     }

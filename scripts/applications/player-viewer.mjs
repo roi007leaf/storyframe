@@ -705,6 +705,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const checkType = target.dataset.checkType || 'skill';
     const dc = target.dataset.dc ? parseInt(target.dataset.dc) : null;
     const actionSlug = target.dataset.actionSlug || null;
+    const actionVariant = target.dataset.actionVariant || null;
     const isSecret = target.dataset.isSecret === 'true';
     const state = game.storyframe.stateManager.getState();
 
@@ -762,7 +763,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     if (checkType === 'save') {
       await PlayerViewerApp._executeSaveRoll(actorData, checkSlug, dc, isSecret);
     } else {
-      await PlayerViewerApp._executeSkillRoll(actorData, checkSlug, dc, actionSlug, isSecret);
+      await PlayerViewerApp._executeSkillRoll(actorData, checkSlug, dc, actionSlug, isSecret, actionVariant);
     }
   }
 
@@ -774,7 +775,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
    * @param {string|null} actionSlug - Optional action slug (PF2e only)
    * @param {boolean} isSecret - Whether this is a secret roll (GM only)
    */
-  static async _executeSkillRoll(actorData, skillSlug, dc, actionSlug = null, isSecret = false) {
+  static async _executeSkillRoll(actorData, skillSlug, dc, actionSlug = null, isSecret = false, actionVariant = null) {
     const actor = await fromUuid(actorData.actorUuid);
     if (!actor) {
       ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ActorNotFound'));
@@ -792,6 +793,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     // Add blind roll mode if secret
     if (isSecret) {
       rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+    }
+    // Add variant for PF2e actions (e.g. Create a Diversion: Gesture)
+    if (actionVariant) {
+      rollOptions.variant = actionVariant;
     }
 
     try {

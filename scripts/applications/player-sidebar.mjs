@@ -281,16 +281,18 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
             }
 
             const actionDisplayName = getActionName(so.action);
+            const variantDisplayName = so.actionVariant ? getActionName(so.action, so.actionVariant) : null;
 
             // Build localized tooltip and aria-label
+            const displayLabel = variantDisplayName || actionDisplayName;
             let tooltip, ariaLabel;
             if (canRoll) {
               if (checkType === 'save') {
                 tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.RollSave', { save: checkName });
                 ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
               } else {
-                tooltip = actionDisplayName
-                  ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action: actionDisplayName })
+                tooltip = displayLabel
+                  ? game.i18n.format('STORYFRAME.UI.Tooltips.RollSkillWithAction', { skill: checkName, action: displayLabel })
                   : game.i18n.format('STORYFRAME.UI.Tooltips.RollSkill', { skill: checkName });
                 ariaLabel = tooltip + (showDCs && so.dc ? ` DC ${so.dc}` : '');
               }
@@ -303,11 +305,13 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
               ...so,
               skillName: checkName,
               skillIcon: checkIcon,
-              checkType,  // NEW
+              checkType,
               dc: so.dc,
               dcDifficulty: getDCDifficulty(so.dc),
-              action: so.action, // Keep original slug for data attribute
-              actionName: actionDisplayName, // Add display name
+              action: so.action,
+              actionVariant: so.actionVariant || null,
+              actionName: actionDisplayName,
+              variantDisplayName,
               isSecret: so.isSecret || false,
               showDC: showDCs,
               canRoll,

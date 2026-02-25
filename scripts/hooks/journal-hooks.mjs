@@ -49,7 +49,8 @@ export async function handleJournalRender(sheet, html) {
   if (contentArea) {
     enrichChecks(contentArea);
 
-    // Set up ctrl+click handlers for inline check repost buttons
+    // Ctrl+click on inline checks handled per-element; action enricher ctrl-click
+    // handled by document-level capture handler in storyframe.mjs
     _setupInlineCheckCtrlClickHandlers(contentArea);
 
     // Set up journal transparency when dragging actor links to canvas

@@ -719,17 +719,19 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     <div class="dc-popup-header">${skillName}</div>
     <div class="dc-popup-items">
       ${skillGroup.checks.map((check, idx) => {
-    const isVisible = visibleDCs.has(String(check.dc));
+    const hasDc = check.dc != null && !isNaN(check.dc);
+    const isVisible = hasDc && visibleDCs.has(String(check.dc));
     const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
+    const dcDisplay = hasDc ? check.dc : '—';
     return `
         <button type="button"
                 class="dc-option ${isVisible ? 'in-view' : ''}"
-                data-dc="${check.dc}"
+                data-dc="${hasDc ? check.dc : ''}"
                 data-check-index="${idx}"
                 data-skill="${check.skillName}"
                 data-is-secret="${check.isSecret || false}"
                 data-tooltip="${check.label}${check.isSecret ? ' (Secret)' : ''}">
-          ${check.dc}${secretIcon}
+          ${dcDisplay}${secretIcon}
         </button>
       `;
   }).join('')}
@@ -746,7 +748,8 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
   // Attach click handlers to DC buttons with shift-click for global batch
   menu.querySelectorAll('.dc-option').forEach((btn) => {
     btn.addEventListener('click', async (e) => {
-      const dc = parseInt(btn.dataset.dc);
+      const rawDc = btn.dataset.dc;
+      const dc = rawDc ? parseInt(rawDc) : null;
       const skill = btn.dataset.skill;
       const isSecret = btn.dataset.isSecret === 'true';
 
@@ -786,10 +789,12 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
       // Normal click: send single check immediately
       menu.remove();
 
-      // Set DC and request check
-      sidebar.currentDC = dc;
-      const dcInput = sidebar.element.querySelector('#dc-input');
-      if (dcInput) dcInput.value = dc;
+      // Set DC and request check (use sidebar's current DC if check has no DC)
+      if (dc != null && !isNaN(dc)) {
+        sidebar.currentDC = dc;
+        const dcInput = sidebar.element.querySelector('#dc-input');
+        if (dcInput) dcInput.value = dc;
+      }
 
       // Set secret toggle if this is a secret check
       sidebar.secretRollEnabled = isSecret;
@@ -824,8 +829,9 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     const btnCheckSlug = checkType === 'save'
       ? (SystemAdapter.getSaveSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase())
       : (SystemAdapter.getSkillSlugFromName(btn.dataset.skill) || btn.dataset.skill.toLowerCase());
-    const dc = parseInt(btn.dataset.dc);
-    const checkId = `journal:${btnCheckSlug}:${dc}`;
+    const rawDcVal = btn.dataset.dc;
+    const dcVal = rawDcVal ? parseInt(rawDcVal) : null;
+    const checkId = `journal:${btnCheckSlug}:${dcVal}`;
     if (sidebar.batchedChecks.some(c => c.checkId === checkId)) {
       btn.classList.add('selected');
     }
@@ -845,15 +851,16 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
  * Apply a journal check
  */
 export async function onApplyJournalCheck(_event, target, sidebar) {
-  const dc = parseInt(target.dataset.dc);
+  const rawDc = target.dataset.dc;
+  const dc = rawDc ? parseInt(rawDc) : null;
   const skillName = target.dataset.skill;
 
-  if (isNaN(dc)) return;
-
-  // Set the DC
-  sidebar.currentDC = dc;
-  const dcInput = sidebar.element.querySelector('#dc-input');
-  if (dcInput) dcInput.value = dc;
+  // Set the DC if present, otherwise use sidebar's current DC
+  if (dc != null && !isNaN(dc)) {
+    sidebar.currentDC = dc;
+    const dcInput = sidebar.element.querySelector('#dc-input');
+    if (dcInput) dcInput.value = dc;
+  }
 
   // If we have a skill, open roll requester and request the roll
   if (skillName) {
