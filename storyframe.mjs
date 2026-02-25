@@ -691,7 +691,8 @@ Hooks.on('getSceneControlButtons', (controls) => {
           }, 50);
         }
         const state = game.storyframe.stateManager?.getState();
-        const hasSpeakers = state?.speakers?.length > 0;
+        const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
+        const hasSpeakers = visibleSpeakers.length > 0;
         const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
 
         // Open viewer if there are speakers
@@ -908,7 +909,8 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   // Update player viewer
   if (!game.user.isGM && game.storyframe.playerViewer) {
     const viewer = game.storyframe.playerViewer;
-    const hasSpeakers = state?.speakers?.length > 0;
+    const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
+    const hasSpeakers = visibleSpeakers.length > 0;
 
     if (hasSpeakers && !viewer.rendered) {
       viewer.render(true); // Auto-open when speakers added
