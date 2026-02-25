@@ -463,8 +463,6 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     // Add keyboard shortcuts
     this._setupKeyboardShortcuts();
 
-    // Attach action variant hover handlers
-    this._attachActionVariantHoverHandlers();
   }
 
   /**

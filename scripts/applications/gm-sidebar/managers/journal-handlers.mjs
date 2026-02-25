@@ -305,17 +305,21 @@ export function setupJournalContentObserver(sidebar) {
 
   if (!pagesContainer) return;
 
-  // Track how many page content elements we've seen
-  let lastPageCount = parentElement.querySelectorAll('.journal-page-content').length;
+  // MEJ renders content async into .content > section — any element addition is new content
+  const isMEJ = !!parentElement.querySelector('.enhanced-journal');
+
+  // Track how many page content elements we've seen (standard journals only)
+  let lastPageCount = isMEJ ? 0 : parentElement.querySelectorAll('.journal-page-content').length;
 
   sidebar._journalContentObserver = new MutationObserver((mutations) => {
-    // Check if any new .journal-page-content elements were added
     let hasNewPages = false;
     for (const mutation of mutations) {
       if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
         for (const node of mutation.addedNodes) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            if (node.classList?.contains('journal-page-content') ||
+            // MEJ: any element node added to the section is new page content
+            if (isMEJ ||
+              node.classList?.contains('journal-page-content') ||
               node.querySelector?.('.journal-page-content')) {
               hasNewPages = true;
               break;
@@ -326,11 +330,13 @@ export function setupJournalContentObserver(sidebar) {
       if (hasNewPages) break;
     }
 
-    // Also check if page count increased (covers nested additions)
-    const currentPageCount = parentElement.querySelectorAll('.journal-page-content').length;
-    if (currentPageCount > lastPageCount) {
-      hasNewPages = true;
-      lastPageCount = currentPageCount;
+    // Also check if page count increased (standard journals, covers nested additions)
+    if (!isMEJ) {
+      const currentPageCount = parentElement.querySelectorAll('.journal-page-content').length;
+      if (currentPageCount > lastPageCount) {
+        hasNewPages = true;
+        lastPageCount = currentPageCount;
+      }
     }
 
     if (hasNewPages) {

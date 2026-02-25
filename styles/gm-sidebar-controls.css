@@ -704,10 +704,10 @@
   animation: sf-fade-in var(--sf-transition-base) var(--sf-ease-out);
 }
 
-/* Speaker Gallery */
+/* Speaker Gallery — unlocked: cards grow with window (min 20% = max ~4 cols) */
 .gm-sidebar-container .speaker-gallery {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(max(100px, 20%), 1fr));
   grid-auto-rows: min-content;
   align-content: start;
   gap: var(--sf-space-xs);
@@ -718,8 +718,14 @@
   scrollbar-color: var(--sf-border-medium) transparent;
 }
 
-/* Remove max-height constraint in drawer mode */
+/* Locked grid: fixed card size, only reflows */
+.gm-sidebar-container .speaker-gallery.grid-locked {
+  grid-template-columns: repeat(auto-fill, 100px);
+}
+
+/* Drawer mode: always 3 per row, no max-height constraint */
 .storyframe.gm-sidebar.drawer .gm-sidebar-container .speaker-gallery {
+  grid-template-columns: repeat(3, 1fr);
   max-height: none;
 }
 
@@ -751,6 +757,7 @@
   border-radius: var(--sf-radius-lg);
   padding: var(--sf-space-xs);
   background: rgba(0, 0, 0, 0.1);
+  container-type: inline-size;
 }
 
 .gm-sidebar-container .speaker-thumbnail:hover {
@@ -814,15 +821,15 @@
   font-weight: 500;
 }
 
-/* All speaker action buttons in a centered flex row above the thumbnail */
+/* All speaker action buttons in a centered flex row inside the thumbnail */
 .gm-sidebar-container .speaker-controls {
   position: absolute;
-  top: -12px;
+  top: 4px;
   left: 50%;
   transform: translateX(-50%);
   display: flex;
   flex-direction: row;
-  gap: 3px;
+  gap: clamp(2px, 3cqi, 5px);
   opacity: 0;
   transition: opacity var(--sf-transition-fast);
   z-index: 10;
@@ -834,16 +841,18 @@
 }
 
 .gm-sidebar-container .speaker-controls button {
-  width: 20px;
-  height: 20px;
+  width: clamp(18px, 14cqi, 24px);
+  height: clamp(18px, 14cqi, 24px);
   border-radius: 50%;
-  border: 2px solid var(--sf-surface-primary);
+  border: 1px solid var(--sf-surface-primary);
+  box-sizing: border-box;
+  aspect-ratio: 1;
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.5rem;
+  font-size: clamp(0.4rem, 4cqi, 0.6rem);
   transition: transform var(--sf-transition-fast), filter var(--sf-transition-fast);
   flex-shrink: 0;
 }
@@ -864,7 +873,7 @@
 }
 .gm-sidebar-container .speaker-controls .remove-speaker {
   background: var(--sf-accent-danger);
-  font-size: 0.55rem;
+  font-size: clamp(0.45rem, 4.5cqi, 0.65rem);
 }
 
 /* Image nav bar — always shown on hover, contains cycle arrows + add + remove */

@@ -137,6 +137,16 @@ export class SocketManager {
     }
   }
 
+  /**
+   * Broadcast state to other clients only (skip local re-render).
+   */
+  broadcastStateToOthers() {
+    const state = game.storyframe.stateManager?.getState();
+    if (state) {
+      this.socket.executeForOthers('stateUpdate', state);
+    }
+  }
+
   // --- Participant API ---
 
   /**

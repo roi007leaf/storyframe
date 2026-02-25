@@ -36,8 +36,12 @@ export class SpeakerManager {
     if (!scene) return;
 
     this.state.activeSpeaker = speakerId;
+
+    // Persist + broadcast to other clients only, skip local re-render
+    // (caller handles DOM update directly)
+    game.storyframe.stateManager._suppressNextRender = true;
     await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
-    this._broadcast();
+    if (this.socketManager) this.socketManager.broadcastStateToOthers();
   }
 
   /**
@@ -75,8 +79,6 @@ export class SpeakerManager {
       altImages: Array.isArray(altImages) ? altImages : [],
     };
 
-    console.log('StoryFrame: Adding speaker with isNameHidden:', isNameHidden, 'Label:', label, 'Full speaker:', speaker);
-
     this.state.speakers.push(speaker);
     await this.updateSpeakers(this.state.speakers);
     return speaker;
@@ -110,7 +112,6 @@ export class SpeakerManager {
     if (!speaker) return;
 
     speaker.isNameHidden = !speaker.isNameHidden;
-    console.log('StoryFrame: Toggled speaker visibility:', speaker.label, 'isNameHidden:', speaker.isNameHidden);
 
     await this.updateSpeakers(this.state.speakers);
   }
@@ -144,7 +145,14 @@ export class SpeakerManager {
     // so we never need to rotate them in/out of altImages (which holds only custom images)
     speaker.imagePath = imagePath;
 
-    await this.updateSpeakers(this.state.speakers);
+    // Persist + broadcast to other clients only, skip local re-render
+    // (callers handle DOM update directly to avoid resetting window size)
+    game.storyframe.stateManager._suppressNextRender = true;
+    const scene = game.scenes.current;
+    if (scene) {
+      await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+      if (this.socketManager) this.socketManager.broadcastStateToOthers();
+    }
   }
 
   /**

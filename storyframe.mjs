@@ -779,6 +779,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
         } else {
           // Clear parent interface to open standalone
           sidebar.parentInterface = null;
+          // Restore last standalone position + size, or use defaults
+          const saved = sidebar._lastStandalonePos;
+          const defaults = sidebar.constructor.DEFAULT_OPTIONS?.position;
+          sidebar.position.width = saved?.width || defaults?.width || 330;
+          sidebar.position.height = saved?.height || defaults?.height || 500;
+          if (saved?.left != null) sidebar.position.left = saved.left;
+          if (saved?.top != null) sidebar.position.top = saved.top;
           sidebar.render(true);
           game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
         }
@@ -803,7 +810,6 @@ Hooks.once('ready', async () => {
       const checkInit = setInterval(() => {
         if (game.storyframe.initialized) {
           clearInterval(checkInit);
-          console.log(`${MODULE_ID} | Initialization complete`);
           resolve();
         } else if (Date.now() - startTime > maxWait) {
           clearInterval(checkInit);
@@ -913,6 +919,12 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   // Reload state
   await game.storyframe.stateManager.load();
   const state = game.storyframe.stateManager.getState();
+
+  // Skip local re-render if flagged (e.g. image cycle does its own DOM update)
+  if (game.storyframe.stateManager._suppressNextRender) {
+    game.storyframe.stateManager._suppressNextRender = false;
+    return;
+  }
 
   // Update GM sidebar if open
   if (game.user.isGM) {

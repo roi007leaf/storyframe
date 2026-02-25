@@ -25,6 +25,7 @@ import { Persistence } from './state/persistence.mjs';
 export class StateManager {
   constructor() {
     this.state = null;
+    this._suppressNextRender = false;
     // Managers initialized in initialize() after socketManager is available
     this.speakerManager = null;
     this.participantManager = null;

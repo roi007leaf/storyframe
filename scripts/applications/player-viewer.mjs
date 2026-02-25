@@ -247,9 +247,6 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     // Attach right-click handler for image enlargement
     this._attachImageContextMenu();
-
-    // Attach action variant hover handlers
-    this._attachActionVariantHoverHandlers();
   }
 
   /**

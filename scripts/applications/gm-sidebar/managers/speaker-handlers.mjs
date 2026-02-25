@@ -3,6 +3,8 @@
  * Handles all speaker (NPC) related operations including add, remove, set active, and journal integration
  */
 
+import { extractParentElement } from '../../../utils/element-utils.mjs';
+
 /**
  * Add a speaker from an image file picker
  */
@@ -37,6 +39,7 @@ export async function onSetSpeaker(_event, target, _sidebar) {
   const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
   if (speakerId) {
     await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId);
+    _updateActiveSpeakerInDOM(speakerId);
   }
 }
 
@@ -136,6 +139,27 @@ async function _buildSpeakerImageList(speaker) {
 }
 
 /**
+ * Toggle active class on speaker thumbnails without full re-render.
+ */
+function _updateActiveSpeakerInDOM(speakerId) {
+  document.querySelectorAll('.speaker-thumbnail.active').forEach((el) => el.classList.remove('active'));
+  const thumb = document.querySelector(`.speaker-thumbnail[data-speaker-id="${speakerId}"]`);
+  if (thumb) thumb.classList.add('active');
+}
+
+/**
+ * Swap speaker thumbnail image in DOM without full re-render.
+ */
+function _updateSpeakerImageInDOM(speakerId, imagePath) {
+  const thumb = document.querySelector(`.speaker-thumbnail[data-speaker-id="${speakerId}"]`);
+  if (!thumb) return;
+  const img = thumb.querySelector('img');
+  if (img) img.src = imagePath;
+  const nav = thumb.querySelector('.speaker-image-nav');
+  if (nav) nav.dataset.imagePath = imagePath;
+}
+
+/**
  * Cycle to next alt image for a speaker
  */
 export async function onCycleSpeakerImageNext(event, target) {
@@ -153,6 +177,7 @@ export async function onCycleSpeakerImageNext(event, target) {
   const currentIdx = images.indexOf(speaker.imagePath || images[0]);
   const nextImg = images[(currentIdx + 1) % images.length];
   await game.storyframe.socketManager.requestSetSpeakerImage(speakerId, nextImg);
+  _updateSpeakerImageInDOM(speakerId, nextImg);
 }
 
 /**
@@ -173,6 +198,7 @@ export async function onCycleSpeakerImagePrev(event, target) {
   const currentIdx = images.indexOf(speaker.imagePath || images[0]);
   const prevImg = images[(currentIdx - 1 + images.length) % images.length];
   await game.storyframe.socketManager.requestSetSpeakerImage(speakerId, prevImg);
+  _updateSpeakerImageInDOM(speakerId, prevImg);
 }
 
 /**
@@ -271,8 +297,6 @@ export async function onSetActorAsSpeaker(event, target, _sidebar) {
   // Check if ALT key is held to hide name from players
   const isNameHidden = event.altKey;
 
-  console.log('StoryFrame: onSetActorAsSpeaker called - Actor:', actor.name, 'ALT key:', event.altKey, 'Event:', event);
-
   // Token image is derived dynamically at render time — no need to store it
   await game.storyframe.socketManager.requestAddSpeaker({
     actorUuid: actor.uuid,
@@ -286,21 +310,27 @@ export async function onSetActorAsSpeaker(event, target, _sidebar) {
  * Extract images from parent journal content
  */
 export function extractJournalImages(sidebar) {
-  if (!sidebar.parentInterface?.element) return [];
+  const element = extractParentElement(sidebar.parentInterface);
+  if (!element) return [];
 
-  // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-  let element = sidebar.parentInterface.element;
-
-  // If it's jQuery or array-like, get first element
-  if (element?.[0] instanceof HTMLElement) {
-    element = element[0];
-  }
-
-  // Validate we have a DOM element
-  if (!(element instanceof HTMLElement) || !element.querySelectorAll) return [];
+  const isMEJ = sidebar.parentInterface.constructor.name === 'EnhancedJournal';
 
   // Get ALL page content elements (supports multi-page view)
-  const contentElements = element.querySelectorAll('.journal-page-content');
+  let contentElements = element.querySelectorAll('.journal-page-content');
+
+  // Fallback for Monk's Enhanced Journal (.content > section)
+  if (contentElements.length === 0) {
+    contentElements = element.querySelectorAll('.enhanced-journal .content > section');
+  }
+
+  // Broader MEJ fallback — try form.content or just section inside content
+  if (contentElements.length === 0 && isMEJ) {
+    contentElements = element.querySelectorAll('form.content > section');
+  }
+  if (contentElements.length === 0 && isMEJ) {
+    contentElements = element.querySelectorAll('.enhanced-journal-body .content');
+  }
+
   if (contentElements.length === 0) return [];
 
   // Get current speakers to filter out (normalize paths for comparison)
@@ -346,21 +376,24 @@ export function extractJournalImages(sidebar) {
  * Extract actors from parent journal content
  */
 export function extractJournalActors(sidebar) {
-  if (!sidebar.parentInterface?.element) return [];
+  const element = extractParentElement(sidebar.parentInterface);
+  if (!element) return [];
 
-  // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
-  let element = sidebar.parentInterface.element;
-
-  // If it's jQuery or array-like, get first element
-  if (element?.[0] instanceof HTMLElement) {
-    element = element[0];
-  }
-
-  // Validate we have a DOM element
-  if (!(element instanceof HTMLElement) || !element.querySelectorAll) return [];
+  const isMEJ = sidebar.parentInterface.constructor.name === 'EnhancedJournal';
 
   // Get ALL page content elements (supports multi-page view)
-  const contentElements = element.querySelectorAll('.journal-page-content');
+  let contentElements = element.querySelectorAll('.journal-page-content');
+  // Fallback for Monk's Enhanced Journal (.content > section)
+  if (contentElements.length === 0) {
+    contentElements = element.querySelectorAll('.enhanced-journal .content > section');
+  }
+  // Broader MEJ fallbacks
+  if (contentElements.length === 0 && isMEJ) {
+    contentElements = element.querySelectorAll('form.content > section');
+  }
+  if (contentElements.length === 0 && isMEJ) {
+    contentElements = element.querySelectorAll('.enhanced-journal-body .content');
+  }
   if (contentElements.length === 0) return [];
 
   // Get current speakers to filter out (extract actor IDs for comparison)

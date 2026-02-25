@@ -249,6 +249,27 @@
   box-shadow: 0 4px 12px rgba(191, 97, 106, 0.5);
 }
 
+.gm-sidebar .tab-header-actions .grid-lock-toggle {
+  margin-left: auto;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  padding: 6px 8px;
+}
+
+.gm-sidebar .tab-header-actions .grid-lock-toggle.active {
+  background: rgba(94, 129, 172, 0.3);
+  border-color: rgba(94, 129, 172, 0.5);
+}
+
+.gm-sidebar .tab-header-actions .grid-lock-toggle:hover {
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Only show grid lock in standalone mode */
+.gm-sidebar.drawer .tab-header-actions .grid-lock-toggle {
+  display: none;
+}
+
 /* Hidden name indicators */
 .speaker-hidden-badge {
   position: absolute !important;

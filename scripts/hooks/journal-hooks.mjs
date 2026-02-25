@@ -16,10 +16,21 @@ import { extractElement } from '../utils/element-utils.mjs';
 export async function handleJournalRender(sheet, html) {
   if (!game.user.isGM) return;
 
-  const element = extractElement(html, sheet);
+  let element = extractElement(html, sheet);
   if (!element) {
     console.warn('StoryFrame: Could not extract element from journal sheet', html);
     return;
+  }
+
+  // ApplicationV2 apps (e.g. MEJ) may pass a sub-element — find the app root
+  if (element instanceof HTMLElement && !element.classList.contains('application') && !element.classList.contains('window-app')) {
+    const appRoot = element.closest('.application');
+    if (appRoot) {
+      element = appRoot;
+    } else {
+      const appId = sheet.options?.id || sheet.id;
+      if (appId) element = document.getElementById(appId) || element;
+    }
   }
 
   // Re-apply peek state if active (re-render replaces DOM, losing the class)
@@ -74,6 +85,17 @@ export async function handleJournalRender(sheet, html) {
   } else if (autoOpen) {
     // Sidebar not open, auto-open if setting enabled
     await _attachSidebarToSheet(sheet);
+  }
+
+  // MEJ renders page content async via renderSubSheet() — re-render sidebar
+  // after a short delay so extractJournalImages/Actors find populated content
+  if (sheet.constructor.name === 'EnhancedJournal') {
+    const sb = game.storyframe.gmSidebar;
+    if (sb?.rendered && sb.parentInterface === sheet) {
+      setTimeout(() => {
+        if (sb.rendered && sb.parentInterface === sheet) sb.render();
+      }, 300);
+    }
   }
 
   // Listen for minimize/maximize events on this journal

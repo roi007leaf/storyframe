@@ -7,6 +7,20 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.16.0] - 2026-02-25
+
+### Added
+
+- **Grid lock toggle** — lock/unlock speaker grid size in standalone mode; locked uses fixed 100px cards, unlocked scales cards with window
+- **Responsive speaker grid** — cards grow proportionally when expanding standalone window; drawer mode fixed at 3 per row
+- **Standalone position memory** — standalone sidebar remembers its position and size across close/reopen
+
+### Fixed
+
+- **Speaker actions no longer re-render window** — cycling images and setting active speaker update DOM directly instead of triggering full re-render, preserving user-set window size
+- **Drawer width reset** — sidebar resets to default width when attaching as drawer, preventing oversized drawer from standalone resize
+- **Speaker control buttons** — scale with card size via container queries, positioned inside card border
+
 ## [1.15.0] - 2026-02-25
 
 ### Added

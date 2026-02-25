@@ -45,6 +45,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       clearAllSpeakers: GMSidebarAppBase._onClearAllSpeakers,
       saveCurrentSpeakers: GMSidebarAppBase._onSaveCurrentSpeakers,
       manageScenes: GMSidebarAppBase._onManageScenes,
+      toggleGridLock: GMSidebarAppBase._onToggleGridLock,
       switchTab: GMSidebarAppBase._onSwitchTab,
       toggleSecretRoll: GMSidebarAppBase._onToggleSecretRoll,
       toggleAllowOnlyOne: GMSidebarAppBase._onToggleAllowOnlyOne,
@@ -274,8 +275,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Check if ALT key is held to hide name from players
     const isNameHidden = event.altKey;
 
-    console.log('StoryFrame: Drop event - ALT key held?', isNameHidden, 'Actor:', actor.name);
-
     // Add actor as speaker (state manager handles duplicate notification)
     // Token image is derived dynamically at render time — no need to store it
     await game.storyframe.socketManager.requestAddSpeaker({
@@ -402,8 +401,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
           currentImagePath: currentImg,
         };
 
-        console.log('StoryFrame: Speaker context -', resolved.name, 'isNameHidden:', result.isNameHidden, 'Raw speaker:', speaker);
-
         if (speaker.actorUuid) {
           const actor = await fromUuid(speaker.actorUuid);
           if (!actor) {
@@ -480,6 +477,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       activeSpeaker: state.activeSpeaker,
       hasSpeakers: speakers.length > 0,
       hasSpeakerScenes: speakerScenes.length > 0,
+      gridLocked: this._gridLocked ?? false,
       ...dcContext,
       partyLevel,
       calculatedDC,
@@ -688,6 +686,14 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    * Cleanup on close
    */
   async _onClose(_options) {
+    // Save standalone position + size for next open
+    if (!this.parentInterface) {
+      this._lastStandalonePos = {
+        width: this.position.width, height: this.position.height,
+        left: this.position.left, top: this.position.top,
+      };
+    }
+
     this._stopTrackingParent();
     JournalHandlers.cleanupJournalObservers(this);
     SkillReorderHandlers.cleanupSkillReorderHandlers(this);
@@ -784,6 +790,11 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onManageScenes(event, target) {
     return SpeakerHandlers.onManageScenes(event, target, this);
+  }
+
+  static _onToggleGridLock(_event, _target) {
+    this._gridLocked = !this._gridLocked;
+    this.render();
   }
 
   static async _onSetImageAsSpeaker(event, target) {
@@ -935,7 +946,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     }
   }
 
-static async _onToggleJournalChecksPanel(_event, _target) {
+  static async _onToggleJournalChecksPanel(_event, _target) {
     this.journalChecksPanelCollapsed = !this.journalChecksPanelCollapsed;
     this.render();
   }

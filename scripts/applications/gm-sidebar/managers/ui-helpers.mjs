@@ -43,13 +43,16 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
   const newTop = parentRect.top;
   const newHeight = parentRect.height;
 
+  // Use default width for drawer mode (user may have resized in floating mode)
+  const defaultWidth = sidebar.constructor.DEFAULT_OPTIONS?.position?.width || 330;
+
   // Check if it would go off-screen, if so position to the left instead
-  const maxLeft = window.innerWidth - sidebar.position.width;
+  const maxLeft = window.innerWidth - defaultWidth;
   let adjustedLeft = newLeft;
 
   if (newLeft > maxLeft) {
     // Position to the left of parent instead
-    adjustedLeft = Math.max(0, parentRect.left - sidebar.position.width);
+    adjustedLeft = Math.max(0, parentRect.left - defaultWidth);
   }
 
   // Use setPosition for ApplicationV2
@@ -58,11 +61,20 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
     return;
   }
 
-  sidebar.setPosition({
-    left: adjustedLeft,
-    top: newTop,
-    height: newHeight,
-  });
+  try {
+    sidebar.setPosition({
+      left: adjustedLeft,
+      top: newTop,
+      width: defaultWidth,
+      height: newHeight,
+    });
+  } catch (e) {
+    // Foundry's _updatePosition can fail if element isn't fully in DOM yet (e.g. MEJ async render)
+    if (retryCount > 0) {
+      setTimeout(() => positionAsDrawer(sidebar, retryCount - 1), 100);
+    }
+    return;
+  }
 
   // Match parent z-index + 1 to appear above it
   const parentZIndex = parseInt(window.getComputedStyle(parentEl).zIndex) || 99;
