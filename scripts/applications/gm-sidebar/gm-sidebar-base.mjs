@@ -478,6 +478,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasSpeakers: speakers.length > 0,
       hasSpeakerScenes: speakerScenes.length > 0,
       gridLocked: this._gridLocked ?? false,
+      gridLockedSize: this._gridLockedSize ?? null,
       ...dcContext,
       partyLevel,
       calculatedDC,
@@ -793,7 +794,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static _onToggleGridLock(_event, _target) {
-    this._gridLocked = !this._gridLocked;
+    if (!this._gridLocked) {
+      // Capture current card width before locking
+      const card = this.element?.querySelector('.speaker-gallery .speaker-thumbnail');
+      this._gridLockedSize = card ? card.offsetWidth : 100;
+      this._gridLocked = true;
+    } else {
+      this._gridLocked = false;
+      this._gridLockedSize = null;
+    }
     this.render();
   }
 

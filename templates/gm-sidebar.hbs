@@ -58,12 +58,12 @@
             <i class="fas fa-folder" aria-hidden="true"></i>
           </button>
           {{/if}}
-          <button type="button" data-action="toggleGridLock" class="grid-lock-toggle {{#if gridLocked}}active{{/if}}" data-tooltip="{{#if gridLocked}}Unlock grid (cards grow with window){{else}}Lock grid (fixed card size){{/if}}" aria-label="Toggle grid lock">
+          <button type="button" data-action="toggleGridLock" class="grid-lock-toggle {{#if gridLocked}}active{{/if}}" data-tooltip="{{#if gridLocked}}Unlock grid (cards grow with window){{else}}Lock grid (freeze current card size){{/if}}" aria-label="Toggle grid lock">
             <i class="fas {{#if gridLocked}}fa-lock{{else}}fa-lock-open{{/if}}" aria-hidden="true"></i>
           </button>
         </div>
 
-        <div class="speaker-gallery {{#if gridLocked}}grid-locked{{/if}}" role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.NPCSpeakers"}}">
+        <div class="speaker-gallery {{#if gridLocked}}grid-locked{{/if}}" {{#if gridLockedSize}}style="grid-template-columns: repeat(auto-fill, {{gridLockedSize}}px);"{{/if}} role="list" aria-label="{{localize "STORYFRAME.UI.AriaLabels.NPCSpeakers"}}">
         {{#if hasSpeakers}}
           {{#each speakers}}
             <div class="speaker-thumbnail {{#if (eq ../activeSpeaker this.id)}}active{{/if}} {{#if this.actorDeleted}}deleted{{/if}} {{#if this.isHidden}}speaker-hidden{{/if}}"
