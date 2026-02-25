@@ -134,6 +134,14 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
     }
   }
 
+  // Check if Monks TokenBar integration is enabled
+  const useMTB = game.settings.get(MODULE_ID, 'useMonksTokenBar');
+  let mtb = null;
+  if (useMTB) {
+    mtb = await import('../../../integrations/monks-tokenbar.mjs');
+    if (!mtb.isActive()) mtb = null;
+  }
+
   let sentCount = 0;
   let offlineCount = 0;
   let missingSkillCount = 0;
@@ -142,6 +150,7 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
   const missingIds = new Set();
   const offlineNames = new Set();
   const missingNames = new Set();
+  const mtbActorUuids = [];
 
   for (const actorUuid of actorUuids) {
     const actor = await fromUuid(actorUuid);
@@ -165,26 +174,60 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
       continue;
     }
 
-    const requestId = foundry.utils.randomID();
-    const request = {
-      id: requestId,
-      actorUuid,
-      userId: user.id,
-      skillSlug,
-      checkType,
-      actionSlug,
-      actionVariant,
-      dc: sidebar.currentDC,
-      isSecretRoll,
-      timestamp: Date.now(),
-      batchGroupId,
-      allowOnlyOne,
-    };
+    if (mtb) {
+      // Route through Monks TokenBar — no pending roll needed
+      mtbActorUuids.push(actorUuid);
+    } else {
+      const requestId = foundry.utils.randomID();
+      const request = {
+        id: requestId,
+        actorUuid,
+        userId: user.id,
+        skillSlug,
+        checkType,
+        actionSlug,
+        actionVariant,
+        dc: sidebar.currentDC,
+        isSecretRoll,
+        timestamp: Date.now(),
+        batchGroupId,
+        allowOnlyOne,
+      };
 
-    await game.storyframe.socketManager.requestAddPendingRoll(request);
-    await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
+      await game.storyframe.socketManager.requestAddPendingRoll(request);
+      await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
+    }
     sentCount++;
     sentIds.add(actorUuid);
+  }
+
+  // Batch-send to Monks TokenBar (one chat card for all participants)
+  if (mtb && mtbActorUuids.length > 0) {
+    const mtbSent = await mtb.requestRoll({
+      actorUuids: mtbActorUuids,
+      skillSlug,
+      checkType,
+      dc: sidebar.currentDC,
+      isSecret: isSecretRoll,
+    });
+
+    // Fall back to native StoryFrame if MTB failed
+    if (!mtbSent) {
+      for (const actorUuid of mtbActorUuids) {
+        const actor = await fromUuid(actorUuid);
+        if (!actor) continue;
+        const user = game.users.find(u => u.active && !u.isGM && actor.testUserPermission?.(u, 'OWNER'));
+        if (!user) continue;
+        const requestId = foundry.utils.randomID();
+        const request = {
+          id: requestId, actorUuid, userId: user.id, skillSlug, checkType,
+          actionSlug, actionVariant, dc: sidebar.currentDC, isSecretRoll,
+          timestamp: Date.now(), batchGroupId, allowOnlyOne,
+        };
+        await game.storyframe.socketManager.requestAddPendingRoll(request);
+        await game.storyframe.socketManager.triggerSkillCheckOnPlayer(user.id, request);
+      }
+    }
   }
 
   // Get appropriate name and notification based on check type

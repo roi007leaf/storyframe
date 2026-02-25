@@ -147,6 +147,7 @@ export function setupJournalCheckHighlighting(sidebar) {
   // Try multiple selectors for different journal sheet types
   const scrollContainer = parentElement.querySelector('.journal-entry-pages') ||
     parentElement.querySelector('.journal-entry-content') ||
+    parentElement.querySelector('.enhanced-journal .content > section') ||
     parentElement.querySelector('.scrollable') ||
     parentElement.querySelector('.journal-page-content')?.parentElement;
 
@@ -299,6 +300,7 @@ export function setupJournalContentObserver(sidebar) {
   // Watch the journal pages container for new content
   const pagesContainer = parentElement.querySelector('.journal-entry-pages') ||
     parentElement.querySelector('.journal-entry-content') ||
+    parentElement.querySelector('.enhanced-journal .content > section') ||
     parentElement;
 
   if (!pagesContainer) return;

@@ -7,7 +7,13 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.14.1] - 2026-02-25
+## [1.15.0] - 2026-02-25
+
+### Added
+
+- **Monk's Enhanced Journal support** — sidebar attaches to MEJ windows with toggle button, check enrichment, and proper close/reattach behavior, matching standard journal integration
+
+- **Monks TokenBar integration** — when enabled in settings and Monks TokenBar is active, skill checks and saves requested through StoryFrame route through MTB's group roll UI instead of built-in player viewer prompts; roll results are captured back into StoryFrame's roll history via the `monks-tokenbar.updateRoll` hook
 
 ### Fixed
 

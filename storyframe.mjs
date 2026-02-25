@@ -358,6 +358,15 @@ Hooks.once('init', () => {
     default: '',
   });
 
+  game.settings.register(MODULE_ID, 'useMonksTokenBar', {
+    name: 'Use Monks TokenBar for Rolls',
+    hint: 'Route skill checks and saves through Monks TokenBar instead of the built-in player viewer prompts. Requires Monks TokenBar module to be active.',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'gmWindowWasOpen', {
     scope: 'client',
     config: false,
@@ -826,6 +835,12 @@ Hooks.once('ready', async () => {
     setupDamageRollTargetInterception();
   }
 
+  // Initialize Monks TokenBar integration hooks (GM only)
+  if (game.user.isGM && game.settings.get(MODULE_ID, 'useMonksTokenBar')) {
+    const mtb = await import('./scripts/integrations/monks-tokenbar.mjs');
+    mtb.initHooks();
+  }
+
   // Migration: Detect and perform migration from 1.x to 2.x
   const oldVersion = game.settings.get(MODULE_ID, 'moduleVersion');
   const currentVersion = game.modules.get(MODULE_ID).version;
@@ -941,12 +956,16 @@ Hooks.on('renderJournalSheet', handleJournalRender);
 Hooks.on('renderJournalEntrySheet', handleJournalRender);
 Hooks.on('renderJournalEntrySheet5e', handleJournalRender);
 Hooks.on('renderMetaMorphicJournalEntrySheet', handleJournalRender);
+Hooks.on('renderEnhancedJournal', handleJournalRender);
 // Hook: renderJournalEntryPageProseMirrorSheet (Daggerheart - fires per page render)
 Hooks.on('renderJournalEntryPageProseMirrorSheet', handleDaggerheartPageRender);
 
 // Hook: closeJournalSheet (handle sidebar reattachment)
 Hooks.on('closeJournalSheet', handleJournalClose);
+Hooks.on('closeJournalEntrySheet', handleJournalClose);
 Hooks.on('closeJournalEntrySheet5e', handleJournalClose);
+Hooks.on('closeMetaMorphicJournalEntrySheet', handleJournalClose);
+Hooks.on('closeEnhancedJournal', handleJournalClose);
 
 // Hook: Manage player sidebar lifecycle with player viewer
 Hooks.on('renderPlayerViewerApp', handlePlayerViewerRender);

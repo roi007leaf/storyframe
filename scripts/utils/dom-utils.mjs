@@ -17,6 +17,7 @@ export function findJournalContent(element) {
   return (
     element.querySelector('.journal-entry-pages') ||
     element.querySelector('.journal-entry-content') ||
+    element.querySelector('.enhanced-journal .content > section') ||
     element.querySelector('.scrollable') ||
     element.querySelector('.journal-page-content')?.parentElement ||
     element.querySelector(SELECTORS.JOURNAL_CONTENT) ||

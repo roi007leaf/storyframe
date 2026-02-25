@@ -106,12 +106,7 @@ export async function handleJournalClose(sheet) {
 
   // Find other open journals (all supported types)
   const openJournals = Object.values(ui.windows).filter(
-    (app) =>
-      (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-        app.constructor.name === 'JournalEntrySheet5e' ||
-        app.constructor.name === 'MetaMorphicJournalEntrySheet') &&
-      app !== sheet &&
-      app.rendered,
+    (app) => _isJournalApp(app) && app !== sheet && app.rendered,
   );
 
   if (openJournals.length > 0) {
@@ -135,6 +130,21 @@ export async function handleJournalClose(sheet) {
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * Check if an application is a supported journal-like window
+ * @param {Object} app
+ * @returns {boolean}
+ * @private
+ */
+function _isJournalApp(app) {
+  return (
+    app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
+    app.constructor.name === 'JournalEntrySheet5e' ||
+    app.constructor.name === 'MetaMorphicJournalEntrySheet' ||
+    app.constructor.name === 'EnhancedJournal'
+  );
+}
 
 /**
  * Inject sidebar toggle button into journal header
@@ -261,8 +271,7 @@ async function _attachSidebarToSheet(sheet) {
  */
 export function _updateAllJournalToggleButtons() {
   const openJournals = Object.values(ui.windows).filter(
-    (app) =>
-      app instanceof foundry.applications.sheets.journal.JournalEntrySheet && app.rendered,
+    (app) => _isJournalApp(app) && app.rendered,
   );
 
   for (const journal of openJournals) {
@@ -726,11 +735,7 @@ function _getActiveJournalAndSidebar() {
   // Priority 2: topmost open journal
   if (!sheet) {
     const openJournals = Object.values(ui.windows).filter(
-      (app) =>
-        (app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
-          app.constructor.name === 'JournalEntrySheet5e' ||
-          app.constructor.name === 'MetaMorphicJournalEntrySheet') &&
-        app.rendered,
+      (app) => _isJournalApp(app) && app.rendered,
     );
     if (openJournals.length > 0) {
       sheet = openJournals[openJournals.length - 1];
