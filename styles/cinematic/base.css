@@ -43,6 +43,12 @@
   z-index: 100000 !important;
 }
 
+/* FilePicker must appear above the fullscreen cinematic overlay */
+#file-picker,
+.filepicker {
+  z-index: 100000 !important;
+}
+
 .cinematic-scene-container {
   position: relative;
   width: 100%;
