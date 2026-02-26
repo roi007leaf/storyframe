@@ -43,6 +43,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     // Checks without entries fall back to the globally selected PCs.
     this._links = new Map();
     this.allowOnlyOne = false; // Allow-only-one toggle state
+    this._draggingUid = null;  // UID of the check currently being dragged
     this._autoSized = false;
     this.resolve = null;
     this.promise = new Promise((resolve) => {
@@ -114,6 +115,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     checksList.addEventListener('dragstart', (e) => {
       const item = e.target.closest('.check-item');
       if (!item) return;
+      this._draggingUid = item.dataset.uid;
       e.dataTransfer.effectAllowed = 'copy';
       e.dataTransfer.setData('text/plain', item.dataset.uid);
       item.classList.add('dragging');
@@ -123,9 +125,10 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     checksList.addEventListener('dragend', (e) => {
       const item = e.target.closest('.check-item');
       if (item) item.classList.remove('dragging');
+      this._draggingUid = null;
       participantsGrid.classList.remove('drag-active');
-      participantsGrid.querySelectorAll('.participant-content.drop-target').forEach(el => {
-        el.classList.remove('drop-target');
+      participantsGrid.querySelectorAll('.participant-content.drop-target, .participant-content.drop-ineligible').forEach(el => {
+        el.classList.remove('drop-target', 'drop-ineligible');
       });
     });
 
@@ -135,7 +138,23 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       const content = e.target.closest('.participant-content');
       if (!content) return;
       e.preventDefault();
+
+      // If the dragged check has eligibility restrictions, show a not-allowed indicator
+      // for PCs that don't qualify (e.g. a lore skill the PC doesn't possess).
+      if (this._draggingUid) {
+        const check = this.checks.find(c => c._uid === this._draggingUid);
+        const pcLabel = content.closest('.participant-card');
+        const pcId = pcLabel?.querySelector('input[name="participant"]')?.value;
+        if (check?.eligiblePcIds instanceof Set && pcId && !check.eligiblePcIds.has(pcId)) {
+          e.dataTransfer.dropEffect = 'none';
+          content.classList.remove('drop-target');
+          content.classList.add('drop-ineligible');
+          return;
+        }
+      }
+
       e.dataTransfer.dropEffect = 'copy';
+      content.classList.remove('drop-ineligible');
       content.classList.add('drop-target');
     });
 
@@ -144,7 +163,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       if (!content) return;
       // Only remove the class when the cursor genuinely leaves this element
       if (!content.contains(e.relatedTarget)) {
-        content.classList.remove('drop-target');
+        content.classList.remove('drop-target', 'drop-ineligible');
       }
     });
 
@@ -152,7 +171,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       const content = e.target.closest('.participant-content');
       if (!content) return;
       e.preventDefault();
-      content.classList.remove('drop-target');
+      content.classList.remove('drop-target', 'drop-ineligible');
       const uid = e.dataTransfer.getData('text/plain');
       const pcLabel = content.closest('.participant-card');
       const pcId = pcLabel?.querySelector('input[name="participant"]')?.value;
@@ -175,6 +194,20 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
    * Idempotent — calling it twice for the same pair is a no-op.
    */
   _addLink(uid, pcId) {
+    // Reject the link if this PC is ineligible for the check (e.g. missing lore skill).
+    const check = this.checks.find(c => c._uid === uid);
+    if (check?.eligiblePcIds instanceof Set && !check.eligiblePcIds.has(pcId)) {
+      const pc = this.participants.find(p => p.id === pcId);
+      const systemSkills = SystemAdapter.getSkills();
+      const skillName = systemSkills[check.skillName]?.name
+        || check.skillName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PCLacksSkill', {
+        name: pc?.name ?? pcId,
+        skillName,
+      }));
+      return;
+    }
+
     if (!this._links.has(uid)) this._links.set(uid, new Set());
     const links = this._links.get(uid);
     if (links.has(pcId)) return; // Already linked

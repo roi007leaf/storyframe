@@ -94,11 +94,13 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
 
-  // For lore skill checks, only filter PCs when opening a fresh dialog (no existing instance).
-  // If a dialog is already open it may contain non-lore checks, so all PCs must remain
-  // selectable; the post-selection validation in requestSkillCheck will skip ineligible ones.
+  // For lore skill checks, compute which PCs are eligible.
+  // When opening a fresh dialog, restrict the visible PC list to eligible PCs only.
+  // When adding to an existing dialog, all PCs remain visible but eligiblePcIds is
+  // attached to the check so the dialog can block drag-to-link for ineligible PCs.
   let eligiblePcs = pcs;
-  if (checkType === 'skill' && skillSlug.includes('-lore') && !RollRequestDialog._instance) {
+  let eligiblePcIds = null; // null means no restriction
+  if (checkType === 'skill' && skillSlug.includes('-lore')) {
     const eligibilityResults = await Promise.all(
       pcs.map(async pc => {
         const actor = await fromUuid(pc.actorUuid);
@@ -106,15 +108,23 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
         return actorHasSkill(sidebar, actor, skillSlug);
       })
     );
-    eligiblePcs = pcs.filter((_, i) => eligibilityResults[i]);
-    if (eligiblePcs.length === 0) {
+    const lorePcs = pcs.filter((_, i) => eligibilityResults[i]);
+    eligiblePcIds = new Set(lorePcs.map(p => p.id));
+    if (!RollRequestDialog._instance) {
+      eligiblePcs = lorePcs;
+      if (eligiblePcs.length === 0) {
+        const skillName = getSkillName(skillSlug);
+        ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
+        return;
+      }
+    } else if (eligiblePcIds.size === 0) {
       const skillName = getSkillName(skillSlug);
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
       return;
     }
   }
 
-  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant }];
+  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant, eligiblePcIds }];
   const result = await RollRequestDialog.subscribe(checks, eligiblePcs);
   if (!result) return;
 

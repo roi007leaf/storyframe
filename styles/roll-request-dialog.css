@@ -286,6 +286,14 @@
   box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.35) !important;
 }
 
+/* PC card shown as an invalid drop target (PC doesn't have the required skill) */
+.roll-request-dialog .participant-content.drop-ineligible {
+  border-color: rgba(220, 80, 80, 0.7) !important;
+  background: rgba(220, 80, 80, 0.12) !important;
+  box-shadow: 0 0 0 2px rgba(220, 80, 80, 0.3) !important;
+  cursor: not-allowed;
+}
+
 /* Badge showing how many checks are drag-linked to this PC */
 .roll-request-dialog .pc-link-badge {
   position: absolute;
