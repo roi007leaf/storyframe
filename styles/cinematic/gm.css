@@ -1405,6 +1405,44 @@
   background: rgba(191, 97, 106, 0.15);
 }
 
+/* ===== Speaker Counter ===== */
+.cinematic-scene-container .speaker-counter {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: var(--sf-space-sm, 8px);
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-sm, 4px);
+  overflow: hidden;
+}
+
+.cinematic-scene-container .counter-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 7px;
+  transition: background 0.1s, color 0.1s;
+}
+
+.cinematic-scene-container .counter-btn:hover {
+  background: rgba(94, 129, 172, 0.25);
+  color: #fff;
+}
+
+.cinematic-scene-container .counter-value {
+  min-width: 2ch;
+  text-align: center;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.9);
+  padding: 0 4px;
+}
+
 /* ===== Preset Button ===== */
 .cinematic-scene-container .cinematic-preset-btn {
   width: 32px;

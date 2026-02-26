@@ -7,6 +7,64 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-02-26
+
+### Added
+
+- **Frame Mode** — a full-screen cinematic overlay launched from a new film-reel button in the Tokens toolbar (GM only); replaces the normal Foundry UI with an immersive scene for both GM and players
+
+  **Stage**
+  - Letterbox bars, dark vignette, and fade-in animation on launch
+  - Active speaker spotlight with portrait, glow, and nameplate; deselect button sits inline next to the name
+  - Image preview mode — GM can push a full-screen image to all players; players see it with a close button
+  - Filmstrip of inactive speakers along the bottom; click any to make them active
+  - PC row above the filmstrip showing all party members (PF2e party roster, or all player-owned characters on other systems); click to open character sheet
+
+  **GM — Right Panel (slide-out)**
+  - DC input with preset picker and secret-roll toggle
+  - Skill check buttons — request rolls from all participants with one click; opens Full Sidebar for advanced targeting
+  - Challenge deployment — send saved challenges from the library directly to players
+  - Chat log with full context-menu support
+
+  **GM — Left Panel (slide-out)**
+  - Speaker Scenes — load saved NPC lineups with a single click
+  - Journal browser — search and open journal entries; inline page tabs, image buttons, minimise/restore; auto-opens the scene journal if one is linked
+  - Music player — transport controls (play/pause, stop, prev/next, shuffle, repeat), volume slider, now-playing display, playlist browser with expand/collapse, and full-text track search
+
+  **GM — Filmstrip speaker controls**
+  - Per-speaker buttons: hide from players, toggle name visibility, edit display name, remove, and cycle alt images
+  - Inline left/right arrows for alt-image navigation
+
+  **GM — Floating panels**
+  - Pending rolls panel — live list of outstanding roll requests with per-request cancel; draggable, position persisted
+  - Active challenges panel — live list of active challenges with remove button; draggable, position persisted
+
+  **Player view**
+  - Roll panel (bottom-right, collapsible) — shows pending skill-check requests grouped by actor; "Choose One" badge for batch groups; auto-expands on new arrivals
+  - Challenge panel (bottom-left, collapsible) — shows active challenges with per-option skill buttons; buttons are locked and greyed out for skills below the required proficiency rank; auto-expands on new arrivals
+  - Player chat (top-right, collapsible) — scrollable chat log with live message appending
+
+  **Resizable & persistent UI**
+  - Both GM panels have drag handles on their inner edges; widths clamp 200–600 px and are saved per client
+  - Section heights within each panel are drag-resizable and persisted
+  - Relaunch button pushes the current scene to all connected players mid-session
+
+- **Speaker Controls Mode setting** — client setting with three display options for speaker action buttons (edit, remove, hide, image nav) on speaker cards in both the regular sidebar and the Frame Mode filmstrip:
+  - *Hover* — buttons appear as an overlay on mouse-over (default)
+  - *Sides* — edit/hide/remove on the left edge, image navigation on the right edge, always visible
+  - *Bottom bar* — all controls in a bar below the speaker name, always visible
+
+- **Grid size slider** — a range slider in the GM sidebar toolbar lets you continuously resize speaker cards in standalone mode without entering grid-lock; saved per client
+
+### Fixed
+
+- **Dice So Nice above Frame Mode** — 3D dice now render above the cinematic overlay instead of being hidden behind it
+- **Frame Mode chat log with Dice So Nice** — roll messages re-render in the cinematic chat log after the DSN animation completes, so results are always visible
+- **Filmstrip position with GM panels** — the inactive-speaker filmstrip no longer shifts left/right when GM panels open or close; it now only yields space for player-side UI panels
+- **Spotlight size with closed panels** — the active speaker portrait no longer shrinks when a panel is closed; it only adjusts for panels that are currently open
+- **Right-click image fullscreen for active speaker** — right-clicking the active speaker spotlight portrait in the non-cinematic Player Viewer now correctly opens the fullscreen image popup, matching the behaviour for inactive speakers
+- **Party PCs in Frame Mode** — the PC row now draws from the same party-member source used everywhere else in StoryFrame (PF2e party actor members, or all player-owned characters) rather than only the manually added session participants
+
 ## [1.16.2] - 2026-02-25
 
 ### Fixed

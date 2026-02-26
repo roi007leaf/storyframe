@@ -41,6 +41,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevActiveKey = '';
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
+    this._prevBackgroundKey = '';
     this._debouncedRender = foundry.utils.debounce(() => this.render(), 150);
   }
 
@@ -88,6 +89,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       pcRow,
       previewImageSrc: this.previewImageSrc,
       speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
+      sceneBackground: state.sceneBackground || null,
     };
   }
 
@@ -106,16 +108,19 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       : '';
     const activeKey = state.activeSpeaker || '';
     const participantKey = (state.participants || []).map(p => p.id).join(',');
+    const backgroundKey = state.sceneBackground || '';
 
     const structuralChange = speakerKey !== this._prevSpeakerKey
       || activeKey !== this._prevActiveKey
-      || participantKey !== this._prevParticipantKey;
+      || participantKey !== this._prevParticipantKey
+      || backgroundKey !== this._prevBackgroundKey;
     const flagsChanged = game.user.isGM && speakerFlagsKey !== this._prevSpeakerFlagsKey;
 
     this._prevSpeakerKey = speakerKey;
     this._prevSpeakerFlagsKey = speakerFlagsKey;
     this._prevActiveKey = activeKey;
     this._prevParticipantKey = participantKey;
+    this._prevBackgroundKey = backgroundKey;
 
     if (structuralChange) {
       this.render();
@@ -178,6 +183,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         : '';
       this._prevActiveKey = _seedState.activeSpeaker || '';
       this._prevParticipantKey = (_seedState.participants || []).map(p => p.id).join(',');
+      this._prevBackgroundKey = _seedState.sceneBackground || '';
     }
   }
 
@@ -251,14 +257,21 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
   _getSkillIcon(slug) {
     const iconMap = {
+      // PF2e skills
       per: 'fa-eye', acr: 'fa-person-running', arc: 'fa-wand-sparkles',
       ath: 'fa-dumbbell', cra: 'fa-hammer', dec: 'fa-mask',
       dip: 'fa-handshake', itm: 'fa-fist-raised', med: 'fa-kit-medical',
       nat: 'fa-leaf', occ: 'fa-book-skull', prf: 'fa-music',
       rel: 'fa-cross', soc: 'fa-users', ste: 'fa-user-secret',
       sur: 'fa-compass', thi: 'fa-hand-holding',
+      // D&D 5e skills
       ani: 'fa-paw', his: 'fa-scroll', ins: 'fa-lightbulb',
       inv: 'fa-search', prc: 'fa-eye', slt: 'fa-hand-sparkles',
+      // PF2e saves
+      fort: 'fa-shield-halved', ref: 'fa-bolt', will: 'fa-brain',
+      // D&D 5e ability saves
+      str: 'fa-dumbbell', dex: 'fa-person-running', con: 'fa-heart',
+      int: 'fa-book', wis: 'fa-eye', cha: 'fa-star',
     };
     return iconMap[slug] || 'fa-dice-d20';
   }

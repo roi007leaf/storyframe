@@ -1,4 +1,9 @@
 <div class="cinematic-scene-container">
+  {{!-- Scene background image --}}
+  {{#if sceneBackground}}
+  <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+  {{/if}}
+
   {{!-- Letterbox bars --}}
   <div class="letterbox letterbox-top"></div>
   <div class="letterbox letterbox-bottom"></div>
@@ -183,6 +188,14 @@
     <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
       <i class="fas fa-sliders-h" aria-hidden="true"></i>
     </button>
+    <button type="button" class="gm-control-btn {{#if sceneBackground}}active{{/if}}" data-action="setBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.SetBackground'}}">
+      <i class="fas fa-image" aria-hidden="true"></i>
+    </button>
+    {{#if sceneBackground}}
+    <button type="button" class="gm-control-btn" data-action="clearBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ClearBackground'}}">
+      <i class="fas fa-image-slash" aria-hidden="true"></i>
+    </button>
+    {{/if}}
     <button type="button" class="gm-control-btn" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RelaunchForPlayers'}}">
       <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
     </button>

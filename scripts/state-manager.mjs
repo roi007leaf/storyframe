@@ -100,6 +100,22 @@ export class StateManager {
   }
 
   /**
+   * Set or clear the cinematic scene background image and persist.
+   * @param {string|null} url - Image path or null to clear
+   */
+  async setSceneBackground(url) {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.sceneBackground = url || null;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    this._broadcast();
+    game.storyframe.cinematicScene?.render();
+  }
+
+  /**
    * Update speakers list and persist.
    * @param {Array} speakers - New speakers array
    */

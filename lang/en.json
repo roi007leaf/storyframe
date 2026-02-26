@@ -413,6 +413,8 @@
       "NoJournalsFound": "No journals found",
       "SearchTracks": "Search tracks...",
       "ChatLog": "Chat Log",
+      "SetBackground": "Set Scene Background",
+      "ClearBackground": "Clear Background",
       "DeselectSpeaker": "Deselect Speaker",
       "ShowSpeaker": "Show speaker",
       "HideSpeaker": "Hide speaker",

@@ -1,4 +1,9 @@
 <div class="cinematic-scene-container">
+  {{!-- Scene background image --}}
+  {{#if sceneBackground}}
+  <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+  {{/if}}
+
   {{!-- Letterbox bars --}}
   <div class="letterbox letterbox-top"></div>
   <div class="letterbox letterbox-bottom"></div>
@@ -23,6 +28,11 @@
       <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
         <i class="fas fa-user-slash" aria-hidden="true"></i>
       </button>
+      <div class="speaker-counter">
+        <button type="button" class="counter-btn" data-action="decrementCounter">−</button>
+        <span class="counter-value">{{activeSpeakerCounter}}</span>
+        <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
+      </div>
     </div>
   </div>
   {{else}}
@@ -100,6 +110,14 @@
     <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
       <i class="fas fa-sliders-h" aria-hidden="true"></i>
     </button>
+    <button type="button" class="gm-control-btn {{#if sceneBackground}}active{{/if}}" data-action="setBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.SetBackground'}}">
+      <i class="fas fa-image" aria-hidden="true"></i>
+    </button>
+    {{#if sceneBackground}}
+    <button type="button" class="gm-control-btn" data-action="clearBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ClearBackground'}}">
+      <i class="fas fa-image-slash" aria-hidden="true"></i>
+    </button>
+    {{/if}}
     <button type="button" class="gm-control-btn" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RelaunchForPlayers'}}">
       <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
     </button>
@@ -393,7 +411,22 @@
             {{#each journalSkillGroups}}
               {{#each this.checks}}
               <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
+                <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
+                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+              </button>
+              {{/each}}
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if hasJournalLore}}
+          <div class="cinematic-saves-divider">{{localize "STORYFRAME.UI.Labels.JournalLore"}}</div>
+          <div class="side-panel-skills">
+            {{#each journalLoreGroups}}
+              {{#each this.checks}}
+              <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
+                <i class="fas fa-book" aria-hidden="true"></i>
+                <span>{{../displayName}}</span>
                 {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
               </button>
               {{/each}}
@@ -406,6 +439,7 @@
             {{#each journalSaveGroups}}
               {{#each this.checks}}
               <button type="button" class="side-panel-skill-btn side-panel-save-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="save">
+                <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
                 {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
               </button>
@@ -413,6 +447,7 @@
             {{/each}}
           </div>
           {{/if}}
+          <div class="cinematic-saves-divider">{{localize "STORYFRAME.UI.Labels.Skills"}}</div>
           <div class="side-panel-skills">
             {{#each quickSkills}}
             <button type="button" class="side-panel-skill-btn" data-action="requestQuickSkill" data-skill="{{this.slug}}">
@@ -427,6 +462,17 @@
             {{#each quickSaves}}
             <button type="button" class="side-panel-skill-btn side-panel-save-btn" data-action="requestQuickSave" data-skill="{{this.slug}}">
               <i class="fas {{this.icon}}" aria-hidden="true"></i>
+              <span>{{this.name}}</span>
+            </button>
+            {{/each}}
+          </div>
+          {{/if}}
+          {{#if hasLoreSkills}}
+          <div class="cinematic-saves-divider">{{localize "STORYFRAME.ChallengeBuilder.LoreSkills"}}</div>
+          <div class="side-panel-skills">
+            {{#each loreSkills}}
+            <button type="button" class="side-panel-skill-btn" data-action="requestQuickSkill" data-skill="{{this.slug}}">
+              <i class="fas fa-book" aria-hidden="true"></i>
               <span>{{this.name}}</span>
             </button>
             {{/each}}

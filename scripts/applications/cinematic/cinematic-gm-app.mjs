@@ -49,6 +49,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       cycleSpeakerImagePrev: CinematicGMApp._onCycleSpeakerImagePrev,
       addSpeakerAltImage: CinematicGMApp._onAddSpeakerAltImage,
       removeSpeakerAltImage: CinematicGMApp._onRemoveSpeakerAltImage,
+      setBackground: CinematicGMApp._onSetBackground,
+      clearBackground: CinematicGMApp._onClearBackground,
+      incrementCounter: CinematicGMApp._onIncrementCounter,
+      decrementCounter: CinematicGMApp._onDecrementCounter,
     },
   };
 
@@ -72,9 +76,11 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.openJournalPageId = null;
     this.journalMinimized = false;
     this.journalSearchQuery = '';
+    this._speakerCounters = {};
     this._escHandler = null;
     this._playlistHookIds = [];
     this._chatHookId = null;
+    this._chatDeleteHookId = null;
     const savedHeights = game.settings.get(MODULE_ID, 'cinematicSectionHeights') || {};
     this._sectionHeights = {
       scenes: savedHeights.scenes ?? null,
@@ -264,10 +270,12 @@ export class CinematicGMApp extends CinematicSceneBase {
       }
     }
 
-    // Journal checks/saves from the currently open journal
+    // Journal checks/saves/lore from the currently open journal + PC lore skills
     let journalSkillGroups = [];
+    let journalLoreGroups = [];
     let journalSaveGroups = [];
-    if (hasParticipants && openJournal?.enrichedContent) {
+    let loreSkills = [];
+    if (hasParticipants) {
       try {
         const sys = SystemAdapter.detectSystem();
         let SidebarClass;
@@ -280,16 +288,32 @@ export class CinematicGMApp extends CinematicSceneBase {
         } else {
           ({ GMSidebarAppBase: SidebarClass } = await import('../gm-sidebar/gm-sidebar-base.mjs'));
         }
-        const tempEl = document.createElement('div');
-        tempEl.innerHTML = openJournal.enrichedContent;
-        const rawChecks = SidebarClass.prototype._parseChecksFromContent.call({}, tempEl);
-        const { groupChecksBySkill } = await import('../gm-sidebar/managers/journal-handlers.mjs');
-        const grouped = groupChecksBySkill(rawChecks);
-        for (const group of grouped) {
-          const skillChecks = group.checks.filter(c => c.checkType === 'skill' || !c.checkType);
-          const saveChecks = group.checks.filter(c => c.checkType === 'save');
-          if (skillChecks.length) journalSkillGroups.push({ ...group, checks: skillChecks });
-          if (saveChecks.length) journalSaveGroups.push({ ...group, checks: saveChecks });
+
+        // PC lore skills
+        loreSkills = await SidebarClass._getLoreSkills(null, null);
+
+        // Journal checks
+        if (openJournal?.enrichedContent) {
+          const tempEl = document.createElement('div');
+          tempEl.innerHTML = openJournal.enrichedContent;
+          const rawChecks = SidebarClass.prototype._parseChecksFromContent.call({}, tempEl);
+          const { groupChecksBySkill } = await import('../gm-sidebar/managers/journal-handlers.mjs');
+          const grouped = groupChecksBySkill(rawChecks);
+          for (const group of grouped) {
+            const isLore = group.skillSlug?.includes('-lore');
+            const skillChecks = group.checks.filter(c => c.checkType === 'skill' || !c.checkType);
+            const saveChecks = group.checks.filter(c => c.checkType === 'save');
+            if (skillChecks.length) {
+              const entry = { ...group, icon: this._getSkillIcon(group.skillSlug), checks: skillChecks };
+              if (isLore) {
+                entry.displayName = group.skillName.replace(/[- ]?lore$/i, '');
+                journalLoreGroups.push(entry);
+              } else {
+                journalSkillGroups.push(entry);
+              }
+            }
+            if (saveChecks.length) journalSaveGroups.push({ ...group, icon: this._getSkillIcon(group.skillSlug), checks: saveChecks });
+          }
         }
       } catch (err) {
         console.warn('StoryFrame | Failed to parse journal checks for cinematic panel', err);
@@ -303,10 +327,15 @@ export class CinematicGMApp extends CinematicSceneBase {
       quickSkills,
       quickSaves,
       journalSkillGroups,
+      journalLoreGroups,
       journalSaveGroups,
+      loreSkills,
       hasJournalChecks: journalSkillGroups.length > 0,
+      hasJournalLore: journalLoreGroups.length > 0,
       hasJournalSaves: journalSaveGroups.length > 0,
+      hasLoreSkills: loreSkills.length > 0,
       hasParticipants,
+      activeSpeakerCounter: base.activeSpeakerId != null ? (this._speakerCounters[base.activeSpeakerId] ?? 0) : null,
       currentDC: this.currentDC,
       secretRollEnabled: this.secretRollEnabled,
       speakerScenes,
@@ -509,6 +538,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       this._chatHookId = Hooks.on('createChatMessage', (msg) => {
         this._appendChatMessage(chatContainer, msg);
       });
+      if (this._chatDeleteHookId != null) Hooks.off('deleteChatMessage', this._chatDeleteHookId);
+      this._chatDeleteHookId = Hooks.on('deleteChatMessage', (msg) => {
+        chatContainer.querySelector(`.message[data-message-id="${msg.id}"]`)?.remove();
+      });
     }
 
     // Apply saved panel widths
@@ -561,6 +594,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       Hooks.off('createChatMessage', this._chatHookId);
       this._chatHookId = null;
     }
+    if (this._chatDeleteHookId != null) {
+      Hooks.off('deleteChatMessage', this._chatDeleteHookId);
+      this._chatDeleteHookId = null;
+    }
     this.sidePanelOpen = false;
     this.currentDC = null;
     this.secretRollEnabled = false;
@@ -581,6 +618,39 @@ export class CinematicGMApp extends CinematicSceneBase {
 
   static async _onExitScene() {
     game.storyframe.socketManager.closeSceneMode();
+  }
+
+  static _onSetBackground() {
+    const current = game.storyframe.stateManager?.getState()?.sceneBackground;
+    new FilePicker({
+      type: 'imagevideo',
+      current,
+      callback: async (path) => {
+        await game.storyframe.stateManager.setSceneBackground(path);
+      },
+    }).browse(current ?? '');
+  }
+
+  static async _onClearBackground() {
+    await game.storyframe.stateManager.setSceneBackground(null);
+  }
+
+  static _onIncrementCounter() {
+    const id = game.storyframe.stateManager?.getState()?.activeSpeaker;
+    if (!id) return;
+    this._speakerCounters[id] = (this._speakerCounters[id] ?? 0) + 1;
+    this.element?.querySelector('.counter-value')?.replaceWith(
+      Object.assign(document.createElement('span'), { className: 'counter-value', textContent: this._speakerCounters[id] })
+    );
+  }
+
+  static _onDecrementCounter() {
+    const id = game.storyframe.stateManager?.getState()?.activeSpeaker;
+    if (!id) return;
+    this._speakerCounters[id] = (this._speakerCounters[id] ?? 0) - 1;
+    this.element?.querySelector('.counter-value')?.replaceWith(
+      Object.assign(document.createElement('span'), { className: 'counter-value', textContent: this._speakerCounters[id] })
+    );
   }
 
   static _onRelaunchForPlayers() {

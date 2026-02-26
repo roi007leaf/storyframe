@@ -53,6 +53,7 @@ export class Persistence {
       version: SCHEMA_VERSION,
       activeJournal: null,
       activeSpeaker: null,
+      sceneBackground: null,
       speakers: [],
       participants: [],
       pendingRolls: [],
