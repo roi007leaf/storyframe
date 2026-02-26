@@ -132,27 +132,40 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       });
     });
 
+    // Disable checkbox toggling on PC cards while a drag is in progress.
+    // Drag-to-link and checkbox selection are mutually exclusive; blocking clicks
+    // during a drag prevents accidental check-state changes.
+    participantsGrid.addEventListener('click', (e) => {
+      if (!this._draggingUid) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+
     // --- Drop targets: PC cards ---
 
     participantsGrid.addEventListener('dragover', (e) => {
       const content = e.target.closest('.participant-content');
       if (!content) return;
-      e.preventDefault();
 
-      // If the dragged check has eligibility restrictions, show a not-allowed indicator
-      // for PCs that don't qualify (e.g. a lore skill the PC doesn't possess).
+      // For checks that carry eligibility restrictions (e.g. lore skills — only PCs
+      // that possess the skill are valid targets), block the drop on ineligible PCs.
+      // eligiblePcIds is only a Set for lore checks; it is null for regular skills
+      // and saves, so this branch is a no-op for everything else.
+      // Crucially we must NOT call e.preventDefault() here — omitting it signals
+      // to the browser that the drop is rejected, shows the not-allowed cursor,
+      // and prevents the drop event from firing entirely.
       if (this._draggingUid) {
         const check = this.checks.find(c => c._uid === this._draggingUid);
         const pcLabel = content.closest('.participant-card');
         const pcId = pcLabel?.querySelector('input[name="participant"]')?.value;
         if (check?.eligiblePcIds instanceof Set && pcId && !check.eligiblePcIds.has(pcId)) {
-          e.dataTransfer.dropEffect = 'none';
           content.classList.remove('drop-target');
           content.classList.add('drop-ineligible');
           return;
         }
       }
 
+      e.preventDefault();
       e.dataTransfer.dropEffect = 'copy';
       content.classList.remove('drop-ineligible');
       content.classList.add('drop-target');

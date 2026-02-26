@@ -462,15 +462,18 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
   _populateChatLog(container) {
     container.innerHTML = '';
-    const messages = game.messages.contents.slice(-50);
-    for (const msg of messages) {
-      if (!msg.visible) continue;
-      msg.getHTML().then(html => {
+    const messages = game.messages.contents.slice(-10).filter(msg => msg.visible);
+    Promise.all(messages.map(msg => msg.getHTML())).then(htmlElements => {
+      if (!container.isConnected) return;
+      container.innerHTML = '';
+      for (const html of htmlElements) {
         const el = html?.jquery ? html[0] : html;
-        container.appendChild(el);
+        if (el) container.appendChild(el);
+      }
+      requestAnimationFrame(() => {
+        if (container.isConnected) container.scrollTop = container.scrollHeight;
       });
-    }
-    requestAnimationFrame(() => { container.scrollTop = container.scrollHeight; });
+    });
     this._bindChatContextMenu(container);
   }
 

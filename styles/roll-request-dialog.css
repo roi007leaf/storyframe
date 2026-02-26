@@ -274,9 +274,13 @@
   opacity: 1;
 }
 
-/* Drag-active state: hint all PC cards are droppable */
+/* Drag-active state: hint all PC cards are droppable; disable checkbox cursor */
 .roll-request-dialog .participants-grid.drag-active .participant-content {
   border-color: rgba(94, 129, 172, 0.4);
+}
+
+.roll-request-dialog .participants-grid.drag-active .participant-card {
+  cursor: copy;
 }
 
 /* PC card highlighted as a valid drop target */

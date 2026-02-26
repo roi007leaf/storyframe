@@ -94,11 +94,9 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
 
-  // For lore skill checks, compute which PCs are eligible.
-  // When opening a fresh dialog, restrict the visible PC list to eligible PCs only.
-  // When adding to an existing dialog, all PCs remain visible but eligiblePcIds is
-  // attached to the check so the dialog can block drag-to-link for ineligible PCs.
-  let eligiblePcs = pcs;
+  // For lore skill checks, compute which PCs are eligible and attach eligiblePcIds
+  // to the check so the dialog can block drag-to-link for ineligible PCs.
+  // All PCs remain visible in the dialog regardless — filtering happens at send time.
   let eligiblePcIds = null; // null means no restriction
   if (checkType === 'skill' && skillSlug.includes('-lore')) {
     const eligibilityResults = await Promise.all(
@@ -109,23 +107,16 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
       })
     );
     const lorePcs = pcs.filter((_, i) => eligibilityResults[i]);
-    eligiblePcIds = new Set(lorePcs.map(p => p.id));
-    if (!RollRequestDialog._instance) {
-      eligiblePcs = lorePcs;
-      if (eligiblePcs.length === 0) {
-        const skillName = getSkillName(skillSlug);
-        ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
-        return;
-      }
-    } else if (eligiblePcIds.size === 0) {
+    if (lorePcs.length === 0) {
       const skillName = getSkillName(skillSlug);
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
       return;
     }
+    eligiblePcIds = new Set(lorePcs.map(p => p.id));
   }
 
   const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant, eligiblePcIds }];
-  const result = await RollRequestDialog.subscribe(checks, eligiblePcs);
+  const result = await RollRequestDialog.subscribe(checks, pcs);
   if (!result) return;
 
   const selectedIds = result.selectedIds ?? [];
@@ -772,11 +763,17 @@ export async function mapSkillsWithProficiency(categorySlugs, allSkills, _partic
 }
 
 /**
- * Check if actor has a specific skill (system-specific - override in subclass)
+ * Check if actor has a specific skill (system-specific - override in subclass).
+ * Falls back to a direct actor data check for PF2e lore skills so that callers
+ * without _actorHasSkill (e.g. the cinematic app) still get correct eligibility.
  */
 export async function actorHasSkill(sidebar, actor, skillSlug) {
   if (sidebar._actorHasSkill) {
     return await sidebar._actorHasSkill(actor, skillSlug);
+  }
+  // Direct PF2e lore-skill check: lore skills are keyed by their slug in actor.skills
+  if (skillSlug.includes('-lore') && game.system.id === 'pf2e') {
+    return !!(actor?.skills?.[skillSlug]);
   }
   return true;
 }
