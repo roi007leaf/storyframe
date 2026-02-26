@@ -479,6 +479,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       hasSpeakerScenes: speakerScenes.length > 0,
       gridLocked: this._gridLocked ?? false,
       gridLockedSize: this._gridLockedSize ?? null,
+      gridSliderSize: this._gridSliderSize ?? 100,
+      speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
       ...dcContext,
       partyLevel,
       calculatedDC,
@@ -658,6 +660,23 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
     // Attach skill reordering handlers
     SkillReorderHandlers.attachSkillReorderHandlers(this);
+
+    // Grid size slider — direct DOM update for real-time resizing
+    const slider = this.element.querySelector('.grid-size-slider');
+    if (slider) {
+      // Apply stored size on render if previously adjusted
+      if (this._gridSliderSize) {
+        const gallery = this.element.querySelector('.speaker-gallery');
+        if (gallery) gallery.style.gridTemplateColumns = `repeat(auto-fill, ${this._gridSliderSize}px)`;
+      }
+      slider.addEventListener('input', (e) => {
+        const size = parseInt(e.target.value);
+        this._gridSliderSize = size;
+        const gallery = this.element.querySelector('.speaker-gallery');
+        if (gallery) gallery.style.gridTemplateColumns = `repeat(auto-fill, ${size}px)`;
+        slider.dataset.tooltip = `Card size: ${size}px`;
+      });
+    }
   }
 
   /**

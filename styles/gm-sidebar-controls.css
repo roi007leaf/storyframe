@@ -831,13 +831,16 @@
   flex-direction: row;
   gap: clamp(2px, 3cqi, 5px);
   opacity: 0;
-  transition: opacity var(--sf-transition-fast);
+  pointer-events: none;
+  transition: opacity var(--sf-transition-fast) 150ms;
   z-index: 10;
   white-space: nowrap;
 }
 
 .gm-sidebar-container .speaker-thumbnail:hover .speaker-controls {
   opacity: 1;
+  pointer-events: all;
+  transition: opacity var(--sf-transition-fast);
 }
 
 .gm-sidebar-container .speaker-controls button {
@@ -923,6 +926,60 @@
 .gm-sidebar-container .speaker-image-nav button:hover {
   transform: scale(1.15);
   filter: brightness(1.2);
+}
+
+/* === Speaker controls mode: sides === */
+/* Controls on left edge, image nav on right edge, vertical stacks */
+.speaker-gallery.controls-sides .speaker-controls {
+  top: 4px;
+  bottom: 24px;
+  left: 0;
+  right: auto;
+  transform: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+}
+
+.speaker-gallery.controls-sides .speaker-image-nav {
+  top: 4px;
+  bottom: 24px;
+  left: auto;
+  right: 0;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  padding: 0 2px;
+}
+
+/* === Speaker controls mode: bottom bar === */
+/* Controls become static row below speaker name, always visible */
+.speaker-gallery.controls-bottombar .speaker-controls {
+  position: static;
+  transform: none;
+  opacity: 1;
+  pointer-events: all;
+  transition: none;
+  justify-content: center;
+  padding-top: var(--sf-space-xs);
+}
+
+/* Hide hover reveal for bottom bar mode */
+.speaker-gallery.controls-bottombar .speaker-thumbnail:hover .speaker-controls {
+  opacity: 1;
+}
+
+/* Image nav also static in bottom bar mode */
+.speaker-gallery.controls-bottombar .speaker-image-nav {
+  position: static;
+  opacity: 1;
+  pointer-events: all;
+  transition: none;
+  padding-top: 2px;
+}
+
+.speaker-gallery.controls-bottombar .speaker-thumbnail:hover .speaker-image-nav {
+  opacity: 1;
 }
 
 /* Speaker hidden from players - blur the image to indicate it's hidden */

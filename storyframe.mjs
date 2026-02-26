@@ -401,6 +401,20 @@ Hooks.once('init', () => {
     default: true,
   });
 
+  game.settings.register(MODULE_ID, 'speakerControlsMode', {
+    name: 'Speaker Controls Mode',
+    hint: 'How speaker action buttons (edit, remove, hide, etc.) are displayed. Hover: overlay on hover. Sides: controls on left, image nav on right. Bottom bar: always visible below speaker name.',
+    scope: 'client',
+    config: true,
+    type: String,
+    default: 'hover',
+    choices: {
+      hover: 'Hover (overlay)',
+      sides: 'Sides (left & right edges)',
+      bottombar: 'Bottom bar (always visible)',
+    },
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerMinimized', {
     scope: 'client',
     config: false,
