@@ -93,8 +93,29 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
   }
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+
+  // For lore skill checks, only filter PCs when opening a fresh dialog (no existing instance).
+  // If a dialog is already open it may contain non-lore checks, so all PCs must remain
+  // selectable; the post-selection validation in requestSkillCheck will skip ineligible ones.
+  let eligiblePcs = pcs;
+  if (checkType === 'skill' && skillSlug.includes('-lore') && !RollRequestDialog._instance) {
+    const eligibilityResults = await Promise.all(
+      pcs.map(async pc => {
+        const actor = await fromUuid(pc.actorUuid);
+        if (!actor) return false;
+        return actorHasSkill(sidebar, actor, skillSlug);
+      })
+    );
+    eligiblePcs = pcs.filter((_, i) => eligibilityResults[i]);
+    if (eligiblePcs.length === 0) {
+      const skillName = getSkillName(skillSlug);
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
+      return;
+    }
+  }
+
   const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant }];
-  const result = await RollRequestDialog.subscribe(checks, pcs);
+  const result = await RollRequestDialog.subscribe(checks, eligiblePcs);
 
   const selectedIds = result?.selectedIds || result || [];
   const allowOnlyOne = result?.allowOnlyOne || false;
