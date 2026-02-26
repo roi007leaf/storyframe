@@ -205,12 +205,9 @@ export class CinematicPlayerApp extends CinematicSceneBase {
     const rollPanel = this.element?.querySelector('.cinematic-roll-panel');
     if (rollPanel) {
       rollPanel.classList.toggle('hidden', !ctx.hasPendingRolls);
+      rollPanel.classList.toggle('expanded', ctx.hasPendingRolls);
       const rollBadge = rollPanel.querySelector('.roll-badge');
       if (rollBadge) rollBadge.textContent = ctx.totalPendingRolls || '';
-      if (ctx.hasPendingRolls && !this.rollPanelExpanded) {
-        this.rollPanelExpanded = true;
-        rollPanel.classList.add('expanded');
-      }
       const content = rollPanel.querySelector('.roll-panel-content');
       if (content) content.innerHTML = this._buildRollPanelHTML(ctx);
     }
