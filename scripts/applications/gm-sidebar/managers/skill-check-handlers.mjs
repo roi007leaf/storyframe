@@ -92,9 +92,13 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
     return;
   }
 
-  // For lore skill checks, only show PCs that actually have that lore skill
+  const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
+
+  // For lore skill checks, only filter PCs when opening a fresh dialog (no existing instance).
+  // If a dialog is already open it may contain non-lore checks, so all PCs must remain
+  // selectable; the post-selection validation in requestSkillCheck will skip ineligible ones.
   let eligiblePcs = pcs;
-  if (checkType === 'skill' && skillSlug.includes('-lore')) {
+  if (checkType === 'skill' && skillSlug.includes('-lore') && !RollRequestDialog._instance) {
     const eligibilityResults = await Promise.all(
       pcs.map(async pc => {
         const actor = await fromUuid(pc.actorUuid);
@@ -110,7 +114,6 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
     }
   }
 
-  const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
   const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant }];
   const result = await RollRequestDialog.subscribe(checks, eligiblePcs);
 
