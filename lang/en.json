@@ -21,10 +21,12 @@
         "FoundSaves": "Found {count} save(s):",
         "FoundChecksAndSaves": "Found {count} check(s) and save(s):",
         "SelectPCs": "Select PCs to request rolls from:",
+        "DragHint": "Drag a check onto a PC to send it only to that PC.",
         "SendRollRequests": "Send Roll Requests",
         "Secret": "Secret",
         "AllowOnlyOne": "Allow only one roll (dismiss others when one is rolled)",
-        "RemoveCheck": "Remove check"
+        "RemoveCheck": "Remove check",
+        "UnlinkPC": "Click to unlink {name} from this check"
       },
       "AddSpeaker": {
         "Title": "Add Speaker",

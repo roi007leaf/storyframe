@@ -2,9 +2,10 @@
   <div class="dialog-content">
     <section class="checks-summary">
       <h3>{{i18n.foundChecks}}</h3>
+      <p class="drag-hint">{{i18n.dragHint}}</p>
       <ul class="checks-list">
         {{#each checks}}
-        <li class="check-item" data-uid="{{this._uid}}">
+        <li class="check-item" data-uid="{{this._uid}}" draggable="true">
           <div class="check-info">
             <i class="fas {{this.skillIcon}}"></i>
             <span class="check-skill">{{this.skillName}}{{#if this.actionName}}<span class="check-action-name"> ({{this.actionName}}{{#if this.variantName}}: {{this.variantName}}{{/if}})</span>{{/if}}</span>
@@ -15,6 +16,7 @@
               {{@root.i18n.secret}}
             </span>
             {{/if}}
+            <div class="check-linked-pcs"></div>
             <button type="button" class="check-remove-btn" data-uid="{{this._uid}}" aria-label="{{localize "STORYFRAME.Dialogs.RollRequest.RemoveCheck"}}"><i class="fas fa-times"></i></button>
           </div>
         </li>
