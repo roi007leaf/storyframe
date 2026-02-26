@@ -358,6 +358,13 @@ Hooks.once('init', () => {
     default: {},
   });
 
+  game.settings.register(MODULE_ID, 'cinematicJournalFontSize', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 0.75,
+  });
+
   game.settings.register(MODULE_ID, 'playerViewerLayout', {
     scope: 'client',
     config: false,

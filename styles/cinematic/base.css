@@ -49,6 +49,11 @@
   z-index: 100000 !important;
 }
 
+/* Roll Resolver must appear above the fullscreen cinematic overlay */
+.roll-resolver {
+  z-index: 100000 !important;
+}
+
 /* ===== Scene Background ===== */
 .cinematic-bg {
   position: absolute;

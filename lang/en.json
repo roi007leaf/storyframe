@@ -425,6 +425,7 @@
       "ShowName": "Show name",
       "HideName": "Hide name",
       "EditName": "Edit name",
+      "JournalFontSize": "Font Size",
       "Relaunched": "Cinematic scene relaunched for all players",
       "Music": {
         "Shuffle": "Shuffle",
