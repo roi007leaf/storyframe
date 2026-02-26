@@ -469,18 +469,12 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(_requestData) {
-    // Trigger UI update on cinematic scene if active
     if (game.storyframe.cinematicScene?.rendered) {
       game.storyframe.cinematicScene._onStateChange();
-    }
-    // Trigger UI update on player sidebar (where rolls are displayed)
-    if (game.storyframe.playerSidebar) {
+    } else if (game.storyframe.playerSidebar?.rendered) {
       game.storyframe.playerSidebar.render();
     } else if (game.storyframe.playerApp) {
-      // Fallback for compatibility
       game.storyframe.playerApp.showRollPrompt(_requestData);
-    } else {
-      console.warn(`${MODULE_ID} | playerApp/playerSidebar not initialized for roll prompt`);
     }
   }
 
@@ -489,10 +483,9 @@ export class SocketManager {
    * Runs on all clients to sync roll history display.
    */
   _handleRollHistoryUpdate(_historyData) {
-    // Update local UI displays
     game.storyframe.gmApp?.render();
-    game.storyframe.playerViewer?.render();
-    game.storyframe.playerSidebar?.render();
+    if (game.storyframe.playerViewer?.rendered) game.storyframe.playerViewer.render();
+    if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
     game.storyframe.cinematicScene?._onStateChange();
   }
 
