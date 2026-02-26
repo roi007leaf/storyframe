@@ -45,11 +45,11 @@
           <button type="button" data-action="clearAllSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllNPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllNPCs"}}">
             <i class="fas fa-trash" aria-hidden="true"></i>
           </button>
-          <button type="button" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseViewerOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
+          <button type="button" class="btn-broadcast" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseViewerOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
             <i class="fas fa-tv" aria-hidden="true"></i>
           </button>
           {{#if hasSpeakers}}
-          <button type="button" data-action="launchSceneMode" data-tooltip="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}" aria-label="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}">
+          <button type="button" class="btn-broadcast" data-action="launchSceneMode" data-tooltip="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}" aria-label="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}">
             <i class="fas fa-film" aria-hidden="true"></i>
           </button>
           {{/if}}

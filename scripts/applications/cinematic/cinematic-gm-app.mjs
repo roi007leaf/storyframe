@@ -572,6 +572,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       btn.addEventListener('click', () => {
         this.previewImageSrc = img.src;
         this.render();
+        game.storyframe.socketManager.broadcastImagePreview(img.src);
       });
       wrapper.appendChild(btn);
     });

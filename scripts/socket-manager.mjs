@@ -48,6 +48,7 @@ export class SocketManager {
     // Register cinematic scene mode handlers
     this.socket.register('launchSceneMode', this._handleLaunchSceneMode);
     this.socket.register('closeSceneMode', this._handleCloseSceneMode);
+    this.socket.register('showImagePreview', this._handleShowImagePreview);
   }
 
   // --- Public API (call from any client) ---
@@ -260,6 +261,14 @@ export class SocketManager {
   // --- Cinematic Scene Mode API ---
 
   /**
+   * Broadcast a journal image preview to all player clients.
+   * @param {string} src - Image src URL
+   */
+  broadcastImagePreview(src) {
+    this.socket.executeForOthers('showImagePreview', src);
+  }
+
+  /**
    * Launch cinematic scene mode on all clients.
    */
   launchSceneMode() {
@@ -395,8 +404,8 @@ export class SocketManager {
       game.storyframe.stateManager.syncState(state);
       // Trigger UI re-render
       game.storyframe.gmApp?.render();
-      game.storyframe.playerViewer?.render();
-      game.storyframe.playerSidebar?.render();
+      if (game.storyframe.playerViewer?.rendered) game.storyframe.playerViewer.render();
+      if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
       game.storyframe.cinematicScene?._onStateChange();
     }
   }
@@ -563,6 +572,13 @@ export class SocketManager {
   }
 
   // --- Cinematic Scene Mode Handlers ---
+
+  _handleShowImagePreview(src) {
+    const scene = game.storyframe.cinematicScene;
+    if (!scene?.rendered) return;
+    scene.previewImageSrc = src;
+    scene.render();
+  }
 
   async _handleLaunchSceneMode() {
     const isGM = game.user?.isGM;
