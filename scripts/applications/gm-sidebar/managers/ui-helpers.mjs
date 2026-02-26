@@ -194,6 +194,21 @@ export function restoreScrollPositions(sidebar, positions) {
 }
 
 /**
+ * Return a z-index value that places a popup above the sidebar.
+ * The sidebar gets a dynamic inline z-index from positionAsDrawer; popups must
+ * read that value at creation time so they always render on top.
+ */
+function _aboveSidebarZIndex(sidebar) {
+  const el = sidebar?.element;
+  if (!el) return 100001;
+  // Use getComputedStyle so we capture z-index set by !important CSS rules
+  // (e.g. cinematic/base.css sets #storyframe-gm-sidebar to 100000 !important
+  // globally, not just in cinematic mode, so inline-style reads miss it).
+  const z = parseInt(window.getComputedStyle(el).zIndex) || 0;
+  return Math.max(z + 1, 100001);
+}
+
+/**
  * Show pending rolls popup
  */
 export async function onShowPendingRolls(_event, target, sidebar) {
@@ -470,6 +485,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(popup);
+  popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
   const popupRect = popup.getBoundingClientRect();
@@ -490,7 +506,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
 /**
  * Show active challenges popup
  */
-export async function onShowActiveChallenges(_event, target, _sidebar) {
+export async function onShowActiveChallenges(_event, target, sidebar) {
   const state = game.storyframe.stateManager.getState();
   const activeChallenges = state?.activeChallenges || [];
 
@@ -622,6 +638,7 @@ export async function onShowActiveChallenges(_event, target, _sidebar) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(popup);
+  popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen (match pending rolls positioning)
   const popupRect = popup.getBoundingClientRect();
@@ -742,6 +759,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
   // Position above button (CSS handles all styling)
   const rect = target.getBoundingClientRect();
   document.body.appendChild(menu);
+  menu.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
   menu.style.left = `${rect.left}px`;
@@ -815,7 +833,27 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
           return;
         }
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-        const checks = [{ skillName: checkSlug, dc, isSecret, checkType }];
+
+        // For lore skill checks, compute eligibility so the dialog can block drag-to-link
+        // for PCs that don't have the lore skill. All PCs remain visible in the dialog.
+        let eligiblePcIds = null;
+        if (checkType === 'skill' && checkSlug.includes('-lore')) {
+          const eligibilityResults = await Promise.all(
+            pcs.map(async pc => {
+              const actor = await fromUuid(pc.actorUuid);
+              if (!actor) return false;
+              return SkillCheckHandlers.actorHasSkill(sidebar, actor, checkSlug);
+            })
+          );
+          const lorePcs = pcs.filter((_, i) => eligibilityResults[i]);
+          if (lorePcs.length === 0) {
+            ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName: SkillCheckHandlers.getSkillName(checkSlug) }));
+            return;
+          }
+          eligiblePcIds = new Set(lorePcs.map(p => p.id));
+        }
+
+        const checks = [{ skillName: checkSlug, dc, isSecret, checkType, eligiblePcIds }];
         const result = await RollRequestDialog.subscribe(checks, pcs);
         const selectedIds = result?.selectedIds || result || [];
         const allowOnlyOne = result?.allowOnlyOne || false;
@@ -875,7 +913,27 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
         return;
       }
       const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-      const checks = [{ skillName: skillSlug, dc, isSecret: false, checkType: 'skill' }];
+
+      // For lore skill checks, compute eligibility so the dialog can block drag-to-link
+      // for PCs that don't have the lore skill. All PCs remain visible in the dialog.
+      let eligiblePcIds = null;
+      if (skillSlug.includes('-lore')) {
+        const eligibilityResults = await Promise.all(
+          pcs.map(async pc => {
+            const actor = await fromUuid(pc.actorUuid);
+            if (!actor) return false;
+            return SkillCheckHandlers.actorHasSkill(sidebar, actor, skillSlug);
+          })
+        );
+        const lorePcs = pcs.filter((_, i) => eligibilityResults[i]);
+        if (lorePcs.length === 0) {
+          ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName: SkillCheckHandlers.getSkillName(skillSlug) }));
+          return;
+        }
+        eligiblePcIds = new Set(lorePcs.map(p => p.id));
+      }
+
+      const checks = [{ skillName: skillSlug, dc, isSecret: false, checkType: 'skill', eligiblePcIds }];
       const result = await RollRequestDialog.subscribe(checks, pcs);
       const selectedIds = result?.selectedIds || result || [];
       const allowOnlyOne = result?.allowOnlyOne || false;
@@ -1019,6 +1077,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   setTimeout(() => document.addEventListener('click', closeHandler), 10);
 
   document.body.appendChild(menu);
+  menu.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
   const menuRect = menu.getBoundingClientRect();
@@ -1062,6 +1121,7 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
     popup.style.left = `${rect.right + 8}px`;
 
     document.body.appendChild(popup);
+    popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
     // Adjust if off-screen
     const popupRect = popup.getBoundingClientRect();
@@ -1622,6 +1682,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(popup);
+  popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
   const popupRect = popup.getBoundingClientRect();

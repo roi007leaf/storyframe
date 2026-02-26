@@ -1144,6 +1144,25 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
+.cinematic-scene-container .journal-font-size-slider {
+  width: 52px;
+  cursor: pointer;
+  accent-color: rgba(94, 129, 172, 0.7);
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .journal-font-icon-sm {
+  font-size: 0.45rem;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .journal-font-icon-lg {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.3);
+  flex-shrink: 0;
+}
+
 /* Page tabs */
 .cinematic-scene-container .journal-page-tabs {
   display: flex;

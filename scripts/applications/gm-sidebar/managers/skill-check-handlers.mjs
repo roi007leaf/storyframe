@@ -94,11 +94,11 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
 
-  // For lore skill checks, only filter PCs when opening a fresh dialog (no existing instance).
-  // If a dialog is already open it may contain non-lore checks, so all PCs must remain
-  // selectable; the post-selection validation in requestSkillCheck will skip ineligible ones.
-  let eligiblePcs = pcs;
-  if (checkType === 'skill' && skillSlug.includes('-lore') && !RollRequestDialog._instance) {
+  // For lore skill checks, compute which PCs are eligible and attach eligiblePcIds
+  // to the check so the dialog can block drag-to-link for ineligible PCs.
+  // All PCs remain visible in the dialog regardless — filtering happens at send time.
+  let eligiblePcIds = null; // null means no restriction
+  if (checkType === 'skill' && skillSlug.includes('-lore')) {
     const eligibilityResults = await Promise.all(
       pcs.map(async pc => {
         const actor = await fromUuid(pc.actorUuid);
@@ -106,23 +106,29 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
         return actorHasSkill(sidebar, actor, skillSlug);
       })
     );
-    eligiblePcs = pcs.filter((_, i) => eligibilityResults[i]);
-    if (eligiblePcs.length === 0) {
+    const lorePcs = pcs.filter((_, i) => eligibilityResults[i]);
+    if (lorePcs.length === 0) {
       const skillName = getSkillName(skillSlug);
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.NoPlayersHaveSkill', { skillName }));
       return;
     }
+    eligiblePcIds = new Set(lorePcs.map(p => p.id));
   }
 
-  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant }];
-  const result = await RollRequestDialog.subscribe(checks, eligiblePcs);
+  const checks = [{ skillName: skillSlug, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType, actionSlug, actionVariant, eligiblePcIds }];
+  const result = await RollRequestDialog.subscribe(checks, pcs);
+  if (!result) return;
 
-  const selectedIds = result?.selectedIds || result || [];
-  const allowOnlyOne = result?.allowOnlyOne || false;
-  const batchGroupId = result?.batchGroupId ?? null;
-  if (!selectedIds || selectedIds.length === 0) return;
+  const selectedIds = result.selectedIds ?? [];
+  const allowOnlyOne = result.allowOnlyOne || false;
+  const batchGroupId = result.batchGroupId ?? null;
 
-  await requestSkillCheck(sidebar, skillSlug, selectedIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant, result.checks[0].isSecret ?? false);
+  // Per-check targetIds override the global selection; null means "use selectedIds".
+  const check = result.checks?.[0];
+  const targetIds = check?.targetIds ?? selectedIds;
+  if (!targetIds || targetIds.length === 0) return;
+
+  await requestSkillCheck(sidebar, skillSlug, targetIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant, check?.isSecret ?? false);
 }
 
 /**
@@ -307,11 +313,11 @@ export async function sendBatchSkillCheck(sidebar) {
 
   const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
   const result = await RollRequestDialog.subscribe(checksForDialog, pcs);
+  if (!result) return;
 
-  const selectedIds = result?.selectedIds || result || [];
-  const allowOnlyOne = result?.allowOnlyOne || false;
-  const batchGroupId = result?.batchGroupId ?? null;
-  if (!selectedIds || selectedIds.length === 0) return;
+  const selectedIds = result.selectedIds ?? [];
+  const allowOnlyOne = result.allowOnlyOne || false;
+  const batchGroupId = result.batchGroupId ?? null;
 
   // Track unique IDs and names across all checks
   const uniqueSentIds = new Set();
@@ -332,13 +338,17 @@ export async function sendBatchSkillCheck(sidebar) {
   const effectiveAllowOnlyOne = allowOnlyOne || false;
 
   for (const check of survivingChecks) {
+    // Per-check targetIds (from drag-links) take priority over the global selection.
+    const checkTargetIds = check.targetIds ?? selectedIds;
+    if (!checkTargetIds || checkTargetIds.length === 0) continue;
+
     const previousDC = sidebar.currentDC;
     const previousSecret = sidebar.secretRollEnabled;
 
     sidebar.currentDC = check.dc;
     sidebar.secretRollEnabled = check.isSecret || false;
 
-    const checkResult = await requestSkillCheck(sidebar, check.skillName, selectedIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, effectiveAllowOnlyOne, check.actionVariant ?? null);
+    const checkResult = await requestSkillCheck(sidebar, check.skillName, checkTargetIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, effectiveAllowOnlyOne, check.actionVariant ?? null);
 
     sidebar.currentDC = previousDC;
     sidebar.secretRollEnabled = previousSecret;
@@ -753,11 +763,17 @@ export async function mapSkillsWithProficiency(categorySlugs, allSkills, _partic
 }
 
 /**
- * Check if actor has a specific skill (system-specific - override in subclass)
+ * Check if actor has a specific skill (system-specific - override in subclass).
+ * Falls back to a direct actor data check for PF2e lore skills so that callers
+ * without _actorHasSkill (e.g. the cinematic app) still get correct eligibility.
  */
 export async function actorHasSkill(sidebar, actor, skillSlug) {
   if (sidebar._actorHasSkill) {
     return await sidebar._actorHasSkill(actor, skillSlug);
+  }
+  // Direct PF2e lore-skill check: lore skills are keyed by their slug in actor.skills
+  if (skillSlug.includes('-lore') && game.system.id === 'pf2e') {
+    return !!(actor?.skills?.[skillSlug]);
   }
   return true;
 }

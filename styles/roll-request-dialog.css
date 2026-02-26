@@ -40,10 +40,17 @@
 
 /* Checks Summary */
 .roll-request-dialog .checks-summary h3 {
-  margin: 0 0 var(--sf-space-sm) 0;
+  margin: 0 0 var(--sf-space-xs) 0;
   font-size: 13px;
   font-weight: 600;
   color: var(--sf-text-primary);
+}
+
+.roll-request-dialog .drag-hint {
+  margin: 0 0 var(--sf-space-sm) 0;
+  font-size: 11px;
+  color: var(--sf-text-secondary);
+  opacity: 0.7;
 }
 
 .roll-request-dialog .checks-list {
@@ -62,6 +69,17 @@
   border: 1px solid var(--sf-border-secondary);
   border-radius: 6px;
   padding: var(--sf-space-sm) var(--sf-space-md);
+  cursor: grab;
+  transition: border-color 0.15s ease, opacity 0.15s ease;
+}
+
+.roll-request-dialog .check-item.dragging {
+  opacity: 0.45;
+  cursor: grabbing;
+}
+
+.roll-request-dialog .check-item.has-links {
+  border-color: var(--sf-accent-primary);
 }
 
 .roll-request-dialog .check-info {
@@ -140,6 +158,29 @@
   width: auto;
   font-size: 11px;
   color: inherit;
+}
+
+/* Linked PC avatars on check rows */
+.roll-request-dialog .check-linked-pcs {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  flex-shrink: 0;
+}
+
+.roll-request-dialog .check-linked-pc {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--sf-accent-primary);
+  object-fit: contain;
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.roll-request-dialog .check-linked-pc:hover {
+  transform: scale(1.2);
+  border-color: var(--sf-accent-danger);
 }
 
 /* Participants Selection */
@@ -231,6 +272,52 @@
 
 .roll-request-dialog .participant-card input:checked ~ .participant-content .check-icon {
   opacity: 1;
+}
+
+/* Drag-active state: hint all PC cards are droppable; disable checkbox cursor */
+.roll-request-dialog .participants-grid.drag-active .participant-content {
+  border-color: rgba(94, 129, 172, 0.4);
+}
+
+.roll-request-dialog .participants-grid.drag-active .participant-card {
+  cursor: copy;
+}
+
+/* PC card highlighted as a valid drop target */
+.roll-request-dialog .participant-content.drop-target {
+  border-color: var(--sf-accent-primary) !important;
+  background: rgba(94, 129, 172, 0.25) !important;
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.35) !important;
+}
+
+/* PC card shown as an invalid drop target (PC doesn't have the required skill) */
+.roll-request-dialog .participant-content.drop-ineligible {
+  border-color: rgba(220, 80, 80, 0.7) !important;
+  background: rgba(220, 80, 80, 0.12) !important;
+  box-shadow: 0 0 0 2px rgba(220, 80, 80, 0.3) !important;
+  cursor: not-allowed;
+}
+
+/* Badge showing how many checks are drag-linked to this PC */
+.roll-request-dialog .pc-link-badge {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  background: var(--sf-accent-primary);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 3px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: none;
+  z-index: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 /* Allow Only One Section */

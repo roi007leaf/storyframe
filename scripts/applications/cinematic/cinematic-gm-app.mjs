@@ -76,6 +76,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.openJournalPageId = null;
     this.journalMinimized = false;
     this.journalSearchQuery = '';
+    this.journalFontSize = game.settings.get(MODULE_ID, 'cinematicJournalFontSize') ?? 0.75;
     this._speakerCounters = {};
     this._escHandler = null;
     this._playlistHookIds = [];
@@ -148,6 +149,7 @@ export class CinematicGMApp extends CinematicSceneBase {
         openJournal: null,
         journalMinimized: false,
         journalSearchQuery: '',
+        journalFontSize: this.journalFontSize,
       };
     }
 
@@ -353,6 +355,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       openJournal,
       journalMinimized: this.journalMinimized,
       journalSearchQuery: this.journalSearchQuery,
+      journalFontSize: this.journalFontSize,
     };
   }
 
@@ -518,6 +521,25 @@ export class CinematicGMApp extends CinematicSceneBase {
         this._debouncedRender();
       });
     }
+
+    // Apply saved journal font size to content body
+    const journalBody = this.element?.querySelector('.journal-content-body');
+    if (journalBody) journalBody.style.fontSize = `${this.journalFontSize}rem`;
+
+    // Journal font size slider
+    const fontSlider = this.element?.querySelector('.journal-font-size-slider');
+    if (fontSlider) {
+      fontSlider.addEventListener('input', (e) => {
+        const size = parseFloat(e.target.value);
+        this.journalFontSize = size;
+        this.element?.querySelector('.journal-content-body')?.style.setProperty('font-size', `${size}rem`);
+        game.settings.set(MODULE_ID, 'cinematicJournalFontSize', size);
+      });
+    }
+
+    // Scroll active journal page tab into view
+    const activeTab = this.element?.querySelector('.journal-page-tab.active');
+    activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
 
     // Restore section heights + bind resize handles
     for (const [key, height] of Object.entries(this._sectionHeights)) {

@@ -68,12 +68,12 @@
   </div>
   {{/if}}
 
-  {{!-- Player roll panel (bottom-right, collapsible) --}}
-  <div class="cinematic-roll-panel {{#if rollPanelExpanded}}expanded{{/if}} {{#unless hasPendingRolls}}hidden{{/unless}}">
-    <button type="button" class="roll-panel-toggle" data-action="toggleRollPanel">
+  {{!-- Player roll panel (bottom-right, always expanded when rolls are pending) --}}
+  <div class="cinematic-roll-panel {{#if hasPendingRolls}}expanded{{/if}} {{#unless hasPendingRolls}}hidden{{/unless}}">
+    <div class="roll-panel-toggle">
       <i class="fas fa-dice-d20" aria-hidden="true"></i>
       <span class="roll-badge">{{totalPendingRolls}}</span>
-    </button>
+    </div>
     <div class="roll-panel-content">
       {{#each actorRollGroups}}
       <div class="cinematic-roll-group {{#if this.hasAllowOnlyOne}}allow-only-one-group{{/if}}">

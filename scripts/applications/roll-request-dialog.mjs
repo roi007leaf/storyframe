@@ -38,7 +38,12 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     super(options);
     this.checks = checks.map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
     this.participants = participants;
+    // Map<checkUid, Set<pcId>> — explicit drag-links between a check and specific PCs.
+    // Checks with entries here are sent only to those PCs (ignoring the global checkbox selection).
+    // Checks without entries fall back to the globally selected PCs.
+    this._links = new Map();
     this.allowOnlyOne = false; // Allow-only-one toggle state
+    this._draggingUid = null;  // UID of the check currently being dragged
     this._autoSized = false;
     this.resolve = null;
     this.promise = new Promise((resolve) => {
@@ -50,16 +55,9 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     super._onRender(_context, _options);
 
     // Wire up participant checkboxes to enable/disable submit button
-    const submitBtn = this.element.querySelector('.submit-btn');
     const checkboxes = this.element.querySelectorAll('input[name="participant"]');
-
-    const updateSubmit = () => {
-      const anyChecked = Array.from(checkboxes).some(cb => cb.checked);
-      submitBtn.disabled = !anyChecked;
-    };
-
-    checkboxes.forEach(cb => cb.addEventListener('change', updateSubmit));
-    updateSubmit();
+    checkboxes.forEach(cb => cb.addEventListener('change', () => this._updateSubmitState()));
+    this._updateSubmitState();
 
     // Delegate remove-button clicks on the checks list
     const checksList = this.element.querySelector('.checks-list');
@@ -70,6 +68,9 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       if (uid) this._removeCheck(uid);
     });
 
+    // Set up drag-to-link interaction
+    this._setupDragAndDrop();
+
     if (this._autoSized) return;
     this._autoSized = true;
 
@@ -79,6 +80,225 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
   async _autoSizeToContent() {
     await new Promise((resolve) => setTimeout(resolve, 0));
     this.setPosition({ height: 'auto' });
+  }
+
+  /**
+   * Enable/disable the submit button based on whether there is at least one target
+   * (either a globally checked PC or at least one drag-link).
+   */
+  _updateSubmitState() {
+    const submitBtn = this.element?.querySelector('.submit-btn');
+    if (!submitBtn) return;
+
+    const anyChecked = Array.from(
+      this.element.querySelectorAll('input[name="participant"]'),
+    ).some(cb => cb.checked);
+
+    const anyLinked = Array.from(this._links.values()).some(s => s.size > 0);
+
+    submitBtn.disabled = !anyChecked && !anyLinked;
+  }
+
+  /**
+   * Wire up HTML5 drag-and-drop so that dragging a check onto a PC card creates an
+   * explicit link: that check will be sent only to explicitly linked PCs (not the
+   * global checkbox selection).  Clicking a linked-PC avatar on a check row removes
+   * that individual link.
+   */
+  _setupDragAndDrop() {
+    const checksList = this.element?.querySelector('.checks-list');
+    const participantsGrid = this.element?.querySelector('.participants-grid');
+    if (!checksList || !participantsGrid) return;
+
+    // --- Drag source: check items ---
+
+    checksList.addEventListener('dragstart', (e) => {
+      const item = e.target.closest('.check-item');
+      if (!item) return;
+      this._draggingUid = item.dataset.uid;
+      e.dataTransfer.effectAllowed = 'copy';
+      e.dataTransfer.setData('text/plain', item.dataset.uid);
+      item.classList.add('dragging');
+      participantsGrid.classList.add('drag-active');
+    });
+
+    checksList.addEventListener('dragend', (e) => {
+      const item = e.target.closest('.check-item');
+      if (item) item.classList.remove('dragging');
+      this._draggingUid = null;
+      participantsGrid.classList.remove('drag-active');
+      participantsGrid.querySelectorAll('.participant-content.drop-target, .participant-content.drop-ineligible').forEach(el => {
+        el.classList.remove('drop-target', 'drop-ineligible');
+      });
+    });
+
+    // Disable checkbox toggling on PC cards while a drag is in progress.
+    // Drag-to-link and checkbox selection are mutually exclusive; blocking clicks
+    // during a drag prevents accidental check-state changes.
+    participantsGrid.addEventListener('click', (e) => {
+      if (!this._draggingUid) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }, true);
+
+    // --- Drop targets: PC cards ---
+
+    participantsGrid.addEventListener('dragover', (e) => {
+      const content = e.target.closest('.participant-content');
+      if (!content) return;
+
+      // For checks that carry eligibility restrictions (e.g. lore skills — only PCs
+      // that possess the skill are valid targets), block the drop on ineligible PCs.
+      // eligiblePcIds is only a Set for lore checks; it is null for regular skills
+      // and saves, so this branch is a no-op for everything else.
+      // Crucially we must NOT call e.preventDefault() here — omitting it signals
+      // to the browser that the drop is rejected, shows the not-allowed cursor,
+      // and prevents the drop event from firing entirely.
+      if (this._draggingUid) {
+        const check = this.checks.find(c => c._uid === this._draggingUid);
+        const pcLabel = content.closest('.participant-card');
+        const pcId = pcLabel?.querySelector('input[name="participant"]')?.value;
+        if (check?.eligiblePcIds instanceof Set && pcId && !check.eligiblePcIds.has(pcId)) {
+          content.classList.remove('drop-target');
+          content.classList.add('drop-ineligible');
+          return;
+        }
+      }
+
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'copy';
+      content.classList.remove('drop-ineligible');
+      content.classList.add('drop-target');
+    });
+
+    participantsGrid.addEventListener('dragleave', (e) => {
+      const content = e.target.closest('.participant-content');
+      if (!content) return;
+      // Only remove the class when the cursor genuinely leaves this element
+      if (!content.contains(e.relatedTarget)) {
+        content.classList.remove('drop-target', 'drop-ineligible');
+      }
+    });
+
+    participantsGrid.addEventListener('drop', (e) => {
+      const content = e.target.closest('.participant-content');
+      if (!content) return;
+      e.preventDefault();
+      content.classList.remove('drop-target', 'drop-ineligible');
+      const uid = e.dataTransfer.getData('text/plain');
+      const pcLabel = content.closest('.participant-card');
+      const pcId = pcLabel?.querySelector('input[name="participant"]')?.value;
+      if (uid && pcId) this._addLink(uid, pcId);
+    });
+
+    // --- Remove a link by clicking the PC avatar on the check row ---
+
+    checksList.addEventListener('click', (e) => {
+      const avatar = e.target.closest('.check-linked-pc');
+      if (!avatar) return;
+      const uid = avatar.dataset.uid;
+      const pcId = avatar.dataset.pcId;
+      if (uid && pcId) this._removeLink(uid, pcId);
+    });
+  }
+
+  /**
+   * Create a drag-link between a check and a PC.
+   * Idempotent — calling it twice for the same pair is a no-op.
+   */
+  _addLink(uid, pcId) {
+    // Reject the link if this PC is ineligible for the check (e.g. missing lore skill).
+    const check = this.checks.find(c => c._uid === uid);
+    if (check?.eligiblePcIds instanceof Set && !check.eligiblePcIds.has(pcId)) {
+      const pc = this.participants.find(p => p.id === pcId);
+      const systemSkills = SystemAdapter.getSkills();
+      const skillName = systemSkills[check.skillName]?.name
+        || check.skillName.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.PCLacksSkill', {
+        name: pc?.name ?? pcId,
+        skillName,
+      }));
+      return;
+    }
+
+    if (!this._links.has(uid)) this._links.set(uid, new Set());
+    const links = this._links.get(uid);
+    if (links.has(pcId)) return; // Already linked
+    links.add(pcId);
+
+    // Add a small PC avatar to the check row
+    const checkItem = this.element?.querySelector(`.check-item[data-uid="${uid}"]`);
+    if (checkItem) {
+      const pcsContainer = checkItem.querySelector('.check-linked-pcs');
+      if (pcsContainer) {
+        const pc = this.participants.find(p => p.id === pcId);
+        if (pc) {
+          const unlinkLabel = game.i18n.format('STORYFRAME.Dialogs.RollRequest.UnlinkPC', { name: pc.name });
+          const img = document.createElement('img');
+          img.className = 'check-linked-pc';
+          img.src = pc.img || 'icons/svg/mystery-man.svg';
+          img.alt = pc.name;
+          img.title = unlinkLabel;
+          img.dataset.uid = uid;
+          img.dataset.pcId = pcId;
+          pcsContainer.appendChild(img);
+        }
+      }
+      checkItem.classList.add('has-links');
+    }
+
+    // Update the badge on the PC card
+    this._updatePcLinkBadge(pcId);
+    this._updateSubmitState();
+  }
+
+  /**
+   * Remove a drag-link between a check and a PC.
+   */
+  _removeLink(uid, pcId) {
+    const links = this._links.get(uid);
+    if (!links) return;
+    links.delete(pcId);
+    if (links.size === 0) this._links.delete(uid);
+
+    // Remove the avatar from the check row
+    const checkItem = this.element?.querySelector(`.check-item[data-uid="${uid}"]`);
+    if (checkItem) {
+      checkItem.querySelector(`.check-linked-pc[data-uid="${uid}"][data-pc-id="${pcId}"]`)?.remove();
+      if (!this._links.has(uid)) {
+        checkItem.classList.remove('has-links');
+      }
+    }
+
+    this._updatePcLinkBadge(pcId);
+    this._updateSubmitState();
+  }
+
+  /**
+   * Refresh the link-count badge on a PC card.
+   * The badge shows how many checks are explicitly linked to that PC.
+   */
+  _updatePcLinkBadge(pcId) {
+    const input = this.element?.querySelector(`input[name="participant"][value="${pcId}"]`);
+    const content = input?.closest('.participant-card')?.querySelector('.participant-content');
+    if (!content) return;
+
+    let count = 0;
+    for (const links of this._links.values()) {
+      if (links.has(pcId)) count++;
+    }
+
+    let badge = content.querySelector('.pc-link-badge');
+    if (count > 0) {
+      if (!badge) {
+        badge = document.createElement('span');
+        badge.className = 'pc-link-badge';
+        content.appendChild(badge);
+      }
+      badge.textContent = count;
+    } else {
+      badge?.remove();
+    }
   }
 
   /**
@@ -152,6 +372,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       <span class="check-skill">${enriched.skillName}${actionPart}</span>
       ${dcPart}
       ${secretBadge}
+      <div class="check-linked-pcs"></div>
       ${removeBtn}
     </div>`;
   }
@@ -186,6 +407,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
       allowOnlyOne: this.allowOnlyOne,
       i18n: {
         foundChecks: foundChecksText,
+        dragHint: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.DragHint'),
         selectPCs: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SelectPCs'),
         cancel: game.i18n.localize('STORYFRAME.Dialogs.Cancel'),
         sendRollRequests: game.i18n.localize('STORYFRAME.Dialogs.RollRequest.SendRollRequests'),
@@ -267,6 +489,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
         const li = document.createElement('li');
         li.className = 'check-item';
         li.dataset.uid = enriched._uid;
+        li.draggable = true;
         li.innerHTML = this._renderCheckItemHTML(enriched);
         checksList.appendChild(li);
       }
@@ -306,6 +529,14 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     this.checks = this.checks.filter(c => c._uid !== uid);
     this.element?.querySelector(`.check-item[data-uid="${uid}"]`)?.remove();
 
+    // Clean up any drag-links for this check and refresh affected PC badges
+    if (this._links.has(uid)) {
+      const affectedPcIds = [...this._links.get(uid)];
+      this._links.delete(uid);
+      affectedPcIds.forEach(pcId => this._updatePcLinkBadge(pcId));
+      this._updateSubmitState();
+    }
+
     // Update header count
     const header = this.element?.querySelector('.checks-summary h3');
     if (header) {
@@ -333,7 +564,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     const formData = new FormDataExtended(form);
     const data = formData.object;
 
-    // Get selected participant IDs
+    // Get selected participant IDs (global checkbox selection)
     const selectedIds = data.participant
       ? (Array.isArray(data.participant) ? data.participant : [data.participant])
       : [];
@@ -343,9 +574,19 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
     // One shared batchGroupId so all concurrent subscribers use the same group
     const batchGroupId = allowOnlyOne ? foundry.utils.randomID() : null;
 
+    // Attach per-check targetIds: explicit drag-links take priority over global selection.
+    // A null targetIds means "fall back to selectedIds" in the caller.
+    const checks = this.checks.map(check => {
+      const explicitLinks = this._links.get(check._uid);
+      return {
+        ...check,
+        targetIds: explicitLinks?.size > 0 ? [...explicitLinks] : null,
+      };
+    });
+
     const resolve = this.resolve;
     this.resolve = null;
-    resolve({ selectedIds, allowOnlyOne, batchGroupId, checks: this.checks });
+    resolve({ selectedIds, allowOnlyOne, batchGroupId, checks });
     this.close();
   }
 

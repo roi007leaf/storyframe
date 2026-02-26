@@ -219,6 +219,11 @@
         <div class="journal-viewer-header">
           <i class="fas fa-book-open" aria-hidden="true"></i>
           <span class="journal-viewer-title">{{openJournal.name}}</span>
+          <i class="fas fa-font journal-font-icon-sm" aria-hidden="true"></i>
+          <input type="range" class="journal-font-size-slider" min="0.5" max="1.5" step="0.05"
+                 value="{{journalFontSize}}"
+                 data-tooltip="{{localize 'STORYFRAME.CinematicScene.JournalFontSize'}}">
+          <i class="fas fa-font journal-font-icon-lg" aria-hidden="true"></i>
           <button type="button" class="journal-header-btn" data-action="journalMinimize" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Minimize'}}">
             <i class="fas fa-minus" aria-hidden="true"></i>
           </button>

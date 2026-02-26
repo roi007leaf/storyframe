@@ -21,10 +21,12 @@
         "FoundSaves": "Found {count} save(s):",
         "FoundChecksAndSaves": "Found {count} check(s) and save(s):",
         "SelectPCs": "Select PCs to request rolls from:",
+        "DragHint": "Drag a check onto a PC to send it only to that PC.",
         "SendRollRequests": "Send Roll Requests",
         "Secret": "Secret",
         "AllowOnlyOne": "Allow only one roll (dismiss others when one is rolled)",
-        "RemoveCheck": "Remove check"
+        "RemoveCheck": "Remove check",
+        "UnlinkPC": "Click to unlink {name} from this check"
       },
       "AddSpeaker": {
         "Title": "Add Speaker",
@@ -147,6 +149,7 @@
         "PlayersOffline": "{names} offline - skipped",
         "PlayersLackSkill": "{names} don't have {skillName} - skipped",
         "NoPlayersHaveSkill": "No player characters have the {skillName} skill",
+        "PCLacksSkill": "{name} doesn't have {skillName}",
         "MultipleChecksRequested": "Requested {checkCount} check(s) from {uniqueCount} PC(s)",
         "MultipleSavesRequested": "Requested {checkCount} save(s) from {uniqueCount} PC(s)",
         "MultipleChecksAndSavesRequested": "Requested {checkCount} check(s) and save(s) from {uniqueCount} PC(s)",
@@ -422,6 +425,7 @@
       "ShowName": "Show name",
       "HideName": "Hide name",
       "EditName": "Edit name",
+      "JournalFontSize": "Font Size",
       "Relaunched": "Cinematic scene relaunched for all players",
       "Music": {
         "Shuffle": "Shuffle",
