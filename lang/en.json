@@ -146,6 +146,7 @@
         "SaveRequested": "Requested {checkName} save from {count} PC(s)",
         "PlayersOffline": "{names} offline - skipped",
         "PlayersLackSkill": "{names} don't have {skillName} - skipped",
+        "NoPlayersHaveSkill": "No player characters have the {skillName} skill",
         "MultipleChecksRequested": "Requested {checkCount} check(s) from {uniqueCount} PC(s)",
         "MultipleSavesRequested": "Requested {checkCount} save(s) from {uniqueCount} PC(s)",
         "MultipleChecksAndSavesRequested": "Requested {checkCount} check(s) and save(s) from {uniqueCount} PC(s)",
