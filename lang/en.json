@@ -390,6 +390,45 @@
     "Errors": {
       "ProficiencyFilteringNotImplemented": "Proficiency filtering not implemented in base class"
     },
+    "CinematicScene": {
+      "Title": "Frame Mode",
+      "LaunchScene": "Launch Frame Mode",
+      "ExitScene": "Exit Frame Mode",
+      "NoSpeakers": "No speakers to display",
+      "GMControls": "GM Controls",
+      "OpenFullSidebar": "Open Full Sidebar",
+      "ScenesAndMusic": "Scenes & Music",
+      "SpeakerScenes": "Speaker Scenes",
+      "NoSavedScenes": "No saved scenes",
+      "NowPlaying": "Now Playing",
+      "Playlists": "Playlists",
+      "Tracks": "Tracks",
+      "RelaunchForPlayers": "Relaunch for Players",
+      "PendingLabel": "Pending",
+      "ActiveLabel": "Active",
+      "Minimize": "Minimize",
+      "Journal": "Journal",
+      "SearchJournals": "Search journals...",
+      "NoJournalsFound": "No journals found",
+      "SearchTracks": "Search tracks...",
+      "ChatLog": "Chat Log",
+      "DeselectSpeaker": "Deselect Speaker",
+      "ShowSpeaker": "Show speaker",
+      "HideSpeaker": "Hide speaker",
+      "ShowName": "Show name",
+      "HideName": "Hide name",
+      "EditName": "Edit name",
+      "Relaunched": "Cinematic scene relaunched for all players",
+      "Music": {
+        "Shuffle": "Shuffle",
+        "Previous": "Previous",
+        "Play": "Play",
+        "Pause": "Pause",
+        "Stop": "Stop",
+        "Next": "Next",
+        "Repeat": "Repeat"
+      }
+    },
     "SpeakerWheel": {
       "Back": "Back"
     },

@@ -28,6 +28,7 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
 
   // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
   const parentEl = extractParentElement(sidebar.parentInterface);
+  if (!parentEl) return;
   const parentRect = parentEl.getBoundingClientRect();
 
   // Check if parent has valid dimensions (not at 0,0 with no size)

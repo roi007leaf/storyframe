@@ -82,6 +82,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       deleteChallenge: GMSidebarAppBase._onDeleteChallenge,
       createChallengeFromSelection: GMSidebarAppBase._onCreateChallengeFromSelection,
       requestRollsFromSelection: GMSidebarAppBase._onRequestRollsFromSelection,
+      launchSceneMode: GMSidebarAppBase._onLaunchSceneMode,
     },
   };
 
@@ -703,6 +704,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   /**
+   * Guard against Foundry's _updatePosition crashing when element is null/detached
+   * during render cycles that overlap with close (e.g. drawer reposition on parent move)
+   */
+  setPosition(options) {
+    if (!this.element?.isConnected) return this.position;
+    return super.setPosition(options);
+  }
+
+  /**
    * Cleanup on close
    */
   async _onClose(_options) {
@@ -944,6 +954,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   static async _onRequestRollsFromSelection(event, target) {
     return ChallengeHandlers.onRequestRollsFromSelection(event, target, this);
+  }
+
+  static _onLaunchSceneMode() {
+    const state = game.storyframe.stateManager?.getState();
+    if (!state?.speakers?.length) {
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.CinematicScene.NoSpeakers'));
+      return;
+    }
+    game.storyframe.socketManager.launchSceneMode();
   }
 
   // ===========================

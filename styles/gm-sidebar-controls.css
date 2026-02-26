@@ -929,11 +929,16 @@
 }
 
 /* === Speaker controls mode: sides === */
-/* Controls on left edge, image nav on right edge, vertical stacks */
+/* Add side padding to thumbnails so buttons sit beside the image */
+.speaker-gallery.controls-sides .speaker-thumbnail {
+  padding-left: 26px;
+  padding-right: 26px;
+}
+
 .speaker-gallery.controls-sides .speaker-controls {
   top: 4px;
   bottom: 24px;
-  left: 0;
+  left: 2px;
   right: auto;
   transform: none;
   flex-direction: column;
@@ -945,11 +950,12 @@
   top: 4px;
   bottom: 24px;
   left: auto;
-  right: 0;
+  right: 2px;
+  transform: none;
   flex-direction: column;
   justify-content: center;
   gap: 3px;
-  padding: 0 2px;
+  padding: 0;
 }
 
 /* === Speaker controls mode: bottom bar === */

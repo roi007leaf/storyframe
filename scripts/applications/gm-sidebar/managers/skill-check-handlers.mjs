@@ -84,7 +84,7 @@ export async function onSendBatch(_event, _target, sidebar) {
 /**
  * Open roll requester dialog, then send skill checks to selected actor UUIDs
  */
-async function openRollRequesterAndSend(sidebar, skillSlug, checkType, actionSlug = null, actionVariant = null) {
+export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, actionSlug = null, actionVariant = null) {
   const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
   const pcs = await getAllPlayerPCs();
   if (pcs.length === 0) {

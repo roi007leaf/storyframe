@@ -44,6 +44,10 @@ export class SocketManager {
 
     // Register blind roll notification handler
     this.socket.register('notifyBlindRoll', this._handleNotifyBlindRoll);
+
+    // Register cinematic scene mode handlers
+    this.socket.register('launchSceneMode', this._handleLaunchSceneMode);
+    this.socket.register('closeSceneMode', this._handleCloseSceneMode);
   }
 
   // --- Public API (call from any client) ---
@@ -253,6 +257,22 @@ export class SocketManager {
     this.socket.executeForEveryone('closePlayerSidebar');
   }
 
+  // --- Cinematic Scene Mode API ---
+
+  /**
+   * Launch cinematic scene mode on all clients.
+   */
+  launchSceneMode() {
+    this.socket.executeForEveryone('launchSceneMode');
+  }
+
+  /**
+   * Close cinematic scene mode on all clients.
+   */
+  closeSceneMode() {
+    this.socket.executeForEveryone('closeSceneMode');
+  }
+
   // --- Challenge API ---
 
   /**
@@ -377,6 +397,7 @@ export class SocketManager {
       game.storyframe.gmApp?.render();
       game.storyframe.playerViewer?.render();
       game.storyframe.playerSidebar?.render();
+      game.storyframe.cinematicScene?._onStateChange();
     }
   }
 
@@ -439,6 +460,10 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(_requestData) {
+    // Trigger UI update on cinematic scene if active
+    if (game.storyframe.cinematicScene?.rendered) {
+      game.storyframe.cinematicScene._onStateChange();
+    }
     // Trigger UI update on player sidebar (where rolls are displayed)
     if (game.storyframe.playerSidebar) {
       game.storyframe.playerSidebar.render();
@@ -459,6 +484,7 @@ export class SocketManager {
     game.storyframe.gmApp?.render();
     game.storyframe.playerViewer?.render();
     game.storyframe.playerSidebar?.render();
+    game.storyframe.cinematicScene?._onStateChange();
   }
 
   /**
@@ -468,7 +494,7 @@ export class SocketManager {
   _handleOpenPlayerViewer() {
 
     // Only open for non-GM users
-    if (game.user.isGM) return;
+    if (game.user?.isGM) return;
 
     const sidebar = game.storyframe.playerSidebar;
     const sidebarWasRendered = sidebar?.rendered;
@@ -500,7 +526,7 @@ export class SocketManager {
    */
   _handleClosePlayerViewer() {
     // Only close for non-GM users
-    if (game.user.isGM) return;
+    if (game.user?.isGM) return;
 
     // Close viewer if it exists and is rendered
     if (game.storyframe.playerViewer?.rendered) {
@@ -514,7 +540,7 @@ export class SocketManager {
    */
   _handleOpenPlayerSidebar() {
     // Only open for non-GM users
-    if (game.user.isGM) return;
+    if (game.user?.isGM) return;
 
     // Open sidebar if it exists and not already rendered
     if (game.storyframe.playerSidebar && !game.storyframe.playerSidebar.rendered) {
@@ -528,11 +554,45 @@ export class SocketManager {
    */
   _handleClosePlayerSidebar() {
     // Only close for non-GM users
-    if (game.user.isGM) return;
+    if (game.user?.isGM) return;
 
     // Close sidebar if it exists and is rendered
     if (game.storyframe.playerSidebar?.rendered) {
       game.storyframe.playerSidebar.close();
+    }
+  }
+
+  // --- Cinematic Scene Mode Handlers ---
+
+  async _handleLaunchSceneMode() {
+    const { CinematicSceneApp } = await import('./applications/cinematic-scene.mjs');
+
+    // Close player viewer/sidebar for non-GM (cinematic replaces them)
+    if (!game.user?.isGM) {
+      game.storyframe.playerViewer?.close();
+      game.storyframe.playerSidebar?.close();
+    }
+
+    if (!game.storyframe.cinematicScene) {
+      game.storyframe.cinematicScene = new CinematicSceneApp();
+    }
+    if (!game.storyframe.cinematicScene.rendered) {
+      game.storyframe.cinematicScene.render(true);
+    }
+  }
+
+  _handleCloseSceneMode() {
+    if (game.storyframe.cinematicScene?.rendered) {
+      game.storyframe.cinematicScene.close();
+    }
+
+    // Reopen player viewer for non-GM if speakers exist
+    if (!game.user?.isGM) {
+      const state = game.storyframe.stateManager?.getState();
+      const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
+      if (visibleSpeakers.length > 0 && game.storyframe.playerViewer) {
+        game.storyframe.playerViewer.render(true);
+      }
     }
   }
 

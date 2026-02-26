@@ -152,11 +152,17 @@ function _updateActiveSpeakerInDOM(speakerId) {
  */
 function _updateSpeakerImageInDOM(speakerId, imagePath) {
   const thumb = document.querySelector(`.speaker-thumbnail[data-speaker-id="${speakerId}"]`);
-  if (!thumb) return;
-  const img = thumb.querySelector('img');
-  if (img) img.src = imagePath;
-  const nav = thumb.querySelector('.speaker-image-nav');
-  if (nav) nav.dataset.imagePath = imagePath;
+  if (thumb) {
+    const img = thumb.querySelector('img');
+    if (img) img.src = imagePath;
+    const nav = thumb.querySelector('.speaker-image-nav');
+    if (nav) nav.dataset.imagePath = imagePath;
+  }
+  const filmstripCard = document.querySelector(`.filmstrip-speaker[data-speaker-id="${speakerId}"]`);
+  if (filmstripCard) {
+    const img = filmstripCard.querySelector('img');
+    if (img) img.src = imagePath;
+  }
 }
 
 /**

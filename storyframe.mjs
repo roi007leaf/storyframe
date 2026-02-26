@@ -308,6 +308,7 @@ Hooks.once('init', () => {
       socketManager: null,
       gmSidebar: null,
       playerSidebar: null,
+      cinematicScene: null,
     };
   }
 
@@ -330,6 +331,27 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'playerViewerPosition', {
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.register(MODULE_ID, 'cinematicSectionHeights', {
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.register(MODULE_ID, 'cinematicPanelWidths', {
+    scope: 'client',
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.register(MODULE_ID, 'cinematicFloatingPanelPositions', {
     scope: 'client',
     config: false,
     type: Object,
@@ -749,6 +771,7 @@ Hooks.once('socketlib.ready', () => {
       stateManager: null,
       socketManager: null,
       gmSidebar: null,
+      cinematicScene: null,
     };
   }
 
@@ -881,6 +904,31 @@ Hooks.on('getSceneControlButtons', (controls) => {
           sidebar.render(true);
           game.settings.set(MODULE_ID, 'gmSidebarVisible', true);
         }
+      },
+    };
+
+    // Scene Mode button (GM only)
+    controls.tokens.tools.storyframe_scene = {
+      name: 'storyframe_scene',
+      title: 'StoryFrame Scene Mode',
+      icon: 'fas fa-film',
+      visible: true,
+      button: true,
+      onChange: (isActive) => {
+        if (!isActive) return;
+        // Deactivate button immediately
+        setTimeout(() => {
+          const ctrl = ui.controls.controls;
+          const control = ctrl?.get?.('tokens') ?? ctrl?.find?.(c => c.name === 'tokens');
+          if (control) control.activeTool = null;
+        }, 50);
+
+        const state = game.storyframe.stateManager?.getState();
+        if (!state?.speakers?.length) {
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.CinematicScene.NoSpeakers'));
+          return;
+        }
+        game.storyframe.socketManager.launchSceneMode();
       },
     };
   }
@@ -1053,6 +1101,11 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
     } else if (sidebar.rendered) {
       sidebar.render(); // Update display
     }
+  }
+
+  // Update cinematic scene if active
+  if (game.storyframe.cinematicScene?.rendered) {
+    game.storyframe.cinematicScene._onStateChange();
   }
 });
 

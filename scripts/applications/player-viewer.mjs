@@ -460,7 +460,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     }
 
-    return slug.toUpperCase();
+    return slug.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
   }
 
   /**
