@@ -461,15 +461,20 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   // --- Chat management ---
 
   _populateChatLog(container) {
+    // Clear synchronously so the hook (registered after this returns) starts with an empty container.
     container.innerHTML = '';
     const messages = game.messages.contents.slice(-10).filter(msg => msg.visible);
     Promise.all(messages.map(msg => msg.getHTML())).then(htmlElements => {
       if (!container.isConnected) return;
-      container.innerHTML = '';
+      // Build a fragment to preserve chronological order regardless of resolution speed.
+      const fragment = document.createDocumentFragment();
       for (const html of htmlElements) {
         const el = html?.jquery ? html[0] : html;
-        if (el) container.appendChild(el);
+        if (el) fragment.appendChild(el);
       }
+      // Prepend historical messages so any messages appended by the createChatMessage hook
+      // during the async window stay at the bottom (correct chronological position).
+      container.prepend(fragment);
       requestAnimationFrame(() => {
         if (container.isConnected) container.scrollTop = container.scrollHeight;
       });
