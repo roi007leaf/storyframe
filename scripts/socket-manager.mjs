@@ -565,16 +565,19 @@ export class SocketManager {
   // --- Cinematic Scene Mode Handlers ---
 
   async _handleLaunchSceneMode() {
-    const { CinematicSceneApp } = await import('./applications/cinematic-scene.mjs');
+    const isGM = game.user?.isGM;
+    const AppClass = isGM
+      ? (await import('./applications/cinematic/cinematic-gm-app.mjs')).CinematicGMApp
+      : (await import('./applications/cinematic/cinematic-player-app.mjs')).CinematicPlayerApp;
 
     // Close player viewer/sidebar for non-GM (cinematic replaces them)
-    if (!game.user?.isGM) {
+    if (!isGM) {
       game.storyframe.playerViewer?.close();
       game.storyframe.playerSidebar?.close();
     }
 
     if (!game.storyframe.cinematicScene) {
-      game.storyframe.cinematicScene = new CinematicSceneApp();
+      game.storyframe.cinematicScene = new AppClass();
     }
     if (!game.storyframe.cinematicScene.rendered) {
       game.storyframe.cinematicScene.render(true);

@@ -1,0 +1,432 @@
+<div class="cinematic-scene-container">
+  {{!-- Letterbox bars --}}
+  <div class="letterbox letterbox-top"></div>
+  <div class="letterbox letterbox-bottom"></div>
+
+  {{!-- Dark vignette overlay --}}
+  <div class="vignette-overlay"></div>
+
+  {{!-- Active Speaker or Image Preview (center stage) --}}
+  {{#if previewImageSrc}}
+  <div class="cinematic-image-preview">
+    <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-close-btn" data-action="closeImagePreview">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  {{else if activeSpeaker}}
+  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
+    <div class="spotlight-glow-cinematic"></div>
+    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+    <div class="spotlight-nameplate">
+      <span class="nameplate-text">{{activeSpeaker.name}}</span>
+      <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
+        <i class="fas fa-user-slash" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+  {{else}}
+  <div class="cinematic-no-active">
+    <i class="fas fa-masks-theater" aria-hidden="true"></i>
+  </div>
+  {{/if}}
+
+  {{!-- Film strip (inactive speakers along bottom) --}}
+  {{#if inactiveSpeakers.length}}
+  <div class="cinematic-filmstrip-container">
+    <div class="filmstrip-scroll-indicator filmstrip-scroll-left">
+      <i class="fas fa-chevron-left"></i>
+    </div>
+    <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
+      {{#each inactiveSpeakers}}
+      <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}"
+           role="listitem"
+           data-speaker-id="{{this.id}}"
+           data-action="switchSpeaker"
+           data-tooltip="{{this.name}}">
+        <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+        <span class="filmstrip-name">{{this.name}}</span>
+        <div class="filmstrip-speaker-controls">
+          <button type="button" class="fsc-btn" data-action="toggleSpeakerHidden" data-speaker-id="{{this.id}}"
+            data-tooltip="{{#if this.isHidden}}{{localize 'STORYFRAME.CinematicScene.ShowSpeaker'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideSpeaker'}}{{/if}}">
+            <i class="fas {{#if this.isHidden}}fa-eye{{else}}fa-eye-slash{{/if}}"></i>
+          </button>
+          <button type="button" class="fsc-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{this.id}}"
+            data-tooltip="{{#if this.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
+            <i class="fas fa-tag"></i>
+          </button>
+          <button type="button" class="fsc-btn" data-action="editSpeaker" data-speaker-id="{{this.id}}"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.EditName'}}">
+            <i class="fas fa-pen"></i>
+          </button>
+          <button type="button" class="fsc-btn fsc-btn-danger" data-action="removeSpeaker" data-speaker-id="{{this.id}}"
+            data-tooltip="{{localize 'STORYFRAME.UI.Labels.Remove'}}">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        {{#if this.hasAltImages}}
+        <div class="filmstrip-speaker-image-nav">
+          <button type="button" class="fsc-nav-btn" data-action="cycleSpeakerImagePrev" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.UI.Tooltips.PrevImage'}}">
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          <button type="button" class="fsc-nav-btn" data-action="cycleSpeakerImageNext" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.UI.Tooltips.NextImage'}}">
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+        {{/if}}
+      </div>
+      {{/each}}
+    </div>
+    <div class="filmstrip-scroll-indicator filmstrip-scroll-right">
+      <i class="fas fa-chevron-right"></i>
+    </div>
+  </div>
+  {{/if}}
+
+  {{!-- PC row (above filmstrip) --}}
+  {{#if pcRow.length}}
+  <div class="cinematic-pc-row">
+    {{#each pcRow}}
+    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-tooltip="{{this.name}}">
+      <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+      <span class="pc-item-name">{{this.name}}</span>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{!-- GM floating controls (top-right) --}}
+  <div class="cinematic-gm-controls">
+    <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
+      <i class="fas fa-sliders-h" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RelaunchForPlayers'}}">
+      <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn exit-btn" data-action="exitScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ExitScene'}}">
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  {{!-- Left panel toggle (top-left) --}}
+  <div class="cinematic-gm-controls cinematic-left-controls">
+    <button type="button" class="gm-control-btn" data-action="toggleLeftPanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ScenesAndMusic'}}">
+      <i class="fas fa-music" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  {{!-- Floating pending rolls (top-right, below GM buttons) --}}
+  <div class="cinematic-floating-pending{{#unless gmPendingRolls.length}} hidden{{/unless}}">
+    <div class="cinematic-pending-rolls-header">
+      <i class="fas fa-hourglass-half" aria-hidden="true"></i>
+      <span>{{localize 'STORYFRAME.CinematicScene.PendingLabel'}}</span>
+      <span class="pending-rolls-badge">{{gmPendingRolls.length}}</span>
+    </div>
+    <div class="cinematic-pending-rolls">
+      {{#each gmPendingRolls}}
+      <div class="cinematic-pending-roll-item">
+        <img src="{{this.actorImg}}" alt="{{this.actorName}}" class="pending-roll-avatar" loading="lazy">
+        <div class="pending-roll-info">
+          <span class="pending-roll-actor">{{this.actorName}}</span>
+          <span class="pending-roll-skill">{{this.skillName}}{{#if this.dc}} DC {{this.dc}}{{/if}}</span>
+        </div>
+        <button type="button" class="pending-roll-cancel" data-action="cancelPendingRoll" data-request-id="{{this.id}}">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- Floating active challenges (top-left, below left panel toggle) --}}
+  <div class="cinematic-floating-challenges{{#unless gmActiveChallenges.length}} hidden{{/unless}}">
+    <div class="cinematic-active-challenges-header">
+      <i class="fas fa-flag-checkered" aria-hidden="true"></i>
+      <span>{{localize 'STORYFRAME.CinematicScene.ActiveLabel'}}</span>
+      <span class="active-challenges-badge">{{gmActiveChallenges.length}}</span>
+    </div>
+    <div class="cinematic-floating-challenges-list">
+      {{#each gmActiveChallenges}}
+      <div class="cinematic-active-challenge-item">
+        <span>{{this.name}}</span>
+        <button type="button" class="active-challenge-remove" data-action="removeChallenge" data-challenge-id="{{this.id}}">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- Left Side Panel (slide-out from left) --}}
+  <div class="cinematic-left-panel {{#if leftPanelOpen}}open{{/if}}">
+    <div class="panel-width-handle panel-width-handle-right"></div>
+    <div class="side-panel-header">
+      <h3>{{localize "STORYFRAME.CinematicScene.ScenesAndMusic"}}</h3>
+      <button type="button" class="panel-close-btn" data-action="toggleLeftPanel">
+        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    {{!-- Speaker Scenes --}}
+    <div class="side-panel-section left-panel-section" data-section="scenes">
+      <h4>{{localize "STORYFRAME.CinematicScene.SpeakerScenes"}}</h4>
+      <div class="left-panel-scenes">
+        {{#each speakerScenes}}
+        <div class="left-panel-scene-item" data-scene-id="{{this.id}}" data-action="loadSpeakerScene">
+          <i class="fas fa-users" aria-hidden="true"></i>
+          <span class="scene-item-name">{{this.name}}</span>
+          <span class="scene-item-count">{{this.speakers.length}}</span>
+        </div>
+        {{/each}}
+        {{#unless speakerScenes.length}}
+        <div class="left-panel-empty">{{localize "STORYFRAME.CinematicScene.NoSavedScenes"}}</div>
+        {{/unless}}
+      </div>
+    </div>
+
+    <div class="section-resize-handle" data-resize-above="scenes" data-resize-below="journal"></div>
+
+    {{!-- Journal --}}
+    <div class="side-panel-section left-panel-journal left-panel-section" data-section="journal">
+      {{#if openJournal}}
+        {{#if journalMinimized}}
+        <div class="journal-minimized-pill" data-action="journalExpand">
+          <i class="fas fa-book-open" aria-hidden="true"></i>
+          <span>{{openJournal.name}}</span>
+          <button type="button" class="journal-pill-close" data-action="journalClose">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+        {{else}}
+        <div class="journal-viewer-header">
+          <i class="fas fa-book-open" aria-hidden="true"></i>
+          <span class="journal-viewer-title">{{openJournal.name}}</span>
+          <button type="button" class="journal-header-btn" data-action="journalMinimize" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Minimize'}}">
+            <i class="fas fa-minus" aria-hidden="true"></i>
+          </button>
+          <button type="button" class="journal-header-btn" data-action="journalClose" data-tooltip="{{localize 'STORYFRAME.UI.Labels.Close'}}">
+            <i class="fas fa-times" aria-hidden="true"></i>
+          </button>
+        </div>
+        {{#if openJournal.pages.length}}
+        {{#unless (eq openJournal.pages.length 1)}}
+        <div class="journal-page-tabs">
+          {{#each openJournal.pages}}
+          <button type="button" class="journal-page-tab {{#if (eq this.id ../openJournal.activePageId)}}active{{/if}}"
+                  data-action="journalSelectPage" data-page-id="{{this.id}}">
+            {{this.name}}
+          </button>
+          {{/each}}
+        </div>
+        {{/unless}}
+        {{/if}}
+        <div class="journal-content-scroll">
+          <div class="journal-content-body">{{{openJournal.enrichedContent}}}</div>
+        </div>
+        {{/if}}
+      {{else}}
+        <h4><i class="fas fa-book" aria-hidden="true"></i> {{localize 'STORYFRAME.CinematicScene.Journal'}}</h4>
+        <div class="journal-search-row">
+          <input type="text" class="journal-search-input" placeholder="{{localize 'STORYFRAME.CinematicScene.SearchJournals'}}" value="{{journalSearchQuery}}">
+        </div>
+        <div class="journal-entry-list">
+          {{#each journalEntries}}
+          <div class="journal-entry-item" data-action="journalOpen" data-journal-id="{{this.id}}">
+            <i class="fas fa-book" aria-hidden="true"></i>
+            <span>{{this.name}}</span>
+            {{#if this.pageCount}}<span class="journal-page-count">{{this.pageCount}}</span>{{/if}}
+          </div>
+          {{#each this.matchingPages}}
+          <div class="journal-entry-item journal-page-match" data-action="journalOpenPage" data-journal-id="{{../id}}" data-page-id="{{this.id}}">
+            <i class="fas fa-file-alt" aria-hidden="true"></i>
+            <span>{{this.name}}</span>
+          </div>
+          {{/each}}
+          {{/each}}
+          {{#unless journalEntries.length}}
+          <div class="left-panel-empty">{{localize 'STORYFRAME.CinematicScene.NoJournalsFound'}}</div>
+          {{/unless}}
+        </div>
+      {{/if}}
+    </div>
+
+    <div class="section-resize-handle" data-resize-above="journal" data-resize-below="music"></div>
+
+    {{!-- Music Player --}}
+    <div class="side-panel-section left-panel-music left-panel-section" data-section="music">
+      <div class="music-controls-sticky">
+      {{!-- Transport Controls --}}
+      <div class="music-transport">
+        <button type="button" class="music-btn {{#if shuffleActive}}active{{/if}}" data-action="musicShuffle" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Music.Shuffle'}}">
+          <i class="fas fa-shuffle" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="music-btn" data-action="musicPrev" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Music.Previous'}}">
+          <i class="fas fa-backward" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="music-btn music-btn-main" data-action="musicPlayPause" data-tooltip="{{#if nowPlaying}}{{localize 'STORYFRAME.CinematicScene.Music.Pause'}}{{else}}{{localize 'STORYFRAME.CinematicScene.Music.Play'}}{{/if}}">
+          <i class="fas {{#if nowPlaying}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="music-btn" data-action="musicStop" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Music.Stop'}}">
+          <i class="fas fa-stop" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="music-btn" data-action="musicNext" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Music.Next'}}">
+          <i class="fas fa-forward" aria-hidden="true"></i>
+        </button>
+        <button type="button" class="music-btn {{#if repeatActive}}active{{/if}}" data-action="musicRepeat" data-tooltip="{{localize 'STORYFRAME.CinematicScene.Music.Repeat'}}">
+          <i class="fas fa-repeat" aria-hidden="true"></i>
+        </button>
+      </div>
+
+      {{!-- Volume Slider --}}
+      <div class="music-volume-row">
+        <i class="fas fa-volume-down" aria-hidden="true"></i>
+        <input type="range" class="cinematic-music-volume" min="0" max="1" step="0.05" value="{{currentVolume}}">
+        <i class="fas fa-volume-up" aria-hidden="true"></i>
+      </div>
+
+      {{!-- Now Playing --}}
+      {{#if nowPlaying}}
+      <div class="music-now-playing">
+        <i class="fas fa-volume-up" aria-hidden="true"></i>
+        <div class="now-playing-info">
+          <span class="now-playing-track">{{nowPlaying.trackName}}</span>
+          <span class="now-playing-playlist">{{nowPlaying.playlistName}}</span>
+        </div>
+      </div>
+      {{/if}}
+
+      {{!-- Search --}}
+      <div class="music-search-row">
+        <i class="fas fa-search" aria-hidden="true"></i>
+        <input type="text" class="music-search-input" placeholder="{{localize 'STORYFRAME.CinematicScene.SearchTracks'}}" value="{{musicSearchQuery}}">
+      </div>
+
+      </div>{{!-- end music-controls-sticky --}}
+
+      {{!-- Search Results --}}
+      {{#if musicSearchResults.length}}
+      <div class="music-search-results">
+        {{#each musicSearchResults}}
+        <div class="left-panel-track-item" data-action="musicPlayTrack" data-playlist-id="{{this.playlistId}}" data-sound-id="{{this.id}}">
+          <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
+          <div class="search-result-info">
+            <span class="search-result-track">{{this.name}}</span>
+            <span class="search-result-playlist">{{this.playlistName}}</span>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+
+      {{!-- Playlists with expandable tracks --}}
+      <div class="left-panel-playlists">
+        {{#each playlists}}
+        <div class="left-panel-playlist-item {{#if this.playing}}playing{{/if}}">
+          <button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="{{this.id}}">
+            <i class="fas {{#if this.expanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
+          </button>
+          <span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="{{this.id}}">{{this.name}}</span>
+          <span class="playlist-track-count">{{this.trackCount}}</span>
+        </div>
+        {{#if this.expanded}}
+        <div class="playlist-tracks-inline">
+          {{#each this.tracks}}
+          <div class="left-panel-track-item {{#if this.playing}}playing{{/if}}"
+               data-action="musicPlayTrack" data-playlist-id="{{../id}}" data-sound-id="{{this.id}}">
+            <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
+            <span>{{this.name}}</span>
+          </div>
+          {{/each}}
+        </div>
+        {{/if}}
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  {{!-- GM Side Panel (slide-out from right) --}}
+  <div class="cinematic-side-panel {{#if sidePanelOpen}}open{{/if}}">
+    <div class="panel-width-handle panel-width-handle-left"></div>
+    <div class="side-panel-header">
+      <h3>{{localize "STORYFRAME.CinematicScene.GMControls"}}</h3>
+      <button type="button" class="panel-close-btn" data-action="toggleSidePanel">
+        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="side-panel-body">
+      {{!-- Controls section --}}
+      <div class="side-panel-resizable" data-section="controls">
+        {{!-- Roll request controls --}}
+        {{#if hasParticipants}}
+        <div class="side-panel-section">
+          <h4>{{localize "STORYFRAME.UI.Tabs.PCs"}}</h4>
+          <div class="cinematic-dc-row">
+            <div class="cinematic-dc-group">
+              <label class="cinematic-dc-label" for="cinematic-dc-input">{{localize "STORYFRAME.ChallengeBuilder.DC"}}</label>
+              <input type="number"
+                     id="cinematic-dc-input"
+                     class="cinematic-dc-input"
+                     value="{{currentDC}}"
+                     min="1"
+                     placeholder="--"
+                     aria-label="{{localize "STORYFRAME.UI.AriaLabels.DifficultyClass"}}">
+              <button type="button"
+                      class="cinematic-preset-btn"
+                      data-action="togglePresetDropdown"
+                      data-tooltip="{{localize "STORYFRAME.UI.Tooltips.DCPresets"}}">
+                <i class="fas fa-bookmark" aria-hidden="true"></i>
+              </button>
+            </div>
+            <button type="button"
+                    class="cinematic-secret-btn {{#if secretRollEnabled}}active{{/if}}"
+                    data-action="toggleSecretRoll"
+                    data-tooltip="{{localize "STORYFRAME.UI.Tooltips.GMOnlyRoll"}}"
+                    aria-pressed="{{#if secretRollEnabled}}true{{else}}false{{/if}}">
+              <i class="fas fa-eye-slash" aria-hidden="true"></i>
+            </button>
+          </div>
+          <div class="side-panel-skills">
+            {{#each quickSkills}}
+            <button type="button" class="side-panel-skill-btn" data-action="requestQuickSkill" data-skill="{{this.slug}}">
+              <i class="fas {{this.icon}}" aria-hidden="true"></i>
+              <span>{{this.name}}</span>
+            </button>
+            {{/each}}
+          </div>
+          <button type="button" class="side-panel-open-sidebar-btn" data-action="openGMSidebar">
+            <i class="fas fa-external-link-alt" aria-hidden="true"></i>
+            <span>{{localize "STORYFRAME.CinematicScene.OpenFullSidebar"}}</span>
+          </button>
+        </div>
+        {{/if}}
+
+        {{!-- Challenge controls --}}
+        <div class="side-panel-section cinematic-challenge-section">
+          <h4><i class="fas fa-tasks" aria-hidden="true"></i> {{localize "STORYFRAME.UI.Labels.Challenges"}}</h4>
+          {{#if savedChallenges.length}}
+          <div class="cinematic-saved-challenges">
+            {{#each savedChallenges}}
+            <div class="cinematic-saved-item" data-action="presentSavedChallenge" data-challenge-id="{{this.id}}">
+              <i class="fas fa-paper-plane" aria-hidden="true"></i>
+              <span>{{this.name}}</span>
+            </div>
+            {{/each}}
+          </div>
+          {{/if}}
+        </div>
+      </div>
+
+      <div class="section-resize-handle" data-resize-above="controls" data-resize-below="chat"></div>
+
+      {{!-- Chat log section --}}
+      <div class="side-panel-resizable" data-section="chat">
+        <div class="side-panel-chat-header">
+          <h4><i class="fas fa-comments" aria-hidden="true"></i> {{localize 'STORYFRAME.CinematicScene.ChatLog'}}</h4>
+        </div>
+        <div class="side-panel-chat-messages"></div>
+      </div>
+    </div>
+  </div>
+</div>

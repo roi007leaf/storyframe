@@ -1,0 +1,148 @@
+<div class="cinematic-scene-container">
+  {{!-- Letterbox bars --}}
+  <div class="letterbox letterbox-top"></div>
+  <div class="letterbox letterbox-bottom"></div>
+
+  {{!-- Dark vignette overlay --}}
+  <div class="vignette-overlay"></div>
+
+  {{!-- Active Speaker or Image Preview (center stage) --}}
+  {{#if previewImageSrc}}
+  <div class="cinematic-image-preview">
+    <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-close-btn" data-action="closeImagePreview">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+  {{else if activeSpeaker}}
+  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
+    <div class="spotlight-glow-cinematic"></div>
+    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+    <div class="spotlight-nameplate">
+      <span class="nameplate-text">{{activeSpeaker.name}}</span>
+    </div>
+  </div>
+  {{else}}
+  <div class="cinematic-no-active">
+    <i class="fas fa-masks-theater" aria-hidden="true"></i>
+  </div>
+  {{/if}}
+
+  {{!-- Film strip (inactive speakers along bottom) --}}
+  {{#if inactiveSpeakers.length}}
+  <div class="cinematic-filmstrip-container">
+    <div class="filmstrip-scroll-indicator filmstrip-scroll-left">
+      <i class="fas fa-chevron-left"></i>
+    </div>
+    <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
+      {{#each inactiveSpeakers}}
+      <div class="filmstrip-speaker"
+           role="listitem"
+           data-speaker-id="{{this.id}}"
+           data-tooltip="{{this.name}}">
+        <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+        <span class="filmstrip-name">{{this.name}}</span>
+      </div>
+      {{/each}}
+    </div>
+    <div class="filmstrip-scroll-indicator filmstrip-scroll-right">
+      <i class="fas fa-chevron-right"></i>
+    </div>
+  </div>
+  {{/if}}
+
+  {{!-- PC row (above filmstrip) --}}
+  {{#if pcRow.length}}
+  <div class="cinematic-pc-row">
+    {{#each pcRow}}
+    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-tooltip="{{this.name}}">
+      <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+      <span class="pc-item-name">{{this.name}}</span>
+    </div>
+    {{/each}}
+  </div>
+  {{/if}}
+
+  {{!-- Player roll panel (bottom-right, collapsible) --}}
+  <div class="cinematic-roll-panel {{#if rollPanelExpanded}}expanded{{/if}} {{#unless hasPendingRolls}}hidden{{/unless}}">
+    <button type="button" class="roll-panel-toggle" data-action="toggleRollPanel">
+      <i class="fas fa-dice-d20" aria-hidden="true"></i>
+      <span class="roll-badge">{{totalPendingRolls}}</span>
+    </button>
+    <div class="roll-panel-content">
+      {{#each actorRollGroups}}
+      <div class="cinematic-roll-group {{#if this.hasAllowOnlyOne}}allow-only-one-group{{/if}}">
+        <div class="roll-group-header">
+          <img src="{{this.actorImg}}" alt="{{this.actorName}}" class="roll-actor-avatar" loading="lazy">
+          <span class="roll-actor-name">{{this.actorName}}</span>
+          {{#if this.hasAllowOnlyOne}}
+          <span class="cinematic-allow-one-badge">
+            <i class="fas fa-hand-pointer" aria-hidden="true"></i>
+            {{localize "STORYFRAME.UI.Labels.ChooseOne"}}
+          </span>
+          {{/if}}
+        </div>
+        <div class="roll-group-buttons">
+          {{#each this.rolls}}
+          <button type="button" class="cinematic-roll-btn" data-action="executeRoll" data-request-id="{{this.id}}">
+            <span class="roll-skill-name">{{this.skillName}}</span>
+            {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+          </button>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- Player challenge panel (bottom-left, collapsible) --}}
+  <div class="cinematic-challenge-panel {{#if challengePanelExpanded}}expanded{{/if}} {{#unless hasPendingChallenges}}hidden{{/unless}}">
+    <button type="button" class="challenge-panel-toggle" data-action="toggleChallengePanel">
+      <i class="fas fa-tasks" aria-hidden="true"></i>
+      <span class="challenge-badge">{{totalChallenges}}</span>
+    </button>
+    <div class="challenge-panel-content">
+      {{#each activeChallenges}}
+      <div class="cinematic-challenge-group" data-challenge-id="{{this.id}}">
+        <div class="challenge-group-header">
+          {{#if this.image}}<img src="{{this.image}}" alt="{{this.name}}" class="challenge-thumb" loading="lazy">{{/if}}
+          <span class="challenge-group-name">{{this.name}}</span>
+        </div>
+        {{#each this.options}}
+        <div class="challenge-option-compact">
+          {{#if this.name}}<span class="option-label">{{this.name}}</span>{{/if}}
+          <div class="challenge-skill-buttons">
+            {{#each this.skillOptionsDisplay}}
+            <button type="button"
+                    class="cinematic-roll-btn{{#unless this.canRoll}} proficiency-locked{{/unless}}"
+                    data-action="selectChallengeOption"
+                    data-skill="{{this.skill}}"
+                    data-check-type="{{this.checkType}}"
+                    data-dc="{{this.dc}}"
+                    data-action-slug="{{this.action}}"
+                    data-action-variant="{{this.actionVariant}}"
+                    data-is-secret="{{this.isSecret}}"
+                    {{#unless this.canRoll}}disabled{{/unless}}>
+              {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
+              <span class="roll-skill-name">{{this.skillName}}</span>
+              {{#if this.showDC}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+            </button>
+            {{/each}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  {{!-- Player chat log (top-right, collapsible) --}}
+  <div class="cinematic-player-chat {{#if playerChatExpanded}}expanded{{/if}}">
+    <button type="button" class="player-chat-toggle" data-action="togglePlayerChat">
+      <i class="fas fa-comments" aria-hidden="true"></i>
+    </button>
+    <div class="player-chat-content">
+      <div class="side-panel-chat-messages player-chat-messages"></div>
+    </div>
+  </div>
+</div>

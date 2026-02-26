@@ -1,0 +1,371 @@
+/* ===== Player Roll Panel (Bottom-Right) ===== */
+.cinematic-scene-container .cinematic-roll-panel.hidden,
+.cinematic-scene-container .cinematic-challenge-panel.hidden {
+  display: none;
+}
+
+.cinematic-scene-container .cinematic-roll-panel {
+  position: absolute;
+  bottom: calc(6vh + 16px);
+  right: var(--sf-space-lg, 24px);
+  z-index: 15;
+  background: rgba(10, 10, 18, 0.88);
+  border: 1px solid rgba(235, 203, 139, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: 320px;
+  animation: cinematic-fade-in 0.4s ease-out;
+}
+
+.cinematic-scene-container .cinematic-roll-panel.expanded {
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cinematic-scene-container .roll-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  padding: 10px 14px;
+  cursor: pointer;
+  color: rgba(235, 203, 139, 0.9);
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+  width: 100%;
+}
+
+.cinematic-scene-container .roll-panel-toggle:hover {
+  color: rgba(235, 203, 139, 1);
+}
+
+.cinematic-scene-container .roll-badge,
+.cinematic-scene-container .challenge-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--sf-radius-full, 9999px);
+  font-size: 0.7rem;
+  font-weight: 700;
+  animation: cinematic-badge-pop 0.3s ease-out;
+}
+
+.cinematic-scene-container .roll-badge {
+  background: rgba(235, 203, 139, 0.3);
+  color: rgba(235, 203, 139, 1);
+}
+
+.cinematic-scene-container .challenge-badge {
+  background: rgba(94, 129, 172, 0.3);
+  color: rgba(94, 129, 172, 1);
+}
+
+@keyframes cinematic-badge-pop {
+  from {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* Roll panel content — hidden until expanded */
+.cinematic-scene-container .cinematic-roll-panel:not(.expanded) .roll-panel-content {
+  display: none;
+}
+
+.cinematic-scene-container .roll-panel-content {
+  padding: 0 var(--sf-space-sm, 8px) var(--sf-space-sm, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-sm, 8px);
+}
+
+.cinematic-scene-container .cinematic-roll-group,
+.cinematic-scene-container .cinematic-challenge-group {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--sf-radius-md, 8px);
+  padding: var(--sf-space-sm, 8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.cinematic-scene-container .roll-group-header,
+.cinematic-scene-container .challenge-group-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  margin-bottom: 6px;
+}
+
+.cinematic-scene-container .roll-actor-avatar,
+.cinematic-scene-container .challenge-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: var(--sf-radius-sm, 4px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cinematic-scene-container .roll-actor-name,
+.cinematic-scene-container .challenge-group-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cinematic-scene-container .roll-group-buttons,
+.cinematic-scene-container .challenge-skill-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cinematic-scene-container .option-label {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.cinematic-scene-container .challenge-option-compact {
+  margin-top: 4px;
+}
+
+.cinematic-scene-container .cinematic-roll-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sf-space-sm, 8px);
+  padding: 7px 10px;
+  background: rgba(94, 129, 172, 0.12);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.75rem;
+  font-weight: 500;
+  width: 100%;
+}
+
+.cinematic-scene-container .cinematic-roll-btn:hover {
+  background: rgba(94, 129, 172, 0.25);
+  border-color: rgba(94, 129, 172, 0.5);
+  color: #fff;
+  transform: translateX(2px);
+}
+
+.cinematic-scene-container .roll-skill-name {
+  flex: 1;
+}
+
+.cinematic-scene-container .dc-mini {
+  font-size: 0.65rem;
+  font-weight: 700;
+  font-family: var(--font-mono, monospace);
+  padding: 1px 6px;
+  background: rgba(94, 129, 172, 0.2);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(94, 129, 172, 0.9);
+}
+
+/* Save check buttons — orange accent (matches player sidebar) */
+.cinematic-scene-container .cinematic-roll-btn[data-check-type='save'] {
+  background: linear-gradient(135deg, #c05621 0%, #dc7633 100%);
+  border-color: rgba(220, 118, 51, 0.6);
+  color: #fff;
+}
+
+.cinematic-scene-container .cinematic-roll-btn[data-check-type='save'] .roll-skill-name {
+  color: #fff;
+}
+
+.cinematic-scene-container .cinematic-roll-btn[data-check-type='save'] .dc-mini {
+  background: rgba(0, 0, 0, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.cinematic-scene-container .cinematic-roll-btn[data-check-type='save']:hover {
+  background: linear-gradient(135deg, #dc7633 0%, #e67e22 100%);
+  border-color: rgba(230, 126, 34, 0.8);
+  box-shadow: 0 2px 8px rgba(220, 118, 51, 0.4);
+}
+
+/* ===== Allow Only One Badge (Player) ===== */
+.cinematic-scene-container .cinematic-roll-group.allow-only-one-group {
+  border-color: rgba(163, 190, 140, 0.5);
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.12), rgba(163, 190, 140, 0.08));
+}
+
+.cinematic-scene-container .cinematic-allow-one-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  background: linear-gradient(135deg, rgba(163, 190, 140, 0.3), rgba(163, 190, 140, 0.2));
+  border: 1px solid rgba(163, 190, 140, 0.5);
+  border-radius: 10px;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #a3be8c;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-left: auto;
+  animation: cinematic-badge-pulse 2s ease-in-out infinite;
+}
+
+.cinematic-scene-container .cinematic-allow-one-badge i {
+  font-size: 0.55rem;
+}
+
+@keyframes cinematic-badge-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 6px rgba(163, 190, 140, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(163, 190, 140, 0.6);
+  }
+}
+
+
+/* ===== Player Challenge Panel (Bottom-Left) ===== */
+.cinematic-scene-container .cinematic-challenge-panel {
+  position: absolute;
+  bottom: calc(6vh + 16px);
+  left: var(--sf-space-lg, 24px);
+  z-index: 15;
+  background: rgba(10, 10, 18, 0.88);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: 320px;
+  animation: cinematic-fade-in 0.4s ease-out;
+}
+
+.cinematic-scene-container .cinematic-challenge-panel.expanded {
+  max-height: 50vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.cinematic-scene-container .challenge-panel-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  padding: 10px 14px;
+  cursor: pointer;
+  color: rgba(94, 129, 172, 0.9);
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  transition: color 0.2s;
+  width: 100%;
+}
+
+.cinematic-scene-container .challenge-panel-toggle:hover {
+  color: rgba(94, 129, 172, 1);
+}
+
+.cinematic-scene-container .cinematic-challenge-panel:not(.expanded) .challenge-panel-content {
+  display: none;
+}
+
+.cinematic-scene-container .challenge-panel-content {
+  padding: 0 var(--sf-space-sm, 8px) var(--sf-space-sm, 8px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-sm, 8px);
+}
+
+/* ===== Player Chat Log (top-right, collapsible) ===== */
+.cinematic-scene-container .cinematic-player-chat {
+  position: absolute;
+  top: calc(6vh + 16px);
+  right: var(--sf-space-lg, 24px);
+  z-index: 15;
+  background: rgba(10, 10, 18, 0.88);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  max-width: 360px;
+  animation: cinematic-fade-in 0.4s ease-out;
+}
+
+.cinematic-scene-container .cinematic-player-chat.expanded {
+  width: 360px;
+  max-height: 50vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.cinematic-scene-container .player-chat-toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  padding: 10px 14px;
+  cursor: pointer;
+  color: rgba(94, 129, 172, 0.9);
+  background: none;
+  border: none;
+  font-size: 1.1rem;
+  width: 100%;
+}
+
+.cinematic-scene-container .player-chat-toggle:hover {
+  color: rgba(94, 129, 172, 1);
+}
+
+.cinematic-scene-container .cinematic-player-chat:not(.expanded) .player-chat-content {
+  display: none;
+}
+
+.cinematic-scene-container .player-chat-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cinematic-scene-container .player-chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 0 8px 8px;
+  max-height: 45vh;
+}
+
+/* ===== Proficiency-locked challenge buttons ===== */
+.cinematic-scene-container .cinematic-roll-btn.proficiency-locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+  filter: grayscale(50%);
+  position: relative;
+}
+
+.cinematic-scene-container .cinematic-roll-btn.proficiency-locked:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  transform: none;
+  box-shadow: none;
+}
+
+.cinematic-scene-container .cinematic-roll-btn .proficiency-lock-icon {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  margin-right: 2px;
+}
+

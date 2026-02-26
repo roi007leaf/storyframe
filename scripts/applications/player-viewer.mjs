@@ -294,7 +294,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     }
     this._imageContextHandlers = [];
 
-    const images = this.element.querySelectorAll('.speaker-item img');
+    const images = this.element.querySelectorAll('.speaker-item img, .speaker-spotlight img');
     images.forEach((img) => {
       const handler = (e) => {
         e.preventDefault();
