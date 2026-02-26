@@ -203,6 +203,7 @@
       },
       "Labels": {
         "Skills": "Skills",
+        "Saves": "Saves",
         "SceneName": "Scene Name",
         "SelectSkill": "Select skill...",
         "SelectSave": "Select save...",

@@ -462,21 +462,24 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   }
 
   _bindChatContextMenu(container) {
-    const raw = ui.chat?._getEntryContextOptions?.();
-    if (!raw?.length) return;
-
     container.addEventListener('contextmenu', (e) => {
-      const msgEl = e.target.closest('.message');
+      const msgEl = e.target.closest('.message, .chat-message');
       if (!msgEl) return;
       e.preventDefault();
       e.stopPropagation();
 
+      // Fetch lazily so we always get current options regardless of init order.
+      // Try both v12 and v13 API paths.
+      const raw = ui.chat?._getEntryContextOptions?.()
+        ?? ui.chat?.constructor?._entryContextOptions?.()
+        ?? [];
+      if (!raw.length) return;
+
       document.getElementById('cinematic-context-menu')?.remove();
 
-      const jEl = globalThis.jQuery ? globalThis.jQuery(msgEl) : msgEl;
       const visible = raw.filter(opt => {
         if (!opt.condition) return true;
-        try { return opt.condition(jEl); } catch { return false; }
+        try { return opt.condition(msgEl); } catch { return false; }
       });
       if (!visible.length) return;
 
@@ -503,12 +506,13 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         const li = document.createElement('li');
         li.className = 'context-item';
         li.style.cssText = 'display:flex;align-items:center;gap:8px;padding:6px 12px;cursor:pointer;color:var(--text-color,#ccc);font-size:0.85rem;white-space:nowrap;';
-        li.innerHTML = `<i class="${opt.icon}" style="width:14px;text-align:center;"></i>${opt.name}`;
+        const iconHtml = opt.icon?.startsWith('<') ? opt.icon : `<i class="${opt.icon}" style="width:14px;text-align:center;"></i>`;
+        li.innerHTML = `${iconHtml}${game.i18n.localize(opt.name)}`;
         li.addEventListener('mouseover', () => { li.style.background = 'rgba(94,129,172,0.2)'; });
         li.addEventListener('mouseout', () => { li.style.background = ''; });
         li.addEventListener('click', (ev) => {
           ev.stopPropagation();
-          try { opt.callback(jEl); } catch (err) { console.error('StoryFrame | context menu callback error', err); }
+          try { opt.callback(msgEl); } catch (err) { console.error('StoryFrame | context menu callback error', err); }
           menu.remove();
         });
         ol.appendChild(li);

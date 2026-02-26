@@ -18,6 +18,8 @@ export class CinematicGMApp extends CinematicSceneBase {
       toggleLeftPanel: CinematicGMApp._onToggleLeftPanel,
       loadSpeakerScene: CinematicGMApp._onLoadSpeakerScene,
       requestQuickSkill: CinematicGMApp._onRequestQuickSkill,
+      requestQuickSave: CinematicGMApp._onRequestQuickSave,
+      requestJournalCheck: CinematicGMApp._onRequestJournalCheck,
       toggleSecretRoll: CinematicGMApp._onToggleSecretRoll,
       togglePresetDropdown: CinematicGMApp._onTogglePresetDropdown,
       openGMSidebar: CinematicGMApp._onOpenGMSidebar,
@@ -143,14 +145,21 @@ export class CinematicGMApp extends CinematicSceneBase {
       };
     }
 
-    // Quick skills
+    // Quick skills + saves
     let quickSkills = [];
-    const hasParticipants = (state.participants?.length || 0) > 0;
+    let quickSaves = [];
+    const hasParticipants = base.pcRow.length > 0;
     if (hasParticipants) {
       const skills = SystemAdapter.getSkills();
       quickSkills = Object.entries(skills).map(([slug, skill]) => ({
         slug,
         name: skill.name,
+        icon: this._getSkillIcon(slug),
+      }));
+      const saves = SystemAdapter.getSaves();
+      quickSaves = Object.entries(saves).map(([slug, save]) => ({
+        slug,
+        name: save.name,
         icon: this._getSkillIcon(slug),
       }));
     }
@@ -255,11 +264,48 @@ export class CinematicGMApp extends CinematicSceneBase {
       }
     }
 
+    // Journal checks/saves from the currently open journal
+    let journalSkillGroups = [];
+    let journalSaveGroups = [];
+    if (hasParticipants && openJournal?.enrichedContent) {
+      try {
+        const sys = SystemAdapter.detectSystem();
+        let SidebarClass;
+        if (sys === 'pf2e') {
+          ({ GMSidebarAppPF2e: SidebarClass } = await import('../gm-sidebar/gm-sidebar-pf2e.mjs'));
+        } else if (sys === 'dnd5e') {
+          ({ GMSidebarAppDND5e: SidebarClass } = await import('../gm-sidebar/gm-sidebar-dnd5e.mjs'));
+        } else if (sys === 'daggerheart') {
+          ({ GMSidebarAppDaggerheart: SidebarClass } = await import('../gm-sidebar/gm-sidebar-daggerheart.mjs'));
+        } else {
+          ({ GMSidebarAppBase: SidebarClass } = await import('../gm-sidebar/gm-sidebar-base.mjs'));
+        }
+        const tempEl = document.createElement('div');
+        tempEl.innerHTML = openJournal.enrichedContent;
+        const rawChecks = SidebarClass.prototype._parseChecksFromContent.call({}, tempEl);
+        const { groupChecksBySkill } = await import('../gm-sidebar/managers/journal-handlers.mjs');
+        const grouped = groupChecksBySkill(rawChecks);
+        for (const group of grouped) {
+          const skillChecks = group.checks.filter(c => c.checkType === 'skill' || !c.checkType);
+          const saveChecks = group.checks.filter(c => c.checkType === 'save');
+          if (skillChecks.length) journalSkillGroups.push({ ...group, checks: skillChecks });
+          if (saveChecks.length) journalSaveGroups.push({ ...group, checks: saveChecks });
+        }
+      } catch (err) {
+        console.warn('StoryFrame | Failed to parse journal checks for cinematic panel', err);
+      }
+    }
+
     return {
       ...base,
       sidePanelOpen: this.sidePanelOpen,
       leftPanelOpen: this.leftPanelOpen,
       quickSkills,
+      quickSaves,
+      journalSkillGroups,
+      journalSaveGroups,
+      hasJournalChecks: journalSkillGroups.length > 0,
+      hasJournalSaves: journalSaveGroups.length > 0,
       hasParticipants,
       currentDC: this.currentDC,
       secretRollEnabled: this.secretRollEnabled,
@@ -574,6 +620,23 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (!skillSlug) return;
     const { openRollRequesterAndSend } = await import('../gm-sidebar/managers/skill-check-handlers.mjs');
     await openRollRequesterAndSend(this, skillSlug, 'skill');
+  }
+
+  static async _onRequestQuickSave(_event, target) {
+    const saveSlug = target.dataset.skill;
+    if (!saveSlug) return;
+    const { openRollRequesterAndSend } = await import('../gm-sidebar/managers/skill-check-handlers.mjs');
+    await openRollRequesterAndSend(this, saveSlug, 'save');
+  }
+
+  static async _onRequestJournalCheck(_event, target) {
+    const skillSlug = target.dataset.skill;
+    const checkType = target.dataset.checkType || 'skill';
+    if (!skillSlug) return;
+    const dc = parseInt(target.dataset.dc);
+    if (!isNaN(dc)) this.currentDC = dc;
+    const { openRollRequesterAndSend } = await import('../gm-sidebar/managers/skill-check-handlers.mjs');
+    await openRollRequesterAndSend(this, skillSlug, checkType);
   }
 
   static _onToggleSecretRoll() {

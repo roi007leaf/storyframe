@@ -28,6 +28,11 @@
   background: transparent;
 }
 
+/* StoryFrame GM sidebar must appear above the fullscreen cinematic overlay */
+#storyframe-gm-sidebar {
+  z-index: 100000 !important;
+}
+
 /* Context menus must appear above the fullscreen cinematic overlay */
 #context-menu {
   z-index: 100001 !important;

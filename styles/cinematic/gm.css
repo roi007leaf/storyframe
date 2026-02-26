@@ -374,6 +374,26 @@
   opacity: 0.7;
 }
 
+.cinematic-scene-container .side-panel-save-btn {
+  border-color: rgba(215, 153, 86, 0.25);
+  color: rgba(215, 153, 86, 0.85);
+}
+
+.cinematic-scene-container .side-panel-save-btn:hover {
+  background: rgba(215, 153, 86, 0.2);
+  border-color: rgba(215, 153, 86, 0.5);
+  color: #fff;
+}
+
+.cinematic-scene-container .cinematic-saves-divider {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 4px 2px 2px;
+}
+
 .cinematic-scene-container .side-panel-open-sidebar-btn {
   display: flex;
   align-items: center;
