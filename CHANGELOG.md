@@ -7,6 +7,19 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-02-27
+
+### Added
+
+- **Open Scene from Cinematic Mode** — new map button in the GM cinematic controls opens a scene picker dialog
+  - Displays all FoundryVTT scenes organized by folder hierarchy with thumbnails
+  - Collapsible folders with chevron toggle (remembers state within session)
+  - Search filter matches scene names and folder names (matching a folder shows all its scenes)
+  - Natural numeric sorting (e.g. "2. Into the Wild" before "10. Sound of a Thousand Screams")
+  - Active scene badge shows which scene is currently loaded
+  - Eye icon preview lets the GM view the full scene background image before committing
+  - Selecting a scene closes cinematic mode and activates the scene for all players
+
 ## [2.2.0] - 2026-02-27
 
 ### Added

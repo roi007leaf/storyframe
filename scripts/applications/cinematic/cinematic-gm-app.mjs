@@ -54,6 +54,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       removeSpeakerAltImage: CinematicGMApp._onRemoveSpeakerAltImage,
       setBackground: CinematicGMApp._onSetBackground,
       clearBackground: CinematicGMApp._onClearBackground,
+      openScene: CinematicGMApp._onOpenScene,
       incrementCounter: CinematicGMApp._onIncrementCounter,
       decrementCounter: CinematicGMApp._onDecrementCounter,
     },
@@ -731,6 +732,21 @@ export class CinematicGMApp extends CinematicSceneBase {
 
   static async _onClearBackground() {
     await game.storyframe.stateManager.setSceneBackground(null);
+  }
+
+  static async _onOpenScene() {
+    const { ScenePickerDialog } = await import('./scene-picker-dialog.mjs');
+    const scene = await ScenePickerDialog.open();
+    if (!scene) return;
+
+    // Close cinematic scene for all clients
+    game.storyframe.socketManager.closeSceneMode();
+
+    // Brief delay for the socket broadcast to propagate before activating the new scene
+    await new Promise((r) => setTimeout(r, 300));
+
+    // Activate the scene for all players
+    await scene.activate();
   }
 
   static _onIncrementCounter() {

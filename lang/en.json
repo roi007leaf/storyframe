@@ -440,6 +440,12 @@
       "EditName": "Edit name",
       "JournalFontSize": "Font Size",
       "PartySheet": "Party Sheet",
+      "OpenScene": "Open Scene",
+      "SearchScenes": "Search scenes...",
+      "NoScenesFound": "No scenes found",
+      "ActiveScene": "Active",
+      "PreviewScene": "Preview scene",
+      "ClickToClose": "Click anywhere to close",
       "Relaunched": "Cinematic scene relaunched for all players",
       "Music": {
         "Shuffle": "Shuffle",

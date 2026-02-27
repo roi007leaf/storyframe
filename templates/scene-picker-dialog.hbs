@@ -1,0 +1,55 @@
+<div class="scene-picker-dialog">
+  <div class="scene-picker-search-row">
+    <i class="fas fa-search" aria-hidden="true"></i>
+    <input type="text"
+           class="scene-picker-search"
+           placeholder="{{i18n.searchPlaceholder}}"
+           value="{{searchQuery}}"
+           autofocus>
+  </div>
+
+  {{#if hasScenes}}
+  <div class="scene-picker-list">
+    {{#each entries}}
+      {{#if (eq this.type "folder")}}
+      <div class="scene-picker-folder{{#if this.isCollapsed}} collapsed{{/if}}" style="padding-left: {{this.indent}}px;" data-folder-id="{{this.folderId}}" data-action="toggleFolder">
+        <i class="fas fa-chevron-down folder-chevron" aria-hidden="true"></i>
+        <i class="fas fa-folder" {{#if this.color}}style="color: {{this.color}}"{{/if}} aria-hidden="true"></i>
+        <span class="folder-name">{{this.name}}</span>
+      </div>
+      {{else}}
+      <div class="scene-picker-scene" style="padding-left: {{this.indent}}px;" data-scene-id="{{this.id}}" data-action="selectScene">
+        <img class="scene-thumbnail" src="{{this.thumbnail}}" alt="{{this.name}}" loading="lazy">
+        <span class="scene-name">{{this.name}}</span>
+        {{#if this.isActive}}
+        <span class="scene-active-badge">{{../i18n.activeLabel}}</span>
+        {{/if}}
+        {{#if this.backgroundSrc}}
+        <button type="button" class="scene-preview-btn" data-action="previewScene" data-tooltip="{{../i18n.previewTooltip}}">
+          <i class="fas fa-eye" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+      {{/if}}
+    {{/each}}
+  </div>
+  {{else}}
+  <div class="scene-picker-empty">
+    <i class="fas fa-map" aria-hidden="true"></i>
+    <p>{{i18n.noScenesFound}}</p>
+  </div>
+  {{/if}}
+
+  <div class="scene-preview-overlay" data-action="closePreview">
+    <img class="scene-preview-image" src="" alt="">
+    <div class="scene-preview-name"></div>
+    <div class="scene-preview-hint">{{i18n.clickToClose}}</div>
+  </div>
+
+  <footer class="dialog-footer">
+    <button type="button" class="cancel-btn" data-action="cancel">
+      <i class="fas fa-times"></i>
+      {{i18n.cancel}}
+    </button>
+  </footer>
+</div>

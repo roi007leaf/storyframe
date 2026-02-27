@@ -1609,6 +1609,10 @@ body:has(.storyframe.cinematic-scene) .storyframe.roll-request-dialog-app {
   z-index: 200000 !important;
 }
 
+body:has(.storyframe.cinematic-scene) .storyframe.scene-picker-dialog-app {
+  z-index: 200000 !important;
+}
+
 /* Standard Foundry dialogs/apps (e.g. PF2e roll dialogs) must appear above cinematic overlay */
 body:has(.storyframe.cinematic-scene) .app.dialog,
 body:has(.storyframe.cinematic-scene) .dnd5e2.sheet.actor,

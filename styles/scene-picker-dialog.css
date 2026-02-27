@@ -1,0 +1,278 @@
+/* Scene Picker Dialog */
+.storyframe.scene-picker-dialog-app {
+  background: var(--sf-surface-primary);
+  border: 2px solid var(--sf-border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+.storyframe.scene-picker-dialog-app .window-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.scene-picker-dialog {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Search row */
+.scene-picker-dialog .scene-picker-search-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-md);
+  border-bottom: 1px solid var(--sf-border-secondary);
+}
+
+.scene-picker-dialog .scene-picker-search-row i {
+  color: var(--sf-text-secondary);
+  font-size: 13px;
+}
+
+.scene-picker-dialog .scene-picker-search {
+  flex: 1;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 13px;
+  font-family: inherit;
+  transition: all var(--sf-transition-base);
+}
+
+.scene-picker-dialog .scene-picker-search:focus {
+  outline: none;
+  border-color: rgba(94, 129, 172, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
+}
+
+/* Scene list */
+.scene-picker-dialog .scene-picker-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sf-space-sm);
+}
+
+/* Folder row */
+.scene-picker-dialog .scene-picker-folder {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-xs) var(--sf-space-sm);
+  margin-top: var(--sf-space-xs);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 0.15s ease;
+}
+
+.scene-picker-dialog .scene-picker-folder:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.scene-picker-dialog .scene-picker-folder .folder-chevron {
+  font-size: 10px;
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.scene-picker-dialog .scene-picker-folder.collapsed .folder-chevron {
+  transform: rotate(-90deg);
+}
+
+.scene-picker-dialog .scene-picker-folder .folder-name {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Scene row */
+.scene-picker-dialog .scene-picker-scene {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-xs) var(--sf-space-sm);
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scene-picker-dialog .scene-picker-scene:hover {
+  background: var(--sf-surface-hover);
+}
+
+/* Thumbnail */
+.scene-picker-dialog .scene-thumbnail {
+  width: 48px;
+  height: 32px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--sf-border-secondary);
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.scene-picker-dialog .scene-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--sf-text-primary);
+}
+
+/* Preview button */
+.scene-picker-dialog .scene-preview-btn {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--sf-text-secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.scene-picker-dialog .scene-picker-scene:hover .scene-preview-btn {
+  opacity: 1;
+}
+
+.scene-picker-dialog .scene-preview-btn:hover {
+  color: var(--sf-accent-primary);
+  background: rgba(94, 129, 172, 0.15);
+}
+
+/* Active scene badge */
+.scene-picker-dialog .scene-active-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--sf-accent-success);
+  background: rgba(163, 190, 140, 0.15);
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: 4px;
+  padding: 2px 6px;
+  flex-shrink: 0;
+}
+
+/* Empty state */
+.scene-picker-dialog .scene-picker-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-lg);
+  color: var(--sf-text-secondary);
+  flex: 1;
+}
+
+.scene-picker-dialog .scene-picker-empty i {
+  font-size: 2rem;
+  opacity: 0.5;
+}
+
+/* Footer */
+.scene-picker-dialog .dialog-footer {
+  display: flex;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-md);
+  background: var(--sf-surface-secondary);
+  border-top: 1px solid var(--sf-border-secondary);
+  border-radius: 0 0 6px 6px;
+}
+
+.scene-picker-dialog .cancel-btn {
+  flex: 1;
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  border: 1px solid var(--sf-border-primary);
+  border-radius: 6px;
+  background: var(--sf-surface-primary);
+  color: var(--sf-text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-xs);
+  transition: all 0.2s ease;
+}
+
+.scene-picker-dialog .cancel-btn:hover {
+  background: var(--sf-surface-hover);
+  border-color: var(--sf-accent-danger);
+  color: var(--sf-accent-danger);
+}
+
+/* Scrollbar styling */
+.scene-picker-dialog .scene-picker-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scene-picker-dialog .scene-picker-list::-webkit-scrollbar-track {
+  background: var(--sf-surface-secondary);
+  border-radius: 4px;
+}
+
+.scene-picker-dialog .scene-picker-list::-webkit-scrollbar-thumb {
+  background: var(--sf-border-primary);
+  border-radius: 4px;
+}
+
+.scene-picker-dialog .scene-picker-list::-webkit-scrollbar-thumb:hover {
+  background: var(--sf-accent-primary);
+}
+
+/* Preview overlay */
+.scene-picker-dialog .scene-preview-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 300000;
+  background: rgba(0, 0, 0, 0.92);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-md);
+}
+
+.scene-picker-dialog .scene-preview-overlay.active {
+  display: flex;
+}
+
+.scene-picker-dialog .scene-preview-image {
+  max-width: 90vw;
+  max-height: 80vh;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.6);
+}
+
+.scene-picker-dialog .scene-preview-name {
+  font-size: 18px;
+  font-weight: 600;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.scene-picker-dialog .scene-preview-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.4);
+}

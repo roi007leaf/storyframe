@@ -56,6 +56,10 @@
   z-index: 100000 !important;
 }
 
+.dialog {
+  z-index: 100000 !important;
+}
+
 /* ===== Scene Background ===== */
 .cinematic-bg {
   position: absolute;
@@ -111,7 +115,6 @@
     opacity: 1;
   }
 }
-
 
 /* ===== Skip intro on re-render ===== */
 .storyframe.cinematic-scene.skip-intro {
@@ -211,7 +214,10 @@
   padding: 4px 8px;
   font-size: 0.85rem;
   line-height: 1;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
   flex-shrink: 0;
 }
 
@@ -721,7 +727,9 @@
   padding: 0;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.15s, border-color 0.15s;
+  transition:
+    transform 0.15s,
+    border-color 0.15s;
 }
 
 .cinematic-scene-container .camera-feed-sheet-btn img {
