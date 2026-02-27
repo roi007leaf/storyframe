@@ -6,15 +6,25 @@
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 
 /**
+ * Extract a display name from an image file path by stripping the directory and extension.
+ */
+function nameFromPath(path) {
+  if (!path) return '';
+  const filename = path.split('/').pop().split('\\').pop();
+  return filename.replace(/\.[^.]+$/, '').replace(/[_-]/g, ' ').trim();
+}
+
+/**
  * Add a speaker from an image file picker
  */
 export async function onAddSpeakerFromImage(_event, _target, _sidebar) {
   new FilePicker({
     type: 'image',
     callback: async (path) => {
+      const defaultName = nameFromPath(path);
       const label = await foundry.applications.api.DialogV2.prompt({
         window: { title: game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Title') },
-        content: `<input type="text" name="label" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
+        content: `<input type="text" name="label" value="${defaultName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
         ok: {
           label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
           callback: (event, button, _dialog) => button.form.elements.label.value,
@@ -269,9 +279,10 @@ export async function onSetImageAsSpeaker(_event, target, _sidebar) {
   const imageSrc = target.dataset.imageSrc;
   if (!imageSrc) return;
 
+  const defaultName = nameFromPath(imageSrc);
   const label = await foundry.applications.api.DialogV2.prompt({
     window: { title: game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Title') },
-    content: `<input type="text" name="label" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
+    content: `<input type="text" name="label" value="${defaultName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
     ok: {
       label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
       callback: (event, button, _dialog) => button.form.elements.label.value,

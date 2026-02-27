@@ -6,7 +6,7 @@
 
 .cinematic-scene-container .cinematic-roll-panel {
   position: absolute;
-  bottom: calc(6vh + 16px);
+  bottom: calc(16px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -241,7 +241,7 @@
 /* ===== Player Challenge Panel (Bottom-Left) ===== */
 .cinematic-scene-container .cinematic-challenge-panel {
   position: absolute;
-  bottom: calc(6vh + 16px);
+  bottom: calc(16px);
   left: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -291,7 +291,7 @@
 /* ===== Player Chat Log (top-right, collapsible) ===== */
 .cinematic-scene-container .cinematic-player-chat {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);

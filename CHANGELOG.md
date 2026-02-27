@@ -7,6 +7,20 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-27
+
+### Added
+
+- **PF2e Party Sheet button in nameplate** — a party-users icon appears inline in the active speaker nameplate when running PF2e with a party actor; click to open the party sheet
+- **Speaker name visibility toggle in spotlight** — GM sees an eye button on the left side of the active speaker nameplate to toggle name visibility for players; nameplate text shows strikethrough when hidden
+- **Cinematic chat message limit setting** — configurable client setting (default 10, range 1–50) controlling the maximum number of recent messages shown in the cinematic chat log
+- **Camera/A/V feed row** — when A/V is active, camera feeds replace the PC row above the filmstrip
+
+### Improved
+
+- PC row now pushes the filmstrip up (matching camera row behaviour)
+- NPC name input now pre-fills with the image filename (minus extension, dashes/underscores replaced with spaces) when adding speakers from the file picker or from journal images
+
 ## [2.0.1] - 2026-02-27
 
 ### Fixed
@@ -56,9 +70,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Relaunch button pushes the current scene to all connected players mid-session
 
 - **Speaker Controls Mode setting** — client setting with three display options for speaker action buttons (edit, remove, hide, image nav) on speaker cards in both the regular sidebar and the Frame Mode filmstrip:
-  - *Hover* — buttons appear as an overlay on mouse-over (default)
-  - *Sides* — edit/hide/remove on the left edge, image navigation on the right edge, always visible
-  - *Bottom bar* — all controls in a bar below the speaker name, always visible
+  - _Hover_ — buttons appear as an overlay on mouse-over (default)
+  - _Sides_ — edit/hide/remove on the left edge, image navigation on the right edge, always visible
+  - _Bottom bar_ — all controls in a bar below the speaker name, always visible
 
 - **Grid size slider** — a range slider in the GM sidebar toolbar lets you continuously resize speaker cards in standalone mode without entering grid-lock; saved per client
 

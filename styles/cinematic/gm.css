@@ -1,7 +1,7 @@
 /* ===== GM Controls (Top-Right) ===== */
 .cinematic-scene-container .cinematic-gm-controls {
   position: absolute;
-  top: calc(6vh + 12px);
+  top: calc(12px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   display: flex;
@@ -58,10 +58,10 @@
 
 /* ===== GM Side Panel (Slide-Out from Right) ===== */
 .cinematic-scene-container .cinematic-side-panel {
-  position: absolute;
-  top: 6vh;
+  position: fixed;
+  top: 0;
   right: 0;
-  bottom: 6vh;
+  bottom: 0;
   width: var(--right-panel-width, 320px);
   z-index: 12;
   background: rgba(10, 10, 18, 0.92);
@@ -73,6 +73,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0 !important;
+}
+
+.cinematic-scene-container .cinematic-side-panel > * {
+  margin-bottom: 0 !important;
 }
 
 .cinematic-scene-container .cinematic-side-panel.open {
@@ -158,6 +163,8 @@
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 .cinematic-scene-container .side-panel-resizable {
@@ -420,7 +427,7 @@
 /* ===== Floating Pending Rolls (right of speaker) ===== */
 .cinematic-scene-container .cinematic-floating-pending {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   right: 16px;
   z-index: 11;
   background: rgba(10, 10, 18, 0.85);
@@ -437,7 +444,7 @@
 /* ===== Floating Active Challenges (left of speaker) ===== */
 .cinematic-scene-container .cinematic-floating-challenges {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   left: 16px;
   z-index: 11;
   background: rgba(10, 10, 18, 0.85);
@@ -665,10 +672,10 @@
 
 /* ===== Left Side Panel (Slide-Out from Left) ===== */
 .cinematic-scene-container .cinematic-left-panel {
-  position: absolute;
-  top: 6vh;
+  position: fixed;
+  top: 0;
   left: 0;
-  bottom: 6vh;
+  bottom: 0;
   width: var(--left-panel-width, 320px);
   z-index: 12;
   background: rgba(10, 10, 18, 0.92);
@@ -680,6 +687,11 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  padding: 0 !important;
+}
+
+.cinematic-scene-container .cinematic-left-panel > * {
+  margin-bottom: 0 !important;
 }
 
 .cinematic-scene-container .cinematic-left-panel.open {
@@ -1422,6 +1434,31 @@
   color: rgba(191, 97, 106, 1);
   border-color: rgba(191, 97, 106, 0.7);
   background: rgba(191, 97, 106, 0.15);
+}
+
+/* ===== Spotlight Visibility Toggle ===== */
+.cinematic-scene-container .spotlight-visibility-btn {
+  background: transparent;
+  border: 1px solid rgba(163, 190, 140, 0.3);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(163, 190, 140, 0.7);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .spotlight-visibility-btn:hover {
+  color: rgba(163, 190, 140, 1);
+  border-color: rgba(163, 190, 140, 0.7);
+  background: rgba(163, 190, 140, 0.15);
+}
+
+.cinematic-scene-container .spotlight-nameplate.name-is-hidden .nameplate-text {
+  text-decoration: line-through;
+  opacity: 0.5;
 }
 
 /* ===== Speaker Counter ===== */

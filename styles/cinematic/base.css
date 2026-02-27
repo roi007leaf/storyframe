@@ -16,14 +16,16 @@
   animation: cinematic-fade-in 0.8s ease-out;
 }
 
-.storyframe.cinematic-scene .window-header {
+.storyframe.cinematic-scene .window-header,
+.storyframe.cinematic-scene .window-resize-handle {
   display: none !important;
 }
 
 .storyframe.cinematic-scene .window-content {
-  padding: 0;
-  margin: 0;
-  height: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
   overflow: hidden;
   background: transparent;
 }
@@ -65,15 +67,15 @@
 }
 
 .cinematic-scene-container {
-  position: relative;
-  width: 100%;
-  height: 100%;
+  position: absolute;
+  inset: 0;
   overflow: hidden;
   background: #0a0a0f;
   --_open-left-width: 0px;
   --_open-right-width: 0px;
   --_panel-left-reserve: 0px;
   --_panel-right-reserve: 0px;
+  --_camera-row-reserve: 0px;
 }
 
 /* Track open panel widths for spotlight centering */
@@ -93,6 +95,14 @@
   --_panel-right-reserve: 360px;
 }
 
+.cinematic-scene-container:has(.cinematic-pc-row) {
+  --_camera-row-reserve: 60px;
+}
+
+.cinematic-scene-container:has(.cinematic-camera-row:not(:empty)) {
+  --_camera-row-reserve: calc(var(--camera-feed-width, 140px) * 0.75 + 30px);
+}
+
 @keyframes cinematic-fade-in {
   from {
     opacity: 0;
@@ -102,23 +112,6 @@
   }
 }
 
-/* ===== Letterboxing ===== */
-.cinematic-scene-container .letterbox {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 6vh;
-  background: #000;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.cinematic-scene-container .letterbox-top {
-  top: 0;
-}
-.cinematic-scene-container .letterbox-bottom {
-  bottom: 0;
-}
 
 /* ===== Vignette Overlay ===== */
 .cinematic-scene-container .vignette-overlay {
@@ -132,8 +125,8 @@
 /* ===== Active Speaker Spotlight ===== */
 .cinematic-scene-container .cinematic-spotlight {
   position: absolute;
-  top: calc(6vh + 16px);
-  bottom: calc(6vh + 175px);
+  top: 16px;
+  bottom: calc(140px + var(--_camera-row-reserve));
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -199,6 +192,26 @@
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
 }
 
+/* Party sheet button in nameplate */
+.cinematic-scene-container .spotlight-party-btn {
+  background: transparent;
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(94, 129, 172, 0.7);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .spotlight-party-btn:hover {
+  color: rgba(94, 129, 172, 1);
+  border-color: rgba(94, 129, 172, 0.7);
+  background: rgba(94, 129, 172, 0.15);
+}
+
 /* No active speaker state */
 .cinematic-scene-container .cinematic-no-active {
   position: absolute;
@@ -253,7 +266,7 @@
 /* ===== PC Row (above filmstrip) ===== */
 .cinematic-scene-container .cinematic-pc-row {
   position: absolute;
-  bottom: calc(6vh + 4px);
+  bottom: 4px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 8;
@@ -309,10 +322,13 @@
 /* ===== Film Strip (Bottom Bar) ===== */
 .cinematic-scene-container .cinematic-filmstrip-container {
   position: absolute;
-  bottom: calc(6vh + 60px);
-  left: 24px;
-  right: 24px;
+  bottom: calc(8px + var(--_camera-row-reserve));
+  left: 50%;
+  transform: translateX(-50%);
+  width: fit-content;
+  max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 48px);
   z-index: 8;
+  transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .cinematic-scene-container .cinematic-filmstrip {
@@ -326,9 +342,7 @@
   border: 1px solid rgba(255, 255, 255, 0.06);
   overflow-x: auto;
   scrollbar-width: none;
-  width: fit-content;
   max-width: 100%;
-  margin: 0 auto;
 }
 
 .cinematic-scene-container .cinematic-filmstrip::-webkit-scrollbar {
@@ -598,4 +612,117 @@
   transition: none;
   justify-content: center;
   margin-top: 2px;
+}
+
+/* ===== Camera Row (replaces PC row when A/V active) ===== */
+.cinematic-scene-container .cinematic-camera-row {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8;
+  display: flex;
+  gap: 10px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  max-width: 80vw;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.cinematic-scene-container .cinematic-camera-row::-webkit-scrollbar {
+  display: none;
+}
+
+.cinematic-scene-container .cinematic-camera-row:empty {
+  display: none;
+}
+
+.cinematic-scene-container .camera-feed-item {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.cinematic-scene-container .camera-feed-item video {
+  width: var(--camera-feed-width, 140px);
+  height: calc(var(--camera-feed-width, 140px) * 0.75);
+  object-fit: cover;
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.15);
+  background: #000;
+}
+
+.cinematic-scene-container .camera-feed-name {
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: var(--camera-feed-width, 140px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Resize handle at bottom of camera row */
+.cinematic-scene-container .camera-row-resize-handle {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  cursor: ns-resize;
+  border-radius: 0 0 4px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.15s;
+}
+
+.cinematic-scene-container .camera-row-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1px;
+}
+
+.cinematic-scene-container .camera-row-resize-handle:hover {
+  background: rgba(94, 129, 172, 0.3);
+}
+
+.cinematic-scene-container .camera-feed-sheet-btn {
+  position: absolute;
+  bottom: 20px;
+  right: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.6);
+  padding: 0;
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform 0.15s, border-color 0.15s;
+}
+
+.cinematic-scene-container .camera-feed-sheet-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.cinematic-scene-container .camera-feed-sheet-btn:hover {
+  transform: scale(1.15);
+  border-color: rgba(94, 129, 172, 0.8);
 }

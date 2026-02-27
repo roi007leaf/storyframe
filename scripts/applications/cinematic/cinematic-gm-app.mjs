@@ -415,23 +415,40 @@ export class CinematicGMApp extends CinematicSceneBase {
   /** Targeted DOM update for speaker hidden/nameHidden flags */
   _updateSpeakerFlagsInDOM(state) {
     for (const speaker of state.speakers || []) {
+      // Update filmstrip card
       const card = this.element?.querySelector(`.filmstrip-speaker[data-speaker-id="${speaker.id}"]`);
-      if (!card) continue;
-      card.classList.toggle('speaker-is-hidden', !!speaker.isHidden);
-      card.classList.toggle('name-is-hidden', !!speaker.isNameHidden);
-      const hideBtn = card.querySelector('[data-action="toggleSpeakerHidden"]');
-      if (hideBtn) {
-        const icon = hideBtn.querySelector('i');
-        if (icon) icon.className = `fas ${speaker.isHidden ? 'fa-eye' : 'fa-eye-slash'}`;
-        hideBtn.dataset.tooltip = speaker.isHidden
-          ? game.i18n.localize('STORYFRAME.CinematicScene.ShowSpeaker')
-          : game.i18n.localize('STORYFRAME.CinematicScene.HideSpeaker');
+      if (card) {
+        card.classList.toggle('speaker-is-hidden', !!speaker.isHidden);
+        card.classList.toggle('name-is-hidden', !!speaker.isNameHidden);
+        const hideBtn = card.querySelector('[data-action="toggleSpeakerHidden"]');
+        if (hideBtn) {
+          const icon = hideBtn.querySelector('i');
+          if (icon) icon.className = `fas ${speaker.isHidden ? 'fa-eye' : 'fa-eye-slash'}`;
+          hideBtn.dataset.tooltip = speaker.isHidden
+            ? game.i18n.localize('STORYFRAME.CinematicScene.ShowSpeaker')
+            : game.i18n.localize('STORYFRAME.CinematicScene.HideSpeaker');
+        }
+        const nameBtn = card.querySelector('[data-action="toggleSpeakerVisibility"]');
+        if (nameBtn) {
+          nameBtn.dataset.tooltip = speaker.isNameHidden
+            ? game.i18n.localize('STORYFRAME.CinematicScene.ShowName')
+            : game.i18n.localize('STORYFRAME.CinematicScene.HideName');
+        }
       }
-      const nameBtn = card.querySelector('[data-action="toggleSpeakerVisibility"]');
-      if (nameBtn) {
-        nameBtn.dataset.tooltip = speaker.isNameHidden
-          ? game.i18n.localize('STORYFRAME.CinematicScene.ShowName')
-          : game.i18n.localize('STORYFRAME.CinematicScene.HideName');
+
+      // Update spotlight nameplate if this is the active speaker
+      const spotlight = this.element?.querySelector(`.cinematic-spotlight[data-speaker-id="${speaker.id}"]`);
+      if (spotlight) {
+        const nameplate = spotlight.querySelector('.spotlight-nameplate');
+        if (nameplate) nameplate.classList.toggle('name-is-hidden', !!speaker.isNameHidden);
+        const visBtn = spotlight.querySelector('.spotlight-visibility-btn');
+        if (visBtn) {
+          visBtn.dataset.tooltip = speaker.isNameHidden
+            ? game.i18n.localize('STORYFRAME.CinematicScene.ShowName')
+            : game.i18n.localize('STORYFRAME.CinematicScene.HideName');
+          const icon = visBtn.querySelector('i');
+          if (icon) icon.className = `fas ${speaker.isNameHidden ? 'fa-eye' : 'fa-eye-slash'}`;
+        }
       }
     }
   }
@@ -542,10 +559,13 @@ export class CinematicGMApp extends CinematicSceneBase {
     activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
 
     // Restore section heights + bind resize handles
+    const growSections = new Set(['music', 'chat']);
     for (const [key, height] of Object.entries(this._sectionHeights)) {
       if (height != null) {
         const section = this.element?.querySelector(`.left-panel-section[data-section="${key}"], .side-panel-resizable[data-section="${key}"]`);
-        if (section) section.style.flex = `0 0 ${height}px`;
+        if (!section) continue;
+        // Last section in each panel should grow to fill remaining space
+        section.style.flex = growSections.has(key) ? `1 0 ${height}px` : `0 0 ${height}px`;
       }
     }
     this.element?.querySelectorAll('.section-resize-handle').forEach(handle => {
@@ -604,6 +624,9 @@ export class CinematicGMApp extends CinematicSceneBase {
       const panel = this.element?.querySelector(`.${key}`);
       if (panel) this._makePanelDraggable(panel, key);
     }
+
+    // Camera row (A/V feed mirroring)
+    this._initCameraRow();
   }
 
   async _onClose(_options) {

@@ -79,23 +79,6 @@
   }
 }
 
-/* ===== Letterboxing ===== */
-.cinematic-scene-container .letterbox {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 6vh;
-  background: #000;
-  z-index: 10;
-  pointer-events: none;
-}
-
-.cinematic-scene-container .letterbox-top {
-  top: 0;
-}
-.cinematic-scene-container .letterbox-bottom {
-  bottom: 0;
-}
 
 /* ===== Vignette Overlay ===== */
 .cinematic-scene-container .vignette-overlay {
@@ -109,7 +92,7 @@
 /* ===== Active Speaker Spotlight ===== */
 .cinematic-scene-container .cinematic-spotlight {
   position: absolute;
-  bottom: calc(6vh + 175px);
+  bottom: calc(175px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -226,7 +209,7 @@
 /* ===== PC Row (above filmstrip) ===== */
 .cinematic-scene-container .cinematic-pc-row {
   position: absolute;
-  bottom: calc(6vh + 4px);
+  bottom: calc(4px);
   left: 50%;
   transform: translateX(-50%);
   z-index: 8;
@@ -282,7 +265,7 @@
 /* ===== Film Strip (Bottom Bar) ===== */
 .cinematic-scene-container .cinematic-filmstrip-container {
   position: absolute;
-  bottom: calc(6vh + 60px);
+  bottom: calc(60px);
   left: calc(var(--_active-left) + var(--_panel-left-reserve) + 24px);
   right: calc(var(--_active-right) + var(--_panel-right-reserve) + 24px);
   z-index: 8;
@@ -579,7 +562,7 @@
 /* ===== GM Controls (Top-Right) ===== */
 .cinematic-scene-container .cinematic-gm-controls {
   position: absolute;
-  top: calc(6vh + 12px);
+  top: calc(12px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   display: flex;
@@ -637,9 +620,9 @@
 /* ===== GM Side Panel (Slide-Out from Right) ===== */
 .cinematic-scene-container .cinematic-side-panel {
   position: absolute;
-  top: 6vh;
+  top: 0;
   right: 0;
-  bottom: 6vh;
+  bottom: 0;
   width: var(--right-panel-width, 320px);
   z-index: 12;
   background: rgba(10, 10, 18, 0.92);
@@ -982,7 +965,7 @@
 
 .cinematic-scene-container .cinematic-roll-panel {
   position: absolute;
-  bottom: calc(6vh + 16px);
+  bottom: calc(16px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -1216,7 +1199,7 @@
 /* ===== Floating Pending Rolls (right of speaker) ===== */
 .cinematic-scene-container .cinematic-floating-pending {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   right: 16px;
   z-index: 11;
   background: rgba(10, 10, 18, 0.85);
@@ -1233,7 +1216,7 @@
 /* ===== Floating Active Challenges (left of speaker) ===== */
 .cinematic-scene-container .cinematic-floating-challenges {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   left: 16px;
   z-index: 11;
   background: rgba(10, 10, 18, 0.85);
@@ -1335,7 +1318,7 @@
 /* ===== Player Challenge Panel (Bottom-Left) ===== */
 .cinematic-scene-container .cinematic-challenge-panel {
   position: absolute;
-  bottom: calc(6vh + 16px);
+  bottom: calc(16px);
   left: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -1385,7 +1368,7 @@
 /* ===== Player Chat Log (top-right, collapsible) ===== */
 .cinematic-scene-container .cinematic-player-chat {
   position: absolute;
-  top: calc(6vh + 16px);
+  top: calc(16px);
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -1571,9 +1554,9 @@
 /* ===== Left Side Panel (Slide-Out from Left) ===== */
 .cinematic-scene-container .cinematic-left-panel {
   position: absolute;
-  top: 6vh;
+  top: 0;
   left: 0;
-  bottom: 6vh;
+  bottom: 0;
   width: var(--left-panel-width, 320px);
   z-index: 12;
   background: rgba(10, 10, 18, 0.92);

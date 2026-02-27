@@ -241,6 +241,9 @@ export class CinematicPlayerApp extends CinematicSceneBase {
         });
       }
     }
+
+    // Camera row (A/V feed mirroring)
+    this._initCameraRow();
   }
 
   async _onClose(_options) {

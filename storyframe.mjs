@@ -358,6 +358,13 @@ Hooks.once('init', () => {
     default: {},
   });
 
+  game.settings.register(MODULE_ID, 'cinematicCameraFeedSize', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 140,
+  });
+
   game.settings.register(MODULE_ID, 'cinematicJournalFontSize', {
     scope: 'client',
     config: false,
@@ -477,6 +484,16 @@ Hooks.once('init', () => {
     config: false,
     type: String,
     default: '',
+  });
+
+  game.settings.register(MODULE_ID, 'cinematicChatMessageLimit', {
+    name: 'Cinematic Chat Message Limit',
+    hint: 'Maximum number of recent chat messages shown in the cinematic scene chat log.',
+    scope: 'client',
+    config: true,
+    type: Number,
+    default: 10,
+    range: { min: 1, max: 50, step: 1 },
   });
 
   game.settings.register(MODULE_ID, 'useMonksTokenBar', {

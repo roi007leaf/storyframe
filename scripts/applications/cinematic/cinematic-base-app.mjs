@@ -26,6 +26,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     actions: {
       openCharacterSheet: CinematicSceneBase._onOpenCharacterSheet,
       closeImagePreview: CinematicSceneBase._onCloseImagePreview,
+      openPartySheet: CinematicSceneBase._onOpenPartySheet,
     },
   };
 
@@ -43,6 +44,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevSpeakerFlagsKey = '';
     this._prevBackgroundKey = '';
     this._debouncedRender = foundry.utils.debounce(() => this.render(), 150);
+    // Camera row (A/V feed mirroring)
+    this._cameraObserver = null;
+    this._cameraHookIds = [];
+    this._trackedVideoStreams = new Map();
   }
 
   // --- Shared context (speakers + pcRow) ---
@@ -59,6 +64,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         inactiveSpeakers: [],
         allSpeakers: [],
         pcRow: [],
+        avActive: false,
         previewImageSrc: this.previewImageSrc,
         speakerControlsMode: 'hover',
       };
@@ -80,6 +86,15 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const partyPCs = await getAllPlayerPCs();
     const pcRow = partyPCs.map(p => ({ actorUuid: p.actorUuid, name: p.name, img: p.img }));
 
+    // Check if A/V is active with video feeds
+    const avActive = !!game.webrtc?.client
+      && document.querySelectorAll('#camera-views .camera-view video').length > 0;
+
+    // PF2e party sheet availability
+    const partyActor = game.system.id === 'pf2e'
+      ? game.actors.find(a => a.type === 'party')
+      : null;
+
     return {
       isGM,
       activeSpeaker,
@@ -87,6 +102,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       inactiveSpeakers,
       allSpeakers,
       pcRow,
+      avActive,
+      hasPartySheet: !!partyActor,
       previewImageSrc: this.previewImageSrc,
       speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
       sceneBackground: state.sceneBackground || null,
@@ -190,6 +207,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   // --- Shared cleanup ---
 
   async _onClose(_options) {
+    this._teardownCameraRow();
     game.storyframe.cinematicScene = null;
     document.getElementById('cinematic-context-menu')?.remove();
     this.rollPanelExpanded = false;
@@ -367,7 +385,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const onMove = (ev) => {
       const delta = ev.clientY - startY;
       aboveEl.style.flex = `0 0 ${Math.max(40, startAboveH + delta)}px`;
-      belowEl.style.flex = `0 0 ${Math.max(40, startBelowH - delta)}px`;
+      belowEl.style.flex = `1 0 ${Math.max(40, startBelowH - delta)}px`;
     };
 
     const onUp = () => {
@@ -458,12 +476,176 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     panel.addEventListener('mousedown', onMouseDown);
   }
 
+  // --- Camera row (A/V feed mirroring) ---
+
+  _initCameraRow() {
+    const cameraRow = this.element?.querySelector('.cinematic-camera-row');
+    if (!cameraRow) return; // AV not active or no placeholder
+
+    this._teardownCameraRow();
+
+    // Apply saved feed size — set on container so :has() reserve calc can read it
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    const savedSize = game.settings.get(MODULE_ID, 'cinematicCameraFeedSize') || 140;
+    container?.style.setProperty('--camera-feed-width', `${savedSize}px`);
+
+    // Add resize handle
+    const handle = document.createElement('div');
+    handle.className = 'camera-row-resize-handle';
+    cameraRow.appendChild(handle);
+    handle.addEventListener('mousedown', (e) => this._onCameraRowResizeStart(e, cameraRow));
+
+    this._syncCameraFeeds();
+
+    this._debouncedCameraSync = foundry.utils.debounce(() => this._syncCameraFeeds(), 300);
+
+    this._cameraHookIds = [
+      { hook: 'rtcSettingsChanged', id: Hooks.on('rtcSettingsChanged', () => this._debouncedCameraSync()) },
+      { hook: 'renderCameraViews', id: Hooks.on('renderCameraViews', () => this._debouncedCameraSync()) },
+    ];
+
+    const cameraViews = document.getElementById('camera-views');
+    if (cameraViews) {
+      this._cameraObserver = new MutationObserver(() => this._debouncedCameraSync());
+      this._cameraObserver.observe(cameraViews, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['class', 'style'],
+      });
+    }
+  }
+
+  _onCameraRowResizeStart(e, cameraRow) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const container = cameraRow.closest('.cinematic-scene-container');
+    const startY = e.clientY;
+    const currentWidth = parseFloat(
+      getComputedStyle(container || cameraRow).getPropertyValue('--camera-feed-width'),
+    ) || 140;
+
+    const onMove = (ev) => {
+      // Dragging up = bigger, dragging down = smaller
+      const delta = startY - ev.clientY;
+      const newWidth = Math.max(80, Math.min(300, currentWidth + delta));
+      container?.style.setProperty('--camera-feed-width', `${newWidth}px`);
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      const finalWidth = parseFloat(
+        getComputedStyle(container || cameraRow).getPropertyValue('--camera-feed-width'),
+      ) || 140;
+      game.settings.set(MODULE_ID, 'cinematicCameraFeedSize', finalWidth);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
+  _syncCameraFeeds() {
+    const feedsContainer = this.element?.querySelector('.cinematic-camera-row');
+    if (!feedsContainer) return;
+
+    const cameraViews = document.getElementById('camera-views');
+    if (!cameraViews) return;
+
+    const activeCameras = [];
+    cameraViews.querySelectorAll('.camera-view').forEach(view => {
+      const userId = view.dataset.user;
+      if (!userId) return;
+      const video = view.querySelector('video');
+      if (!video?.srcObject) return;
+      const videoTracks = video.srcObject.getVideoTracks();
+      if (!videoTracks.length || !videoTracks.some(t => t.enabled && t.readyState === 'live')) return;
+      const user = game.users.get(userId);
+      if (!user) return;
+      activeCameras.push({ userId, userName: user.name, stream: video.srcObject });
+    });
+
+    const currentIds = new Set(activeCameras.map(c => c.userId));
+    const trackedIds = new Set(this._trackedVideoStreams.keys());
+
+    // Remove feeds no longer active
+    for (const userId of trackedIds) {
+      if (!currentIds.has(userId)) {
+        const entry = this._trackedVideoStreams.get(userId);
+        entry?.wrapper?.remove();
+        this._trackedVideoStreams.delete(userId);
+      }
+    }
+
+    // Add or update feeds
+    for (const cam of activeCameras) {
+      const existing = this._trackedVideoStreams.get(cam.userId);
+      if (existing && existing.stream === cam.stream) continue;
+      if (existing) {
+        existing.video.srcObject = cam.stream;
+        existing.stream = cam.stream;
+        continue;
+      }
+
+      const wrapper = document.createElement('div');
+      wrapper.className = 'camera-feed-item';
+      wrapper.dataset.userId = cam.userId;
+      wrapper.dataset.tooltip = cam.userName;
+
+      const video = document.createElement('video');
+      video.autoplay = true;
+      video.muted = true;
+      video.playsInline = true;
+      video.srcObject = cam.stream;
+
+      const nameTag = document.createElement('span');
+      nameTag.className = 'camera-feed-name';
+      nameTag.textContent = cam.userName;
+
+      wrapper.appendChild(video);
+      wrapper.appendChild(nameTag);
+
+      // Character sheet button (if user has a character)
+      const user = game.users.get(cam.userId);
+      const character = user?.character;
+      if (character) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'camera-feed-sheet-btn';
+        btn.dataset.action = 'openCharacterSheet';
+        btn.dataset.actorUuid = character.uuid;
+        btn.dataset.tooltip = character.name;
+        const img = document.createElement('img');
+        img.src = character.img;
+        img.alt = character.name;
+        btn.appendChild(img);
+        wrapper.appendChild(btn);
+      }
+
+      feedsContainer.appendChild(wrapper);
+      this._trackedVideoStreams.set(cam.userId, { video, stream: cam.stream, wrapper });
+    }
+  }
+
+  _teardownCameraRow() {
+    if (this._cameraObserver) {
+      this._cameraObserver.disconnect();
+      this._cameraObserver = null;
+    }
+    for (const { hook, id } of (this._cameraHookIds || [])) {
+      Hooks.off(hook, id);
+    }
+    this._cameraHookIds = [];
+    this._trackedVideoStreams?.clear();
+  }
+
   // --- Chat management ---
 
   _populateChatLog(container) {
     // Clear synchronously so the hook (registered after this returns) starts with an empty container.
     container.innerHTML = '';
-    const messages = game.messages.contents.slice(-10).filter(msg => msg.visible);
+    const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
+    const messages = game.messages.contents.filter(msg => msg.visible).slice(-limit);
     Promise.all(messages.map(msg => msg.getHTML())).then(htmlElements => {
       if (!container.isConnected) return;
       // Build a fragment to preserve chronological order regardless of resolution speed.
@@ -567,6 +749,13 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         const existing = container.querySelector(`.message[data-message-id="${msg.id}"]`);
         if (existing) existing.replaceWith(el);
         else container.appendChild(el);
+        // Trim oldest messages beyond the configured limit
+        const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
+        const allMessages = container.querySelectorAll('.message, .chat-message');
+        let excess = allMessages.length - limit;
+        for (let i = 0; excess > 0 && i < allMessages.length; i++, excess--) {
+          allMessages[i].remove();
+        }
         if (wasAtBottom || container.scrollHeight - container.scrollTop - container.clientHeight < 30) {
           container.scrollTop = container.scrollHeight;
         }
@@ -653,5 +842,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   static _onCloseImagePreview() {
     this.previewImageSrc = null;
     this.render();
+  }
+
+  static _onOpenPartySheet() {
+    const party = game.actors.find(a => a.type === 'party');
+    party?.sheet?.render(true);
   }
 }

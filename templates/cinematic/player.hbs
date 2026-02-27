@@ -4,9 +4,6 @@
   <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
   {{/if}}
 
-  {{!-- Letterbox bars --}}
-  <div class="letterbox letterbox-top"></div>
-  <div class="letterbox letterbox-bottom"></div>
 
   {{!-- Dark vignette overlay --}}
   <div class="vignette-overlay"></div>
@@ -25,6 +22,11 @@
     <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
     <div class="spotlight-nameplate">
       <span class="nameplate-text">{{activeSpeaker.name}}</span>
+      {{#if hasPartySheet}}
+      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+        <i class="fas fa-users" aria-hidden="true"></i>
+      </button>
+      {{/if}}
     </div>
   </div>
   {{else}}
@@ -56,7 +58,10 @@
   </div>
   {{/if}}
 
-  {{!-- PC row (above filmstrip) --}}
+  {{!-- PC row / Camera row (above filmstrip) --}}
+  {{#if avActive}}
+  <div class="cinematic-camera-row"></div>
+  {{else}}
   {{#if pcRow.length}}
   <div class="cinematic-pc-row">
     {{#each pcRow}}
@@ -66,6 +71,7 @@
     </div>
     {{/each}}
   </div>
+  {{/if}}
   {{/if}}
 
   {{!-- Player roll panel (bottom-right, always expanded when rolls are pending) --}}

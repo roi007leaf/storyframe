@@ -4,9 +4,6 @@
   <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
   {{/if}}
 
-  {{!-- Letterbox bars --}}
-  <div class="letterbox letterbox-top"></div>
-  <div class="letterbox letterbox-bottom"></div>
 
   {{!-- Dark vignette overlay --}}
   <div class="vignette-overlay"></div>
@@ -23,7 +20,10 @@
   <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
     <div class="spotlight-glow-cinematic"></div>
     <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
-    <div class="spotlight-nameplate">
+    <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
+      <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
+        <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye-slash{{else}}fa-eye{{/if}}" aria-hidden="true"></i>
+      </button>
       <span class="nameplate-text">{{activeSpeaker.name}}</span>
       <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
         <i class="fas fa-user-slash" aria-hidden="true"></i>
@@ -33,6 +33,11 @@
         <span class="counter-value">{{activeSpeakerCounter}}</span>
         <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
       </div>
+      {{#if hasPartySheet}}
+      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+        <i class="fas fa-users" aria-hidden="true"></i>
+      </button>
+      {{/if}}
     </div>
   </div>
   {{else}}
@@ -93,7 +98,10 @@
   </div>
   {{/if}}
 
-  {{!-- PC row (above filmstrip) --}}
+  {{!-- PC row / Camera row (above filmstrip) --}}
+  {{#if avActive}}
+  <div class="cinematic-camera-row"></div>
+  {{else}}
   {{#if pcRow.length}}
   <div class="cinematic-pc-row">
     {{#each pcRow}}
@@ -103,6 +111,7 @@
     </div>
     {{/each}}
   </div>
+  {{/if}}
   {{/if}}
 
   {{!-- GM floating controls (top-right) --}}
