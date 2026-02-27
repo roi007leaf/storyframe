@@ -22,7 +22,7 @@
     <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
     <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
       <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
-        <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye-slash{{else}}fa-eye{{/if}}" aria-hidden="true"></i>
+        <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
       </button>
       <span class="nameplate-text">{{activeSpeaker.name}}</span>
       <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
