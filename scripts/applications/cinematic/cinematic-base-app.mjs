@@ -202,8 +202,17 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         return this.render();
       }
     } else {
-      // Deselected — no active speaker, need re-render to show no-active state
-      if (oldSpotlight) return this.render();
+      // Deselected — swap spotlight for no-active placeholder (avoids full re-render
+      // which would tear down camera row and cause video feed flicker)
+      if (oldSpotlight) {
+        const noActive = document.createElement('div');
+        noActive.className = 'cinematic-no-active';
+        noActive.innerHTML = '<i class="fas fa-masks-theater" aria-hidden="true"></i>';
+        oldSpotlight.replaceWith(noActive);
+      }
+      // Hide the "Deselect Speaker" button in GM side panel
+      const deactivateBtn = container.querySelector('.side-panel-deactivate-btn');
+      if (deactivateBtn) deactivateBtn.closest('.side-panel-section')?.remove();
     }
 
     // --- Update filmstrip ---
@@ -412,16 +421,27 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!this.element) return;
     const np = this._getNowPlaying();
 
+    // Check if the set of playing tracks changed — if so, full re-render
     const npSection = this.element.querySelector('.music-now-playing');
-    if (np && npSection) {
-      npSection.querySelector('.now-playing-track').textContent = np.trackName;
-      npSection.querySelector('.now-playing-playlist').textContent = np.playlistName;
-      npSection.style.display = '';
-    } else if (!np && npSection) {
-      npSection.style.display = 'none';
-    } else if (np && !npSection) {
-      return this.render();
+    const currentRows = npSection ? [...npSection.querySelectorAll('.now-playing-track-row')] : [];
+    const currentIds = new Set(currentRows.map(r => `${r.dataset.playlistId}:${r.dataset.soundId}`));
+    const actualIds = new Set();
+    for (const p of game.playlists) {
+      for (const s of p.sounds) {
+        if (s.playing) actualIds.add(`${p.id}:${s.id}`);
+      }
     }
+    const setsEqual = currentIds.size === actualIds.size && [...currentIds].every(id => actualIds.has(id));
+    if (!setsEqual) return this.render();
+
+    // Sync volume sliders and repeat buttons in now-playing section
+    currentRows.forEach(row => {
+      const sound = game.playlists.get(row.dataset.playlistId)?.sounds.get(row.dataset.soundId);
+      const volSlider = row.querySelector('.track-volume-slider');
+      if (volSlider && sound) volSlider.value = sound.volume;
+      const repeatBtn = row.querySelector('.track-repeat-btn');
+      if (repeatBtn && sound) repeatBtn.classList.toggle('active', sound.repeat === true);
+    });
 
     const ppIcon = this.element.querySelector('[data-action="musicPlayPause"] i');
     if (ppIcon) ppIcon.className = `fas ${np ? 'fa-pause' : 'fa-play'}`;

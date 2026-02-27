@@ -13,7 +13,8 @@
       "PlayerSidebar": "Storyframe Player Sidebar",
       "PlayerViewer": "StoryFrame Player Viewer",
       "GMSidebar": "Storyframe",
-      "TargetSelector": "Target Selector"
+      "TargetSelector": "Target Selector",
+      "SceneGatherer": "Populate from Scene"
     },
     "Dialogs": {
       "RollRequest": {
@@ -86,6 +87,13 @@
       },
       "Cancel": "Cancel",
       "Close": "Close",
+      "SceneGatherer": {
+        "SelectActors": "Select actors to add as speakers:",
+        "GatherButton": "Populate & Save",
+        "NoTokensOnScene": "No tokens found on the current scene",
+        "NoActorsFound": "No valid actors found on scene tokens",
+        "TokenCount": "{count} actor(s) on scene"
+      },
       "TargetSelector": {
         "Rolling": "Rolling",
         "SelectTargets": "Select Targets:",
@@ -109,6 +117,9 @@
         "SceneDeleted": "Deleted scene \"{name}\"",
         "SceneLoaded": "Loaded scene \"{name}\"",
         "SceneUpdatedWithCurrentSpeakers": "Updated \"{name}\" with {count} current speaker(s)"
+      },
+      "SceneGatherer": {
+        "SceneGathered": "Populated \"{name}\" with {count} speaker(s)"
       },
       "Speaker": {
         "AlreadyInList": "{label} is already in the list",
@@ -321,7 +332,8 @@
         "ActiveChallengesCount": "{count} active challenge(s)",
         "PresentChallenge": "Present Challenge",
         "CreateFromSelection": "Create from Selection",
-        "AllowOnlyOne": "When enabled, only the first roll from this group will count. Other pending rolls will be automatically dismissed."
+        "AllowOnlyOne": "When enabled, only the first roll from this group will count. Other pending rolls will be automatically dismissed.",
+        "GatherSceneTokens": "Populate from scene"
       },
       "AriaLabels": {
         "AddNPCFromImage": "Add NPC from image",
@@ -355,7 +367,8 @@
         "SkillButtonsByCategory": "Skill buttons by category",
         "ViewActiveChallenges": "View active challenges",
         "PresentChallenge": "Present multi-option challenge to all players",
-        "CreateFromSelection": "Create challenge from selected journal text"
+        "CreateFromSelection": "Create challenge from selected journal text",
+        "GatherSceneTokens": "Populate speakers from all tokens on the current scene"
       },
       "Placeholders": {
         "EnterSceneName": "Enter scene name",

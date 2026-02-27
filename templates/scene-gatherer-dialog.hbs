@@ -1,0 +1,42 @@
+<form class="scene-gatherer-dialog">
+  <div class="dialog-content">
+    <section class="scene-name-section">
+      <h3>{{i18n.sceneName}}</h3>
+      <input type="text"
+             name="sceneName"
+             value="{{defaultSceneName}}"
+             placeholder="{{i18n.sceneNamePlaceholder}}"
+             autofocus>
+    </section>
+
+    <section class="actors-selection">
+      <div class="actors-header">
+        <h3>{{i18n.tokenCount}}</h3>
+        <button type="button" class="select-all-btn">{{i18n.selectAll}}</button>
+      </div>
+      <div class="participants-grid">
+        {{#each tokens}}
+        <label class="participant-card">
+          <input type="checkbox" name="actor" value="{{@index}}" checked>
+          <div class="participant-content">
+            <img src="{{this.img}}" alt="{{this.name}}">
+            <span class="participant-name">{{this.name}}</span>
+            <i class="fas fa-check-circle check-icon"></i>
+          </div>
+        </label>
+        {{/each}}
+      </div>
+    </section>
+  </div>
+
+  <footer class="dialog-footer">
+    <button type="button" class="cancel-btn" data-action="cancel">
+      <i class="fas fa-times"></i>
+      {{i18n.cancel}}
+    </button>
+    <button type="submit" class="submit-btn" data-action="submit">
+      <i class="fas fa-users"></i>
+      {{i18n.gather}}
+    </button>
+  </footer>
+</form>

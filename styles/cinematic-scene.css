@@ -79,7 +79,6 @@
   }
 }
 
-
 /* ===== Vignette Overlay ===== */
 .cinematic-scene-container .vignette-overlay {
   position: absolute;
@@ -1580,18 +1579,6 @@
   overflow: hidden;
   display: flex;
   flex-direction: column;
-}
-
-.cinematic-scene-container .left-panel-section[data-section='scenes'] {
-  flex: 0 0 auto;
-}
-
-.cinematic-scene-container .left-panel-section[data-section='journal'] {
-  flex: 1 1 auto;
-}
-
-.cinematic-scene-container .left-panel-section[data-section='music'] {
-  flex: 1 1 auto;
 }
 
 /* Resize handles */

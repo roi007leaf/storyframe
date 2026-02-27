@@ -22,8 +22,12 @@ export async function onAddSpeakerFromImage(_event, _target, _sidebar) {
     type: 'image',
     callback: async (path) => {
       const defaultName = nameFromPath(path);
+      // Place the dialog above the sidebar so it isn't hidden behind it
+      const sidebarEl = _sidebar?.element;
+      const sidebarZ = sidebarEl ? parseInt(window.getComputedStyle(sidebarEl).zIndex) || 0 : 0;
       const label = await foundry.applications.api.DialogV2.prompt({
         window: { title: game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Title') },
+        position: { zIndex: Math.max(sidebarZ + 1, 100001) },
         content: `<input type="text" name="label" value="${defaultName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EnterNPCName.Label')}" autofocus>`,
         ok: {
           label: game.i18n.localize('STORYFRAME.Dialogs.AddSpeaker.Button'),
@@ -250,6 +254,7 @@ export async function onRemoveSpeakerAltImage(event, target) {
  */
 export async function onClearSpeaker(_event, _target) {
   await game.storyframe.socketManager.requestSetActiveSpeaker(null);
+  _updateActiveSpeakerInDOM(null);
 }
 
 /**
@@ -269,6 +274,7 @@ export async function onClearAllSpeakers(_event, _target) {
 
   if (confirmed) {
     await game.storyframe.socketManager.requestUpdateSpeakers([]);
+    game.storyframe.gmSidebar?.render();
   }
 }
 
@@ -599,6 +605,18 @@ export async function onOpenPlayerSidebars(_event, _target, _sidebar) {
 export async function onClosePlayerSidebars(_event, _target, _sidebar) {
   game.storyframe.socketManager.closeAllPlayerSidebars();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingSidebarsForPlayers'));
+}
+
+/**
+ * Open the Scene Gatherer dialog to gather tokens from the current FoundryVTT scene
+ */
+export async function onGatherScene(_event, _target, sidebar) {
+  const { SceneGathererDialog } = await import('../../scene-gatherer-dialog.mjs');
+  const result = await SceneGathererDialog.open();
+
+  if (result) {
+    sidebar.render();
+  }
 }
 
 // --- Helper Functions ---

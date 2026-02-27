@@ -7,6 +7,34 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-02-27
+
+### Added
+
+- **Per-track volume sliders** — now-playing section shows all currently playing tracks grouped by playlist, each with an individual volume slider
+- **Per-track loop button** — toggle repeat on individual tracks directly from the now-playing section
+- **Collapsible now-playing playlists** — click the playlist name header to collapse/expand its track list
+- **Global volume reset** — after using the master volume slider, a reset button appears to restore each track to its original volume
+- **Play all tracks in playlist** — clicking a playlist name now plays all tracks simultaneously regardless of shuffle mode
+- **Auto-expand playing playlists** — playlists with active tracks automatically expand in the playlist browser
+
+- **Populate from Scene** — new button on the NPCs tab scans the current FoundryVTT scene for tokens, opens a dialog with actor portraits and checkboxes, and lets the GM bulk-add selected actors as speakers while saving a StoryFrame scene snapshot
+  - Deduplicates tokens by base actor (handles unlinked tokens correctly)
+  - Filters out player characters, loot, and hazard actor types
+  - Select All / Deselect All toggle
+  - Scene name defaults to the current FoundryVTT scene name
+
+### Improved
+
+- Global volume slider now controls all playing tracks at once (debounced for performance)
+- Per-track volume updates are debounced to avoid flooding the server
+
+### Fixed
+
+- NPC name dialog now appears above the GM sidebar instead of behind it
+- "Clear Active Speaker" button now visually deselects the speaker in the NPC list
+- "Remove All Speakers" button now reliably re-renders the sidebar
+
 ## [2.1.1] - 2026-02-27
 
 ### Fixed

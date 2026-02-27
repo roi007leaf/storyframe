@@ -1472,7 +1472,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
           <button type="button" class="edit-scene-btn" data-scene-id="${scene.id}" aria-label="${editLabel}">
             <i class="fas fa-pencil-alt"></i>
           </button>
-          <button type="button" class="update-scene-btn" data-scene-id="${scene.id}" aria-label="${updateLabel}">
+          <button type="button" class="update-scene-btn" data-tooltip="Update scene with current speakers" data-scene-id="${scene.id}" aria-label="${updateLabel}">
             <i class="fas fa-sync-alt"></i>
           </button>
           <button type="button" class="delete-scene-btn" data-scene-id="${scene.id}" aria-label="${deleteLabel}">

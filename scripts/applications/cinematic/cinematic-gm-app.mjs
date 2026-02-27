@@ -34,11 +34,14 @@ export class CinematicGMApp extends CinematicSceneBase {
       removeChallenge: CinematicGMApp._onRemoveChallenge,
       musicPlayPause: CinematicGMApp._onMusicPlayPause,
       musicStop: CinematicGMApp._onMusicStop,
+      musicVolumeReset: CinematicGMApp._onMusicVolumeReset,
       musicNext: CinematicGMApp._onMusicNext,
       musicPrev: CinematicGMApp._onMusicPrev,
       musicPlayTrack: CinematicGMApp._onMusicPlayTrack,
       musicShuffle: CinematicGMApp._onMusicShuffle,
       musicRepeat: CinematicGMApp._onMusicRepeat,
+      trackRepeat: CinematicGMApp._onTrackRepeat,
+      toggleNowPlayingPlaylist: CinematicGMApp._onToggleNowPlayingPlaylist,
       togglePlaylistExpand: CinematicGMApp._onTogglePlaylistExpand,
       musicPlayPlaylist: CinematicGMApp._onMusicPlayPlaylist,
       editSpeaker: CinematicGMApp._onEditSpeaker,
@@ -71,6 +74,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.batchedChecks = [];
     this.leftPanelOpen = true;
     this.expandedPlaylistIds = new Set();
+    this._savedTrackVolumes = new Map(); // playlistId:soundId → original volume
     this.musicSearchQuery = '';
     this.openJournalId = null;
     this.openJournalPageId = null;
@@ -138,6 +142,7 @@ export class CinematicGMApp extends CinematicSceneBase {
         playlists: [],
         nowPlaying: null,
         currentVolume: 0.5,
+        playingByPlaylist: [],
         shuffleActive: false,
         repeatActive: false,
         musicSearchQuery: this.musicSearchQuery,
@@ -179,9 +184,22 @@ export class CinematicGMApp extends CinematicSceneBase {
       expanded: this.expandedPlaylistIds.has(p.id),
       trackCount: p.sounds.size,
       tracks: this.expandedPlaylistIds.has(p.id)
-        ? p.sounds.contents.map(s => ({ id: s.id, name: s.name, playing: s.playing }))
+        ? p.sounds.contents.map(s => ({ id: s.id, name: s.name, playing: s.playing, volume: s.volume }))
         : [],
     }));
+    // Auto-expand playlists with currently-playing sounds
+    for (const p of game.playlists) {
+      if (p.sounds.some(s => s.playing) && !this.expandedPlaylistIds.has(p.id)) {
+        this.expandedPlaylistIds.add(p.id);
+        const idx = playlists.findIndex(pl => pl.id === p.id);
+        if (idx >= 0) {
+          playlists[idx].expanded = true;
+          playlists[idx].tracks = p.sounds.contents.map(s => ({
+            id: s.id, name: s.name, playing: s.playing, volume: s.volume,
+          }));
+        }
+      }
+    }
     const nowPlaying = this._getNowPlaying();
     let currentVolume = 0.5;
     let shuffleActive = false;
@@ -192,6 +210,12 @@ export class CinematicGMApp extends CinematicSceneBase {
       if (sound) currentVolume = sound.volume;
       if (pl) shuffleActive = pl.mode === CONST.PLAYLIST_MODES.SHUFFLE;
       if (sound) repeatActive = sound.repeat;
+    }
+    // Collect currently-playing tracks grouped by playlist
+    const playingByPlaylist = [];
+    for (const p of game.playlists) {
+      const tracks = p.sounds.contents.filter(s => s.playing).map(s => ({ id: s.id, name: s.name, volume: s.volume, repeat: s.repeat }));
+      if (tracks.length) playingByPlaylist.push({ id: p.id, name: p.name, tracks });
     }
     let musicSearchResults = [];
     if (this.musicSearchQuery) {
@@ -344,6 +368,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       playlists,
       nowPlaying,
       currentVolume,
+      playingByPlaylist,
       shuffleActive,
       repeatActive,
       musicSearchQuery: this.musicSearchQuery,
@@ -501,17 +526,44 @@ export class CinematicGMApp extends CinematicSceneBase {
       });
     }
 
-    // Volume slider
+    // Global volume slider — controls all playing tracks, saves originals on first use
     const volumeSlider = this.element?.querySelector('.cinematic-music-volume');
     if (volumeSlider) {
+      let globalVolTimer = null;
       volumeSlider.addEventListener('input', (e) => {
-        const np = this._getNowPlaying();
-        if (np) {
-          const sound = game.playlists.get(np.playlistId)?.sounds.get(np.soundId);
-          sound?.update({ volume: parseFloat(e.target.value) });
+        const vol = parseFloat(e.target.value);
+        // Save original volumes before first global adjustment
+        for (const p of game.playlists) {
+          for (const s of p.sounds) {
+            if (s.playing) {
+              const key = `${p.id}:${s.id}`;
+              if (!this._savedTrackVolumes.has(key)) this._savedTrackVolumes.set(key, s.volume);
+            }
+          }
         }
+        // Show reset button
+        this.element?.querySelector('.music-volume-reset')?.classList.remove('hidden');
+        clearTimeout(globalVolTimer);
+        globalVolTimer = setTimeout(() => {
+          for (const p of game.playlists) {
+            const updates = p.sounds.contents
+              .filter(s => s.playing)
+              .map(s => ({ _id: s.id, volume: vol }));
+            if (updates.length) p.updateEmbeddedDocuments('PlaylistSound', updates);
+          }
+        }, 150);
+        // Sync per-track sliders locally for immediate feedback
+        this.element?.querySelectorAll('.track-volume-slider').forEach(s => { s.value = vol; });
       });
     }
+
+    // Show reset button if saved volumes exist
+    if (this._savedTrackVolumes.size) {
+      this.element?.querySelector('.music-volume-reset')?.classList.remove('hidden');
+    }
+
+    // Per-track volume sliders (in now-playing section)
+    this.element?.querySelectorAll('.track-volume-slider').forEach(s => this._bindTrackVolumeSlider(s));
 
     // Music search
     const searchInput = this.element?.querySelector('.music-search-input');
@@ -946,7 +998,58 @@ export class CinematicGMApp extends CinematicSceneBase {
     onRemoveChallenge(null, target, null);
   }
 
+  // --- Music helpers ---
+
+  /** Bind per-track volume slider, preventing parent action propagation */
+  _bindTrackVolumeSlider(slider) {
+    if (!slider) return;
+    slider.addEventListener('click', (e) => e.stopPropagation());
+    slider.addEventListener('mousedown', (e) => e.stopPropagation());
+    let volumeTimer = null;
+    slider.addEventListener('input', (e) => {
+      e.stopPropagation();
+      const playlistId = e.target.dataset.playlistId;
+      const soundId = e.target.dataset.soundId;
+      if (!playlistId || !soundId) return;
+      const vol = parseFloat(e.target.value);
+      const sound = game.playlists.get(playlistId)?.sounds.get(soundId);
+      // Debounce document update to avoid flooding the server during drag
+      clearTimeout(volumeTimer);
+      volumeTimer = setTimeout(() => sound?.update({ volume: vol }), 150);
+    });
+  }
+
   // --- Music actions ---
+
+  static async _onMusicVolumeReset() {
+    if (!this._savedTrackVolumes.size) return;
+    // Group updates by playlist for batch efficiency
+    const byPlaylist = new Map();
+    for (const [key, vol] of this._savedTrackVolumes) {
+      const [playlistId, soundId] = key.split(':');
+      if (!byPlaylist.has(playlistId)) byPlaylist.set(playlistId, []);
+      byPlaylist.get(playlistId).push({ _id: soundId, volume: vol });
+    }
+    for (const [playlistId, updates] of byPlaylist) {
+      const playlist = game.playlists.get(playlistId);
+      if (playlist) await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
+    }
+    this._savedTrackVolumes.clear();
+    this.element?.querySelector('.music-volume-reset')?.classList.add('hidden');
+  }
+
+  static _onToggleNowPlayingPlaylist(_event, target) {
+    const header = target.closest('.now-playing-playlist-header');
+    const group = header?.closest('.now-playing-playlist-group');
+    if (!group) return;
+    const tracks = group.querySelector('.now-playing-tracks');
+    const icon = header.querySelector('i');
+    if (!tracks) return;
+    const collapsed = tracks.style.display === 'none';
+    tracks.style.display = collapsed ? '' : 'none';
+    icon?.classList.toggle('fa-chevron-down', collapsed);
+    icon?.classList.toggle('fa-chevron-right', !collapsed);
+  }
 
   static _onMusicPlayPause() {
     const np = this._getNowPlaying();
@@ -1018,6 +1121,15 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (sound) await sound.update({ repeat: !sound.repeat });
   }
 
+  static async _onTrackRepeat(_event, target) {
+    const btn = target.closest('[data-playlist-id]');
+    const playlistId = btn?.dataset.playlistId;
+    const soundId = btn?.dataset.soundId;
+    if (!playlistId || !soundId) return;
+    const sound = game.playlists.get(playlistId)?.sounds.get(soundId);
+    if (sound) await sound.update({ repeat: !sound.repeat });
+  }
+
   static _onTogglePlaylistExpand(_event, target) {
     const playlistId = target.closest('[data-playlist-id]')?.dataset.playlistId;
     if (!playlistId) return;
@@ -1061,6 +1173,9 @@ export class CinematicGMApp extends CinematicSceneBase {
       if (p.playing) await p.stopAll();
     }
     const playlist = game.playlists.get(playlistId);
-    if (playlist) await playlist.playAll();
+    if (!playlist) return;
+    // Play all tracks simultaneously regardless of playlist mode
+    const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
+    await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
   }
 }

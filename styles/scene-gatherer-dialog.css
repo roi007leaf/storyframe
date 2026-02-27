@@ -1,0 +1,263 @@
+/* Scene Gatherer Dialog */
+.storyframe.scene-gatherer-dialog-app {
+  background: var(--sf-surface-primary);
+  border: 2px solid var(--sf-border-primary);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  height: auto;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.storyframe.scene-gatherer-dialog-app .window-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.scene-gatherer-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+}
+
+.scene-gatherer-dialog .dialog-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--sf-space-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sf-space-lg);
+  min-height: 0;
+}
+
+/* Scene Name Input */
+.scene-gatherer-dialog .scene-name-section h3 {
+  margin: 0 0 var(--sf-space-xs) 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+}
+
+.scene-gatherer-dialog .scene-name-section input[type="text"] {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 14px;
+  font-family: inherit;
+  transition: all var(--sf-transition-base);
+  box-sizing: border-box;
+}
+
+.scene-gatherer-dialog .scene-name-section input[type="text"]:focus {
+  outline: none;
+  border-color: rgba(94, 129, 172, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
+}
+
+/* Actors Header with Select All */
+.scene-gatherer-dialog .actors-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sf-space-sm);
+}
+
+.scene-gatherer-dialog .actors-header h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+}
+
+.scene-gatherer-dialog .select-all-btn {
+  background: none;
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 4px;
+  color: var(--sf-accent-primary);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 10px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.scene-gatherer-dialog .select-all-btn:hover {
+  background: rgba(94, 129, 172, 0.15);
+  border-color: var(--sf-accent-primary);
+}
+
+/* Participants Grid — matches roll-request-dialog */
+.scene-gatherer-dialog .participants-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  align-content: start;
+  gap: var(--sf-space-sm);
+  min-height: 100px;
+  padding: 2px;
+}
+
+.scene-gatherer-dialog .participant-card {
+  position: relative;
+  cursor: pointer;
+  margin: 0;
+  display: block;
+}
+
+.scene-gatherer-dialog .participant-card input[type='checkbox'] {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.scene-gatherer-dialog .participant-content {
+  background: var(--sf-surface-secondary);
+  border: 2px solid var(--sf-border-secondary);
+  border-radius: 6px;
+  padding: var(--sf-space-sm);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sf-space-xs);
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.scene-gatherer-dialog .participant-card:hover .participant-content {
+  border-color: var(--sf-accent-primary);
+  background: var(--sf-surface-hover);
+}
+
+.scene-gatherer-dialog .participant-card input:checked ~ .participant-content {
+  background: rgba(94, 129, 172, 0.15);
+  border-color: var(--sf-accent-primary);
+  box-shadow: 0 0 0 2px rgba(94, 129, 172, 0.2);
+}
+
+.scene-gatherer-dialog .participant-content img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid var(--sf-border-primary);
+  object-fit: contain;
+}
+
+.scene-gatherer-dialog .participant-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sf-text-primary);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.scene-gatherer-dialog .check-icon {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 16px;
+  color: var(--sf-accent-success);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.3));
+}
+
+.scene-gatherer-dialog .participant-card input:checked ~ .participant-content .check-icon {
+  opacity: 1;
+}
+
+/* Footer */
+.scene-gatherer-dialog .dialog-footer {
+  display: flex;
+  gap: var(--sf-space-sm);
+  padding: var(--sf-space-md);
+  background: var(--sf-surface-secondary);
+  border-top: 1px solid var(--sf-border-secondary);
+  border-radius: 0 0 6px 6px;
+}
+
+.scene-gatherer-dialog .dialog-footer button {
+  flex: 1;
+  padding: var(--sf-space-sm) var(--sf-space-md);
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sf-space-xs);
+  transition: all 0.2s ease;
+}
+
+.scene-gatherer-dialog .cancel-btn {
+  background: var(--sf-surface-primary);
+  color: var(--sf-text-primary);
+  border: 1px solid var(--sf-border-primary);
+}
+
+.scene-gatherer-dialog .cancel-btn:hover {
+  background: var(--sf-surface-hover);
+  border-color: var(--sf-accent-danger);
+  color: var(--sf-accent-danger);
+}
+
+.scene-gatherer-dialog .submit-btn {
+  background: linear-gradient(135deg, var(--sf-accent-primary) 0%, rgba(94, 129, 172, 0.9) 100%);
+  color: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.scene-gatherer-dialog .submit-btn:hover {
+  background: linear-gradient(135deg, rgba(94, 129, 172, 0.9) 0%, var(--sf-accent-primary) 100%);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+.scene-gatherer-dialog .submit-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.scene-gatherer-dialog .submit-btn:disabled {
+  background: rgba(94, 129, 172, 0.2);
+  border-color: rgba(94, 129, 172, 0.2);
+  color: rgba(255, 255, 255, 0.3);
+  box-shadow: none;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Scrollbar styling */
+.scene-gatherer-dialog .participants-grid::-webkit-scrollbar,
+.scene-gatherer-dialog .dialog-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scene-gatherer-dialog .participants-grid::-webkit-scrollbar-track,
+.scene-gatherer-dialog .dialog-content::-webkit-scrollbar-track {
+  background: var(--sf-surface-secondary);
+  border-radius: 4px;
+}
+
+.scene-gatherer-dialog .participants-grid::-webkit-scrollbar-thumb,
+.scene-gatherer-dialog .dialog-content::-webkit-scrollbar-thumb {
+  background: var(--sf-border-primary);
+  border-radius: 4px;
+}
+
+.scene-gatherer-dialog .participants-grid::-webkit-scrollbar-thumb:hover,
+.scene-gatherer-dialog .dialog-content::-webkit-scrollbar-thumb:hover {
+  background: var(--sf-accent-primary);
+}
