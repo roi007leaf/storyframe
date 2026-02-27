@@ -477,6 +477,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       slug,
       name: skill.name,
       actions: skill.actions || [],
+      actionsJson: JSON.stringify(skill.actions || []),
     }));
 
     let saves = Object.entries(systemSaves).map(([slug, save]) => ({

@@ -47,7 +47,7 @@
                   <select name="option-0-skill-0" class="skill-dropdown" data-skill-index="0">
                     <option value="">{{localize "STORYFRAME.UI.Labels.SelectSkill"}}</option>
                     {{#each skills}}
-                    <option value="{{this.slug}}" data-actions="{{json this.actions}}" data-check-type="skill">{{this.name}}</option>
+                    <option value="{{this.slug}}" data-actions="{{this.actionsJson}}" data-check-type="skill">{{this.name}}</option>
                     {{/each}}
                     {{#if hasLoreSkills}}
                     <optgroup label="{{localize "STORYFRAME.ChallengeBuilder.LoreSkills"}}">
