@@ -7,6 +7,15 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.1] - 2026-02-27
+
+### Fixed
+
+- Active speaker switching no longer triggers a full re-render — spotlight and filmstrip update in place, preserving camera feeds and avoiding animation flicker
+- Speaker name visibility toggle now syncs to the player cinematic view immediately
+- Camera row hides automatically when no active video feeds are present
+- Intro animations (fade-in, speaker entrance) no longer replay when the scene re-renders
+
 ## [2.1.0] - 2026-02-27
 
 ### Added

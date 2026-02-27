@@ -119,7 +119,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
     const speakerKey = game.user.isGM
       ? (state.speakers || []).map(s => `${s.id}:${s.imagePath}`).join('|')
-      : (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.imagePath}`).join('|');
+      : (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
     const speakerFlagsKey = game.user.isGM
       ? (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
       : '';
@@ -127,11 +127,14 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const participantKey = (state.participants || []).map(p => p.id).join(',');
     const backgroundKey = state.sceneBackground || '';
 
-    const structuralChange = speakerKey !== this._prevSpeakerKey
-      || activeKey !== this._prevActiveKey
-      || participantKey !== this._prevParticipantKey
-      || backgroundKey !== this._prevBackgroundKey;
+    const speakersChanged = speakerKey !== this._prevSpeakerKey;
+    const activeChanged = activeKey !== this._prevActiveKey;
+    const participantsChanged = participantKey !== this._prevParticipantKey;
+    const backgroundChanged = backgroundKey !== this._prevBackgroundKey;
     const flagsChanged = game.user.isGM && speakerFlagsKey !== this._prevSpeakerFlagsKey;
+
+    // Heavy structural change — full re-render
+    const structuralChange = speakersChanged || participantsChanged || backgroundChanged;
 
     this._prevSpeakerKey = speakerKey;
     this._prevSpeakerFlagsKey = speakerFlagsKey;
@@ -141,9 +144,88 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
     if (structuralChange) {
       this.render();
+    } else if (activeChanged) {
+      // Active speaker switch — targeted DOM update (no full re-render)
+      await this._swapActiveSpeaker(state);
+      this._onFlagsChanged?.(state, flagsChanged);
+      this._refreshRollPanel();
     } else {
       this._onFlagsChanged?.(state, flagsChanged);
       this._refreshRollPanel();
+    }
+  }
+
+  /**
+   * Targeted DOM update for active speaker switch (avoids full re-render).
+   */
+  async _swapActiveSpeaker(state) {
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) return;
+
+    const isGM = game.user.isGM;
+    const visibleSpeakers = isGM
+      ? state.speakers || []
+      : (state.speakers || []).filter(s => !s.isHidden);
+    const allResolved = await this._resolveSpeakers(visibleSpeakers);
+    const newActiveId = state.activeSpeaker || '';
+    const newActive = newActiveId ? allResolved.find(s => s.id === newActiveId) : null;
+    const inactives = newActiveId ? allResolved.filter(s => s.id !== newActiveId) : allResolved;
+
+    // --- Update spotlight ---
+    const oldSpotlight = container.querySelector('.cinematic-spotlight');
+    const _oldNoActive = container.querySelector('.cinematic-no-active');
+
+    if (newActive) {
+      if (oldSpotlight) {
+        // Update existing spotlight in place
+        oldSpotlight.dataset.speakerId = newActive.id;
+        const portrait = oldSpotlight.querySelector('.spotlight-portrait');
+        if (portrait) { portrait.src = newActive.img; portrait.alt = newActive.name; }
+        const nameText = oldSpotlight.querySelector('.nameplate-text');
+        if (nameText) nameText.textContent = newActive.name;
+        // Update visibility button
+        const nameplate = oldSpotlight.querySelector('.spotlight-nameplate');
+        if (nameplate) nameplate.classList.toggle('name-is-hidden', !!newActive.isNameHidden);
+        const visBtn = oldSpotlight.querySelector('.spotlight-visibility-btn');
+        if (visBtn) {
+          visBtn.dataset.speakerId = newActive.id;
+          visBtn.dataset.tooltip = newActive.isNameHidden
+            ? game.i18n.localize('STORYFRAME.CinematicScene.ShowName')
+            : game.i18n.localize('STORYFRAME.CinematicScene.HideName');
+          const icon = visBtn.querySelector('i');
+          if (icon) icon.className = `fas ${newActive.isNameHidden ? 'fa-eye' : 'fa-eye-slash'}`;
+        }
+        // Update counter
+        this._updateCounterDisplay?.(newActive.id);
+      } else {
+        // Was "no active" or image preview — need full re-render
+        return this.render();
+      }
+    } else {
+      // Deselected — no active speaker, need re-render to show no-active state
+      if (oldSpotlight) return this.render();
+    }
+
+    // --- Update filmstrip ---
+    const filmstrip = container.querySelector('.cinematic-filmstrip');
+    if (filmstrip) {
+      // Show all filmstrip cards that are inactive, hide the new active one
+      for (const card of filmstrip.querySelectorAll('.filmstrip-speaker')) {
+        const id = card.dataset.speakerId;
+        card.style.display = (id === newActiveId) ? 'none' : '';
+      }
+    }
+
+    // If a speaker is newly active but wasn't in the filmstrip (shouldn't happen, but fallback)
+    // and if speakers were removed from filmstrip but not in DOM, do a full render
+    const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
+    if (inactives.length > 0 && !filmstripContainer) {
+      return this.render();
+    }
+    if (inactives.length === 0 && filmstripContainer) {
+      filmstripContainer.style.display = 'none';
+    } else if (filmstripContainer) {
+      filmstripContainer.style.display = '';
     }
   }
 
@@ -155,22 +237,41 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   _onRender(_context, _options) {
     super._onRender(_context, _options);
 
+    // Skip intro animations on re-renders (not the first open)
+    if (this._introComplete) {
+      this.element?.classList.add('skip-intro');
+    } else {
+      // Mark intro as complete after the first render's animation finishes
+      const onIntroEnd = () => { this._introComplete = true; };
+      setTimeout(onIntroEnd, 1200);
+    }
+
     // Spotlight: hide until portrait image loaded (prevents layout-shift animation)
     const spotlightImg = this.element?.querySelector('.spotlight-portrait');
     const spotlight = spotlightImg?.closest('.cinematic-spotlight');
     if (spotlight && spotlightImg) {
-      spotlight.style.visibility = 'hidden';
-      spotlight.style.animationName = 'none';
-      const showSpotlight = () => {
-        spotlight.style.visibility = '';
-        spotlight.style.animationName = '';
-        void spotlight.offsetWidth;
-      };
-      if (spotlightImg.complete && spotlightImg.naturalHeight > 0) {
-        showSpotlight();
+      if (this._introComplete) {
+        // On re-render, just wait for the image — no animation dance
+        if (!spotlightImg.complete || spotlightImg.naturalHeight === 0) {
+          spotlight.style.visibility = 'hidden';
+          const show = () => { spotlight.style.visibility = ''; };
+          spotlightImg.addEventListener('load', show, { once: true });
+          spotlightImg.addEventListener('error', show, { once: true });
+        }
       } else {
-        spotlightImg.addEventListener('load', showSpotlight, { once: true });
-        spotlightImg.addEventListener('error', showSpotlight, { once: true });
+        spotlight.style.visibility = 'hidden';
+        spotlight.style.animationName = 'none';
+        const showSpotlight = () => {
+          spotlight.style.visibility = '';
+          spotlight.style.animationName = '';
+          void spotlight.offsetWidth;
+        };
+        if (spotlightImg.complete && spotlightImg.naturalHeight > 0) {
+          showSpotlight();
+        } else {
+          spotlightImg.addEventListener('load', showSpotlight, { once: true });
+          spotlightImg.addEventListener('error', showSpotlight, { once: true });
+        }
       }
     }
 
@@ -194,7 +295,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (_seedState) {
       this._prevSpeakerKey = game.user.isGM
         ? (_seedState.speakers || []).map(s => `${s.id}:${s.imagePath}`).join('|')
-        : (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.imagePath}`).join('|');
+        : (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
       this._prevSpeakerFlagsKey = game.user.isGM
         ? (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
         : '';
@@ -207,6 +308,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   // --- Shared cleanup ---
 
   async _onClose(_options) {
+    this._introComplete = false;
     this._teardownCameraRow();
     game.storyframe.cinematicScene = null;
     document.getElementById('cinematic-context-menu')?.remove();
@@ -625,6 +727,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       feedsContainer.appendChild(wrapper);
       this._trackedVideoStreams.set(cam.userId, { video, stream: cam.stream, wrapper });
     }
+
+    // Hide camera row when no active feeds
+    const hasFeeds = this._trackedVideoStreams.size > 0;
+    feedsContainer.classList.toggle('hidden', !hasFeeds);
   }
 
   _teardownCameraRow() {

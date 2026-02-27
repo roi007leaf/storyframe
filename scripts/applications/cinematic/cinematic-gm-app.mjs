@@ -699,6 +699,12 @@ export class CinematicGMApp extends CinematicSceneBase {
     );
   }
 
+  _updateCounterDisplay(speakerId) {
+    const val = this._speakerCounters[speakerId] ?? 0;
+    const el = this.element?.querySelector('.counter-value');
+    if (el) el.textContent = val;
+  }
+
   static _onRelaunchForPlayers() {
     game.storyframe.socketManager.launchSceneMode();
     ui.notifications.info(game.i18n.localize('STORYFRAME.CinematicScene.Relaunched'));
@@ -707,7 +713,11 @@ export class CinematicGMApp extends CinematicSceneBase {
   static async _onSwitchSpeaker(_event, target) {
     const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
     await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId || null);
-    this.render();
+    const state = game.storyframe.stateManager?.getState();
+    if (state) {
+      this._prevActiveKey = state.activeSpeaker || '';
+      await this._swapActiveSpeaker(state);
+    }
   }
 
   static _onToggleSidePanel() {

@@ -113,6 +113,15 @@
 }
 
 
+/* ===== Skip intro on re-render ===== */
+.storyframe.cinematic-scene.skip-intro {
+  animation: none;
+}
+
+.skip-intro .cinematic-spotlight {
+  animation: none !important;
+}
+
 /* ===== Vignette Overlay ===== */
 .cinematic-scene-container .vignette-overlay {
   position: absolute;
