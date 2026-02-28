@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.2] - 2026-02-28
+
+### Fixed
+
+- **Cinematic popups hidden behind overlay** — DC preset dropdown, skill actions menu, and other body-level popups now render inside the cinematic `<dialog>` so they appear above the top-layer overlay
+- **File picker hidden behind cinematic overlay** — added z-index override for the Foundry file picker during cinematic mode
+- **getComputedStyle crash on preset dropdown** — fixed TypeError when opening the DC preset popup from cinematic mode (proxy element is not a DOM Element)
+- **Speaker name editing ignored for actor-backed speakers** — editing a speaker's name now correctly uses the custom label instead of always falling back to the actor's original name, in both the GM sidebar and cinematic scene
+- **Cinematic scene not updating on speaker rename** — added `label` to the speaker change-detection key so name edits trigger a re-render
+
 ## [2.3.1] - 2026-02-27
 
 ### Improved

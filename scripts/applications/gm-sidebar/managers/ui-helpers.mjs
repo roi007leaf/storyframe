@@ -194,13 +194,23 @@ export function restoreScrollPositions(sidebar, positions) {
 }
 
 /**
+ * Return the correct parent element for body-level popups.
+ * ApplicationV2 dialogs live in the browser's top layer, so popups appended
+ * to document.body are hidden behind them. When the trigger element is inside
+ * a <dialog>, append to that dialog instead.
+ */
+export function getPopupParent(target) {
+  return target?.closest?.('dialog') || document.body;
+}
+
+/**
  * Return a z-index value that places a popup above the sidebar.
  * The sidebar gets a dynamic inline z-index from positionAsDrawer; popups must
  * read that value at creation time so they always render on top.
  */
 export function _aboveSidebarZIndex(sidebar) {
   const el = sidebar?.element;
-  if (!el) return 100001;
+  if (!(el instanceof Element)) return 100001;
   // Use getComputedStyle so we capture z-index set by !important CSS rules
   // (e.g. cinematic/base.css sets #storyframe-gm-sidebar to 100000 !important
   // globally, not just in cinematic mode, so inline-style reads miss it).
@@ -484,7 +494,7 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   };
   document.addEventListener('keydown', escHandler);
 
-  document.body.appendChild(popup);
+  getPopupParent(target).appendChild(popup);
   popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
@@ -637,7 +647,7 @@ export async function onShowActiveChallenges(_event, target, sidebar) {
   };
   document.addEventListener('keydown', escHandler);
 
-  document.body.appendChild(popup);
+  getPopupParent(target).appendChild(popup);
   popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen (match pending rolls positioning)
@@ -758,7 +768,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
   // Position above button (CSS handles all styling)
   const rect = target.getBoundingClientRect();
-  document.body.appendChild(menu);
+  getPopupParent(target).appendChild(menu);
   menu.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   menu.style.bottom = `${window.innerHeight - rect.top + 4}px`;
@@ -1076,7 +1086,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
   };
   setTimeout(() => document.addEventListener('click', closeHandler), 10);
 
-  document.body.appendChild(menu);
+  getPopupParent(event.target).appendChild(menu);
   menu.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
@@ -1120,7 +1130,7 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
     popup.style.top = `${rect.top}px`;
     popup.style.left = `${rect.right + 8}px`;
 
-    document.body.appendChild(popup);
+    getPopupParent(event.target).appendChild(popup);
     popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
     // Adjust if off-screen
@@ -1681,7 +1691,7 @@ export async function onShowSavedScenes(_event, target, sidebar) {
   };
   document.addEventListener('keydown', escHandler);
 
-  document.body.appendChild(popup);
+  getPopupParent(target).appendChild(popup);
   popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen

@@ -5,7 +5,7 @@
 
 import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
-import { _aboveSidebarZIndex } from './ui-helpers.mjs';
+import { _aboveSidebarZIndex, getPopupParent } from './ui-helpers.mjs';
 
 /**
  * Set DC from select dropdown
@@ -64,7 +64,7 @@ export function onTogglePresetDropdown(_event, target, sidebar) {
   }
 
   const popup = _buildPresetPopup(sidebar);
-  document.body.appendChild(popup);
+  getPopupParent(target).appendChild(popup);
 
   // Position fixed relative to trigger button
   const rect = target.getBoundingClientRect();

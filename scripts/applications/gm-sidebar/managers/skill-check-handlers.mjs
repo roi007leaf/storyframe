@@ -5,6 +5,7 @@
 
 import { MODULE_ID } from '../../../constants.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import { getPopupParent } from './ui-helpers.mjs';
 
 /**
  * Request a skill check (single skill button click)
@@ -658,7 +659,7 @@ export async function onOpenSkillMenu(_event, target, sidebar) {
   };
   setTimeout(() => document.addEventListener('click', closeHandler), 10);
 
-  document.body.appendChild(menu);
+  getPopupParent(target).appendChild(menu);
 
   // Adjust position if off-screen
   const menuRect = menu.getBoundingClientRect();

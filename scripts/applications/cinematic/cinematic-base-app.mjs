@@ -112,8 +112,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!state) return;
 
     const speakerKey = game.user.isGM
-      ? (state.speakers || []).map(s => `${s.id}:${s.imagePath}`).join('|')
-      : (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
+      ? (state.speakers || []).map(s => `${s.id}:${s.label}:${s.imagePath}`).join('|')
+      : (state.speakers || []).map(s => `${s.id}:${s.label}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
     const speakerFlagsKey = game.user.isGM
       ? (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
       : '';
@@ -369,7 +369,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       const actor = await fromUuid(speaker.actorUuid);
       if (actor) {
         img = speaker.imagePath || actor.img;
-        name = actor.name;
+        name = speaker.label || actor.name;
       } else {
         img = 'icons/svg/mystery-man.svg';
         name = speaker.label || game.i18n.localize('STORYFRAME.UI.Labels.Unknown');

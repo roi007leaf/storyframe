@@ -39,7 +39,7 @@ body:has(.storyframe.cinematic-scene)
 }
 
 body:has(.storyframe.cinematic-scene)
-  :is(#context-menu, #notifications, #dice-box-canvas, #storyframe-gm-sidebar) {
+  :is(#context-menu, #notifications, #dice-box-canvas, #storyframe-gm-sidebar, #file-picker) {
   z-index: 100000 !important;
 }
 

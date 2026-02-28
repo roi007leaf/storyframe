@@ -202,7 +202,7 @@ export class SpeakerManager {
       if (actor) {
         // Use imagePath override if set, otherwise fall back to actor portrait
         img = speaker.imagePath || actor.img;
-        name = actor.name;
+        name = speaker.label || actor.name;
       } else {
         // Actor deleted - use fallback
         img = speaker.imagePath || 'icons/svg/mystery-man.svg';
