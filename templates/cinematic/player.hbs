@@ -89,7 +89,7 @@
         </div>
         <div class="roll-group-buttons">
           {{#each this.rolls}}
-          <button type="button" class="cinematic-roll-btn" data-action="executeRoll" data-request-id="{{this.id}}">
+          <button type="button" class="cinematic-roll-btn" data-action="executeRoll" data-request-id="{{this.id}}" data-check-type="{{this.checkType}}">
             <span class="roll-skill-name">{{this.skillName}}</span>
             {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
           </button>

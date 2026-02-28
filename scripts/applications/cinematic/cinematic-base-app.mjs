@@ -38,7 +38,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this.playerChatExpanded = false;
     this._lastChallengeCount = 0;
     this.previewImageSrc = null;
-    this._prevSpeakerKey = '';
+    this._prevSpeakerIdsKey = '';
+    this._prevSpeakerPropsKey = '';
     this._prevActiveKey = '';
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
@@ -111,26 +112,33 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const state = game.storyframe.stateManager?.getState();
     if (!state) return;
 
-    const speakerKey = game.user.isGM
-      ? (state.speakers || []).map(s => `${s.id}:${s.label}:${s.imagePath}`).join('|')
-      : (state.speakers || []).map(s => `${s.id}:${s.label}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
+    // Structural change = speakers added/removed, participants changed, or
+    // background changed.  Only compare speaker IDs (not mutable properties
+    // like label/imagePath) because those can differ between scene-flag reads
+    // and socket broadcasts, causing false-positive full re-renders.
+    const speakerIdsKey = (state.speakers || []).map(s => s.id).join('|');
     const speakerFlagsKey = game.user.isGM
-      ? (state.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
+      ? (state.speakers || []).map(s => `${s.id}:${!!s.isHidden}:${!!s.isNameHidden}`).join('|')
       : '';
+    // Detect speaker property changes (label, image) separately — these need
+    // a re-render but should only fire when the values genuinely change.
+    const speakerPropsKey = (state.speakers || []).map(s => `${s.id}:${s.label ?? ''}:${s.imagePath ?? ''}`).join('|');
     const activeKey = state.activeSpeaker || '';
     const participantKey = (state.participants || []).map(p => p.id).join(',');
-    const backgroundKey = state.sceneBackground || '';
+    const backgroundKey = state.sceneBackground ?? '';
 
-    const speakersChanged = speakerKey !== this._prevSpeakerKey;
+    const speakerListChanged = speakerIdsKey !== this._prevSpeakerIdsKey;
+    const speakerPropsChanged = speakerPropsKey !== this._prevSpeakerPropsKey;
     const activeChanged = activeKey !== this._prevActiveKey;
     const participantsChanged = participantKey !== this._prevParticipantKey;
     const backgroundChanged = backgroundKey !== this._prevBackgroundKey;
     const flagsChanged = game.user.isGM && speakerFlagsKey !== this._prevSpeakerFlagsKey;
 
     // Heavy structural change — full re-render
-    const structuralChange = speakersChanged || participantsChanged || backgroundChanged;
+    const structuralChange = speakerListChanged || participantsChanged || backgroundChanged;
 
-    this._prevSpeakerKey = speakerKey;
+    this._prevSpeakerIdsKey = speakerIdsKey;
+    this._prevSpeakerPropsKey = speakerPropsKey;
     this._prevSpeakerFlagsKey = speakerFlagsKey;
     this._prevActiveKey = activeKey;
     this._prevParticipantKey = participantKey;
@@ -144,6 +152,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       this._onFlagsChanged?.(state, flagsChanged);
       this._refreshRollPanel();
     } else {
+      // Speaker property changes (name/image edits) — patch DOM in place
+      if (speakerPropsChanged) this._patchSpeakerProps(state);
       this._onFlagsChanged?.(state, flagsChanged);
       this._refreshRollPanel();
     }
@@ -241,10 +251,63 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     }
   }
 
+  /**
+   * Targeted DOM patch for speaker property changes (name/image edits).
+   * Updates spotlight + filmstrip elements in place — avoids full re-render.
+   */
+  async _patchSpeakerProps(state) {
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) return;
+
+    const isGM = game.user.isGM;
+    const visibleSpeakers = isGM
+      ? state.speakers || []
+      : (state.speakers || []).filter(s => !s.isHidden);
+    const resolved = await this._resolveSpeakers(visibleSpeakers);
+    const byId = new Map(resolved.map(s => [s.id, s]));
+
+    // Patch spotlight (active speaker)
+    const spotlight = container.querySelector('.cinematic-spotlight');
+    if (spotlight) {
+      const s = byId.get(spotlight.dataset.speakerId);
+      if (s) {
+        const portrait = spotlight.querySelector('.spotlight-portrait');
+        if (portrait && portrait.src !== s.img) { portrait.src = s.img; portrait.alt = s.name; }
+        const nameText = spotlight.querySelector('.nameplate-text');
+        if (nameText && nameText.textContent !== s.name) nameText.textContent = s.name;
+      }
+    }
+
+    // Patch filmstrip cards (inactive speakers)
+    for (const card of container.querySelectorAll('.filmstrip-speaker')) {
+      const s = byId.get(card.dataset.speakerId);
+      if (!s) continue;
+      const img = card.querySelector('img');
+      if (img && img.src !== s.img) { img.src = s.img; img.alt = s.name; }
+      const nameEl = card.querySelector('.filmstrip-name');
+      if (nameEl && nameEl.textContent !== s.name) nameEl.textContent = s.name;
+      if (card.dataset.tooltip !== s.name) card.dataset.tooltip = s.name;
+    }
+  }
+
   /** Override in subclasses for non-structural panel updates. */
   async _refreshRollPanel() { }
 
   // --- Shared render setup ---
+
+  async _preRender(_context, _options) {
+    await super._preRender(_context, _options);
+    // Save a reference to the current chat container so _populateChatLog can
+    // swap it back in after ApplicationV2 replaces the DOM.  Do NOT remove()
+    // the node here — that would flash an empty space if the template render
+    // (between _preRender and _replaceHTML) yields to the paint loop.
+    const chat = this.element?.querySelector('.side-panel-chat-messages')
+      ?? this.element?.querySelector('.player-chat-messages');
+    if (chat?.dataset.populated) {
+      this._savedChatNode = chat;
+      this._savedChatScroll = chat.scrollTop;
+    }
+  }
 
   _onRender(_context, _options) {
     super._onRender(_context, _options);
@@ -316,9 +379,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     // Seed state-change baseline
     const _seedState = game.storyframe.stateManager?.getState();
     if (_seedState) {
-      this._prevSpeakerKey = game.user.isGM
-        ? (_seedState.speakers || []).map(s => `${s.id}:${s.imagePath}`).join('|')
-        : (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}:${s.imagePath}`).join('|');
+      this._prevSpeakerIdsKey = (_seedState.speakers || []).map(s => s.id).join('|');
+      this._prevSpeakerPropsKey = (_seedState.speakers || []).map(s => `${s.id}:${s.label ?? ''}:${s.imagePath ?? ''}`).join('|');
       this._prevSpeakerFlagsKey = game.user.isGM
         ? (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
         : '';
@@ -338,10 +400,12 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
     this.previewImageSrc = null;
-    this._prevSpeakerKey = '';
+    this._prevSpeakerIdsKey = '';
+    this._prevSpeakerPropsKey = '';
     this._prevActiveKey = '';
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
+    this._prevBackgroundKey = '';
     // Restore Foundry's sidebar if we collapsed it on open
     if (this._sidebarWasOpen && ui.sidebar?._collapsed) {
       ui.sidebar.expand();
@@ -660,6 +724,12 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         attributes: true,
         attributeFilter: ['class', 'style'],
       });
+      // Remote WebRTC streams set video.srcObject (a JS property, not a DOM
+      // attribute) so MutationObserver misses them.  Listen for video play
+      // events which fire when a remote stream starts delivering frames.
+      this._cameraPlayHandler = () => this._debouncedCameraSync();
+      cameraViews.addEventListener('play', this._cameraPlayHandler, true);
+      cameraViews.addEventListener('loadedmetadata', this._cameraPlayHandler, true);
     }
   }
 
@@ -706,7 +776,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         const video = view.querySelector('video');
         if (!video?.srcObject) return;
         const videoTracks = video.srcObject.getVideoTracks();
-        if (!videoTracks.length || !videoTracks.some(t => t.enabled && t.readyState === 'live')) return;
+        if (!videoTracks.length || !videoTracks.some(t => t.enabled)) return;
         const user = game.users.get(userId);
         if (!user) return;
         activeCameras.push({ userId, userName: user.name, stream: video.srcObject });
@@ -746,16 +816,16 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       video.playsInline = true;
       video.srcObject = cam.stream;
 
-      const nameTag = document.createElement('span');
-      nameTag.className = 'camera-feed-name';
-      nameTag.textContent = cam.userName;
-
-      wrapper.appendChild(video);
-      wrapper.appendChild(nameTag);
-
       // Character sheet button (if user has a character)
       const user = game.users.get(cam.userId);
       const character = user?.character;
+
+      const nameTag = document.createElement('span');
+      nameTag.className = 'camera-feed-name';
+      nameTag.textContent = character ? `${cam.userName}\\${character.name.split(' ')[0]}` : cam.userName;
+
+      wrapper.appendChild(video);
+      wrapper.appendChild(nameTag);
       if (character) {
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -792,6 +862,12 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       this._cameraObserver.disconnect();
       this._cameraObserver = null;
     }
+    if (this._cameraPlayHandler) {
+      const cameraViews = document.getElementById('camera-views');
+      cameraViews?.removeEventListener('play', this._cameraPlayHandler, true);
+      cameraViews?.removeEventListener('loadedmetadata', this._cameraPlayHandler, true);
+      this._cameraPlayHandler = null;
+    }
     for (const { hook, id } of (this._cameraHookIds || [])) {
       Hooks.off(hook, id);
     }
@@ -802,20 +878,30 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   // --- Chat management ---
 
   _populateChatLog(container) {
-    // Clear synchronously so the hook (registered after this returns) starts with an empty container.
+    // Re-attach the preserved DOM node from _preRender — zero-flash because
+    // we swap the exact same elements back in, no async work needed.
+    if (this._savedChatNode) {
+      const scrollPos = this._savedChatScroll ?? 0;
+      container.replaceWith(this._savedChatNode);
+      // Browsers reset scrollTop when a node is re-inserted — restore it.
+      this._savedChatNode.scrollTop = scrollPos;
+      this._savedChatNode = null;
+      this._savedChatScroll = null;
+      return;
+    }
+
+    // First-time population — fetch messages asynchronously.
     container.innerHTML = '';
     const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
     const messages = game.messages.contents.filter(msg => msg.visible).slice(-limit);
-    Promise.all(messages.map(msg => msg.getHTML())).then(htmlElements => {
+    const renderMsg = msg => (msg.renderHTML ? msg.renderHTML() : msg.getHTML());
+    Promise.all(messages.map(renderMsg)).then(htmlElements => {
       if (!container.isConnected) return;
-      // Build a fragment to preserve chronological order regardless of resolution speed.
       const fragment = document.createDocumentFragment();
       for (const html of htmlElements) {
         const el = html?.jquery ? html[0] : html;
         if (el) fragment.appendChild(el);
       }
-      // Prepend historical messages so any messages appended by the createChatMessage hook
-      // during the async window stay at the bottom (correct chronological position).
       container.prepend(fragment);
       requestAnimationFrame(() => {
         if (container.isConnected) container.scrollTop = container.scrollHeight;
@@ -902,38 +988,52 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!container?.isConnected || !msg.visible) return;
     const wasAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 30;
 
+    const resolveContainer = () => {
+      if (container.isConnected) return container;
+      // Original container was replaced by a re-render — find the current one
+      return this.element?.querySelector('.side-panel-chat-messages')
+        ?? this.element?.querySelector('.player-chat-messages')
+        ?? null;
+    };
+
     const doAppend = () => {
-      if (!container.isConnected) return;
-      msg.getHTML().then(html => {
+      const target = resolveContainer();
+      if (!target) return;
+      (msg.renderHTML ? msg.renderHTML() : msg.getHTML()).then(html => {
+        const cur = resolveContainer();
+        if (!cur) return;
         const el = html?.jquery ? html[0] : html;
-        const existing = container.querySelector(`.message[data-message-id="${msg.id}"]`);
+        if (!el) return;
+        const existing = cur.querySelector(`.message[data-message-id="${msg.id}"], .chat-message[data-message-id="${msg.id}"]`);
         if (existing) existing.replaceWith(el);
-        else container.appendChild(el);
+        else cur.appendChild(el);
         // Trim oldest messages beyond the configured limit
         const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
-        const allMessages = container.querySelectorAll('.message, .chat-message');
+        const allMessages = cur.querySelectorAll('.message, .chat-message');
         let excess = allMessages.length - limit;
         for (let i = 0; excess > 0 && i < allMessages.length; i++, excess--) {
           allMessages[i].remove();
         }
-        if (wasAtBottom || container.scrollHeight - container.scrollTop - container.clientHeight < 30) {
-          container.scrollTop = container.scrollHeight;
+        if (wasAtBottom || cur.scrollHeight - cur.scrollTop - cur.clientHeight < 30) {
+          cur.scrollTop = cur.scrollHeight;
         }
-      });
+      }).catch(err => console.error('StoryFrame | cinematic chat append error', err));
     };
 
-    doAppend();
-
-    // DSN hooks renderChatMessage to hide roll elements during animation and only
-    // un-hides the copy in #chat-log. Re-render our copy after animation completes.
+    // DSN hooks renderChatMessage to hide roll elements during animation, so
+    // calling getHTML() now would give us a card with hidden results.  Defer
+    // the render until after the animation completes to avoid a flash.
     if (game.dice3d && msg.isRoll) {
       const dsnHookId = Hooks.on('diceSoNiceRollComplete', (messageId) => {
         if (messageId !== msg.id) return;
         Hooks.off('diceSoNiceRollComplete', dsnHookId);
         doAppend();
       });
+    } else {
+      doAppend();
     }
   }
+
 
   // --- HTML builders for roll/challenge panels ---
 

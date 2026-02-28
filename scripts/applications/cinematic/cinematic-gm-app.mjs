@@ -641,7 +641,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       if (this._chatDeleteHookId == null) {
         this._chatDeleteHookId = Hooks.on('deleteChatMessage', (msg) => {
           const el = this.element?.querySelector('.side-panel-chat-messages');
-          el?.querySelector(`.message[data-message-id="${msg.id}"]`)?.remove();
+          el?.querySelector(`.message[data-message-id="${msg.id}"], .chat-message[data-message-id="${msg.id}"]`)?.remove();
         });
       }
     }

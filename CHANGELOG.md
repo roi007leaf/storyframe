@@ -7,6 +7,18 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.4] - 2026-02-28
+
+### Fixed
+
+- **Cinematic chat log flicker during rolls** — state changes from rolls falsely triggered full re-renders because speaker change detection compared mutable properties (label, imagePath) that differ between scene-flag reads and socket broadcasts; structural changes now only compare speaker IDs, and property changes (name/image edits) use targeted DOM patching instead of full re-renders
+- **Chat scroll position lost during re-renders** — browsers reset scrollTop when DOM nodes are replaced; now preserves and restores scroll position across ApplicationV2 re-renders
+- **Dice So Nice roll cards flashing empty then full** — initial render during DSN animation showed hidden content; now defers chat append until `diceSoNiceRollComplete` fires
+- **Camera feed label format** — camera name tags now show `PlayerName\CharacterName` instead of just the username
+- **Camera feeds not visible on GM side** — relaxed WebRTC video track check and added event listeners for remote streams
+- **Deprecated `getHTML()` API** — migrated cinematic chat rendering to use `renderHTML()` where available for Foundry v13 compatibility
+- **Save-type pending rolls missing orange accent on player side** — added `data-check-type` attribute to player roll buttons so the existing CSS styling applies
+
 ## [2.3.3] - 2026-02-28
 
 ### Fixed
