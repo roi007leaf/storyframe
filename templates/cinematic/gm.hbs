@@ -98,21 +98,15 @@
   </div>
   {{/if}}
 
-  {{!-- PC row / Camera row (above filmstrip) --}}
-  {{#if avActive}}
-  <div class="cinematic-camera-row"></div>
-  {{else}}
-  {{#if pcRow.length}}
-  <div class="cinematic-pc-row">
+  {{!-- Bottom row: camera feeds + PC portraits --}}
+  <div class="cinematic-bottom-row">
     {{#each pcRow}}
-    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-tooltip="{{this.name}}">
+    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-user-id="{{this.userId}}" data-tooltip="{{this.name}}">
       <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
       <span class="pc-item-name">{{this.name}}</span>
     </div>
     {{/each}}
   </div>
-  {{/if}}
-  {{/if}}
 
   {{!-- GM floating controls (top-right) --}}
   <div class="cinematic-gm-controls">
@@ -318,7 +312,7 @@
         <input type="range" class="cinematic-music-volume" min="0" max="1" step="0.05" value="{{currentVolume}}">
         <i class="fas fa-volume-up" aria-hidden="true"></i>
         <button type="button" class="music-volume-reset hidden" data-action="musicVolumeReset"
-                data-tooltip="Reset track volumes">
+                data-tooltip="{{localize "STORYFRAME.CinematicScene.ResetTrackVolumes"}}">
           <i class="fas fa-rotate-left" aria-hidden="true"></i>
         </button>
       </div>

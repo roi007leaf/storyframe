@@ -84,9 +84,8 @@
   </div>
   {{/if}}
 
-  {{!-- PC row (above filmstrip) --}}
-  {{#if pcRow.length}}
-  <div class="cinematic-pc-row">
+  {{!-- Bottom row: camera feeds + PC portraits --}}
+  <div class="cinematic-bottom-row">
     {{#each pcRow}}
     <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-tooltip="{{this.name}}">
       <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
@@ -94,7 +93,6 @@
     </div>
     {{/each}}
   </div>
-  {{/if}}
 
   {{!-- Player roll panel (bottom-right, collapsible) --}}
   {{#unless isGM}}

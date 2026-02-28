@@ -103,13 +103,13 @@ export class RollTracker {
    * Notify UI components of state change.
    */
   _broadcast() {
-    // ApplicationV2 instances render() when state changes
-    game.storyframe.gmApp?.render();
+    game.storyframe.gmSidebar?.render();
     game.storyframe.playerViewer?.render();
+    if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
+    game.storyframe.cinematicScene?._onStateChange();
 
-    // Also broadcast via socket for other clients
     if (this.socketManager) {
-      this.socketManager.broadcastStateUpdate();
+      this.socketManager.broadcastStateToOthers();
     }
   }
 }

@@ -198,7 +198,7 @@ export function restoreScrollPositions(sidebar, positions) {
  * The sidebar gets a dynamic inline z-index from positionAsDrawer; popups must
  * read that value at creation time so they always render on top.
  */
-function _aboveSidebarZIndex(sidebar) {
+export function _aboveSidebarZIndex(sidebar) {
   const el = sidebar?.element;
   if (!el) return 100001;
   // Use getComputedStyle so we capture z-index set by !important CSS rules
@@ -829,7 +829,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
         const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
         const pcs = await getAllPlayerPCs();
         if (pcs.length === 0) {
-          ui.notifications.warn('No player-owned characters found in the world.');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
           return;
         }
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
@@ -909,7 +909,7 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
       const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
       const pcs = await getAllPlayerPCs();
       if (pcs.length === 0) {
-        ui.notifications.warn('No player-owned characters found in the world.');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
         return;
       }
       const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
@@ -1046,7 +1046,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
       const pcs = await getAllPlayerPCs();
       if (pcs.length === 0) {
-        ui.notifications.warn('No player-owned characters found in the world.');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
         return;
       }
       const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
@@ -1180,7 +1180,7 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
         const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
         const pcs = await getAllPlayerPCs();
         if (pcs.length === 0) {
-          ui.notifications.warn('No player-owned characters found in the world.');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
           return;
         }
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');

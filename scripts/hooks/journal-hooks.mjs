@@ -189,8 +189,8 @@ function _injectSidebarToggleButton(sheet, html) {
 
   const toggleBtn = document.createElement('a');
   toggleBtn.className = 'header-button control storyframe-sidebar-toggle';
-  toggleBtn.setAttribute('data-tooltip', 'Toggle StoryFrame Sidebar');
-  toggleBtn.setAttribute('aria-label', 'Toggle StoryFrame sidebar');
+  toggleBtn.setAttribute('data-tooltip', game.i18n.localize('STORYFRAME.UI.Tooltips.ToggleSidebar'));
+  toggleBtn.setAttribute('aria-label', game.i18n.localize('STORYFRAME.UI.Tooltips.ToggleSidebar'));
   toggleBtn.innerHTML = '<i class="fas fa-book-open"></i>';
 
   toggleBtn.onclick = async (e) => {
@@ -223,7 +223,7 @@ function _updateToggleButtonState(sheet, html) {
   toggleBtn.classList.toggle('active', isVisible);
   toggleBtn.setAttribute(
     'data-tooltip',
-    isVisible ? 'Hide StoryFrame Sidebar' : 'Show StoryFrame Sidebar',
+    isVisible ? game.i18n.localize('STORYFRAME.UI.Tooltips.HideSidebar') : game.i18n.localize('STORYFRAME.UI.Tooltips.ShowSidebar'),
   );
 }
 
@@ -265,6 +265,9 @@ async function _attachSidebarToSheet(sheet) {
     } else if (system === 'daggerheart') {
       const { GMSidebarAppDaggerheart } = await import('../applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
+    } else if (system === 'projectfu') {
+      const { GMSidebarAppProjectFU } = await import('../applications/gm-sidebar/gm-sidebar-projectfu.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
     } else {
       const { GMSidebarAppBase } = await import('../applications/gm-sidebar/gm-sidebar-base.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -370,7 +373,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
       const pcs = await SystemAdapter.getAllPlayerPCs();
       if (!RollRequestDialog._instance && pcs.length === 0) {
-        ui.notifications.warn('No player-owned characters found in the world.');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
         return;
       }
 
@@ -388,7 +391,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
       const sidebar = game.storyframe.gmSidebar;
       if (!sidebar) {
         console.error('StoryFrame: Sidebar not available');
-        ui.notifications.error('StoryFrame sidebar not available');
+        ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.SidebarNotAvailable'));
         return;
       }
 
@@ -412,7 +415,7 @@ function _setupInlineCheckCtrlClickHandlers(contentArea) {
         }
       } catch (error) {
         console.error('StoryFrame: Error sending request:', error);
-        ui.notifications.error('Failed to send roll request: ' + error.message);
+        ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.FailedToSendRollRequest', { error: error.message }));
       }
     };
 
@@ -903,7 +906,7 @@ function _setupDaggerheartCheckCtrlClickHandlers(contentArea) {
         const { RollRequestDialog } = await import('../applications/roll-request-dialog.mjs');
         const pcs = await SystemAdapter.getAllPlayerPCs();
         if (!RollRequestDialog._instance && pcs.length === 0) {
-          ui.notifications.warn('No player-owned characters found in the world.');
+          ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
           return;
         }
 
@@ -918,7 +921,7 @@ function _setupDaggerheartCheckCtrlClickHandlers(contentArea) {
         const sidebar = game.storyframe.gmSidebar;
         if (!sidebar) {
           console.error('StoryFrame: Sidebar not available');
-          ui.notifications.error('StoryFrame sidebar not available');
+          ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.SidebarNotAvailable'));
           return;
         }
 
@@ -946,7 +949,7 @@ function _setupDaggerheartCheckCtrlClickHandlers(contentArea) {
           );
         } catch (error) {
           console.error('StoryFrame: Error sending request:', error);
-          ui.notifications.error('Failed to send roll request: ' + error.message);
+          ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.FailedToSendRollRequest', { error: error.message }));
         }
       },
       { capture: true },

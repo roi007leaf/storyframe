@@ -4,12 +4,14 @@ import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 import { DAGGERHEART_TRAIT_FULL_NAMES } from '../system/daggerheart/skills.mjs';
+import { PROJECTFU_ATTRIBUTE_FULL_NAMES } from '../system/projectfu/skills.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
   const system = SystemAdapter.detectSystem();
   if (system === 'dnd5e') return DND5E_SKILL_SLUG_MAP;
   if (system === 'daggerheart') return DAGGERHEART_TRAIT_FULL_NAMES;
+  if (system === 'projectfu') return PROJECTFU_ATTRIBUTE_FULL_NAMES;
   return PF2E_SKILL_SLUG_MAP;
 }
 
@@ -582,7 +584,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           // 'all' = everyone sees DCs, 'gm' = only GM sees, 'none' = no one sees in chat
           if (challengeVisibility === 'all' || (challengeVisibility === 'gm' && game.user.isGM)) {
             const displayName = PlayerViewerApp._getSkillDisplayName(request.skillSlug);
-            const checkLabel = checkType === 'save' ? 'Save' : 'Check';
+            const checkLabel = checkType === 'save' ? game.i18n.localize('STORYFRAME.UI.Labels.Save') : game.i18n.localize('STORYFRAME.UI.Labels.Check');
             messageConfig.flavor = `${displayName} ${checkLabel} (DC ${request.dc})`;
           }
         }
@@ -619,6 +621,23 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           dhConfig.roll.difficulty = request.dc;
         }
         roll = await actor.diceRoll(dhConfig);
+      } else if (currentSystem === 'projectfu') {
+        // Fabula Ultima: Dynamically import CheckPrompt from the system
+        // CheckPrompt is not exposed on game.projectfu, so we import it directly
+        try {
+          const { CheckPrompt } = await import('/systems/projectfu/module/checks/check-prompt.mjs');
+          const initialConfig = { primary: fullSlug };
+          if (request.dc !== null && request.dc !== undefined) {
+            initialConfig.difficulty = request.dc;
+          }
+          await CheckPrompt.attributeCheck(actor, { initialConfig });
+          // ProjectFU handles its own chat message; mark roll as handled
+          roll = true;
+        } catch (importErr) {
+          console.error(`${MODULE_ID} | Failed to import ProjectFU CheckPrompt:`, importErr);
+          ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
+          return;
+        }
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         if (request.isSecretRoll) {
@@ -635,16 +654,18 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }
 
       // Extract result data (handle both PF2e and D&D 5e formats)
+      // ProjectFU handles its own chat messages — roll may be a sentinel (true)
+      const isExternalRoll = roll === true;
       const result = {
         requestId: request.id,
         actorUuid: request.actorUuid,
         skillSlug: request.skillSlug,
         actionSlug: request.actionSlug,
-        total: roll.total ?? 0,
+        total: isExternalRoll ? null : (roll.total ?? 0),
         // PF2e has degreeOfSuccess, D&D 5e doesn't
-        degreeOfSuccess: roll.degreeOfSuccess?.value || null,
+        degreeOfSuccess: isExternalRoll ? null : (roll.degreeOfSuccess?.value || null),
         timestamp: Date.now(),
-        chatMessageId: roll.message?.id || null,
+        chatMessageId: isExternalRoll ? null : (roll.message?.id || null),
       };
 
       // Submit result to GM via socket
@@ -714,7 +735,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const challengeId = challengeCard?.dataset.challengeId;
 
     if (!challengeId) {
-      ui.notifications.error('Challenge ID not found');
+      ui.notifications.error(game.i18n.localize('STORYFRAME.Notifications.Roll.ChallengeIdNotFound'));
       return;
     }
 
@@ -855,6 +876,21 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           dhConfig.rollMode = rollOptions.rollMode;
         }
         roll = await actor.diceRoll(dhConfig);
+      } else if (currentSystem === 'projectfu') {
+        // Fabula Ultima: Dynamically import CheckPrompt from the system
+        try {
+          const { CheckPrompt } = await import('/systems/projectfu/module/checks/check-prompt.mjs');
+          const initialConfig = { primary: fullSlug };
+          if (dc !== null && dc !== undefined) {
+            initialConfig.difficulty = dc;
+          }
+          await CheckPrompt.attributeCheck(actor, { initialConfig });
+          roll = true;
+        } catch (importErr) {
+          console.error(`${MODULE_ID} | Failed to import ProjectFU CheckPrompt:`, importErr);
+          ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
+          return;
+        }
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;
@@ -905,8 +941,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         if (dc !== null && dc !== undefined) config.target = dc;
         const rollResult = await actor.rollSavingThrow(config, {}, {});
         roll = Array.isArray(rollResult) ? rollResult[0] : rollResult;
-      } else if (currentSystem === 'daggerheart') {
-        // Daggerheart has no saving throws
+      } else if (currentSystem === 'daggerheart' || currentSystem === 'projectfu') {
+        // Daggerheart and Fabula Ultima have no saving throws
         return;
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));

@@ -64,7 +64,7 @@
             <i class="fas fa-folder" aria-hidden="true"></i>
           </button>
           {{/if}}
-          <button type="button" data-action="toggleGridLock" class="grid-lock-toggle {{#if gridLocked}}active{{/if}}" data-tooltip="{{#if gridLocked}}Unlock grid (cards grow with window){{else}}Lock grid (freeze current card size){{/if}}" aria-label="Toggle grid lock">
+          <button type="button" data-action="toggleGridLock" class="grid-lock-toggle {{#if gridLocked}}active{{/if}}" data-tooltip="{{#if gridLocked}}{{localize "STORYFRAME.UI.Tooltips.UnlockGrid"}}{{else}}{{localize "STORYFRAME.UI.Tooltips.LockGrid"}}{{/if}}" aria-label="Toggle grid lock">
             <i class="fas {{#if gridLocked}}fa-lock{{else}}fa-lock-open{{/if}}" aria-hidden="true"></i>
           </button>
           <div class="grid-size-slider-wrapper">

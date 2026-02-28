@@ -64,7 +64,6 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         inactiveSpeakers: [],
         allSpeakers: [],
         pcRow: [],
-        avActive: false,
         previewImageSrc: this.previewImageSrc,
         speakerControlsMode: 'hover',
       };
@@ -84,11 +83,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     }
 
     const partyPCs = await getAllPlayerPCs();
-    const pcRow = partyPCs.map(p => ({ actorUuid: p.actorUuid, name: p.name, img: p.img }));
-
-    // Check if A/V is active with video feeds
-    const avActive = !!game.webrtc?.client
-      && document.querySelectorAll('#camera-views .camera-view video').length > 0;
+    const pcRow = partyPCs.map(p => ({ actorUuid: p.actorUuid, name: p.name, img: p.img, userId: p.userId }));
 
     // PF2e party sheet availability
     const partyActor = game.system.id === 'pf2e'
@@ -102,7 +97,6 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       inactiveSpeakers,
       allSpeakers,
       pcRow,
-      avActive,
       hasPartySheet: !!partyActor,
       previewImageSrc: this.previewImageSrc,
       speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
@@ -217,17 +211,26 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
     // --- Update filmstrip ---
     const filmstrip = container.querySelector('.cinematic-filmstrip');
-    if (filmstrip) {
-      // Show all filmstrip cards that are inactive, hide the new active one
+    const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
+
+    if (filmstrip && inactives.length > 0) {
+      // Check if all inactive speakers have filmstrip cards — if any are missing
+      // (e.g. the previously-active speaker that was in the spotlight, not in filmstrip),
+      // fall back to a full re-render so the card gets created.
+      const filmstripIds = new Set(
+        [...filmstrip.querySelectorAll('.filmstrip-speaker')].map(c => c.dataset.speakerId),
+      );
+      if (!inactives.every(s => filmstripIds.has(s.id))) {
+        return this.render();
+      }
+
+      // All cards present — just toggle visibility
       for (const card of filmstrip.querySelectorAll('.filmstrip-speaker')) {
         const id = card.dataset.speakerId;
         card.style.display = (id === newActiveId) ? 'none' : '';
       }
     }
 
-    // If a speaker is newly active but wasn't in the filmstrip (shouldn't happen, but fallback)
-    // and if speakers were removed from filmstrip but not in DOM, do a full render
-    const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
     if (inactives.length > 0 && !filmstripContainer) {
       return this.render();
     }
@@ -250,6 +253,17 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (this._introComplete) {
       this.element?.classList.add('skip-intro');
     } else {
+      // Collapse Foundry's sidebar on first render so it doesn't peek through
+      if (ui.sidebar && !ui.sidebar._collapsed) {
+        this._sidebarWasOpen = true;
+        ui.sidebar.collapse();
+      }
+      // Close StoryFrame's own sidebar (GM or player) while cinematic is open
+      const sfSidebar = game.user.isGM ? game.storyframe.gmSidebar : game.storyframe.playerSidebar;
+      if (sfSidebar?.rendered) {
+        this._sfSidebarWasOpen = true;
+        sfSidebar.close();
+      }
       // Mark intro as complete after the first render's animation finishes
       const onIntroEnd = () => { this._introComplete = true; };
       setTimeout(onIntroEnd, 1200);
@@ -328,6 +342,17 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevActiveKey = '';
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
+    // Restore Foundry's sidebar if we collapsed it on open
+    if (this._sidebarWasOpen && ui.sidebar?._collapsed) {
+      ui.sidebar.expand();
+      this._sidebarWasOpen = false;
+    }
+    // Restore StoryFrame's own sidebar if we closed it on open
+    if (this._sfSidebarWasOpen) {
+      const sfSidebar = game.user.isGM ? game.storyframe.gmSidebar : game.storyframe.playerSidebar;
+      sfSidebar?.render(true);
+      this._sfSidebarWasOpen = false;
+    }
     return super._onClose(_options);
   }
 
@@ -601,8 +626,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   // --- Camera row (A/V feed mirroring) ---
 
   _initCameraRow() {
-    const cameraRow = this.element?.querySelector('.cinematic-camera-row');
-    if (!cameraRow) return; // AV not active or no placeholder
+    const bottomRow = this.element?.querySelector('.cinematic-bottom-row');
+    if (!bottomRow) return;
 
     this._teardownCameraRow();
 
@@ -611,11 +636,11 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const savedSize = game.settings.get(MODULE_ID, 'cinematicCameraFeedSize') || 140;
     container?.style.setProperty('--camera-feed-width', `${savedSize}px`);
 
-    // Add resize handle
+    // Add resize handle for camera feeds
     const handle = document.createElement('div');
     handle.className = 'camera-row-resize-handle';
-    cameraRow.appendChild(handle);
-    handle.addEventListener('mousedown', (e) => this._onCameraRowResizeStart(e, cameraRow));
+    bottomRow.appendChild(handle);
+    handle.addEventListener('mousedown', (e) => this._onCameraRowResizeStart(e, bottomRow));
 
     this._syncCameraFeeds();
 
@@ -668,24 +693,25 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   }
 
   _syncCameraFeeds() {
-    const feedsContainer = this.element?.querySelector('.cinematic-camera-row');
-    if (!feedsContainer) return;
+    const bottomRow = this.element?.querySelector('.cinematic-bottom-row');
+    if (!bottomRow) return;
 
     const cameraViews = document.getElementById('camera-views');
-    if (!cameraViews) return;
 
     const activeCameras = [];
-    cameraViews.querySelectorAll('.camera-view').forEach(view => {
-      const userId = view.dataset.user;
-      if (!userId) return;
-      const video = view.querySelector('video');
-      if (!video?.srcObject) return;
-      const videoTracks = video.srcObject.getVideoTracks();
-      if (!videoTracks.length || !videoTracks.some(t => t.enabled && t.readyState === 'live')) return;
-      const user = game.users.get(userId);
-      if (!user) return;
-      activeCameras.push({ userId, userName: user.name, stream: video.srcObject });
-    });
+    if (cameraViews) {
+      cameraViews.querySelectorAll('.camera-view').forEach(view => {
+        const userId = view.dataset.user;
+        if (!userId) return;
+        const video = view.querySelector('video');
+        if (!video?.srcObject) return;
+        const videoTracks = video.srcObject.getVideoTracks();
+        if (!videoTracks.length || !videoTracks.some(t => t.enabled && t.readyState === 'live')) return;
+        const user = game.users.get(userId);
+        if (!user) return;
+        activeCameras.push({ userId, userName: user.name, stream: video.srcObject });
+      });
+    }
 
     const currentIds = new Set(activeCameras.map(c => c.userId));
     const trackedIds = new Set(this._trackedVideoStreams.keys());
@@ -744,13 +770,21 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         wrapper.appendChild(btn);
       }
 
-      feedsContainer.appendChild(wrapper);
+      bottomRow.appendChild(wrapper);
       this._trackedVideoStreams.set(cam.userId, { video, stream: cam.stream, wrapper });
     }
 
-    // Hide camera row when no active feeds
+    // Hide PC items for users who have active camera feeds
+    const activeUserIds = new Set(this._trackedVideoStreams.keys());
+    for (const item of bottomRow.querySelectorAll('.cinematic-pc-item')) {
+      const userId = item.dataset.userId;
+      item.style.display = (userId && activeUserIds.has(userId)) ? 'none' : '';
+    }
+
+    // Hide entire row when empty (no feeds and no visible PC items)
     const hasFeeds = this._trackedVideoStreams.size > 0;
-    feedsContainer.classList.toggle('hidden', !hasFeeds);
+    const hasVisiblePCs = bottomRow.querySelector('.cinematic-pc-item:not([style*="display: none"])');
+    bottomRow.classList.toggle('hidden', !hasFeeds && !hasVisiblePCs);
   }
 
   _teardownCameraRow() {

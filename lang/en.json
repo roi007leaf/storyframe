@@ -3,7 +3,31 @@
     "Title": "StoryFrame",
     "Settings": {
       "Debug": "Debug Mode",
-      "DebugHint": "Enable debug logging to console"
+      "DebugHint": "Enable debug logging to console",
+      "AutoOpenSidebar": "Auto-Open Sidebar",
+      "AutoOpenSidebarHint": "Automatically open the sidebar when opening a journal",
+      "PeekHidesSidebar": "Peek Hides Sidebar",
+      "PeekHidesSidebarHint": "When peeking at the canvas, also hide the StoryFrame sidebar",
+      "SpeakerControlsMode": "Speaker Controls Mode",
+      "SpeakerControlsModeHint": "How speaker action buttons (edit, remove, hide, etc.) are displayed. Hover: overlay on hover. Sides: controls on left, image nav on right. Bottom bar: always visible below speaker name.",
+      "SpeakerControlsHover": "Hover (overlay)",
+      "SpeakerControlsSides": "Sides (left & right edges)",
+      "SpeakerControlsBottombar": "Bottom bar (always visible)",
+      "CinematicChatMessageLimit": "Cinematic Chat Message Limit",
+      "CinematicChatMessageLimitHint": "Maximum number of recent chat messages shown in the cinematic scene chat log.",
+      "UseMonksTokenBar": "Use Monks TokenBar for Rolls",
+      "UseMonksTokenBarHint": "Route skill checks and saves through Monks TokenBar instead of the built-in player viewer prompts. Requires Monks TokenBar module to be active.",
+      "QuickButtonSkills": "Quick Button Skills",
+      "QuickButtonSkillsHint": "Configure via the gear icon in the GM Sidebar skill buttons area",
+      "SkillOrderByCategory": "Skill Order By Category",
+      "SkillOrderByCategoryHint": "Custom order of skills within each category (drag to reorder in GM Sidebar)",
+      "SkillCategoryOrder": "Skill Category Order",
+      "SkillCategoryOrderHint": "Custom order of skill categories (drag category labels to reorder in GM Sidebar)",
+      "AddSpeakersHidden": "Add Speakers Hidden",
+      "AddSpeakersHiddenHint": "When enabled, newly added speakers are hidden from players by default. You can reveal them individually using the eye icon.",
+      "PlayerViewerLayoutGrid": "Grid",
+      "PlayerViewerLayoutList": "List",
+      "PlayerViewerLayoutHorizontal": "Horizontal"
     },
     "WindowTitles": {
       "PresentChallenge": "Present Challenge",
@@ -206,8 +230,17 @@
         "NoParticipantForUser": "No participant found for your user",
         "CheckCompleted": "{skill} check completed ({total})",
         "NA": "N/A",
-        "GroupRollsDismissed": "{count} other roll(s) in group dismissed"
+        "GroupRollsDismissed": "{count} other roll(s) in group dismissed",
+        "ChallengeIdNotFound": "Challenge ID not found"
       },
+      "NoPlayerCharactersFound": "No player-owned characters found in the world.",
+      "OpenGMSidebarFirst": "Open GM Sidebar first (click book icon in token controls)",
+      "OpenGMSidebarFirstChallenge": "Open GM Sidebar first (click users icon in token controls)",
+      "NoTextSelected": "No text selected",
+      "NoSkillChecksFoundInSelection": "No skill checks found in selected text",
+      "SidebarNotAvailable": "StoryFrame sidebar not available",
+      "FailedToSendRollRequest": "Failed to send roll request: {error}",
+      "ChallengeCreatedFromSelection": "Challenge \"{name}\" created with {count} check(s)",
       "NoContent": "No pending rolls, challenges or speakers to show you.",
       "NoSpeakers": "No speakers to display. Check the sidebar for rolls and challenges."
     },
@@ -264,7 +297,9 @@
         "SelectAll": "Select All",
         "LevelShort": "Lv",
         "AllowOnlyOne": "Allow only one",
-        "ChooseOne": "Choose One"
+        "ChooseOne": "Choose One",
+        "Save": "Save",
+        "Check": "Check"
       },
       "Categories": {
         "Physical": "Physical",
@@ -278,6 +313,10 @@
         "SecretRoll": "Secret roll (GM only)",
         "DragToSidebar": "Drag to StoryFrame sidebar",
         "ToggleSidebar": "Toggle StoryFrame Sidebar",
+        "HideSidebar": "Hide StoryFrame Sidebar",
+        "ShowSidebar": "Show StoryFrame Sidebar",
+        "LockGrid": "Lock grid (freeze current card size)",
+        "UnlockGrid": "Unlock grid (cards grow with window)",
         "SelectedCount": "{selected} of {total} selected",
         "SelectAll": "Select all",
         "DeselectAll": "Deselect all",
@@ -403,7 +442,28 @@
         "Hard": "Hard",
         "VeryHard": "Very Hard",
         "Extreme": "Extreme"
+      },
+      "ProjectFU": {
+        "Easy": "Easy",
+        "Standard": "Standard",
+        "Hard": "Hard",
+        "VeryHard": "Very Hard"
       }
+    },
+    "Keybindings": {
+      "RequestRoll": "Request Roll from Journal Selection",
+      "RequestRollHint": "Select text in a journal containing skill checks and press this key to open the roll request dialog",
+      "CreateChallenge": "Create Challenge from Journal Selection",
+      "CreateChallengeHint": "Select text in a journal containing skill checks and press this key to create a new challenge",
+      "SpeakerWheel": "Speaker Selection Wheel",
+      "SpeakerWheelHint": "Hold to show radial speaker selection wheel",
+      "PeekCanvas": "Peek at Canvas",
+      "PeekCanvasHint": "Hold to temporarily hide the journal and see the canvas. Release to restore."
+    },
+    "ToolButtons": {
+      "Viewer": "StoryFrame Viewer",
+      "GMSidebar": "StoryFrame GM Sidebar",
+      "SceneMode": "StoryFrame Scene Mode"
     },
     "Errors": {
       "ProficiencyFilteringNotImplemented": "Proficiency filtering not implemented in base class"
@@ -446,6 +506,7 @@
       "ActiveScene": "Active",
       "PreviewScene": "Preview scene",
       "ClickToClose": "Click anywhere to close",
+      "ResetTrackVolumes": "Reset track volumes",
       "Relaunched": "Cinematic scene relaunched for all players",
       "Music": {
         "Shuffle": "Shuffle",
@@ -496,7 +557,9 @@
       "Validation": {
         "AddAtLeastOneOption": "Add at least one option with skills",
         "AtLeastOneSkill": "Must have at least one skill",
-        "AtLeastOneOption": "Must have at least one option"
+        "AtLeastOneOption": "Must have at least one option",
+        "InvalidDCValue": "Please enter a valid DC value",
+        "PresetNotFound": "Preset not found"
       },
       "SavedToLibrary": "Saved \"{name}\" to library",
       "UpdatedInLibrary": "Updated \"{name}\" in library",

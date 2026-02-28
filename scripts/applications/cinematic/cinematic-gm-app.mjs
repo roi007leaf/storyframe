@@ -625,9 +625,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       handle.addEventListener('mousedown', (e) => this._onResizeStart(e, handle));
     });
 
-    // Side panel chat log
+    // Side panel chat log — only populate once per DOM element
     const chatContainer = this.element?.querySelector('.side-panel-chat-messages');
-    if (chatContainer) {
+    if (chatContainer && !chatContainer.dataset.populated) {
+      chatContainer.dataset.populated = '1';
       this._populateChatLog(chatContainer);
       if (this._chatHookId != null) Hooks.off('createChatMessage', this._chatHookId);
       this._chatHookId = Hooks.on('createChatMessage', (msg) => {
@@ -895,6 +896,9 @@ export class CinematicGMApp extends CinematicSceneBase {
       } else if (system === 'daggerheart') {
         const { GMSidebarAppDaggerheart } = await import('../gm-sidebar/gm-sidebar-daggerheart.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
+      } else if (system === 'projectfu') {
+        const { GMSidebarAppProjectFU } = await import('../gm-sidebar/gm-sidebar-projectfu.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
       } else {
         const { GMSidebarAppBase } = await import('../gm-sidebar/gm-sidebar-base.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppBase();

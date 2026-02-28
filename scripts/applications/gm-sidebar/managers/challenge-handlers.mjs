@@ -343,7 +343,7 @@ export async function onRequestRollsFromSelection(_event, _target, sidebar) {
   const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
   const pcs = await getAllPlayerPCs();
   if (pcs.length === 0) {
-    ui.notifications.warn('No player-owned characters found in the world.');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
     return;
   }
 

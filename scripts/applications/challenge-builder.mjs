@@ -1317,7 +1317,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const dc = parseInt(dcInput.value);
 
     if (!dc || dc < 1) {
-      ui.notifications.warn('Please enter a valid DC value');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.InvalidDCValue'));
       dcInput.focus();
       return;
     }
@@ -1367,7 +1367,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     const presetIndex = allPresets.findIndex(p => (p.id || p.dc.toString()) === presetId);
 
     if (presetIndex === -1) {
-      ui.notifications.warn('Preset not found');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.ChallengeBuilder.Validation.PresetNotFound'));
       return;
     }
 

@@ -58,21 +58,15 @@
   </div>
   {{/if}}
 
-  {{!-- PC row / Camera row (above filmstrip) --}}
-  {{#if avActive}}
-  <div class="cinematic-camera-row"></div>
-  {{else}}
-  {{#if pcRow.length}}
-  <div class="cinematic-pc-row">
+  {{!-- Bottom row: camera feeds + PC portraits --}}
+  <div class="cinematic-bottom-row">
     {{#each pcRow}}
-    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-tooltip="{{this.name}}">
+    <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-user-id="{{this.userId}}" data-tooltip="{{this.name}}">
       <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
       <span class="pc-item-name">{{this.name}}</span>
     </div>
     {{/each}}
   </div>
-  {{/if}}
-  {{/if}}
 
   {{!-- Player roll panel (bottom-right, always expanded when rolls are pending) --}}
   <div class="cinematic-roll-panel {{#if hasPendingRolls}}expanded{{/if}} {{#unless hasPendingRolls}}hidden{{/unless}}">

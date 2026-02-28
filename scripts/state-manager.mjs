@@ -341,7 +341,7 @@ export class StateManager {
    */
   _broadcast() {
     // ApplicationV2 instances render() when state changes
-    game.storyframe.gmApp?.render();
+    game.storyframe.gmSidebar?.render();
     game.storyframe.playerViewer?.render();
 
     // Also broadcast via socket for other clients

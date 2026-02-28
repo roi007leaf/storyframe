@@ -14,7 +14,7 @@
   border: 1px solid var(--sf-border-primary);
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
-  z-index: 10000;
+  z-index: 300000;
   width: 220px;
 }
 

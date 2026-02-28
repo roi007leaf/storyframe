@@ -403,7 +403,7 @@ export class SocketManager {
     if (game.storyframe.stateManager) {
       game.storyframe.stateManager.syncState(state);
       // Trigger UI re-render
-      game.storyframe.gmApp?.render();
+      game.storyframe.gmSidebar?.render();
       if (game.storyframe.playerViewer?.rendered) game.storyframe.playerViewer.render();
       if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
       game.storyframe.cinematicScene?._onStateChange();
@@ -483,7 +483,7 @@ export class SocketManager {
    * Runs on all clients to sync roll history display.
    */
   _handleRollHistoryUpdate(_historyData) {
-    game.storyframe.gmApp?.render();
+    game.storyframe.gmSidebar?.render();
     if (game.storyframe.playerViewer?.rendered) game.storyframe.playerViewer.render();
     if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
     game.storyframe.cinematicScene?._onStateChange();

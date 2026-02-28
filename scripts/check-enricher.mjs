@@ -5,8 +5,8 @@
 
 import { getSkillNameMap } from './system-adapter.mjs';
 
-// Pattern: "Perception DC 20" or "Stealth (Hide) DC 15"
-const CHECK_PATTERN = /\b([A-Z][a-z]+)(?:\s*\(([^)]+)\))?\s+DC\s+(\d+)\b/gi;
+// Pattern: "Perception DC 20", "Stealth (Hide) DC 15", or "Dexterity DL 10" (Fabula Ultima)
+const CHECK_PATTERN = /\b([A-Z][a-z]+)(?:\s*\(([^)]+)\))?\s+(?:DC|DL)\s+(\d+)\b/gi;
 
 /**
  * Enriches HTML content with draggable check elements

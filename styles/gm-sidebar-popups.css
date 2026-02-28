@@ -398,7 +398,7 @@
 .storyframe-dc-popup,
 .storyframe-skill-actions-menu {
   position: fixed;
-  z-index: 10000;
+  z-index: 100002;
   background: #1a1a2e;
   border: 1px solid #3d3d5c;
   border-radius: 8px;
@@ -590,7 +590,7 @@
 
 .storyframe-scenes-popup {
   position: fixed;
-  z-index: 10000;
+  z-index: 100002;
   width: 320px;
   max-height: 400px;
   display: flex;
@@ -740,7 +740,7 @@
 
 .storyframe-action-variants-popup {
   position: fixed;
-  z-index: 10000;
+  z-index: 100002;
   background: linear-gradient(135deg, rgba(30, 35, 45, 0.98), rgba(20, 25, 35, 0.95));
   border: 2px solid rgba(94, 129, 172, 0.4);
   border-radius: 8px;

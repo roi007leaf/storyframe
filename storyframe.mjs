@@ -69,7 +69,7 @@ function setupPF2eRepostIntegration() {
     const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
     const pcs = await getAllPlayerPCs();
     if (!RollRequestDialog._instance && pcs.length === 0) {
-      ui.notifications.warn('No player-owned characters found in the world.');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
       return;
     }
 
@@ -92,6 +92,9 @@ function setupPF2eRepostIntegration() {
       } else if (system === 'daggerheart') {
         const { GMSidebarAppDaggerheart } = await import('./scripts/applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
+      } else if (system === 'projectfu') {
+        const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
       } else {
         const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -157,7 +160,7 @@ function setupPF2eActionEnricherIntegration() {
     const { RollRequestDialog } = await import('./scripts/applications/roll-request-dialog.mjs');
     const pcs = await SystemAdapter.getAllPlayerPCs();
     if (!RollRequestDialog._instance && pcs.length === 0) {
-      ui.notifications.warn('No player-owned characters found in the world.');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
       return;
     }
 
@@ -230,7 +233,7 @@ function setupDND5eRequestRollIntegration() {
     const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
     const pcs = await getAllPlayerPCs();
     if (!RollRequestDialog._instance && pcs.length === 0) {
-      ui.notifications.warn('No player-owned characters found in the world.');
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
       return;
     }
 
@@ -378,9 +381,9 @@ Hooks.once('init', () => {
     type: String,
     default: 'grid',
     choices: {
-      grid: 'Grid',
-      list: 'List',
-      horizontal: 'Horizontal',
+      grid: 'STORYFRAME.Settings.PlayerViewerLayoutGrid',
+      list: 'STORYFRAME.Settings.PlayerViewerLayoutList',
+      horizontal: 'STORYFRAME.Settings.PlayerViewerLayoutHorizontal',
     },
   });
 
@@ -419,9 +422,18 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'addSpeakersHidden', {
+    name: 'STORYFRAME.Settings.AddSpeakersHidden',
+    hint: 'STORYFRAME.Settings.AddSpeakersHiddenHint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'autoOpenSidebar', {
-    name: 'Auto-Open Sidebar',
-    hint: 'Automatically open the sidebar when opening a journal',
+    name: 'STORYFRAME.Settings.AutoOpenSidebar',
+    hint: 'STORYFRAME.Settings.AutoOpenSidebarHint',
     scope: 'client',
     config: true,
     type: Boolean,
@@ -429,8 +441,8 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'peekHidesSidebar', {
-    name: 'Peek Hides Sidebar',
-    hint: 'When peeking at the canvas, also hide the StoryFrame sidebar',
+    name: 'STORYFRAME.Settings.PeekHidesSidebar',
+    hint: 'STORYFRAME.Settings.PeekHidesSidebarHint',
     scope: 'client',
     config: true,
     type: Boolean,
@@ -438,16 +450,16 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'speakerControlsMode', {
-    name: 'Speaker Controls Mode',
-    hint: 'How speaker action buttons (edit, remove, hide, etc.) are displayed. Hover: overlay on hover. Sides: controls on left, image nav on right. Bottom bar: always visible below speaker name.',
+    name: 'STORYFRAME.Settings.SpeakerControlsMode',
+    hint: 'STORYFRAME.Settings.SpeakerControlsModeHint',
     scope: 'client',
     config: true,
     type: String,
     default: 'hover',
     choices: {
-      hover: 'Hover (overlay)',
-      sides: 'Sides (left & right edges)',
-      bottombar: 'Bottom bar (always visible)',
+      hover: 'STORYFRAME.Settings.SpeakerControlsHover',
+      sides: 'STORYFRAME.Settings.SpeakerControlsSides',
+      bottombar: 'STORYFRAME.Settings.SpeakerControlsBottombar',
     },
   });
 
@@ -487,8 +499,8 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'cinematicChatMessageLimit', {
-    name: 'Cinematic Chat Message Limit',
-    hint: 'Maximum number of recent chat messages shown in the cinematic scene chat log.',
+    name: 'STORYFRAME.Settings.CinematicChatMessageLimit',
+    hint: 'STORYFRAME.Settings.CinematicChatMessageLimitHint',
     scope: 'client',
     config: true,
     type: Number,
@@ -497,8 +509,8 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'useMonksTokenBar', {
-    name: 'Use Monks TokenBar for Rolls',
-    hint: 'Route skill checks and saves through Monks TokenBar instead of the built-in player viewer prompts. Requires Monks TokenBar module to be active.',
+    name: 'STORYFRAME.Settings.UseMonksTokenBar',
+    hint: 'STORYFRAME.Settings.UseMonksTokenBarHint',
     scope: 'world',
     config: true,
     type: Boolean,
@@ -520,8 +532,8 @@ Hooks.once('init', () => {
       : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
 
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
-    name: 'Quick Button Skills',
-    hint: 'Configure via the gear icon in the GM Sidebar skill buttons area',
+    name: 'STORYFRAME.Settings.QuickButtonSkills',
+    hint: 'STORYFRAME.Settings.QuickButtonSkillsHint',
     scope: 'world',
     config: false, // Configured via UI in GM Sidebar
     type: String,
@@ -533,8 +545,8 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'skillOrderByCategory', {
-    name: 'Skill Order By Category',
-    hint: 'Custom order of skills within each category (drag to reorder in GM Sidebar)',
+    name: 'STORYFRAME.Settings.SkillOrderByCategory',
+    hint: 'STORYFRAME.Settings.SkillOrderByCategoryHint',
     scope: 'world',
     config: false,
     type: Object,
@@ -542,8 +554,8 @@ Hooks.once('init', () => {
   });
 
   game.settings.register(MODULE_ID, 'skillCategoryOrder', {
-    name: 'Skill Category Order',
-    hint: 'Custom order of skill categories (drag category labels to reorder in GM Sidebar)',
+    name: 'STORYFRAME.Settings.SkillCategoryOrder',
+    hint: 'STORYFRAME.Settings.SkillCategoryOrderHint',
     scope: 'world',
     config: false,
     type: Array,
@@ -552,28 +564,28 @@ Hooks.once('init', () => {
 
   // Register keybindings
   game.keybindings.register(MODULE_ID, 'requestRollFromSelection', {
-    name: 'Request Roll from Journal Selection',
-    hint: 'Select text in a journal containing skill checks and press this key to open the roll request dialog',
+    name: 'STORYFRAME.Keybindings.RequestRoll',
+    hint: 'STORYFRAME.Keybindings.RequestRollHint',
     editable: [],
     onDown: async () => {
       if (!game.user.isGM) return false;
 
       const sidebar = game.storyframe?.gmSidebar;
       if (!sidebar) {
-        ui.notifications.warn('Open GM Sidebar first (click book icon in token controls)');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.OpenGMSidebarFirst'));
         return false;
       }
 
       // Get selected range from active window
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
-        ui.notifications.warn('No text selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoTextSelected'));
         return false;
       }
 
       const range = selection.getRangeAt(0);
       if (range.collapsed) {
-        ui.notifications.warn('No text selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoTextSelected'));
         return false;
       }
 
@@ -593,7 +605,7 @@ Hooks.once('init', () => {
       tempContainer.remove();
 
       if (checks.length === 0) {
-        ui.notifications.warn('No skill checks found in selected text');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoSkillChecksFoundInSelection'));
         return false;
       }
 
@@ -601,7 +613,7 @@ Hooks.once('init', () => {
       const { getAllPlayerPCs } = await import('./scripts/system-adapter.mjs');
       const pcs = await getAllPlayerPCs();
       if (pcs.length === 0) {
-        ui.notifications.warn('No player-owned characters found in the world.');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
         return false;
       }
 
@@ -646,28 +658,28 @@ Hooks.once('init', () => {
   });
 
   game.keybindings.register(MODULE_ID, 'createChallengeFromSelection', {
-    name: 'Create Challenge from Journal Selection',
-    hint: 'Select text in a journal containing skill checks and press this key to create a new challenge',
+    name: 'STORYFRAME.Keybindings.CreateChallenge',
+    hint: 'STORYFRAME.Keybindings.CreateChallengeHint',
     editable: [],
     onDown: async () => {
       if (!game.user.isGM) return false;
 
       const sidebar = game.storyframe?.gmSidebar;
       if (!sidebar) {
-        ui.notifications.warn('Open GM Sidebar first (click users icon in token controls)');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.OpenGMSidebarFirstChallenge'));
         return false;
       }
 
       // Get selected range from active window
       const selection = window.getSelection();
       if (!selection || selection.rangeCount === 0) {
-        ui.notifications.warn('No text selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoTextSelected'));
         return false;
       }
 
       const range = selection.getRangeAt(0);
       if (range.collapsed) {
-        ui.notifications.warn('No text selected');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoTextSelected'));
         return false;
       }
 
@@ -687,16 +699,16 @@ Hooks.once('init', () => {
       tempContainer.remove();
 
       if (checks.length === 0) {
-        ui.notifications.warn('No skill checks found in selected text');
+        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoSkillChecksFoundInSelection'));
         return false;
       }
 
       // Prompt for challenge name
       const challengeName = await foundry.applications.api.DialogV2.prompt({
-        window: { title: 'Create Challenge' },
-        content: '<p>Enter a name for this challenge:</p><input type="text" name="challengeName" autofocus>',
+        window: { title: game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Title') },
+        content: `<p>${game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Content')}</p><input type="text" name="challengeName" autofocus>`,
         ok: {
-          label: 'Create',
+          label: game.i18n.localize('STORYFRAME.Dialogs.CreateChallenge.Button'),
           callback: (_event, button, _dialog) => button.form.elements.challengeName.value,
         },
         rejectClose: false,
@@ -737,15 +749,15 @@ Hooks.once('init', () => {
       savedChallenges.push(template);
       await game.settings.set(MODULE_ID, 'challengeLibrary', savedChallenges);
 
-      ui.notifications.info(`Challenge "${challengeName}" created with ${checks.length} check(s)`);
+      ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.ChallengeCreatedFromSelection', { name: challengeName, count: checks.length }));
 
       return true;
     },
   });
 
   game.keybindings.register(MODULE_ID, 'speakerWheel', {
-    name: 'Speaker Selection Wheel',
-    hint: 'Hold to show radial speaker selection wheel',
+    name: 'STORYFRAME.Keybindings.SpeakerWheel',
+    hint: 'STORYFRAME.Keybindings.SpeakerWheelHint',
     editable: [],
     onDown: async () => {
       if (!game.user.isGM) return false;
@@ -762,8 +774,8 @@ Hooks.once('init', () => {
   });
 
   game.keybindings.register(MODULE_ID, 'peekCanvas', {
-    name: 'Peek at Canvas',
-    hint: 'Hold to temporarily hide the journal and see the canvas. Release to restore.',
+    name: 'STORYFRAME.Keybindings.PeekCanvas',
+    hint: 'STORYFRAME.Keybindings.PeekCanvasHint',
     editable: [],
     onDown: () => {
       if (!game.user.isGM) return false;
@@ -825,7 +837,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
   if (!game.user?.isGM) {
     controls.tokens.tools.storyframe = {
       name: 'storyframe',
-      title: 'StoryFrame Viewer',
+      title: 'STORYFRAME.ToolButtons.Viewer',
       icon: 'fas fa-book-open',
       visible: true,
       button: true,
@@ -883,7 +895,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
   if (game.user?.isGM) {
     controls.tokens.tools.storyframe_gm = {
       name: 'storyframe_gm',
-      title: 'StoryFrame GM Sidebar',
+      title: 'STORYFRAME.ToolButtons.GMSidebar',
       icon: 'fas fa-book-open',
       visible: true,
       button: true,
@@ -904,6 +916,9 @@ Hooks.on('getSceneControlButtons', (controls) => {
           } else if (system === 'daggerheart') {
             const { GMSidebarAppDaggerheart } = await import('./scripts/applications/gm-sidebar/gm-sidebar-daggerheart.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppDaggerheart();
+          } else if (system === 'projectfu') {
+            const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
           } else {
             const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -934,7 +949,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
     // Scene Mode button (GM only)
     controls.tokens.tools.storyframe_scene = {
       name: 'storyframe_scene',
-      title: 'StoryFrame Scene Mode',
+      title: 'STORYFRAME.ToolButtons.SceneMode',
       icon: 'fas fa-film',
       visible: true,
       button: true,
@@ -998,7 +1013,7 @@ Hooks.once('ready', async () => {
     } else if (game.system.id === 'dnd5e') {
       setupDND5eRequestRollIntegration();
     }
-    // Daggerheart: no native "Request Roll" button integration needed
+    // Daggerheart / Fabula Ultima: no native "Request Roll" button integration needed
   }
 
   // Setup damage roll target interception (GM only, all systems)

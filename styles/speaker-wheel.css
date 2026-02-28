@@ -1,7 +1,7 @@
 /* Speaker Selection Wheel */
 .storyframe-speaker-wheel {
   position: fixed;
-  z-index: 10000;
+  z-index: 100002;
   pointer-events: none;
   transform: translate(-50%, -50%);
   animation: sf-scale-in var(--sf-transition-slow) var(--sf-ease-spring);

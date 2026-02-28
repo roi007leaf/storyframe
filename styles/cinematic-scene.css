@@ -28,10 +28,7 @@
   background: transparent;
 }
 
-/* Context menus must appear above the fullscreen cinematic overlay */
-#context-menu {
-  z-index: 100001 !important;
-}
+/* z-index overrides for cinematic mode are in styles/cinematic/base.css */
 
 .cinematic-bg {
   position: absolute;
@@ -205,16 +202,16 @@
   }
 }
 
-/* ===== PC Row (above filmstrip) ===== */
-.cinematic-scene-container .cinematic-pc-row {
+/* ===== Bottom Row (camera feeds + PC portraits) ===== */
+.cinematic-scene-container .cinematic-bottom-row {
   position: absolute;
-  bottom: calc(4px);
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 8;
   display: flex;
   gap: 10px;
-  padding: 6px 16px;
+  padding: 6px 12px;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -223,6 +220,14 @@
   max-width: 80vw;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.cinematic-scene-container .cinematic-bottom-row::-webkit-scrollbar {
+  display: none;
+}
+
+.cinematic-scene-container .cinematic-bottom-row.hidden {
+  display: none;
 }
 
 .cinematic-scene-container .cinematic-pc-item {
@@ -2312,16 +2317,11 @@
 body:has(.storyframe.cinematic-scene) .storyframe-dc-preset-popup,
 body:has(.storyframe.cinematic-scene) .storyframe-skill-actions-menu,
 body:has(.storyframe.cinematic-scene) .storyframe-action-variants-popup {
-  z-index: 200000 !important;
+  z-index: 300000 !important;
 }
 
 body:has(.storyframe.cinematic-scene) .storyframe.roll-request-dialog-app {
   z-index: 200000 !important;
 }
 
-/* Standard Foundry dialogs/apps (e.g. PF2e roll dialogs) must appear above cinematic overlay */
-body:has(.storyframe.cinematic-scene) .app.dialog,
-body:has(.storyframe.cinematic-scene) .dnd5e2.sheet.actor,
-body:has(.storyframe.cinematic-scene) .app.window-app:not(.storyframe) {
-  z-index: 200000 !important;
-}
+/* Handled by the broad rule in styles/cinematic/base.css */

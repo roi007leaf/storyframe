@@ -88,7 +88,7 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
   const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
   const pcs = await getAllPlayerPCs();
   if (pcs.length === 0) {
-    ui.notifications.warn('No player-owned characters found in the world.');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
     return;
   }
 
@@ -297,7 +297,7 @@ export async function sendBatchSkillCheck(sidebar) {
   const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
   const pcs = await getAllPlayerPCs();
   if (pcs.length === 0) {
-    ui.notifications.warn('No player-owned characters found in the world.');
+    ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
     return;
   }
 
@@ -592,7 +592,7 @@ export async function onOpenSkillMenu(_event, target, sidebar) {
     position: fixed;
     top: ${rect.top}px;
     left: ${rect.right + 8}px;
-    z-index: 10000;
+    z-index: 200000;
     background: #1a1a2e;
     border: 1px solid #3d3d5c;
     border-radius: 8px;
@@ -735,6 +735,10 @@ export function getSkillIcon(slug) {
     fin: 'fa-hand-sparkles',
     pre: 'fa-comments',
     kno: 'fa-book',
+    // Fabula Ultima (ProjectFU) attributes
+    dex: 'fa-crosshairs',
+    mig: 'fa-fist-raised',
+    wlp: 'fa-brain',
   };
   return iconMap[slug] || 'fa-dice-d20';
 }

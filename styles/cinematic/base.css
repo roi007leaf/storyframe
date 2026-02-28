@@ -30,33 +30,16 @@
   background: transparent;
 }
 
-/* StoryFrame GM sidebar must appear above the fullscreen cinematic overlay */
-#storyframe-gm-sidebar {
+/* All Foundry windows/dialogs must appear above the cinematic overlay (z-index 99999).
+   Covers ApplicationV2 (.application / dialog.application on body), legacy v1 (.app),
+   and non-app UI elements. */
+body:has(.storyframe.cinematic-scene)
+  :is(#interface .application, #interface .app, dialog.application) {
   z-index: 100000 !important;
 }
 
-/* Context menus must appear above the fullscreen cinematic overlay */
-#context-menu {
-  z-index: 100001 !important;
-}
-
-/* Dice So Nice canvas must appear above the fullscreen cinematic overlay */
-#dice-box-canvas {
-  z-index: 100000 !important;
-}
-
-/* FilePicker must appear above the fullscreen cinematic overlay */
-#file-picker,
-.filepicker {
-  z-index: 100000 !important;
-}
-
-/* Roll Resolver must appear above the fullscreen cinematic overlay */
-.roll-resolver {
-  z-index: 100000 !important;
-}
-
-.dialog {
+body:has(.storyframe.cinematic-scene)
+  :is(#context-menu, #notifications, #dice-box-canvas, #storyframe-gm-sidebar) {
   z-index: 100000 !important;
 }
 
@@ -99,11 +82,11 @@
   --_panel-right-reserve: 360px;
 }
 
-.cinematic-scene-container:has(.cinematic-pc-row) {
+.cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .cinematic-pc-item) {
   --_camera-row-reserve: 60px;
 }
 
-.cinematic-scene-container:has(.cinematic-camera-row:not(:empty)) {
+.cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .camera-feed-item) {
   --_camera-row-reserve: calc(var(--camera-feed-width, 140px) * 0.75 + 30px);
 }
 
@@ -278,16 +261,17 @@
   }
 }
 
-/* ===== PC Row (above filmstrip) ===== */
-.cinematic-scene-container .cinematic-pc-row {
+/* ===== Bottom Row (camera feeds + PC portraits) ===== */
+.cinematic-scene-container .cinematic-bottom-row {
   position: absolute;
-  bottom: 4px;
+  bottom: 8px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 8;
   display: flex;
+  align-items: center;
   gap: 10px;
-  padding: 6px 16px;
+  padding: 6px 12px;
   background: rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -296,6 +280,14 @@
   max-width: 80vw;
   overflow-x: auto;
   scrollbar-width: none;
+}
+
+.cinematic-scene-container .cinematic-bottom-row::-webkit-scrollbar {
+  display: none;
+}
+
+.cinematic-scene-container .cinematic-bottom-row.hidden {
+  display: none;
 }
 
 .cinematic-scene-container .cinematic-pc-item {
@@ -629,34 +621,6 @@
   margin-top: 2px;
 }
 
-/* ===== Camera Row (replaces PC row when A/V active) ===== */
-.cinematic-scene-container .cinematic-camera-row {
-  position: absolute;
-  bottom: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 8;
-  display: flex;
-  gap: 10px;
-  padding: 6px 12px;
-  background: rgba(0, 0, 0, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  max-width: 80vw;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.cinematic-scene-container .cinematic-camera-row::-webkit-scrollbar {
-  display: none;
-}
-
-.cinematic-scene-container .cinematic-camera-row:empty {
-  display: none;
-}
-
 .cinematic-scene-container .camera-feed-item {
   position: relative;
   flex-shrink: 0;
@@ -742,4 +706,17 @@
 .cinematic-scene-container .camera-feed-sheet-btn:hover {
   transform: scale(1.15);
   border-color: rgba(94, 129, 172, 0.8);
+}
+
+/* Chat message avatar images (dnd5e renders large portraits in .message-sender;
+   its size rules are scoped to #chat-log and don't apply inside our containers) */
+.cinematic-scene-container .message-sender .avatar img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.cinematic-scene-container .message-sender {
+  display: flex;
 }

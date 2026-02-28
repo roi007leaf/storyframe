@@ -7,7 +7,7 @@
   width: 90%;
   max-width: 700px;
   max-height: 80vh;
-  z-index: 10001;
+  z-index: 100002;
   background: linear-gradient(135deg, rgba(30, 35, 45, 0.98), rgba(20, 25, 35, 0.98));
   border: 2px solid rgba(94, 129, 172, 0.4);
   border-radius: 12px;

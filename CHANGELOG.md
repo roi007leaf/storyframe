@@ -7,6 +7,20 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+### Improved
+
+- **Unified bottom row** — camera feeds and PC portrait buttons now share a single row; players with active cameras show their video feed, players without show a clickable PC portrait
+- **PC portraits vertically centered** — smaller PC portrait buttons align to the middle of camera feeds for a cleaner mixed layout
+- **Auto-hide sidebars in cinematic mode** — Foundry's sidebar and StoryFrame's own GM/player sidebar automatically close when entering cinematic mode and restore when exiting
+- **Add Speakers Hidden setting** — new module setting that makes newly added NPC speakers start hidden from players by default
+
+### Fixed
+
+- **Filmstrip overlap with bottom row** — fixed CSS specificity bug where the filmstrip reserve calculation used the PC-only height (60px) instead of the camera feed height when both were present
+- **Player PC row not showing** — tightened the A/V active check to require actual live video tracks, so the PC row appears when A/V integration is enabled but no cameras are on
+- **D&D 5e roll dialog behind cinematic overlay** — roll configuration dialogs (`<dialog>` elements) now correctly appear above the cinematic scene
+- **Oversized chat avatars in cinematic chat** — D&D 5e speaker portrait images are now constrained to proper size inside the cinematic chat panels
+
 ## [2.3.0] - 2026-02-27
 
 ### Added

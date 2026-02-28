@@ -42,6 +42,7 @@ export class SpeakerManager {
     game.storyframe.stateManager._suppressNextRender = true;
     await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
     if (this.socketManager) this.socketManager.broadcastStateToOthers();
+    game.storyframe.cinematicScene?._onStateChange();
   }
 
   /**
@@ -75,7 +76,7 @@ export class SpeakerManager {
       imagePath,
       label,
       isNameHidden,
-      isHidden: false,
+      isHidden: !!game.settings.get(MODULE_ID, 'addSpeakersHidden'),
       altImages: Array.isArray(altImages) ? altImages : [],
     };
 
@@ -152,6 +153,7 @@ export class SpeakerManager {
     if (scene) {
       await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
       if (this.socketManager) this.socketManager.broadcastStateToOthers();
+      game.storyframe.cinematicScene?._onStateChange();
     }
   }
 
@@ -225,12 +227,14 @@ export class SpeakerManager {
    */
   _broadcast() {
     // ApplicationV2 instances render() when state changes
-    game.storyframe.gmApp?.render();
+    game.storyframe.gmSidebar?.render();
     game.storyframe.playerViewer?.render();
+    if (game.storyframe.playerSidebar?.rendered) game.storyframe.playerSidebar.render();
+    game.storyframe.cinematicScene?._onStateChange();
 
-    // Also broadcast via socket for other clients
+    // Broadcast to other clients only — local UI is already notified above
     if (this.socketManager) {
-      this.socketManager.broadcastStateUpdate();
+      this.socketManager.broadcastStateToOthers();
     }
   }
 }
