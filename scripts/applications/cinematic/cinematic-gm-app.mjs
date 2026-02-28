@@ -285,7 +285,7 @@ export class CinematicGMApp extends CinematicSceneBase {
           : entry.pages.contents.find(p => p.type === 'text');
         let enrichedContent = '';
         if (activePage?.text?.content) {
-          enrichedContent = await TextEditor.enrichHTML(activePage.text.content, { async: true });
+          enrichedContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(activePage.text.content, { async: true });
         }
         openJournal = {
           id: entry.id, name: entry.name, pages,
@@ -630,14 +630,20 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (chatContainer && !chatContainer.dataset.populated) {
       chatContainer.dataset.populated = '1';
       this._populateChatLog(chatContainer);
-      if (this._chatHookId != null) Hooks.off('createChatMessage', this._chatHookId);
-      this._chatHookId = Hooks.on('createChatMessage', (msg) => {
-        this._appendChatMessage(chatContainer, msg);
-      });
-      if (this._chatDeleteHookId != null) Hooks.off('deleteChatMessage', this._chatDeleteHookId);
-      this._chatDeleteHookId = Hooks.on('deleteChatMessage', (msg) => {
-        chatContainer.querySelector(`.message[data-message-id="${msg.id}"]`)?.remove();
-      });
+      // Register hooks once; look up the *current* container each time so
+      // re-renders don't leave hooks pointing at a stale DOM element.
+      if (this._chatHookId == null) {
+        this._chatHookId = Hooks.on('createChatMessage', (msg) => {
+          const el = this.element?.querySelector('.side-panel-chat-messages');
+          if (el) this._appendChatMessage(el, msg);
+        });
+      }
+      if (this._chatDeleteHookId == null) {
+        this._chatDeleteHookId = Hooks.on('deleteChatMessage', (msg) => {
+          const el = this.element?.querySelector('.side-panel-chat-messages');
+          el?.querySelector(`.message[data-message-id="${msg.id}"]`)?.remove();
+        });
+      }
     }
 
     // Apply saved panel widths

@@ -235,10 +235,12 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       if (container && !container.dataset.populated) {
         container.dataset.populated = '1';
         this._populateChatLog(container);
-        if (this._playerChatHookId != null) Hooks.off('createChatMessage', this._playerChatHookId);
-        this._playerChatHookId = Hooks.on('createChatMessage', (msg) => {
-          this._appendChatMessage(container, msg);
-        });
+        if (this._playerChatHookId == null) {
+          this._playerChatHookId = Hooks.on('createChatMessage', (msg) => {
+            const el = this.element?.querySelector('.player-chat-messages');
+            if (el) this._appendChatMessage(el, msg);
+          });
+        }
       }
     }
 
@@ -284,10 +286,12 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       if (container && !container.dataset.populated) {
         container.dataset.populated = '1';
         this._populateChatLog(container);
-        if (this._playerChatHookId != null) Hooks.off('createChatMessage', this._playerChatHookId);
-        this._playerChatHookId = Hooks.on('createChatMessage', (msg) => {
-          this._appendChatMessage(container, msg);
-        });
+        if (this._playerChatHookId == null) {
+          this._playerChatHookId = Hooks.on('createChatMessage', (msg) => {
+            const el = this.element?.querySelector('.player-chat-messages');
+            if (el) this._appendChatMessage(el, msg);
+          });
+        }
       }
     }
   }

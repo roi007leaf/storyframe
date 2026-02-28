@@ -263,7 +263,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _handleDrop(event) {
     event.preventDefault();
 
-    const data = TextEditor.getDragEventData(event);
+    const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
 
     // Only handle Actor drops
     if (data.type !== 'Actor') return;
