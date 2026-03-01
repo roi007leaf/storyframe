@@ -92,7 +92,7 @@ body:has(.storyframe.cinematic-scene)
   --_camera-row-reserve: calc(var(--camera-feed-width, 140px) * 0.75 + 30px);
 }
 
-.cinematic-scene-container:has(.cinematic-filmstrip-container:not([style*="display: none"])) {
+.cinematic-scene-container:has(.cinematic-filmstrip-container:not([style*='display: none'])) {
   --_filmstrip-visible: 1;
 }
 
@@ -142,7 +142,9 @@ body:has(.storyframe.cinematic-scene)
 .cinematic-scene-container .cinematic-spotlight {
   position: absolute;
   top: 16px;
-  bottom: calc((var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve));
+  bottom: calc(
+    (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve)
+  );
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;

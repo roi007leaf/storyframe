@@ -7,6 +7,13 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.8] - 2026-03-01
+
+### Fixed
+
+- **Hidden active speaker invisible to players** — when the active speaker was hidden (`isHidden`), players saw a blank cinematic screen instead of the spotlight; the active speaker now always appears in the spotlight regardless of hidden state
+- **Player sidebar not opening on roll request** — when the GM sent a skill check request and the player sidebar was closed, it would not open automatically; the sidebar now opens to show pending rolls
+
 ## [2.4.7] - 2026-03-01
 
 ### Fixed

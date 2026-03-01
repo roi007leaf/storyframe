@@ -485,8 +485,8 @@ export class SocketManager {
   _handlePromptSkillCheck(_requestData) {
     if (game.storyframe.cinematicScene?.rendered) {
       game.storyframe.cinematicScene._onStateChange();
-    } else if (game.storyframe.playerSidebar?.rendered) {
-      game.storyframe.playerSidebar.render();
+    } else if (game.storyframe.playerSidebar) {
+      game.storyframe.playerSidebar.render(true);
     } else if (game.storyframe.playerApp) {
       game.storyframe.playerApp.showRollPrompt(_requestData);
     }

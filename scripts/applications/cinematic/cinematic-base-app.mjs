@@ -70,11 +70,11 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       };
     }
 
+    const activeSpeakerId = state.activeSpeaker;
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === activeSpeakerId);
     const allSpeakers = await this._resolveSpeakers(visibleSpeakers);
-    const activeSpeakerId = state.activeSpeaker;
 
     let activeSpeaker = null;
     let inactiveSpeakers = allSpeakers;
@@ -167,11 +167,11 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!container) return;
 
     const isGM = game.user.isGM;
+    const newActiveId = state.activeSpeaker || '';
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === newActiveId);
     const allResolved = await this._resolveSpeakers(visibleSpeakers);
-    const newActiveId = state.activeSpeaker || '';
     const newActive = newActiveId ? allResolved.find(s => s.id === newActiveId) : null;
     const inactives = newActiveId ? allResolved.filter(s => s.id !== newActiveId) : allResolved;
 
@@ -260,9 +260,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!container) return;
 
     const isGM = game.user.isGM;
+    const activeId = state.activeSpeaker || '';
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === activeId);
     const resolved = await this._resolveSpeakers(visibleSpeakers);
     const byId = new Map(resolved.map(s => [s.id, s]));
 
@@ -977,6 +978,23 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       });
     });
     this._bindChatContextMenu(container);
+    this._bindChatDeleteAction(container);
+  }
+
+  _bindChatDeleteAction(container) {
+    container.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('[data-action="deleteMessage"]');
+      if (!deleteBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const msgEl = deleteBtn.closest('[data-message-id]');
+      const msgId = msgEl?.dataset.messageId;
+      if (!msgId) return;
+      const msg = game.messages.get(msgId);
+      if (!msg) return;
+      msgEl.remove();
+      msg.delete();
+    });
   }
 
   _bindChatContextMenu(container) {
