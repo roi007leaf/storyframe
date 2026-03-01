@@ -369,8 +369,15 @@
       </div>{{!-- end music-controls-sticky --}}
 
       {{!-- Search Results --}}
-      {{#if musicSearchResults.length}}
+      {{#if musicSearchQuery}}
       <div class="music-search-results">
+        {{#each musicSearchPlaylists}}
+        <div class="left-panel-playlist-result" data-action="musicPlayPlaylist" data-playlist-id="{{this.id}}">
+          <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
+          <span class="playlist-name">{{this.name}}</span>
+          <span class="playlist-track-count">{{this.trackCount}}</span>
+        </div>
+        {{/each}}
         {{#each musicSearchResults}}
         <div class="left-panel-track-item" data-action="musicPlayTrack" data-playlist-id="{{this.playlistId}}" data-sound-id="{{this.id}}">
           <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>

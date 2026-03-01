@@ -150,6 +150,7 @@ export class CinematicGMApp extends CinematicSceneBase {
         shuffleActive: false,
         repeatActive: false,
         musicSearchQuery: this.musicSearchQuery,
+        musicSearchPlaylists: [],
         musicSearchResults: [],
         gmPendingRolls: [],
         savedChallenges: [],
@@ -224,10 +225,16 @@ export class CinematicGMApp extends CinematicSceneBase {
       const tracks = p.sounds.contents.filter(s => s.playing).map(s => ({ id: s.id, name: s.name, volume: s.volume, repeat: s.repeat }));
       if (tracks.length) playingByPlaylist.push({ id: p.id, name: p.name, tracks });
     }
+    let musicSearchPlaylists = [];
     let musicSearchResults = [];
     if (this.musicSearchQuery) {
       const q = this.musicSearchQuery.toLowerCase();
       for (const p of game.playlists) {
+        // Match playlist names
+        if (p.name.toLowerCase().includes(q)) {
+          musicSearchPlaylists.push({ id: p.id, name: p.name, trackCount: p.sounds.size, playing: p.playing });
+        }
+        // Match track names
         for (const s of p.sounds) {
           if (s.name.toLowerCase().includes(q)) {
             musicSearchResults.push({ id: s.id, name: s.name, playlistId: p.id, playlistName: p.name, playing: s.playing });
@@ -379,6 +386,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       shuffleActive,
       repeatActive,
       musicSearchQuery: this.musicSearchQuery,
+      musicSearchPlaylists,
       musicSearchResults,
       gmPendingRolls,
       savedChallenges,

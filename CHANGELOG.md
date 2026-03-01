@@ -7,7 +7,11 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.4.4] - 2026-03-01
+## [2.4.5] - 2026-03-01
+
+### Added
+
+- **Playlist search in cinematic** — the music search bar now matches playlist names in addition to track names; matching playlists appear above track results and can be clicked to play
 
 ### Fixed
 

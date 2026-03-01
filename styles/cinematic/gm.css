@@ -1051,6 +1051,7 @@
 }
 
 .cinematic-scene-container .left-panel-playlist-item,
+.cinematic-scene-container .left-panel-playlist-result,
 .cinematic-scene-container .left-panel-track-item {
   display: flex;
   align-items: center;
@@ -1064,17 +1065,20 @@
 }
 
 .cinematic-scene-container .left-panel-playlist-item:hover,
+.cinematic-scene-container .left-panel-playlist-result:hover,
 .cinematic-scene-container .left-panel-track-item:hover {
   background: rgba(94, 129, 172, 0.15);
   color: rgba(255, 255, 255, 0.95);
 }
 
 .cinematic-scene-container .left-panel-playlist-item.playing,
+.cinematic-scene-container .left-panel-playlist-result.playing,
 .cinematic-scene-container .left-panel-track-item.playing {
   color: rgba(94, 129, 172, 1);
 }
 
 .cinematic-scene-container .left-panel-playlist-item i,
+.cinematic-scene-container .left-panel-playlist-result i,
 .cinematic-scene-container .left-panel-track-item i {
   font-size: 0.65rem;
   width: 16px;
@@ -1083,6 +1087,7 @@
 }
 
 .cinematic-scene-container .left-panel-playlist-item span,
+.cinematic-scene-container .left-panel-playlist-result span,
 .cinematic-scene-container .left-panel-track-item span {
   overflow: hidden;
   text-overflow: ellipsis;
