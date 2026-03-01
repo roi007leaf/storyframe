@@ -54,6 +54,8 @@ export class CinematicGMApp extends CinematicSceneBase {
       removeSpeakerAltImage: CinematicGMApp._onRemoveSpeakerAltImage,
       setBackground: CinematicGMApp._onSetBackground,
       clearBackground: CinematicGMApp._onClearBackground,
+      saveSceneState: CinematicGMApp._onSaveSceneState,
+      saveCurrentScene: CinematicGMApp._onSaveCurrentScene,
       openScene: CinematicGMApp._onOpenScene,
       incrementCounter: CinematicGMApp._onIncrementCounter,
       decrementCounter: CinematicGMApp._onDecrementCounter,
@@ -87,6 +89,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     this._playlistHookIds = [];
     this._chatHookId = null;
     this._chatDeleteHookId = null;
+    this._scenesHookId = null;
     const savedHeights = game.settings.get(MODULE_ID, 'cinematicSectionHeights') || {};
     this._sectionHeights = {
       scenes: savedHeights.scenes ?? null,
@@ -179,7 +182,10 @@ export class CinematicGMApp extends CinematicSceneBase {
     }
 
     // Speaker scenes + music
-    const speakerScenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+    const speakerScenes = (game.settings.get(MODULE_ID, 'speakerScenes') || []).map(s => ({
+      ...s,
+      hasState: !!(s.playlistId || s.sceneBackground),
+    }));
     const playlists = game.playlists.contents.map(p => ({
       id: p.id, name: p.name, playing: p.playing, mode: p.mode,
       expanded: this.expandedPlaylistIds.has(p.id),
@@ -511,6 +517,13 @@ export class CinematicGMApp extends CinematicSceneBase {
       );
     }
 
+    // Re-render when speaker scenes setting changes (e.g. after scene editor save)
+    if (this._scenesHookId == null) {
+      this._scenesHookId = Hooks.on('updateSetting', (setting) => {
+        if (setting.key === `${MODULE_ID}.speakerScenes`) this.render();
+      });
+    }
+
     // Skill button context menus (PF2e actions/variants)
     const skillBtns = this.element?.querySelectorAll('.side-panel-skill-btn[data-skill]');
     if (skillBtns?.length) {
@@ -689,7 +702,29 @@ export class CinematicGMApp extends CinematicSceneBase {
     this._initCameraRow();
   }
 
+  async fadeOutAndClose() {
+    if (this._fadingOut) return;
+
+    // Fade all playing sounds to zero using Foundry's Sound.fade() API
+    const duration = CinematicSceneBase.FADE_OUT_DURATION;
+    for (const p of game.playlists) {
+      for (const s of p.sounds.contents) {
+        if (s.playing && s.sound) {
+          s.sound.fade(0, { duration, type: 'linear' });
+        }
+      }
+    }
+
+    // Delegate to base for CSS fade + close
+    await super.fadeOutAndClose();
+  }
+
   async _onClose(_options) {
+    // Stop all playing playlists (volume is already at 0 from fade)
+    for (const p of game.playlists) {
+      if (p.playing) p.stopAll();
+    }
+
     if (this._escHandler) {
       document.removeEventListener('keydown', this._escHandler, { capture: true });
       this._escHandler = null;
@@ -703,6 +738,10 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (this._chatDeleteHookId != null) {
       Hooks.off('deleteChatMessage', this._chatDeleteHookId);
       this._chatDeleteHookId = null;
+    }
+    if (this._scenesHookId != null) {
+      Hooks.off('updateSetting', this._scenesHookId);
+      this._scenesHookId = null;
     }
     this.sidePanelOpen = false;
     this.currentDC = null;
@@ -812,8 +851,61 @@ export class CinematicGMApp extends CinematicSceneBase {
     const scene = scenes.find(s => s.id === sceneId);
     if (scene?.speakers) {
       await game.storyframe.socketManager.requestUpdateSpeakers(scene.speakers);
+
+      // Start saved playlist (if any)
+      if (scene.playlistId) {
+        for (const p of game.playlists) {
+          if (p.playing) await p.stopAll();
+        }
+        const playlist = game.playlists.get(scene.playlistId);
+        if (playlist) {
+          const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
+          await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
+        }
+      }
+
+      // Set saved background (if any)
+      if (scene.sceneBackground) {
+        await game.storyframe.stateManager.setSceneBackground(scene.sceneBackground);
+      }
+
       this.render();
     }
+  }
+
+  static async _onSaveSceneState(_event, target) {
+    const sceneId = target.closest('[data-scene-id]')?.dataset.sceneId;
+    if (!sceneId) return;
+    const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+
+    const playingPlaylist = game.playlists.find(p => p.playing);
+    const state = game.storyframe.stateManager.getState();
+
+    const updatedScenes = scenes.map(s =>
+      s.id === sceneId
+        ? { ...s, playlistId: playingPlaylist?.id || null, sceneBackground: state?.sceneBackground || null, updatedAt: Date.now() }
+        : s
+    );
+    await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
+    ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SceneStateUpdated', { name: scene.name }));
+    this.render();
+  }
+
+  static async _onSaveCurrentScene() {
+    const state = game.storyframe.stateManager.getState();
+    const speakers = state?.speakers || [];
+
+    if (speakers.length === 0) {
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.Speaker.NoSpeakersToSave'));
+      return;
+    }
+
+    const { showSceneEditor } = await import('../../scene-editor.mjs');
+    await showSceneEditor({
+      speakers: [...speakers],
+    });
   }
 
   static async _onRequestQuickSkill(_event, target) {

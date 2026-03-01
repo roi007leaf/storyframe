@@ -27,7 +27,12 @@
       "Bash(git commit:*)",
       "Bash(grep:*)",
       "Bash(cd:*)",
-      "WebFetch(domain:api.github.com)"
+      "WebFetch(domain:api.github.com)",
+      "WebFetch(domain:gitlab.com)",
+      "WebFetch(domain:foundryvtt.com)",
+      "WebFetch(domain:cyberpunk-red-gm.herokuapp.com)",
+      "WebFetch(domain:cyberpunkred.wikidot.com)",
+      "WebFetch(domain:app.demiplane.com)"
     ]
   }
 }

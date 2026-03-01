@@ -7,6 +7,20 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-03-01
+
+### Added
+
+- **Save playlist & background per scene** — floppy disk icon on each scene in the cinematic left panel saves the currently playing playlist and cinematic background; loading that scene restores both automatically
+- **Save scene from cinematic** — plus button in the cinematic left panel's Speaker Scenes header opens the scene editor to save current speakers as a new scene
+- **Cinematic close fade-out** — closing the cinematic scene now plays a 1-second fade-to-black animation instead of disappearing instantly
+- **Music fade-out on cinematic close** — all playing playlists gradually fade to silence during the close animation using Foundry's Sound.fade() API
+
+### Fixed
+
+- **Music continues after closing cinematic** — all playing playlists are now stopped when the cinematic scene closes
+- **Scene list not updating after save** — cinematic left panel now listens for `speakerScenes` setting changes and re-renders automatically
+
 ## [2.3.4] - 2026-02-28
 
 ### Fixed

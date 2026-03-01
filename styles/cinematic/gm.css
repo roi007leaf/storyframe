@@ -740,6 +740,32 @@
 }
 
 /* ===== Speaker Scene Items ===== */
+.cinematic-scene-container .left-panel-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cinematic-scene-container .left-panel-section-header h4 {
+  margin: 0;
+}
+
+.cinematic-scene-container .section-header-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: var(--sf-radius-sm, 4px);
+  font-size: 0.7rem;
+  transition: all 0.15s ease;
+}
+
+.cinematic-scene-container .section-header-btn:hover {
+  color: rgba(163, 190, 140, 0.9);
+  background: rgba(163, 190, 140, 0.15);
+}
+
 .cinematic-scene-container .left-panel-scenes {
   display: flex;
   flex-direction: column;
@@ -781,12 +807,39 @@
 }
 
 .cinematic-scene-container .scene-item-count {
-  margin-left: auto;
   font-size: 0.6rem;
   opacity: 0.5;
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 6px;
   border-radius: var(--sf-radius-full, 9999px);
+}
+
+.cinematic-scene-container .scene-save-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--sf-radius-sm, 4px);
+  font-size: 0.65rem;
+  opacity: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .left-panel-scene-item:hover .scene-save-btn {
+  opacity: 1;
+}
+
+.cinematic-scene-container .scene-save-btn:hover {
+  color: rgba(163, 190, 140, 0.9);
+  background: rgba(163, 190, 140, 0.15);
+}
+
+.cinematic-scene-container .scene-state-dot {
+  font-size: 0.35rem;
+  color: rgba(163, 190, 140, 0.6);
+  flex-shrink: 0;
 }
 
 /* ===== Music Player ===== */

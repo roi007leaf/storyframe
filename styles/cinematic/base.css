@@ -108,6 +108,21 @@ body:has(.storyframe.cinematic-scene)
   animation: none !important;
 }
 
+/* ===== Fade out on close ===== */
+.storyframe.cinematic-scene.cinematic-fade-out {
+  animation: cinematic-fade-out var(--fade-out-duration, 1000ms) ease-in forwards !important;
+  pointer-events: none;
+}
+
+@keyframes cinematic-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
 /* ===== Vignette Overlay ===== */
 .cinematic-scene-container .vignette-overlay {
   position: absolute;

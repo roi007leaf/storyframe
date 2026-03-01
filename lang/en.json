@@ -140,7 +140,8 @@
         "NoSavedScenes": "No saved scenes",
         "SceneDeleted": "Deleted scene \"{name}\"",
         "SceneLoaded": "Loaded scene \"{name}\"",
-        "SceneUpdatedWithCurrentSpeakers": "Updated \"{name}\" with {count} current speaker(s)"
+        "SceneUpdatedWithCurrentSpeakers": "Updated \"{name}\" with {count} current speaker(s)",
+        "SceneStateUpdated": "Saved playlist & background to \"{name}\""
       },
       "SceneGatherer": {
         "SceneGathered": "Populated \"{name}\" with {count} speaker(s)"
@@ -477,6 +478,8 @@
       "OpenFullSidebar": "Open Full Sidebar",
       "ScenesAndMusic": "Scenes & Music",
       "SpeakerScenes": "Speaker Scenes",
+      "SaveSceneState": "Save current playlist & background",
+      "SaveCurrentScene": "Save current speakers as scene",
       "NoSavedScenes": "No saved scenes",
       "NowPlaying": "Now Playing",
       "Playlists": "Playlists",

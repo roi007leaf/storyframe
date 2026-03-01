@@ -390,6 +390,26 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     }
   }
 
+  // --- Fade out + close ---
+
+  static FADE_OUT_DURATION = 1000;
+
+  async fadeOutAndClose() {
+    if (this._fadingOut) return;
+    this._fadingOut = true;
+
+    const duration = CinematicSceneBase.FADE_OUT_DURATION;
+
+    // Start CSS fade-out animation
+    this.element?.classList.add('cinematic-fade-out');
+    this.element?.style.setProperty('--fade-out-duration', `${duration}ms`);
+
+    // Wait for animation, then close
+    await new Promise(resolve => setTimeout(resolve, duration));
+    this._fadingOut = false;
+    this.close();
+  }
+
   // --- Shared cleanup ---
 
   async _onClose(_options) {
