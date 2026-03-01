@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.2] - 2026-03-01
+
+### Added
+
+- **Cinematic prep mode** (setting, default on) — launching Scene Mode opens only for the GM; players don't see the cinematic until you click "Show to Players" (broadcast icon), preventing spoilers while you set up speakers, background, and music
+
 ## [2.4.1] - 2026-03-01
 
 ### Added
