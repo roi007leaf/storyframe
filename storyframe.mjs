@@ -1139,8 +1139,9 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
     const viewer = game.storyframe.playerViewer;
     const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
     const hasSpeakers = visibleSpeakers.length > 0;
+    const prepLocked = game.settings.get(MODULE_ID, 'cinematicPrepMode') && !game.storyframe._playerViewerUnlocked;
 
-    if (hasSpeakers && !viewer.rendered) {
+    if (hasSpeakers && !viewer.rendered && !prepLocked) {
       viewer.render(true); // Auto-open when speakers added
     } else if (!hasSpeakers && viewer.rendered) {
       viewer.close(); // Close if no speakers
@@ -1153,8 +1154,9 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   if (!game.user.isGM && game.storyframe.playerSidebar) {
     const sidebar = game.storyframe.playerSidebar;
     const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+    const prepLocked = game.settings.get(MODULE_ID, 'cinematicPrepMode') && !game.storyframe._playerViewerUnlocked;
 
-    if (hasContent && !sidebar.rendered) {
+    if (hasContent && !sidebar.rendered && !prepLocked) {
       sidebar.render(true); // Auto-open when player has rolls/challenges
     } else if (!hasContent && sidebar.rendered) {
       sidebar.close(); // Close if no content
