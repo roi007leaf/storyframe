@@ -312,6 +312,7 @@ Hooks.once('init', () => {
       gmSidebar: null,
       playerSidebar: null,
       cinematicScene: null,
+      _playerViewerUnlocked: false,
     };
   }
 
@@ -817,6 +818,7 @@ Hooks.once('socketlib.ready', () => {
       socketManager: null,
       gmSidebar: null,
       cinematicScene: null,
+      _playerViewerUnlocked: false,
     };
   }
 
@@ -859,6 +861,13 @@ Hooks.on('getSceneControlButtons', (controls) => {
             if (control) control.activeTool = null;
           }, 50);
         }
+        // Prep mode: block until GM unlocks the viewer
+        const prepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode');
+        if (prepMode && !game.storyframe._playerViewerUnlocked) {
+          ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.ViewerNotReady'));
+          return;
+        }
+
         const state = game.storyframe.stateManager?.getState();
         const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
         const hasSpeakers = visibleSpeakers.length > 0;
@@ -1079,11 +1088,14 @@ Hooks.once('ready', async () => {
     game.storyframe.playerSidebar = new PlayerSidebarApp();
     game.storyframe.playerSidebar.parentViewer = game.storyframe.playerViewer;
 
-    // Check if sidebar should open based on content
-    const state = game.storyframe.stateManager?.getState();
-    const hasContent = state && PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
-    if (hasContent) {
-      game.storyframe.playerSidebar.render(true);
+    // Check if sidebar should open based on content (skip if prep mode is on)
+    const prepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode');
+    if (!prepMode) {
+      const state = game.storyframe.stateManager?.getState();
+      const hasContent = state && PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+      if (hasContent) {
+        game.storyframe.playerSidebar.render(true);
+      }
     }
   }
 });

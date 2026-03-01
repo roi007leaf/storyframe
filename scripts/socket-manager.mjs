@@ -512,6 +512,9 @@ export class SocketManager {
     // Only open for non-GM users
     if (game.user?.isGM) return;
 
+    // Mark viewer as unlocked by GM (for prep mode gating)
+    game.storyframe._playerViewerUnlocked = true;
+
     const sidebar = game.storyframe.playerSidebar;
     const sidebarWasRendered = sidebar?.rendered;
 
@@ -543,6 +546,9 @@ export class SocketManager {
   _handleClosePlayerViewer() {
     // Only close for non-GM users
     if (game.user?.isGM) return;
+
+    // Re-lock viewer (GM closed it, prep mode gate re-engages)
+    game.storyframe._playerViewerUnlocked = false;
 
     // Close viewer if it exists and is rendered
     if (game.storyframe.playerViewer?.rendered) {

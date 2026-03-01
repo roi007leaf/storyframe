@@ -247,7 +247,8 @@
       "FailedToSendRollRequest": "Failed to send roll request: {error}",
       "ChallengeCreatedFromSelection": "Challenge \"{name}\" created with {count} check(s)",
       "NoContent": "No pending rolls, challenges or speakers to show you.",
-      "NoSpeakers": "No speakers to display. Check the sidebar for rolls and challenges."
+      "NoSpeakers": "No speakers to display. Check the sidebar for rolls and challenges.",
+      "ViewerNotReady": "The GM hasn't opened the viewer yet. Please wait."
     },
     "UI": {
       "Tabs": {
