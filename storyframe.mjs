@@ -987,11 +987,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
           if (control) control.activeTool = null;
         }, 50);
 
-        const state = game.storyframe.stateManager?.getState();
-        if (!state?.speakers?.length) {
-          ui.notifications.warn(game.i18n.localize('STORYFRAME.CinematicScene.NoSpeakers'));
-          return;
-        }
         game.storyframe.socketManager.launchSceneMode();
       },
     };
