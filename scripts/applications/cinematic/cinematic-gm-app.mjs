@@ -596,7 +596,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       }
       searchInput.addEventListener('input', (e) => {
         this.musicSearchQuery = e.target.value;
-        this._debouncedRender();
+        this._updateMusicSearchDOM();
       });
     }
 
@@ -766,6 +766,86 @@ export class CinematicGMApp extends CinematicSceneBase {
     this._lastChallengeCount = 0;
     return super._onClose(_options);
   }
+
+  // --- Targeted music search DOM update ---
+
+  _updateMusicSearchDOM = foundry.utils.debounce(() => {
+    const musicSection = this.element?.querySelector('.left-panel-music');
+    if (!musicSection) return;
+
+    const q = this.musicSearchQuery?.toLowerCase() || '';
+
+    // Remove existing results / playlist list
+    musicSection.querySelector('.music-search-results')?.remove();
+    musicSection.querySelector('.left-panel-playlists')?.remove();
+
+    if (q) {
+      // Build search results
+      const frag = document.createDocumentFragment();
+      const wrapper = document.createElement('div');
+      wrapper.className = 'music-search-results';
+
+      for (const p of game.playlists) {
+        if (p.name.toLowerCase().includes(q)) {
+          const el = document.createElement('div');
+          el.className = 'left-panel-playlist-result';
+          el.dataset.action = 'musicPlayPlaylist';
+          el.dataset.playlistId = p.id;
+          el.innerHTML = `<i class="fas ${p.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+            + `<span class="playlist-name">${foundry.utils.escapeHTML(p.name)}</span>`
+            + `<span class="playlist-track-count">${p.sounds.size}</span>`;
+          wrapper.appendChild(el);
+        }
+        for (const s of p.sounds) {
+          if (s.name.toLowerCase().includes(q)) {
+            const el = document.createElement('div');
+            el.className = 'left-panel-track-item';
+            el.dataset.action = 'musicPlayTrack';
+            el.dataset.playlistId = p.id;
+            el.dataset.soundId = s.id;
+            el.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+              + `<div class="search-result-info">`
+              + `<span class="search-result-track">${foundry.utils.escapeHTML(s.name)}</span>`
+              + `<span class="search-result-playlist">${foundry.utils.escapeHTML(p.name)}</span>`
+              + `</div>`;
+            wrapper.appendChild(el);
+          }
+        }
+      }
+      frag.appendChild(wrapper);
+      musicSection.appendChild(frag);
+    } else {
+      // Rebuild playlist list directly
+      const listEl = document.createElement('div');
+      listEl.className = 'left-panel-playlists';
+      for (const p of game.playlists) {
+        const expanded = this.expandedPlaylistIds.has(p.id);
+        const item = document.createElement('div');
+        item.className = `left-panel-playlist-item${p.playing ? ' playing' : ''}`;
+        item.innerHTML = `<button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="${p.id}">`
+          + `<i class="fas ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" aria-hidden="true"></i></button>`
+          + `<span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="${p.id}">${foundry.utils.escapeHTML(p.name)}</span>`
+          + `<span class="playlist-track-count">${p.sounds.size}</span>`;
+        listEl.appendChild(item);
+        if (expanded) {
+          const tracksEl = document.createElement('div');
+          tracksEl.className = 'playlist-tracks-inline';
+          for (const s of p.sounds.contents) {
+            const t = document.createElement('div');
+            t.className = `left-panel-track-item${s.playing ? ' playing' : ''}`;
+            t.dataset.action = 'musicPlayTrack';
+            t.dataset.playlistId = p.id;
+            t.dataset.soundId = s.id;
+            t.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+              + `<span>${foundry.utils.escapeHTML(s.name)}</span>`;
+            tracksEl.appendChild(t);
+          }
+          listEl.appendChild(tracksEl);
+        }
+      }
+      musicSection.appendChild(listEl);
+    }
+  }, 150);
 
   // --- Action handlers ---
 

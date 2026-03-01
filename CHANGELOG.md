@@ -12,6 +12,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Playlist search in cinematic** — the music search bar now matches playlist names in addition to track names; matching playlists appear above track results and can be clicked to play
+- **Filmstrip resize handle** — drag the handle at the top of the filmstrip to increase or decrease speaker thumbnail size (saved per client)
+- **Camera resize handle auto-hide** — the camera feed resize handle is now hidden when no cameras are active
+
+### Fixed
+
+- **Music search no longer re-renders filmstrip** — typing in the music search bar now updates only the results area via targeted DOM manipulation instead of re-rendering the entire cinematic
+
+## [2.4.4] - 2026-03-01
+
+a resize handle auto-hide\*\* — the camera feed resize handle is now hidden when no cameras are active
 
 ### Fixed
 

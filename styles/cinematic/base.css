@@ -63,6 +63,8 @@ body:has(.storyframe.cinematic-scene)
   --_panel-left-reserve: 0px;
   --_panel-right-reserve: 0px;
   --_camera-row-reserve: 0px;
+  --filmstrip-speaker-size: 64px;
+  --_filmstrip-visible: 0;
 }
 
 /* Track open panel widths for spotlight centering */
@@ -88,6 +90,10 @@ body:has(.storyframe.cinematic-scene)
 
 .cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .camera-feed-item) {
   --_camera-row-reserve: calc(var(--camera-feed-width, 140px) * 0.75 + 30px);
+}
+
+.cinematic-scene-container:has(.cinematic-filmstrip-container:not([style*="display: none"])) {
+  --_filmstrip-visible: 1;
 }
 
 @keyframes cinematic-fade-in {
@@ -136,7 +142,7 @@ body:has(.storyframe.cinematic-scene)
 .cinematic-scene-container .cinematic-spotlight {
   position: absolute;
   top: 16px;
-  bottom: calc(140px + var(--_camera-row-reserve));
+  bottom: calc((var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve));
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -353,6 +359,39 @@ body:has(.storyframe.cinematic-scene)
   transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+/* Filmstrip resize handle (bottom edge) */
+.cinematic-scene-container .filmstrip-resize-handle {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  cursor: ns-resize;
+  border-radius: 0 0 4px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.15s;
+  z-index: 1;
+}
+.cinematic-scene-container .filmstrip-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1px;
+}
+.cinematic-scene-container .filmstrip-resize-handle:hover {
+  background: rgba(94, 129, 172, 0.3);
+}
+.cinematic-scene-container.filmstrip-resizing .filmstrip-speaker,
+.cinematic-scene-container.filmstrip-resizing .filmstrip-speaker img {
+  transition: none !important;
+}
+
 .cinematic-scene-container .cinematic-filmstrip {
   display: flex;
   gap: var(--sf-space-md, 16px);
@@ -432,8 +471,8 @@ body:has(.storyframe.cinematic-scene)
 }
 
 .cinematic-scene-container .filmstrip-speaker img {
-  width: 64px;
-  height: 64px;
+  width: var(--filmstrip-speaker-size, 64px);
+  height: var(--filmstrip-speaker-size, 64px);
   object-fit: contain;
   border-radius: var(--sf-radius-md, 8px);
   border: 2px solid rgba(255, 255, 255, 0.12);
@@ -450,7 +489,7 @@ body:has(.storyframe.cinematic-scene)
   font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
-  max-width: 72px;
+  max-width: calc(var(--filmstrip-speaker-size, 64px) + 8px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

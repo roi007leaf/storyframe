@@ -378,6 +378,13 @@ Hooks.once('init', () => {
     default: 140,
   });
 
+  game.settings.register(MODULE_ID, 'cinematicFilmstripSize', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 64,
+  });
+
   game.settings.register(MODULE_ID, 'cinematicJournalFontSize', {
     scope: 'client',
     config: false,

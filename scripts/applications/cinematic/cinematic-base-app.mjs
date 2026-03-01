@@ -361,8 +361,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       }
     }
 
-    // Filmstrip scroll indicators
+    // Filmstrip scroll indicators + resize handle
     const filmstrip = this.element?.querySelector('.cinematic-filmstrip');
+    const filmstripContainer = this.element?.querySelector('.cinematic-filmstrip-container');
     if (filmstrip) {
       const updateIndicators = () => {
         const container = filmstrip.closest('.cinematic-filmstrip-container');
@@ -374,6 +375,17 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       };
       filmstrip.addEventListener('scroll', updateIndicators);
       updateIndicators();
+    }
+    if (filmstripContainer && !filmstripContainer.querySelector('.filmstrip-resize-handle')) {
+      // Apply saved filmstrip size (spotlight reads this variable directly)
+      const savedSize = game.settings.get(MODULE_ID, 'cinematicFilmstripSize') || 64;
+      const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
+      sceneContainer?.style.setProperty('--filmstrip-speaker-size', `${savedSize}px`);
+
+      const handle = document.createElement('div');
+      handle.className = 'filmstrip-resize-handle';
+      filmstripContainer.appendChild(handle);
+      handle.addEventListener('mousedown', (e) => this._onFilmstripResizeStart(e));
     }
 
     // Seed state-change baseline
@@ -782,6 +794,39 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     document.addEventListener('mouseup', onUp);
   }
 
+  _onFilmstripResizeStart(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    const startY = e.clientY;
+    const currentSize = parseFloat(
+      getComputedStyle(container).getPropertyValue('--filmstrip-speaker-size'),
+    ) || 64;
+
+    // Disable transitions during drag for seamless resize
+    container?.classList.add('filmstrip-resizing');
+
+    const onMove = (ev) => {
+      // Dragging up = bigger
+      const delta = startY - ev.clientY;
+      const newSize = Math.max(40, Math.min(160, currentSize + delta));
+      container?.style.setProperty('--filmstrip-speaker-size', `${newSize}px`);
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      container?.classList.remove('filmstrip-resizing');
+      const finalSize = parseFloat(
+        getComputedStyle(container).getPropertyValue('--filmstrip-speaker-size'),
+      ) || 64;
+      game.settings.set(MODULE_ID, 'cinematicFilmstripSize', finalSize);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   _syncCameraFeeds() {
     const bottomRow = this.element?.querySelector('.cinematic-bottom-row');
     if (!bottomRow) return;
@@ -875,6 +920,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const hasFeeds = this._trackedVideoStreams.size > 0;
     const hasVisiblePCs = bottomRow.querySelector('.cinematic-pc-item:not([style*="display: none"])');
     bottomRow.classList.toggle('hidden', !hasFeeds && !hasVisiblePCs);
+
+    // Hide camera resize handle when no camera feeds are active
+    const resizeHandle = bottomRow.querySelector('.camera-row-resize-handle');
+    if (resizeHandle) resizeHandle.style.display = hasFeeds ? '' : 'none';
   }
 
   _teardownCameraRow() {
