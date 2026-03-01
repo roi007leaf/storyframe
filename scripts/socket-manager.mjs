@@ -596,17 +596,7 @@ export class SocketManager {
   _handleCloseSceneMode() {
     const cinematic = game.storyframe.cinematicScene;
     if (cinematic?.rendered) {
-      // Fade out visually (and musically for GM) before closing
-      cinematic.fadeOutAndClose().then(() => {
-        // Reopen player viewer for non-GM if speakers exist
-        if (!game.user?.isGM) {
-          const state = game.storyframe.stateManager?.getState();
-          const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
-          if (visibleSpeakers.length > 0 && game.storyframe.playerViewer) {
-            game.storyframe.playerViewer.render(true);
-          }
-        }
-      });
+      cinematic.fadeOutAndClose();
     }
   }
 
