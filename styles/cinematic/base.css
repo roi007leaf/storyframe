@@ -85,7 +85,7 @@ body:has(.storyframe.cinematic-scene)
 }
 
 .cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .cinematic-pc-item) {
-  --_camera-row-reserve: 60px;
+  --_camera-row-reserve: 76px;
 }
 
 .cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .camera-feed-item) {

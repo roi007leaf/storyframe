@@ -2,7 +2,7 @@
   "id": "storyframe",
   "title": "Storyframe",
   "description": "Journal-integrated speaker and skill check manager with synchronized player portraits",
-  "version": "2.4.6",
+  "version": "2.4.7",
   "compatibility": {
     "minimum": "13",
     "verified": "13"

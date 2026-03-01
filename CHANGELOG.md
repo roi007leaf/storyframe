@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.7] - 2026-03-01
+
+### Fixed
+
+- **Cinematic spotlight overlaps PC row** — increased bottom reserve spacing so the active speaker nameplate no longer overlaps the PC portraits row when there is only one speaker active and no filmstrip visible
+
 ## [2.4.6] - 2026-03-01
 
 ### Fixed
