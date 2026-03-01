@@ -325,6 +325,15 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'cinematicPrepMode', {
+    name: game.i18n.localize('STORYFRAME.Settings.CinematicPrepMode.Name'),
+    hint: game.i18n.localize('STORYFRAME.Settings.CinematicPrepMode.Hint'),
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: true,
+  });
+
   game.settings.register(MODULE_ID, 'gmWindowPosition', {
     name: 'GM Window Position',
     scope: 'client',

@@ -962,7 +962,6 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   }
 
   static _onLaunchSceneMode() {
-
     game.storyframe.socketManager.launchSceneMode();
   }
 

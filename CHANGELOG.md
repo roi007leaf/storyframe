@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.4.1] - 2026-03-01
 
+### Added
+
+- **Cinematic prep mode** (setting, default on) — launching Scene Mode opens only for the GM; players don't see the cinematic until you click "Show to Players" (broadcast icon), preventing spoilers while you set up speakers, background, and music
+
 ### Fixed
 
 - **Player viewer reopening after cinematic close** — player viewer no longer automatically reopens when the cinematic scene is closed

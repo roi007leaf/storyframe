@@ -820,7 +820,7 @@ export class CinematicGMApp extends CinematicSceneBase {
   }
 
   static _onRelaunchForPlayers() {
-    game.storyframe.socketManager.launchSceneMode();
+    game.storyframe.socketManager.showSceneToPlayers();
     ui.notifications.info(game.i18n.localize('STORYFRAME.CinematicScene.Relaunched'));
   }
 

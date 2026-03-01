@@ -4,6 +4,10 @@
     "Settings": {
       "Debug": "Debug Mode",
       "DebugHint": "Enable debug logging to console",
+      "CinematicPrepMode": {
+        "Name": "Cinematic Prep Mode",
+        "Hint": "When enabled, launching Scene Mode opens only for the GM. Players won't see it until you click 'Show to Players'."
+      },
       "AutoOpenSidebar": "Auto-Open Sidebar",
       "AutoOpenSidebarHint": "Automatically open the sidebar when opening a journal",
       "PeekHidesSidebar": "Peek Hides Sidebar",
@@ -485,6 +489,7 @@
       "Playlists": "Playlists",
       "Tracks": "Tracks",
       "RelaunchForPlayers": "Relaunch for Players",
+      "ShowToPlayers": "Show to Players",
       "PendingLabel": "Pending",
       "ActiveLabel": "Active",
       "Minimize": "Minimize",

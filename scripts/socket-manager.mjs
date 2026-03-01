@@ -269,9 +269,23 @@ export class SocketManager {
   }
 
   /**
-   * Launch cinematic scene mode on all clients.
+   * Launch cinematic scene mode.
+   * If cinematicPrepMode is enabled, only opens for the GM.
+   * Otherwise broadcasts to all clients.
    */
   launchSceneMode() {
+    const prepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode');
+    if (prepMode) {
+      this._handleLaunchSceneMode();
+    } else {
+      this.socket.executeForEveryone('launchSceneMode');
+    }
+  }
+
+  /**
+   * Show cinematic scene to all players (broadcast from GM).
+   */
+  showSceneToPlayers() {
     this.socket.executeForEveryone('launchSceneMode');
   }
 
