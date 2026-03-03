@@ -1223,6 +1223,7 @@
   align-items: center;
   gap: 6px;
   padding: 6px 10px;
+  margin-bottom: 4px;
   background: rgba(94, 129, 172, 0.12);
   border: 1px solid rgba(94, 129, 172, 0.25);
   border-radius: var(--sf-radius-sm, 4px);
@@ -1230,6 +1231,37 @@
   cursor: pointer;
   font-size: 0.75rem;
   transition: background 0.2s;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.cinematic-scene-container .journal-minimized-pill > i {
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .journal-pill-text {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1;
+}
+
+.cinematic-scene-container .journal-pill-text > span {
+  display: inline-block;
+}
+
+.cinematic-scene-container .journal-minimized-pill:hover .journal-pill-text {
+  text-overflow: clip;
+}
+
+.cinematic-scene-container .journal-minimized-pill:hover .journal-pill-text > span {
+  animation: sf-pill-scroll 4s linear 0.3s infinite alternate;
+}
+
+@keyframes sf-pill-scroll {
+  0%, 10% { transform: translateX(0); }
+  90%, 100% { transform: translateX(var(--sf-scroll-distance, 0px)); }
 }
 
 .cinematic-scene-container .journal-minimized-pill:hover {
@@ -1237,6 +1269,7 @@
 }
 
 .cinematic-scene-container .journal-pill-close {
+  flex-shrink: 0;
   margin-left: auto;
   background: none;
   border: none;
@@ -1266,6 +1299,83 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  background: none;
+  border: none;
+  color: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  text-align: left;
+}
+
+.cinematic-scene-container .journal-viewer-title:hover {
+  color: rgba(255, 255, 255, 1);
+}
+
+.cinematic-scene-container .journal-switcher-caret {
+  font-size: 0.6rem;
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .journal-switcher-dropdown {
+  position: relative;
+  background: rgba(10, 10, 18, 0.95);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: var(--sf-radius-md, 8px);
+  max-height: 300px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  margin-bottom: 6px;
+  animation: cinematic-fade-in 0.15s ease-out;
+}
+
+.cinematic-scene-container .journal-switcher-dropdown.hidden {
+  display: none;
+}
+
+.cinematic-scene-container .journal-switcher-search {
+  width: 100%;
+  padding: 6px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.7rem;
+  outline: none;
+}
+
+.cinematic-scene-container .journal-switcher-search::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.cinematic-scene-container .journal-switcher-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.7);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.cinematic-scene-container .journal-switcher-item:hover {
+  background: rgba(94, 129, 172, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.cinematic-scene-container .journal-switcher-item.active {
+  background: rgba(94, 129, 172, 0.2);
+  color: rgba(94, 129, 172, 1);
+}
+
+.cinematic-scene-container .journal-switcher-item i {
+  font-size: 0.6rem;
+  opacity: 0.5;
 }
 
 .cinematic-scene-container .journal-header-btn {
@@ -1307,6 +1417,7 @@
   margin-bottom: 6px;
   overflow-x: auto;
   scrollbar-width: thin;
+  flex-shrink: 0;
 }
 
 .cinematic-scene-container .journal-page-tab {
@@ -1401,19 +1512,26 @@
   border-color: rgba(94, 129, 172, 0.5);
 }
 
-/* Image preview overlay (center stage) */
+/* Image preview overlay (center stage) — matches spotlight positioning */
 .cinematic-scene-container .cinematic-image-preview {
   position: absolute;
-  top: 50%;
+  bottom: calc(
+    (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve)
+  );
   left: 50%;
-  transform: translate(-50%, -55%);
+  transform: translateX(-50%);
   z-index: 6;
   animation: cinematic-fade-in 0.3s ease-out;
 }
 
 .cinematic-scene-container .preview-portrait {
-  max-width: 70vw;
-  max-height: 80vh;
+  display: block;
+  max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 80px);
+  max-height: calc(
+    100vh - 96px
+    - (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible)
+    - var(--_camera-row-reserve)
+  );
   object-fit: contain;
   border: 3px solid rgba(94, 129, 172, 0.6);
   border-radius: var(--sf-radius-lg, 12px);
@@ -1444,6 +1562,29 @@
 
 .cinematic-scene-container .preview-close-btn:hover {
   background: rgba(200, 50, 50, 1);
+}
+
+.cinematic-scene-container .preview-popout-btn {
+  position: absolute;
+  top: -12px;
+  right: 28px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(94, 129, 172, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 7;
+  transition: background 0.15s;
+}
+
+.cinematic-scene-container .preview-popout-btn:hover {
+  background: rgba(94, 129, 172, 1);
 }
 
 .cinematic-scene-container .journal-content-body a {
@@ -1675,5 +1816,11 @@ body:has(.storyframe.cinematic-scene) .storyframe.scene-picker-dialog-app {
 body:has(.storyframe.cinematic-scene) .app.dialog,
 body:has(.storyframe.cinematic-scene) .dnd5e2.sheet.actor,
 body:has(.storyframe.cinematic-scene) .app.window-app:not(.storyframe) {
+  z-index: 200000 !important;
+}
+
+/* ApplicationV2 document sheets and journal editors opened during cinematic mode */
+body:has(.storyframe.cinematic-scene) .application.sheet:not(.storyframe),
+body:has(.storyframe.cinematic-scene) .application.journal-entry-page {
   z-index: 200000 !important;
 }

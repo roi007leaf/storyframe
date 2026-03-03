@@ -12,6 +12,10 @@
   {{#if previewImageSrc}}
   <div class="cinematic-image-preview">
     <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.PopoutImage'}}">
+      <i class="fas fa-up-right-from-square"></i>
+    </button>
     <button type="button" class="preview-close-btn" data-action="closeImagePreview">
       <i class="fas fa-times"></i>
     </button>
@@ -141,11 +145,25 @@
     </div>
   </div>
 
-  {{!-- Player chat log (top-right, collapsible) --}}
-  <div class="cinematic-player-chat {{#if playerChatExpanded}}expanded{{/if}}">
-    <button type="button" class="player-chat-toggle" data-action="togglePlayerChat">
+  {{!-- Journal button + panel (top-left) --}}
+  <div class="cinematic-player-journal">
+    <button type="button" class="player-utility-btn" data-action="toggleJournalSidebar"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.Journal'}}">
+      <i class="fas fa-book-open" aria-hidden="true"></i>
+    </button>
+    <div class="cinematic-player-journal-panel hidden"></div>
+  </div>
+
+  {{!-- Player utility buttons (top-right) --}}
+  <div class="cinematic-player-utilities">
+    <button type="button" class="player-utility-btn" data-action="togglePlayerChat"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.ChatLog'}}">
       <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
+  </div>
+
+  {{!-- Player chat log (top-right, collapsible) --}}
+  <div class="cinematic-player-chat {{#if playerChatExpanded}}expanded{{/if}}">
     <div class="player-chat-content">
       <div class="side-panel-chat-messages player-chat-messages"></div>
     </div>

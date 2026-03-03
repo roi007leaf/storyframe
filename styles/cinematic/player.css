@@ -288,10 +288,56 @@
   gap: var(--sf-space-sm, 8px);
 }
 
-/* ===== Player Chat Log (top-right, collapsible) ===== */
+/* ===== Player Journal Button (top-left) ===== */
+.cinematic-scene-container .cinematic-player-journal {
+  position: absolute;
+  top: 16px;
+  left: var(--sf-space-lg, 24px);
+  z-index: 15;
+  animation: cinematic-fade-in 0.4s ease-out;
+  /* Positioning context for the journal panel */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+/* ===== Player Utility Buttons (top-right) ===== */
+.cinematic-scene-container .cinematic-player-utilities {
+  position: absolute;
+  top: 16px;
+  right: var(--sf-space-lg, 24px);
+  z-index: 15;
+  display: flex;
+  gap: 6px;
+  animation: cinematic-fade-in 0.4s ease-out;
+}
+
+.cinematic-scene-container .player-utility-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  color: rgba(94, 129, 172, 0.9);
+  background: rgba(10, 10, 18, 0.88);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  font-size: 1rem;
+  transition: color 0.15s, background 0.15s;
+}
+
+.cinematic-scene-container .player-utility-btn:hover {
+  color: rgba(94, 129, 172, 1);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+/* ===== Player Chat Log (top-right, below utility buttons) ===== */
 .cinematic-scene-container .cinematic-player-chat {
   position: absolute;
-  top: calc(16px);
+  top: 66px;
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   background: rgba(10, 10, 18, 0.88);
@@ -300,35 +346,17 @@
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   max-width: 360px;
-  animation: cinematic-fade-in 0.4s ease-out;
 }
 
 .cinematic-scene-container .cinematic-player-chat.expanded {
   width: 360px;
-  max-height: 50vh;
+  max-height: calc(50vh - 50px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.cinematic-scene-container .player-chat-toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--sf-space-sm, 8px);
-  padding: 10px 14px;
-  cursor: pointer;
-  color: rgba(94, 129, 172, 0.9);
-  background: none;
-  border: none;
-  font-size: 1.1rem;
-  width: 100%;
-}
-
-.cinematic-scene-container .player-chat-toggle:hover {
-  color: rgba(94, 129, 172, 1);
-}
-
-.cinematic-scene-container .cinematic-player-chat:not(.expanded) .player-chat-content {
+.cinematic-scene-container .cinematic-player-chat:not(.expanded) {
   display: none;
 }
 
@@ -367,5 +395,69 @@
   font-size: 0.6rem;
   opacity: 0.6;
   margin-right: 2px;
+}
+
+/* ===== Player Journal Panel ===== */
+/* Most journal styles (pills, viewer, page tabs, entry list, content) are shared
+   from gm.css since both use .cinematic-scene-container as scope. */
+.cinematic-scene-container .cinematic-player-journal-panel {
+  margin-top: 6px;
+  width: 300px;
+  max-height: calc(100vh - 80px);
+  background: rgba(10, 10, 18, 0.92);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: cinematic-fade-in 0.2s ease-out;
+}
+
+.cinematic-scene-container .cinematic-player-journal-panel.hidden {
+  display: none;
+}
+
+/* List view header with title + New Note button */
+.cinematic-scene-container .player-journal-list-header {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px 2px;
+  gap: 4px;
+}
+
+.cinematic-scene-container .player-journal-list-header h4 {
+  flex: 1;
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cinematic-scene-container .player-journal-new-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: rgba(94, 129, 172, 0.15);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(94, 129, 172, 0.8);
+  cursor: pointer;
+  font-size: 0.65rem;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .player-journal-new-btn:hover {
+  background: rgba(94, 129, 172, 0.3);
+  color: rgba(94, 129, 172, 1);
 }
 

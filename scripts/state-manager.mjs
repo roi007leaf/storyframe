@@ -116,6 +116,18 @@ export class StateManager {
   }
 
   /**
+   * Set minimized journals list and persist.
+   * @param {Array} arr - Array of {id, pageId}
+   */
+  async setMinimizedJournals(arr) {
+    if (!this.state) return;
+    const scene = game.scenes.current;
+    if (!scene) return;
+    this.state.minimizedJournals = arr;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+  }
+
+  /**
    * Update speakers list and persist.
    * @param {Array} speakers - New speakers array
    */

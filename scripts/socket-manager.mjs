@@ -483,6 +483,16 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(_requestData) {
+    // Ensure this roll exists in local state before rendering.
+    // The stateUpdate broadcast may arrive after this targeted prompt,
+    // causing the sidebar to render with stale state (missing the roll).
+    if (_requestData?.id && game.storyframe.stateManager) {
+      const state = game.storyframe.stateManager.getState();
+      if (state && !state.pendingRolls.some(r => r.id === _requestData.id)) {
+        state.pendingRolls.push(_requestData);
+      }
+    }
+
     if (game.storyframe.cinematicScene?.rendered) {
       game.storyframe.cinematicScene._onStateChange();
     } else if (game.storyframe.playerSidebar) {
@@ -589,8 +599,7 @@ export class SocketManager {
   _handleShowImagePreview(src) {
     const scene = game.storyframe.cinematicScene;
     if (!scene?.rendered) return;
-    scene.previewImageSrc = src;
-    scene.render();
+    scene.showImagePreview(src);
   }
 
   async _handleLaunchSceneMode() {

@@ -12,6 +12,10 @@
   {{#if previewImageSrc}}
   <div class="cinematic-image-preview">
     <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.PopoutImage'}}">
+      <i class="fas fa-up-right-from-square"></i>
+    </button>
     <button type="button" class="preview-close-btn" data-action="closeImagePreview">
       <i class="fas fa-times"></i>
     </button>
@@ -225,19 +229,24 @@
 
     {{!-- Journal --}}
     <div class="side-panel-section left-panel-journal left-panel-section" data-section="journal">
+      {{!-- Minimized journal pills --}}
+      {{#each minimizedJournals}}
+      <div class="journal-minimized-pill" data-action="journalRestoreMinimized" data-journal-id="{{this.id}}">
+        <i class="fas fa-book-open" aria-hidden="true"></i>
+        <span class="journal-pill-text"><span>{{this.name}}{{#if this.pageName}} ({{this.pageName}}){{/if}}</span></span>
+        <button type="button" class="journal-pill-close" data-action="journalCloseMinimized" data-journal-id="{{this.id}}">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      {{/each}}
+
       {{#if openJournal}}
-        {{#if journalMinimized}}
-        <div class="journal-minimized-pill" data-action="journalExpand">
-          <i class="fas fa-book-open" aria-hidden="true"></i>
-          <span>{{openJournal.name}}</span>
-          <button type="button" class="journal-pill-close" data-action="journalClose">
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-        {{else}}
         <div class="journal-viewer-header">
           <i class="fas fa-book-open" aria-hidden="true"></i>
-          <span class="journal-viewer-title">{{openJournal.name}}</span>
+          <button type="button" class="journal-viewer-title" data-action="toggleJournalSwitcher">
+            {{openJournal.name}}
+            <i class="fas fa-caret-down journal-switcher-caret" aria-hidden="true"></i>
+          </button>
           <i class="fas fa-font journal-font-icon-sm" aria-hidden="true"></i>
           <input type="range" class="journal-font-size-slider" min="0.5" max="1.5" step="0.05"
                  value="{{journalFontSize}}"
@@ -249,6 +258,17 @@
           <button type="button" class="journal-header-btn" data-action="journalClose" data-tooltip="{{localize 'STORYFRAME.UI.Labels.Close'}}">
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
+        </div>
+        <div class="journal-switcher-dropdown hidden">
+          <input type="text" class="journal-switcher-search" placeholder="{{localize 'STORYFRAME.CinematicScene.SearchJournals'}}">
+          <div class="journal-switcher-list">
+            {{#each journalEntries}}
+            <div class="journal-switcher-item{{#if (eq this.id ../openJournal.id)}} active{{/if}}" data-action="journalOpen" data-journal-id="{{this.id}}">
+              <i class="fas fa-book" aria-hidden="true"></i>
+              <span>{{this.name}}</span>
+            </div>
+            {{/each}}
+          </div>
         </div>
         {{#if openJournal.pages.length}}
         {{#unless (eq openJournal.pages.length 1)}}
@@ -265,7 +285,6 @@
         <div class="journal-content-scroll">
           <div class="journal-content-body">{{{openJournal.enrichedContent}}}</div>
         </div>
-        {{/if}}
       {{else}}
         <h4><i class="fas fa-book" aria-hidden="true"></i> {{localize 'STORYFRAME.CinematicScene.Journal'}}</h4>
         <div class="journal-search-row">

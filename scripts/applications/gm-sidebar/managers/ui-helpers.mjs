@@ -477,8 +477,11 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   });
 
   // Close on click outside
+  // Use selector-based check for the trigger button since the original target
+  // reference becomes stale when the sidebar re-renders (destroying old DOM).
+  const triggerSelector = '.pending-rolls-btn, [data-action="showPendingRolls"]';
   const closeHandler = (e) => {
-    if (!popup.contains(e.target) && !target.contains(e.target)) {
+    if (!popup.contains(e.target) && !e.target.closest(triggerSelector)) {
       popup.remove();
       document.removeEventListener('click', closeHandler);
     }
@@ -494,7 +497,9 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   };
   document.addEventListener('keydown', escHandler);
 
-  getPopupParent(target).appendChild(popup);
+  // Append to document.body so the popup survives sidebar re-renders
+  // (ApplicationV2 dialogs replace their content on render, destroying children).
+  document.body.appendChild(popup);
   popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
@@ -1053,21 +1058,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       // Normal click: open roll requester then send
       menu.remove();
 
-      const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
-      const pcs = await getAllPlayerPCs();
-      if (pcs.length === 0) {
-        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
-        return;
-      }
-      const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-      const checks = [{ skillName: actionSkill, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType: 'skill', actionSlug }];
-      const result = await RollRequestDialog.subscribe(checks, pcs);
-      const selectedIds = result?.selectedIds || result || [];
-      const allowOnlyOne = result?.allowOnlyOne || false;
-      const batchGroupId = result?.batchGroupId ?? null;
-      if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
-      }
+      await SkillCheckHandlers.openRollRequesterAndSend(sidebar, actionSkill, 'skill', actionSlug);
     });
 
     // Mark as selected if already in global batch

@@ -7,6 +7,23 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-03-02
+
+### Added
+
+- **Player journal panel** — players now have a full in-app journal panel (top-left button) with search, minimized journal pills, page tabs, font size slider, and a New Note button; replaces the non-functional sidebar toggle
+- **Player note creation** — players can create their own journal entries directly from the cinematic panel via the New Note button; the entry opens immediately for viewing and editing
+- **Pop-out journal images** — journal images opened, pop out into separate windows for easier reference during play; these windows are draggable and resizable, and their positions persist across sessions
+- **Font size slider in player journal** — matches the GM journal viewer; adjusts content size and persists the setting across sessions
+
+### Fixed
+
+- **Journal page tabs cut off** — increased player journal panel max-height to `calc(100vh - 80px)` so tall journals with many page tabs are no longer clipped; page tabs also marked `flex-shrink: 0`
+- **Minimized journal pills persist** — minimized journals in cinematic GM mode are now saved to scene state and restored on reload or scene switch; also saved when pressing the floppy disk icon in saved scenes
+- **Spotlight pulse animations removed** — the glow and portrait pulse animations on the active speaker have been removed for a cleaner cinematic look
+- **Foundry dialogs behind cinematic overlay** — "Create Page", journal page editor, and other ApplicationV2 document sheets now correctly appear above the cinematic overlay; fixed a CSS specificity conflict where the `#interface` ID selector was suppressing the higher z-index value on native `<dialog>` elements
+- **Missing i18n strings** — added `NewNote`, `EditJournal`, and `NoContent` keys to the `CinematicScene` locale section; the "No content" placeholder no longer shows the raw key string
+
 ## [2.4.8] - 2026-03-01
 
 ### Fixed

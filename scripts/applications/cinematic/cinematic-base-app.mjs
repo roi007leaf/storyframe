@@ -26,6 +26,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     actions: {
       openCharacterSheet: CinematicSceneBase._onOpenCharacterSheet,
       closeImagePreview: CinematicSceneBase._onCloseImagePreview,
+      popoutImagePreview: CinematicSceneBase._onPopoutImagePreview,
       openPartySheet: CinematicSceneBase._onOpenPartySheet,
     },
   };
@@ -1189,6 +1190,55 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   static _onCloseImagePreview() {
     this.previewImageSrc = null;
     this.render();
+  }
+
+  /**
+   * Show an image preview overlay via direct DOM injection.
+   * Used by the socket handler to avoid async render-queue timing issues.
+   * Sets previewImageSrc so future re-renders also include the preview.
+   * @param {string} src - Image URL to display
+   */
+  showImagePreview(src) {
+    this.previewImageSrc = src;
+
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) {
+      this.render();
+      return;
+    }
+
+    // Remove any existing preview
+    container.querySelector('.cinematic-image-preview')?.remove();
+
+    // Hide spotlight / no-active (template renders them mutually exclusive with preview)
+    const centreEl = container.querySelector('.cinematic-spotlight, .cinematic-no-active');
+    if (centreEl) centreEl.style.display = 'none';
+
+    // Build preview element matching the template markup
+    const preview = document.createElement('div');
+    preview.className = 'cinematic-image-preview';
+    preview.innerHTML = `
+      <img src="${foundry.utils.escapeHTML(src)}" class="preview-portrait">
+      <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+              data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.PopoutImage')}">
+        <i class="fas fa-up-right-from-square"></i>
+      </button>
+      <button type="button" class="preview-close-btn" data-action="closeImagePreview">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+    // Insert right after the vignette overlay (same visual layer as template-rendered preview)
+    const vignette = container.querySelector('.vignette-overlay');
+    if (vignette) {
+      vignette.insertAdjacentElement('afterend', preview);
+    } else {
+      container.prepend(preview);
+    }
+  }
+
+  static _onPopoutImagePreview() {
+    if (this.previewImageSrc) window.open(this.previewImageSrc, '_blank');
   }
 
   static _onOpenPartySheet() {

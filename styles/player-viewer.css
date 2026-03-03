@@ -566,23 +566,6 @@
     0 0 24px rgba(94, 129, 172, 0.55),
     0 6px 24px rgba(0, 0, 0, 0.55);
   background: rgba(0, 0, 0, 0.3);
-  animation: spotlight-img-pulse 2.5s ease-in-out infinite;
-}
-
-@keyframes spotlight-img-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 0 1px rgba(94, 129, 172, 0.25),
-      0 0 20px rgba(94, 129, 172, 0.45),
-      0 6px 24px rgba(0, 0, 0, 0.55);
-  }
-  50% {
-    box-shadow:
-      0 0 0 1px rgba(94, 129, 172, 0.5),
-      0 0 36px rgba(94, 129, 172, 0.75),
-      0 6px 32px rgba(0, 0, 0, 0.6);
-  }
 }
 
 .storyframe.player-viewer .spotlight-eyebrow {

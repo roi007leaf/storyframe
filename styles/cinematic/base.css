@@ -30,16 +30,26 @@
   background: transparent;
 }
 
-/* All Foundry windows/dialogs must appear above the cinematic overlay (z-index 99999).
-   Covers ApplicationV2 (.application / dialog.application on body), legacy v1 (.app),
-   and non-app UI elements. */
+/* ApplicationV2 apps and legacy v1 apps inside #interface must appear above the cinematic overlay.
+   Native <dialog> elements rendered directly on body are handled separately below. */
 body:has(.storyframe.cinematic-scene)
-  :is(#interface .application, #interface .app, dialog.application) {
+  :is(#interface .application, #interface .app) {
   z-index: 100000 !important;
+}
+
+/* Native <dialog> elements (e.g. "Create Page") rendered directly on body by FoundryVTT v13.
+   Kept as a separate rule — `:is()` with #interface would give it higher specificity and
+   suppress this 200000 value via the !important cascade. */
+body:has(.storyframe.cinematic-scene) dialog {
+  z-index: 200000 !important;
 }
 
 body:has(.storyframe.cinematic-scene)
   :is(#context-menu, #notifications, #dice-box-canvas, #storyframe-gm-sidebar, #file-picker) {
+  z-index: 100000 !important;
+}
+
+body:has(.storyframe.cinematic-scene) #sidebar {
   z-index: 100000 !important;
 }
 
@@ -166,7 +176,6 @@ body:has(.storyframe.cinematic-scene)
     transparent 70%
   );
   border-radius: 50%;
-  animation: cinematic-glow-pulse 3s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
 }
@@ -183,7 +192,6 @@ body:has(.storyframe.cinematic-scene)
     0 0 60px rgba(94, 129, 172, 0.4),
     0 0 120px rgba(94, 129, 172, 0.15),
     0 20px 60px rgba(0, 0, 0, 0.8);
-  animation: cinematic-portrait-pulse 3s ease-in-out infinite;
   background: rgba(0, 0, 0, 0.3);
 }
 
@@ -253,34 +261,6 @@ body:has(.storyframe.cinematic-scene)
   to {
     opacity: 1;
     transform: translateX(-50%) scale(1);
-  }
-}
-
-@keyframes cinematic-glow-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes cinematic-portrait-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 60px rgba(94, 129, 172, 0.4),
-      0 0 120px rgba(94, 129, 172, 0.15),
-      0 20px 60px rgba(0, 0, 0, 0.8);
-  }
-  50% {
-    box-shadow:
-      0 0 80px rgba(94, 129, 172, 0.55),
-      0 0 160px rgba(94, 129, 172, 0.25),
-      0 20px 80px rgba(0, 0, 0, 0.8);
   }
 }
 

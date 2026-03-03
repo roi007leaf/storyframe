@@ -26,8 +26,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       cancelPendingRoll: CinematicGMApp._onCancelPendingRoll,
       journalOpen: CinematicGMApp._onJournalOpen,
       journalClose: CinematicGMApp._onJournalClose,
+      toggleJournalSwitcher: CinematicGMApp._onToggleJournalSwitcher,
       journalMinimize: CinematicGMApp._onJournalMinimize,
-      journalExpand: CinematicGMApp._onJournalExpand,
+      journalRestoreMinimized: CinematicGMApp._onJournalRestoreMinimized,
+      journalCloseMinimized: CinematicGMApp._onJournalCloseMinimized,
       journalSelectPage: CinematicGMApp._onJournalSelectPage,
       journalOpenPage: CinematicGMApp._onJournalOpenPage,
       presentSavedChallenge: CinematicGMApp._onPresentSavedChallenge,
@@ -77,11 +79,12 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.batchedChecks = [];
     this.leftPanelOpen = true;
     this.expandedPlaylistIds = new Set();
-    this._savedTrackVolumes = new Map(); // playlistId:soundId → original volume
+    this._savedGlobalVolume = null; // original globalPlaylistVolume before cinematic adjustment
     this.musicSearchQuery = '';
     this.openJournalId = null;
     this.openJournalPageId = null;
-    this.journalMinimized = false;
+    const savedMinimized = game.storyframe.stateManager?.getState()?.minimizedJournals;
+    this.minimizedJournals = Array.isArray(savedMinimized) ? [...savedMinimized] : [];
     this.journalSearchQuery = '';
     this.journalFontSize = game.settings.get(MODULE_ID, 'cinematicJournalFontSize') ?? 0.75;
     this._speakerCounters = {};
@@ -157,7 +160,7 @@ export class CinematicGMApp extends CinematicSceneBase {
         gmActiveChallenges: [],
         journalEntries: [],
         openJournal: null,
-        journalMinimized: false,
+        minimizedJournals: [],
         journalSearchQuery: '',
         journalFontSize: this.journalFontSize,
       };
@@ -209,13 +212,12 @@ export class CinematicGMApp extends CinematicSceneBase {
       }
     }
     const nowPlaying = this._getNowPlaying();
-    let currentVolume = 0.5;
+    let currentVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
     let shuffleActive = false;
     let repeatActive = false;
     if (nowPlaying) {
       const pl = game.playlists.get(nowPlaying.playlistId);
       const sound = pl?.sounds.get(nowPlaying.soundId);
-      if (sound) currentVolume = sound.volume;
       if (pl) shuffleActive = pl.mode === CONST.PLAYLIST_MODES.SHUFFLE;
       if (sound) repeatActive = sound.repeat;
     }
@@ -393,7 +395,11 @@ export class CinematicGMApp extends CinematicSceneBase {
       gmActiveChallenges,
       journalEntries,
       openJournal,
-      journalMinimized: this.journalMinimized,
+      minimizedJournals: this.minimizedJournals.map(m => {
+        const entry = game.journal.get(m.id);
+        const pageName = m.pageId ? entry?.pages.get(m.pageId)?.name : null;
+        return { id: m.id, name: entry?.name || '???', pageId: m.pageId, pageName };
+      }),
       journalSearchQuery: this.journalSearchQuery,
       journalFontSize: this.journalFontSize,
     };
@@ -548,39 +554,27 @@ export class CinematicGMApp extends CinematicSceneBase {
       });
     }
 
-    // Global volume slider — controls all playing tracks, saves originals on first use
+    // Global volume slider — controls Foundry's master globalPlaylistVolume
     const volumeSlider = this.element?.querySelector('.cinematic-music-volume');
     if (volumeSlider) {
       let globalVolTimer = null;
       volumeSlider.addEventListener('input', (e) => {
         const vol = parseFloat(e.target.value);
-        // Save original volumes before first global adjustment
-        for (const p of game.playlists) {
-          for (const s of p.sounds) {
-            if (s.playing) {
-              const key = `${p.id}:${s.id}`;
-              if (!this._savedTrackVolumes.has(key)) this._savedTrackVolumes.set(key, s.volume);
-            }
-          }
+        // Save original global volume on first touch
+        if (this._savedGlobalVolume === null) {
+          this._savedGlobalVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
         }
         // Show reset button
         this.element?.querySelector('.music-volume-reset')?.classList.remove('hidden');
         clearTimeout(globalVolTimer);
         globalVolTimer = setTimeout(() => {
-          for (const p of game.playlists) {
-            const updates = p.sounds.contents
-              .filter(s => s.playing)
-              .map(s => ({ _id: s.id, volume: vol }));
-            if (updates.length) p.updateEmbeddedDocuments('PlaylistSound', updates);
-          }
+          game.settings.set('core', 'globalPlaylistVolume', vol);
         }, 150);
-        // Sync per-track sliders locally for immediate feedback
-        this.element?.querySelectorAll('.track-volume-slider').forEach(s => { s.value = vol; });
       });
     }
 
-    // Show reset button if saved volumes exist
-    if (this._savedTrackVolumes.size) {
+    // Show reset button if global volume was changed
+    if (this._savedGlobalVolume !== null) {
       this.element?.querySelector('.music-volume-reset')?.classList.remove('hidden');
     }
 
@@ -600,37 +594,8 @@ export class CinematicGMApp extends CinematicSceneBase {
       });
     }
 
-    // Journal search
-    const journalSearch = this.element?.querySelector('.journal-search-input');
-    if (journalSearch) {
-      if (this.journalSearchQuery) {
-        journalSearch.focus();
-        journalSearch.setSelectionRange(journalSearch.value.length, journalSearch.value.length);
-      }
-      journalSearch.addEventListener('input', (e) => {
-        this.journalSearchQuery = e.target.value;
-        this._debouncedRender();
-      });
-    }
-
-    // Apply saved journal font size to content body
-    const journalBody = this.element?.querySelector('.journal-content-body');
-    if (journalBody) journalBody.style.fontSize = `${this.journalFontSize}rem`;
-
-    // Journal font size slider
-    const fontSlider = this.element?.querySelector('.journal-font-size-slider');
-    if (fontSlider) {
-      fontSlider.addEventListener('input', (e) => {
-        const size = parseFloat(e.target.value);
-        this.journalFontSize = size;
-        this.element?.querySelector('.journal-content-body')?.style.setProperty('font-size', `${size}rem`);
-        game.settings.set(MODULE_ID, 'cinematicJournalFontSize', size);
-      });
-    }
-
-    // Scroll active journal page tab into view
-    const activeTab = this.element?.querySelector('.journal-page-tab.active');
-    activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+    // Journal search, font size slider, active tab scroll
+    this._bindJournalListeners();
 
     // Restore section heights + bind resize handles
     const growSections = new Set(['music', 'chat']);
@@ -678,26 +643,6 @@ export class CinematicGMApp extends CinematicSceneBase {
     // Panel width resize handles
     this.element?.querySelectorAll('.panel-width-handle').forEach(handle => {
       handle.addEventListener('mousedown', (e) => this._onWidthResizeStart(e, handle));
-    });
-
-    // Journal image "show in spotlight" buttons
-    const journalImages = this.element?.querySelectorAll('.journal-content-body img');
-    journalImages?.forEach(img => {
-      if (img.closest('.journal-img-wrapper')) return;
-      const wrapper = document.createElement('div');
-      wrapper.classList.add('journal-img-wrapper');
-      img.parentNode.insertBefore(wrapper, img);
-      wrapper.appendChild(img);
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.classList.add('journal-img-show-btn');
-      btn.innerHTML = '<i class="fas fa-expand"></i>';
-      btn.addEventListener('click', () => {
-        this.previewImageSrc = img.src;
-        this.render();
-        game.storyframe.socketManager.broadcastImagePreview(img.src);
-      });
-      wrapper.appendChild(btn);
     });
 
     // Floating panels draggable
@@ -757,10 +702,16 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.batchedChecks = [];
     this.leftPanelOpen = false;
     this.expandedPlaylistIds.clear();
+    // Restore master volume if we changed it during cinematic
+    if (this._savedGlobalVolume !== null) {
+      game.settings.set('core', 'globalPlaylistVolume', this._savedGlobalVolume);
+      this._savedGlobalVolume = null;
+    }
     this.musicSearchQuery = '';
     this.openJournalId = null;
     this.openJournalPageId = null;
-    this.journalMinimized = false;
+    this.minimizedJournals = [];
+    this._persistMinimizedJournals();
     this.journalSearchQuery = '';
     this.challengePanelExpanded = false;
     this._lastChallengeCount = 0;
@@ -846,6 +797,258 @@ export class CinematicGMApp extends CinematicSceneBase {
       musicSection.appendChild(listEl);
     }
   }, 150);
+
+  // --- Targeted journal search DOM update ---
+
+  _updateJournalSearchDOM = foundry.utils.debounce(() => {
+    const listEl = this.element?.querySelector('.journal-entry-list');
+    if (!listEl) return;
+
+    const q = this.journalSearchQuery?.toLowerCase() || '';
+    const allJournals = game.journal.contents
+      .filter(j => j.testUserPermission(game.user, 'OBSERVER'))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    let entries;
+    if (q) {
+      entries = [];
+      for (const j of allJournals) {
+        const nameMatch = j.name.toLowerCase().includes(q);
+        const matchingPages = j.pages.contents
+          .filter(p => p.type === 'text' && p.name.toLowerCase().includes(q))
+          .map(p => ({ id: p.id, name: p.name }));
+        if (nameMatch || matchingPages.length > 0) {
+          entries.push({ id: j.id, name: j.name, pageCount: j.pages.size, matchingPages: nameMatch ? [] : matchingPages });
+        }
+      }
+    } else {
+      entries = allJournals.map(j => ({ id: j.id, name: j.name, pageCount: j.pages.size, matchingPages: [] }));
+    }
+
+    if (entries.length === 0) {
+      listEl.innerHTML = `<div class="left-panel-empty">${game.i18n.localize('STORYFRAME.CinematicScene.NoJournalsFound')}</div>`;
+      return;
+    }
+
+    const frag = document.createDocumentFragment();
+    for (const entry of entries) {
+      const item = document.createElement('div');
+      item.className = 'journal-entry-item';
+      item.dataset.action = 'journalOpen';
+      item.dataset.journalId = entry.id;
+      item.innerHTML = `<i class="fas fa-book" aria-hidden="true"></i>`
+        + `<span>${foundry.utils.escapeHTML(entry.name)}</span>`
+        + (entry.pageCount ? `<span class="journal-page-count">${entry.pageCount}</span>` : '');
+      frag.appendChild(item);
+      for (const page of entry.matchingPages) {
+        const pageItem = document.createElement('div');
+        pageItem.className = 'journal-entry-item journal-page-match';
+        pageItem.dataset.action = 'journalOpenPage';
+        pageItem.dataset.journalId = entry.id;
+        pageItem.dataset.pageId = page.id;
+        pageItem.innerHTML = `<i class="fas fa-file-alt" aria-hidden="true"></i><span>${foundry.utils.escapeHTML(page.name)}</span>`;
+        frag.appendChild(pageItem);
+      }
+    }
+    listEl.innerHTML = '';
+    listEl.appendChild(frag);
+  }, 150);
+
+  // --- Targeted journal section DOM update (avoids full re-render / filmstrip rebuild) ---
+
+  async _updateJournalSection() {
+    const sectionEl = this.element?.querySelector('.left-panel-journal');
+    if (!sectionEl) return;
+
+    // Build journal data
+    const allJournals = game.journal.contents
+      .filter(j => j.testUserPermission(game.user, 'OBSERVER'))
+      .sort((a, b) => a.name.localeCompare(b.name));
+    const q = this.journalSearchQuery?.toLowerCase() || '';
+    let journalEntries;
+    if (q) {
+      journalEntries = [];
+      for (const j of allJournals) {
+        const nameMatch = j.name.toLowerCase().includes(q);
+        const matchingPages = j.pages.contents
+          .filter(p => p.type === 'text' && p.name.toLowerCase().includes(q))
+          .map(p => ({ id: p.id, name: p.name }));
+        if (nameMatch || matchingPages.length > 0) {
+          journalEntries.push({ id: j.id, name: j.name, pageCount: j.pages.size, matchingPages: nameMatch ? [] : matchingPages });
+        }
+      }
+    } else {
+      journalEntries = allJournals.map(j => ({ id: j.id, name: j.name, pageCount: j.pages.size, matchingPages: [] }));
+    }
+
+    let openJournal = null;
+    if (this.openJournalId) {
+      const entry = game.journal.get(this.openJournalId);
+      if (entry) {
+        const pages = entry.pages.contents
+          .filter(p => p.type === 'text')
+          .sort((a, b) => a.sort - b.sort)
+          .map(p => ({ id: p.id, name: p.name }));
+        const activePage = this.openJournalPageId
+          ? entry.pages.get(this.openJournalPageId)
+          : entry.pages.contents.find(p => p.type === 'text');
+        let enrichedContent = '';
+        if (activePage?.text?.content) {
+          enrichedContent = await foundry.applications.ux.TextEditor.implementation.enrichHTML(activePage.text.content, { async: true });
+        }
+        openJournal = {
+          id: entry.id, name: entry.name, pages,
+          activePageId: activePage?.id || null,
+          enrichedContent,
+        };
+      } else {
+        this.openJournalId = null;
+      }
+    }
+
+    const minimizedJournals = this.minimizedJournals.map(m => {
+      const entry = game.journal.get(m.id);
+      const pageName = m.pageId ? entry?.pages.get(m.pageId)?.name : null;
+      return { id: m.id, name: entry?.name || '???', pageId: m.pageId, pageName };
+    });
+
+    // Build HTML
+    const esc = foundry.utils.escapeHTML;
+    let html = '';
+
+    // Minimized pills
+    for (const m of minimizedJournals) {
+      const label = m.pageName ? `${esc(m.name)} (${esc(m.pageName)})` : esc(m.name);
+      html += `<div class="journal-minimized-pill" data-action="journalRestoreMinimized" data-journal-id="${m.id}">`
+        + `<i class="fas fa-book-open" aria-hidden="true"></i>`
+        + `<span class="journal-pill-text"><span>${label}</span></span>`
+        + `<button type="button" class="journal-pill-close" data-action="journalCloseMinimized" data-journal-id="${m.id}">`
+        + `<i class="fas fa-times" aria-hidden="true"></i></button></div>`;
+    }
+
+    if (openJournal) {
+      // Viewer header
+      html += `<div class="journal-viewer-header">`
+        + `<i class="fas fa-book-open" aria-hidden="true"></i>`
+        + `<button type="button" class="journal-viewer-title" data-action="toggleJournalSwitcher">`
+        + `${esc(openJournal.name)}`
+        + `<i class="fas fa-caret-down journal-switcher-caret" aria-hidden="true"></i></button>`
+        + `<i class="fas fa-font journal-font-icon-sm" aria-hidden="true"></i>`
+        + `<input type="range" class="journal-font-size-slider" min="0.5" max="1.5" step="0.05" value="${this.journalFontSize}" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.JournalFontSize')}">`
+        + `<i class="fas fa-font journal-font-icon-lg" aria-hidden="true"></i>`
+        + `<button type="button" class="journal-header-btn" data-action="journalMinimize" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.Minimize')}">`
+        + `<i class="fas fa-minus" aria-hidden="true"></i></button>`
+        + `<button type="button" class="journal-header-btn" data-action="journalClose" data-tooltip="${game.i18n.localize('STORYFRAME.UI.Labels.Close')}">`
+        + `<i class="fas fa-times" aria-hidden="true"></i></button></div>`;
+
+      // Switcher dropdown
+      html += `<div class="journal-switcher-dropdown hidden">`
+        + `<input type="text" class="journal-switcher-search" placeholder="${game.i18n.localize('STORYFRAME.CinematicScene.SearchJournals')}">`
+        + `<div class="journal-switcher-list">`;
+      for (const j of journalEntries) {
+        html += `<div class="journal-switcher-item${j.id === openJournal.id ? ' active' : ''}" data-action="journalOpen" data-journal-id="${j.id}">`
+          + `<i class="fas fa-book" aria-hidden="true"></i><span>${esc(j.name)}</span></div>`;
+      }
+      html += `</div></div>`;
+
+      // Page tabs
+      if (openJournal.pages.length > 1) {
+        html += `<div class="journal-page-tabs">`;
+        for (const page of openJournal.pages) {
+          html += `<button type="button" class="journal-page-tab ${page.id === openJournal.activePageId ? 'active' : ''}" data-action="journalSelectPage" data-page-id="${page.id}">${esc(page.name)}</button>`;
+        }
+        html += `</div>`;
+      }
+
+      // Content
+      html += `<div class="journal-content-scroll"><div class="journal-content-body">${openJournal.enrichedContent}</div></div>`;
+    } else {
+      // Journal list view
+      html += `<h4><i class="fas fa-book" aria-hidden="true"></i> ${game.i18n.localize('STORYFRAME.CinematicScene.Journal')}</h4>`
+        + `<div class="journal-search-row">`
+        + `<input type="text" class="journal-search-input" placeholder="${game.i18n.localize('STORYFRAME.CinematicScene.SearchJournals')}" value="${esc(this.journalSearchQuery || '')}">`
+        + `</div><div class="journal-entry-list">`;
+      if (journalEntries.length === 0) {
+        html += `<div class="left-panel-empty">${game.i18n.localize('STORYFRAME.CinematicScene.NoJournalsFound')}</div>`;
+      } else {
+        for (const entry of journalEntries) {
+          html += `<div class="journal-entry-item" data-action="journalOpen" data-journal-id="${entry.id}">`
+            + `<i class="fas fa-book" aria-hidden="true"></i><span>${esc(entry.name)}</span>`
+            + (entry.pageCount ? `<span class="journal-page-count">${entry.pageCount}</span>` : '')
+            + `</div>`;
+          for (const page of entry.matchingPages) {
+            html += `<div class="journal-entry-item journal-page-match" data-action="journalOpenPage" data-journal-id="${entry.id}" data-page-id="${page.id}">`
+              + `<i class="fas fa-file-alt" aria-hidden="true"></i><span>${esc(page.name)}</span></div>`;
+          }
+        }
+      }
+      html += `</div>`;
+    }
+
+    sectionEl.innerHTML = html;
+    this._bindJournalListeners();
+  }
+
+  /** Bind journal-specific event listeners (search input, font size slider, etc.) */
+  _bindJournalListeners() {
+    const journalSearch = this.element?.querySelector('.journal-search-input');
+    if (journalSearch) {
+      if (this.journalSearchQuery) {
+        journalSearch.focus();
+        journalSearch.setSelectionRange(journalSearch.value.length, journalSearch.value.length);
+      }
+      journalSearch.addEventListener('input', (e) => {
+        this.journalSearchQuery = e.target.value;
+        this._updateJournalSearchDOM();
+      });
+    }
+
+    const journalBody = this.element?.querySelector('.journal-content-body');
+    if (journalBody) journalBody.style.fontSize = `${this.journalFontSize}rem`;
+
+    const fontSlider = this.element?.querySelector('.journal-font-size-slider');
+    if (fontSlider) {
+      fontSlider.addEventListener('input', (e) => {
+        const size = parseFloat(e.target.value);
+        this.journalFontSize = size;
+        this.element?.querySelector('.journal-content-body')?.style.setProperty('font-size', `${size}rem`);
+        game.settings.set(MODULE_ID, 'cinematicJournalFontSize', size);
+      });
+    }
+
+    const activeTab = this.element?.querySelector('.journal-page-tab.active');
+    activeTab?.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+
+    // Set scroll distance for overflowing minimized pill text
+    this.element?.querySelectorAll('.journal-pill-text').forEach(outer => {
+      const inner = outer.querySelector('span');
+      if (!inner) return;
+      const overflow = inner.scrollWidth - outer.clientWidth;
+      inner.style.setProperty('--sf-scroll-distance', overflow > 0 ? `-${overflow}px` : '0px');
+    });
+
+    // Journal image "show to players" buttons
+    this.element?.querySelectorAll('.journal-content-body img').forEach(img => {
+      if (img.closest('.journal-img-wrapper')) return;
+      const wrapper = document.createElement('div');
+      wrapper.classList.add('journal-img-wrapper');
+      img.parentNode.insertBefore(wrapper, img);
+      wrapper.appendChild(img);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.classList.add('journal-img-show-btn');
+      btn.innerHTML = '<i class="fas fa-expand"></i>';
+      btn.addEventListener('click', () => {
+        this.showImagePreview(img.src);
+        game.storyframe.socketManager.broadcastImagePreview(img.src);
+      });
+      wrapper.appendChild(btn);
+    });
+  }
+
+  _persistMinimizedJournals() {
+    game.storyframe.stateManager?.setMinimizedJournals(this.minimizedJournals);
+  }
 
   // --- Action handlers ---
 
@@ -957,6 +1160,10 @@ export class CinematicGMApp extends CinematicSceneBase {
         await game.storyframe.stateManager.setSceneBackground(scene.sceneBackground);
       }
 
+      // Restore minimized journals (if any)
+      this.minimizedJournals = Array.isArray(scene.minimizedJournals) ? [...scene.minimizedJournals] : [];
+      this._persistMinimizedJournals();
+
       this.render();
     }
   }
@@ -973,7 +1180,7 @@ export class CinematicGMApp extends CinematicSceneBase {
 
     const updatedScenes = scenes.map(s =>
       s.id === sceneId
-        ? { ...s, playlistId: playingPlaylist?.id || null, sceneBackground: state?.sceneBackground || null, updatedAt: Date.now() }
+        ? { ...s, playlistId: playingPlaylist?.id || null, sceneBackground: state?.sceneBackground || null, minimizedJournals: this.minimizedJournals, updatedAt: Date.now() }
         : s
     );
     await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
@@ -1154,42 +1361,120 @@ export class CinematicGMApp extends CinematicSceneBase {
   static _onJournalOpen(_event, target) {
     const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
     if (!journalId) return;
+    // Auto-minimize the currently open journal when switching via list or dropdown
+    if (this.openJournalId && this.openJournalId !== journalId) {
+      // Don't duplicate if already minimized
+      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
+        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
+      }
+    }
+    // Remove from minimized list if restoring a minimized journal via list/dropdown
+    this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
     this.openJournalId = journalId;
     this.openJournalPageId = null;
-    this.journalMinimized = false;
-    this.render();
+    this._persistMinimizedJournals();
+    this._updateJournalSection();
   }
 
   static _onJournalOpenPage(_event, target) {
     const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
     const pageId = target.dataset.pageId;
     if (!journalId) return;
+    if (this.openJournalId && this.openJournalId !== journalId) {
+      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
+        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
+      }
+    }
+    this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
     this.openJournalId = journalId;
     this.openJournalPageId = pageId || null;
-    this.journalMinimized = false;
-    this.render();
+    this._persistMinimizedJournals();
+    this._updateJournalSection();
   }
 
   static _onJournalClose() {
     this.openJournalId = null;
     this.openJournalPageId = null;
-    this.journalMinimized = false;
-    this.render();
+    this._updateJournalSection();
   }
 
   static _onJournalMinimize() {
-    this.journalMinimized = true;
-    this.render();
+    if (this.openJournalId) {
+      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
+        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
+      }
+      this.openJournalId = null;
+      this.openJournalPageId = null;
+    }
+    this._persistMinimizedJournals();
+    this._updateJournalSection();
   }
 
-  static _onJournalExpand() {
-    this.journalMinimized = false;
-    this.render();
+  static _onJournalRestoreMinimized(_event, target) {
+    const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
+    if (!journalId) return;
+    const entry = this.minimizedJournals.find(m => m.id === journalId);
+    // Auto-minimize the currently open journal
+    if (this.openJournalId && this.openJournalId !== journalId) {
+      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
+        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
+      }
+    }
+    this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
+    this.openJournalId = journalId;
+    this.openJournalPageId = entry?.pageId || null;
+    this._persistMinimizedJournals();
+    this._updateJournalSection();
+  }
+
+  static _onJournalCloseMinimized(_event, target) {
+    const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
+    if (!journalId) return;
+    this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
+    this._persistMinimizedJournals();
+    this._updateJournalSection();
+  }
+
+  static _onToggleJournalSwitcher() {
+    const dropdown = this.element?.querySelector('.journal-switcher-dropdown');
+    if (!dropdown) return;
+    const isHidden = dropdown.classList.contains('hidden');
+    if (isHidden) {
+      dropdown.classList.remove('hidden');
+      const searchInput = dropdown.querySelector('.journal-switcher-search');
+      searchInput?.focus();
+      // Filter items on search input
+      searchInput?.addEventListener('input', (e) => {
+        const q = e.target.value.toLowerCase();
+        dropdown.querySelectorAll('.journal-switcher-item').forEach(item => {
+          const name = item.querySelector('span')?.textContent?.toLowerCase() || '';
+          item.style.display = name.includes(q) ? '' : 'none';
+        });
+      });
+      // Close on click outside
+      const closeHandler = (e) => {
+        if (!dropdown.contains(e.target) && !e.target.closest('[data-action="toggleJournalSwitcher"]')) {
+          dropdown.classList.add('hidden');
+          document.removeEventListener('pointerdown', closeHandler);
+        }
+      };
+      setTimeout(() => document.addEventListener('pointerdown', closeHandler), 0);
+      // Close on Escape
+      const escHandler = (e) => {
+        if (e.key === 'Escape') {
+          dropdown.classList.add('hidden');
+          document.removeEventListener('keydown', escHandler);
+        }
+      };
+      document.addEventListener('keydown', escHandler);
+    } else {
+      dropdown.classList.add('hidden');
+    }
   }
 
   static _onJournalSelectPage(_event, target) {
     this.openJournalPageId = target.dataset.pageId;
-    this.render();
+    this._updateJournalSection();
   }
 
   // --- Challenge actions ---
@@ -1228,19 +1513,11 @@ export class CinematicGMApp extends CinematicSceneBase {
   // --- Music actions ---
 
   static async _onMusicVolumeReset() {
-    if (!this._savedTrackVolumes.size) return;
-    // Group updates by playlist for batch efficiency
-    const byPlaylist = new Map();
-    for (const [key, vol] of this._savedTrackVolumes) {
-      const [playlistId, soundId] = key.split(':');
-      if (!byPlaylist.has(playlistId)) byPlaylist.set(playlistId, []);
-      byPlaylist.get(playlistId).push({ _id: soundId, volume: vol });
-    }
-    for (const [playlistId, updates] of byPlaylist) {
-      const playlist = game.playlists.get(playlistId);
-      if (playlist) await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
-    }
-    this._savedTrackVolumes.clear();
+    if (this._savedGlobalVolume === null) return;
+    await game.settings.set('core', 'globalPlaylistVolume', this._savedGlobalVolume);
+    const slider = this.element?.querySelector('.cinematic-music-volume');
+    if (slider) slider.value = this._savedGlobalVolume;
+    this._savedGlobalVolume = null;
     this.element?.querySelector('.music-volume-reset')?.classList.add('hidden');
   }
 

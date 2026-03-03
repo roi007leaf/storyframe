@@ -404,6 +404,7 @@ Hooks.once('init', () => {
     },
   });
 
+
   game.settings.register(MODULE_ID, 'gmWindowMinimized', {
     scope: 'client',
     config: false,
