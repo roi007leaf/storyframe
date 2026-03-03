@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.1] - 2026-03-03
+
+### Fixed
+
+- **Carolingian UI chat text in cinematic mode** — chat messages in the cinematic side panel now correctly inherit the dark theme text styling from Carolingian UI (and other theme modules that scope their rules to `.chat-log.theme-dark`); theme classes from `#chat-log` are now propagated to the cinematic chat container on first population
+
 ## [2.5.0] - 2026-03-02
 
 ### Added

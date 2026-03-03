@@ -961,6 +961,16 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       return;
     }
 
+    // Propagate theme classes from the main chat log so theme modules
+    // (e.g. Carolingian UI) apply their dark-mode styling inside the
+    // cinematic panel exactly as they do in #chat-log.
+    const chatLog = document.querySelector('#chat-log');
+    if (chatLog) {
+      const themeClasses = ['themed', 'theme-dark', 'theme-light']
+        .filter(c => chatLog.classList.contains(c));
+      if (themeClasses.length) container.classList.add(...themeClasses);
+    }
+
     // First-time population — fetch messages asynchronously.
     container.innerHTML = '';
     const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
