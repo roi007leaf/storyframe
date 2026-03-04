@@ -117,7 +117,11 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     // background changed.  Only compare speaker IDs (not mutable properties
     // like label/imagePath) because those can differ between scene-flag reads
     // and socket broadcasts, causing false-positive full re-renders.
-    const speakerIdsKey = (state.speakers || []).map(s => s.id).join('|');
+    // For non-GM users, include isHidden in the IDs key so that toggling
+    // speaker visibility triggers a structural re-render (the visible set changes).
+    const speakerIdsKey = game.user.isGM
+      ? (state.speakers || []).map(s => s.id).join('|')
+      : (state.speakers || []).map(s => `${s.id}:${!!s.isHidden}`).join('|');
     const speakerFlagsKey = game.user.isGM
       ? (state.speakers || []).map(s => `${s.id}:${!!s.isHidden}:${!!s.isNameHidden}`).join('|')
       : '';
@@ -393,7 +397,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     // Seed state-change baseline
     const _seedState = game.storyframe.stateManager?.getState();
     if (_seedState) {
-      this._prevSpeakerIdsKey = (_seedState.speakers || []).map(s => s.id).join('|');
+      this._prevSpeakerIdsKey = game.user.isGM
+        ? (_seedState.speakers || []).map(s => s.id).join('|')
+        : (_seedState.speakers || []).map(s => `${s.id}:${!!s.isHidden}`).join('|');
       this._prevSpeakerPropsKey = (_seedState.speakers || []).map(s => `${s.id}:${s.label ?? ''}:${s.imagePath ?? ''}`).join('|');
       this._prevSpeakerFlagsKey = game.user.isGM
         ? (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
