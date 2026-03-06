@@ -680,6 +680,11 @@ export class CinematicGMApp extends CinematicSceneBase {
   async fadeOutAndClose() {
     if (this._fadingOut) return;
 
+    // Remove prep banner immediately — it lives at document.body level and is not
+    // inside this.element, so the CSS fade-out applied to the app element won't
+    // affect it. Removing it here ensures it disappears as soon as the Frame closes.
+    document.body.querySelector('.cinematic-prep-banner')?.remove();
+
     // Fade all playing sounds to zero using Foundry's Sound.fade() API
     const duration = CinematicSceneBase.FADE_OUT_DURATION;
     for (const p of game.playlists) {
