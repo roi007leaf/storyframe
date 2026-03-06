@@ -578,33 +578,41 @@ export function attachPlayerSidebarsContextMenu(sidebar) {
 /**
  * Open player windows
  */
-export async function onOpenPlayerWindows(_event, _target, _sidebar) {
+export async function onOpenPlayerWindows(_event, _target, sidebar) {
   game.storyframe.socketManager.openAllPlayerViewers();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.OpeningForPlayers'));
+  const btn = sidebar?.element?.querySelector('[data-action="openPlayerWindows"]');
+  if (btn) btn.classList.add('active');
 }
 
 /**
  * Close player windows
  */
-export async function onClosePlayerWindows(_event, _target, _sidebar) {
+export async function onClosePlayerWindows(_event, _target, sidebar) {
   game.storyframe.socketManager.closeAllPlayerViewers();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingForPlayers'));
+  const btn = sidebar?.element?.querySelector('[data-action="openPlayerWindows"]');
+  if (btn) btn.classList.remove('active');
 }
 
 /**
  * Open player sidebars
  */
-export async function onOpenPlayerSidebars(_event, _target, _sidebar) {
+export async function onOpenPlayerSidebars(_event, _target, sidebar) {
   game.storyframe.socketManager.openAllPlayerSidebars();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.OpeningSidebarsForPlayers'));
+  const btn = sidebar?.element?.querySelector('[data-action="openPlayerSidebars"]');
+  if (btn) btn.classList.add('active');
 }
 
 /**
  * Close player sidebars
  */
-export async function onClosePlayerSidebars(_event, _target, _sidebar) {
+export async function onClosePlayerSidebars(_event, _target, sidebar) {
   game.storyframe.socketManager.closeAllPlayerSidebars();
   ui.notifications.info(game.i18n.localize('STORYFRAME.Notifications.Speaker.ClosingSidebarsForPlayers'));
+  const btn = sidebar?.element?.querySelector('[data-action="openPlayerSidebars"]');
+  if (btn) btn.classList.remove('active');
 }
 
 /**

@@ -131,4 +131,12 @@
       {{/unless}}
     {{/unless}}
   </div>
+
+  {{!-- Player volume control --}}
+  <div class="player-volume-row">
+    <i class="fas fa-volume-down" aria-hidden="true"></i>
+    <input type="range" class="player-volume-slider" min="0" max="1" step="0.05" value="{{currentVolume}}"
+           data-tooltip="{{localize 'STORYFRAME.UI.Tooltips.MusicVolume'}}">
+    <i class="fas fa-volume-up" aria-hidden="true"></i>
+  </div>
 </div>

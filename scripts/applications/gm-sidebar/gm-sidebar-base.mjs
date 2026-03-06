@@ -507,6 +507,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       journalActors,
       hasJournalActors: journalActors.length > 0,
       ...challengesContext,
+      playerViewersOpen: game.storyframe.socketManager?._gmBroadcastState?.playerViewersOpen ?? false,
+      playerSidebarsOpen: game.storyframe.socketManager?._gmBroadcastState?.playerSidebarsOpen ?? false,
     };
   }
 

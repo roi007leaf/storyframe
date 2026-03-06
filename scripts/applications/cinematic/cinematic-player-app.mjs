@@ -16,6 +16,7 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       selectChallengeOption: CinematicPlayerApp._onSelectChallengeOption,
       toggleChallengePanel: CinematicPlayerApp._onToggleChallengePanel,
       togglePlayerChat: CinematicPlayerApp._onTogglePlayerChat,
+      togglePlayerVolume: CinematicPlayerApp._onTogglePlayerVolume,
       toggleJournalSidebar: CinematicPlayerApp._onToggleJournalSidebar,
       openPlayerJournal: CinematicPlayerApp._onOpenPlayerJournal,
       openPlayerJournalPage: CinematicPlayerApp._onOpenPlayerJournalPage,
@@ -45,11 +46,14 @@ export class CinematicPlayerApp extends CinematicSceneBase {
     this.playerMinimizedJournals = [];
     this.playerJournalSearchQuery = '';
     this.playerJournalFontSize = game.settings.get(MODULE_ID, 'cinematicJournalFontSize') ?? 0.75;
+    this.playerVolumeExpanded = false;
   }
 
   async _prepareContext(_options) {
     const base = await super._prepareContext(_options);
     const state = game.storyframe.stateManager?.getState();
+
+    const currentVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
 
     if (!state) {
       return {
@@ -64,6 +68,8 @@ export class CinematicPlayerApp extends CinematicSceneBase {
         rollPanelExpanded: this.rollPanelExpanded,
         challengePanelExpanded: this.challengePanelExpanded,
         playerChatExpanded: this.playerChatExpanded,
+        playerVolumeExpanded: this.playerVolumeExpanded,
+        currentVolume,
       };
     }
 
@@ -212,6 +218,8 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       rollPanelExpanded: this.rollPanelExpanded,
       challengePanelExpanded: this.challengePanelExpanded,
       playerChatExpanded: this.playerChatExpanded,
+      playerVolumeExpanded: this.playerVolumeExpanded,
+      currentVolume,
     };
   }
 
@@ -261,6 +269,9 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       }
     }
 
+    // Volume slider
+    if (this.playerVolumeExpanded) this._bindVolumeSlider();
+
     // Camera row (A/V feed mirroring)
     this._initCameraRow();
   }
@@ -281,6 +292,12 @@ export class CinematicPlayerApp extends CinematicSceneBase {
     this.playerJournalPageId = null;
     this.playerMinimizedJournals = [];
     this.playerJournalSearchQuery = '';
+
+    // Notify GM that this player no longer has cinematic open
+    try {
+      game.storyframe.socketManager?.socket?.executeAsGM('reportCinematicStatus', game.user.id, false);
+    } catch { /* ignore if socket unavailable */ }
+
     return super._onClose(_options);
   }
 
@@ -589,6 +606,27 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       if (!inner) return;
       const overflow = inner.scrollWidth - outer.clientWidth;
       inner.style.setProperty('--sf-scroll-distance', overflow > 0 ? `-${overflow}px` : '0px');
+    });
+  }
+
+  static _onTogglePlayerVolume() {
+    this.playerVolumeExpanded = !this.playerVolumeExpanded;
+    const panel = this.element?.querySelector('.cinematic-player-volume');
+    panel?.classList.toggle('expanded', this.playerVolumeExpanded);
+    if (this.playerVolumeExpanded) this._bindVolumeSlider();
+  }
+
+  _bindVolumeSlider() {
+    const slider = this.element?.querySelector('.player-volume-slider');
+    if (!slider || slider.dataset.bound) return;
+    slider.dataset.bound = '1';
+    let volTimer = null;
+    slider.addEventListener('input', (e) => {
+      const vol = parseFloat(e.target.value);
+      clearTimeout(volTimer);
+      volTimer = setTimeout(() => {
+        game.settings.set('core', 'globalPlaylistVolume', vol);
+      }, 150);
     });
   }
 

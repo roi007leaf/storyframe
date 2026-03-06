@@ -7,6 +7,26 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-03-06
+
+### Added
+
+- **Per-player broadcast status popup** — hovering the broadcast button in cinematic mode shows a popup listing each connected player with a live eye icon indicating whether they have the cinematic open; individual "play" buttons let the GM send the scene to specific players, with a "Show to All" button at the bottom
+- **Live player status polling** — the popup actively queries each player client via socket to verify their cinematic state in real-time, rather than relying on GM-side tracking alone
+- **GM Prep Mode banner** — a prominent "GM PREP MODE" indicator displays at the top of the cinematic screen until the first broadcast, making it clear when players cannot see the scene; the banner is permanently dismissed after any broadcast
+- **Player reconnect detection** — when a player refreshes their browser during cinematic mode, the GM receives a warning notification and the player's status updates in the popup
+- **Player volume controls** — players now have an independent music volume slider in both the cinematic view and the player sidebar, allowing them to adjust playback volume without affecting the GM
+- **Improved cinematic icons** — the side panel toggle now uses a dice icon and the broadcast button uses a clapperboard icon for better clarity
+
+### Changed
+
+- **Broadcast button** — the cinematic broadcast button is now a status indicator with a hover popup; direct click removed in favor of the popup's "Show to All" and per-player buttons
+- **Cinematic left panel** — the scenes/music/journal panel now starts closed when launching cinematic mode from the token tools; it still auto-opens when launched from the GM sidebar (where a journal context exists)
+
+### Removed
+
+- **Legacy template and stylesheet** — removed unused `cinematic-scene.css` and `cinematic-scene.hbs` files that were superseded by the split cinematic template/style architecture
+
 ## [2.5.2] - 2026-03-04
 
 ### Fixed

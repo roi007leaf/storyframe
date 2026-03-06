@@ -181,7 +181,7 @@
   {{#if isGM}}
   <div class="cinematic-gm-controls">
     <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
-      <i class="fas fa-sliders-h" aria-hidden="true"></i>
+      <i class="fas fa-dice-d20" aria-hidden="true"></i>
     </button>
     <button type="button" class="gm-control-btn {{#if sceneBackground}}active{{/if}}" data-action="setBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.SetBackground'}}">
       <i class="fas fa-image" aria-hidden="true"></i>
@@ -191,8 +191,8 @@
       <i class="fas fa-image-slash" aria-hidden="true"></i>
     </button>
     {{/if}}
-    <button type="button" class="gm-control-btn" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RelaunchForPlayers'}}">
-      <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
+    <button type="button" class="gm-control-btn {{#if playersSeeCinematic}}active{{/if}}" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RelaunchForPlayers'}}">
+      <i class="fas fa-clapperboard-play" aria-hidden="true"></i>
     </button>
     <button type="button" class="gm-control-btn exit-btn" data-action="exitScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ExitScene'}}">
       <i class="fas fa-times" aria-hidden="true"></i>

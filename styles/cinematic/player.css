@@ -334,6 +334,48 @@
   background: rgba(10, 10, 18, 0.95);
 }
 
+/* ===== Player Volume Slider (top-right, below utility buttons) ===== */
+.cinematic-scene-container .cinematic-player-volume {
+  position: absolute;
+  top: 66px;
+  right: var(--sf-space-lg, 24px);
+  z-index: 16;
+  background: rgba(10, 10, 18, 0.88);
+  border: 1px solid rgba(94, 129, 172, 0.25);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cinematic-scene-container .cinematic-player-volume:not(.expanded) {
+  display: none;
+}
+
+.cinematic-scene-container .cinematic-player-volume.expanded {
+  display: block;
+  width: 200px;
+  padding: 10px 12px;
+}
+
+.cinematic-scene-container .player-volume-content {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+}
+
+.cinematic-scene-container .player-volume-slider {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: rgba(94, 129, 172, 1);
+}
+
+.cinematic-scene-container .cinematic-player-volume.expanded ~ .cinematic-player-chat {
+  top: 118px;
+}
+
 /* ===== Player Chat Log (top-right, below utility buttons) ===== */
 .cinematic-scene-container .cinematic-player-chat {
   position: absolute;

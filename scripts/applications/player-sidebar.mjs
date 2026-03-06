@@ -117,12 +117,15 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   async _prepareContext(_options) {
     const state = game.storyframe.stateManager.getState();
 
+    const currentVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
+
     if (!state) {
       return {
         actorRollGroups: [],
         activeChallenge: null,
         currentTab: this.currentTab,
         totalPendingRolls: 0,
+        currentVolume,
       };
     }
 
@@ -445,6 +448,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       hasActiveChallenges,
       currentTab: this.currentTab,
       totalPendingRolls,
+      currentVolume,
     };
   }
 
@@ -467,6 +471,21 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     // Add keyboard shortcuts
     this._setupKeyboardShortcuts();
 
+    // Volume slider
+    this._bindVolumeSlider();
+  }
+
+  _bindVolumeSlider() {
+    const slider = this.element?.querySelector('.player-volume-slider');
+    if (!slider) return;
+    let volTimer = null;
+    slider.addEventListener('input', (e) => {
+      const vol = parseFloat(e.target.value);
+      clearTimeout(volTimer);
+      volTimer = setTimeout(() => {
+        game.settings.set('core', 'globalPlaylistVolume', vol);
+      }, 150);
+    });
   }
 
   /**

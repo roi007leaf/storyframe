@@ -156,10 +156,23 @@
 
   {{!-- Player utility buttons (top-right) --}}
   <div class="cinematic-player-utilities">
+    <button type="button" class="player-utility-btn" data-action="togglePlayerVolume"
+            data-tooltip="{{localize 'STORYFRAME.UI.Tooltips.MusicVolume'}}">
+      <i class="fas fa-volume-up" aria-hidden="true"></i>
+    </button>
     <button type="button" class="player-utility-btn" data-action="togglePlayerChat"
             data-tooltip="{{localize 'STORYFRAME.CinematicScene.ChatLog'}}">
       <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
+  </div>
+
+  {{!-- Player volume slider (top-right, collapsible) --}}
+  <div class="cinematic-player-volume {{#if playerVolumeExpanded}}expanded{{/if}}">
+    <div class="player-volume-content">
+      <i class="fas fa-volume-down" aria-hidden="true"></i>
+      <input type="range" class="player-volume-slider" min="0" max="1" step="0.05" value="{{currentVolume}}">
+      <i class="fas fa-volume-up" aria-hidden="true"></i>
+    </div>
   </div>
 
   {{!-- Player chat log (top-right, collapsible) --}}

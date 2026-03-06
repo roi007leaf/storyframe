@@ -680,3 +680,22 @@
 .player-sidebar .roll-btn-grid.success i::before {
   color: rgba(163, 190, 140, 1);
 }
+
+/* Player Volume Control */
+.player-sidebar .player-volume-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.75rem;
+}
+
+.player-sidebar .player-volume-slider {
+  flex: 1;
+  height: 4px;
+  cursor: pointer;
+  accent-color: var(--sf-accent-primary);
+}

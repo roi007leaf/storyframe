@@ -61,6 +61,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       openScene: CinematicGMApp._onOpenScene,
       incrementCounter: CinematicGMApp._onIncrementCounter,
       decrementCounter: CinematicGMApp._onDecrementCounter,
+      showToPlayer: CinematicGMApp._onShowToPlayer,
     },
   };
 
@@ -77,7 +78,8 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.currentDC = null;
     this.secretRollEnabled = false;
     this.batchedChecks = [];
-    this.leftPanelOpen = true;
+    // Only auto-open left panel if launched from sidebar (journal context exists)
+    this.leftPanelOpen = !!game.storyframe.gmSidebar?.parentInterface?.document;
     this.expandedPlaylistIds = new Set();
     this._savedGlobalVolume = null; // original globalPlaylistVolume before cinematic adjustment
     this.musicSearchQuery = '';
@@ -136,11 +138,19 @@ export class CinematicGMApp extends CinematicSceneBase {
     const base = await super._prepareContext(_options);
     const state = game.storyframe.stateManager?.getState();
 
+    const sm = game.storyframe.socketManager;
+    const playersSeeCinematic = sm?.allPlayersSeeScene ?? false;
+    const isPrepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode') ?? false;
+    const hasBroadcasted = sm?._gmBroadcastState?.hasBroadcasted ?? false;
+    const showPrepBanner = isPrepMode && !hasBroadcasted;
+
     if (!state) {
       return {
         ...base,
         sidePanelOpen: this.sidePanelOpen,
         leftPanelOpen: this.leftPanelOpen,
+        playersSeeCinematic,
+        showPrepBanner,
         quickSkills: [],
         hasParticipants: false,
         currentDC: this.currentDC,
@@ -366,6 +376,8 @@ export class CinematicGMApp extends CinematicSceneBase {
       ...base,
       sidePanelOpen: this.sidePanelOpen,
       leftPanelOpen: this.leftPanelOpen,
+      playersSeeCinematic,
+      showPrepBanner,
       quickSkills,
       quickSaves,
       journalSkillGroups,
@@ -501,6 +513,16 @@ export class CinematicGMApp extends CinematicSceneBase {
 
   _onRender(_context, _options) {
     super._onRender(_context, _options);
+
+    // Relocate prep banner from inside app to document.body (ancestor transforms break position:fixed)
+    const prepBanner = this.element?.querySelector('.cinematic-prep-banner');
+    if (prepBanner) {
+      document.body.querySelector('.cinematic-prep-banner')?.remove();
+      document.body.appendChild(prepBanner);
+    }
+
+    // Broadcast player popup on Show to Players button
+    this._setupBroadcastPopup();
 
     // ESC to exit
     if (!this._escHandler) {
@@ -711,6 +733,8 @@ export class CinematicGMApp extends CinematicSceneBase {
     this.openJournalId = null;
     this.openJournalPageId = null;
     this.minimizedJournals = [];
+    // Remove body-level prep banner
+    document.body.querySelector('.cinematic-prep-banner')?.remove();
     this._persistMinimizedJournals();
     this.journalSearchQuery = '';
     this.challengePanelExpanded = false;
@@ -1110,9 +1134,85 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (el) el.textContent = val;
   }
 
+  /**
+   * Build and attach the broadcast player popup to the Show to Players button.
+   */
+  _setupBroadcastPopup() {
+    const btn = this.element?.querySelector('.broadcast-status-btn');
+    if (!btn) return;
+
+    // Remove existing wrapper if re-rendering
+    const existingWrapper = this.element?.querySelector('.broadcast-btn-wrapper');
+    if (existingWrapper) {
+      existingWrapper.replaceWith(existingWrapper.querySelector('[data-action="relaunchForPlayers"]'));
+    }
+
+    const sm = game.storyframe.socketManager;
+    const status = sm?._gmBroadcastState?.playerCinematicStatus;
+    const activePlayers = game.users.filter(u => !u.isGM && u.active);
+    if (activePlayers.length === 0) return;
+
+    // Wrap the button in a container div so popup is a sibling, not inside the <button>
+    const wrapper = document.createElement('div');
+    wrapper.className = 'broadcast-btn-wrapper';
+    btn.parentNode.insertBefore(wrapper, btn);
+    wrapper.appendChild(btn);
+
+    // Create popup as sibling of button inside wrapper
+    const popup = document.createElement('div');
+    popup.className = 'broadcast-player-popup';
+
+    for (const user of activePlayers) {
+      const seeing = status?.get(user.id) === true;
+      const row = document.createElement('div');
+      row.className = 'broadcast-player-row';
+      row.dataset.userId = user.id;
+      row.innerHTML = `
+        <span class="broadcast-player-status ${seeing ? 'active' : ''}"><i class="fas ${seeing ? 'fa-eye' : 'fa-eye-slash'}"></i></span>
+        <span class="broadcast-player-name" style="color: ${user.color}">${user.name}</span>
+        <button type="button" class="broadcast-player-send ${seeing ? 'hidden' : ''}" data-action="showToPlayer" data-user-id="${user.id}" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.ShowToPlayers')}">
+          <i class="fas fa-play"></i>
+        </button>
+      `;
+      popup.appendChild(row);
+    }
+
+    // "Show All" button at bottom
+    const allSee = sm?.allPlayersSeeScene;
+    if (!allSee) {
+      const showAllRow = document.createElement('div');
+      showAllRow.className = 'broadcast-show-all-row';
+      showAllRow.innerHTML = `<button type="button" class="broadcast-show-all-btn" data-action="relaunchForPlayers"><i class="fas fa-users"></i> ${game.i18n.localize('STORYFRAME.CinematicScene.ShowToAll')}</button>`;
+      popup.appendChild(showAllRow);
+    }
+
+    wrapper.appendChild(popup);
+
+    // Hover on wrapper controls popup visibility
+    let hideTimeout = null;
+    wrapper.addEventListener('mouseenter', () => {
+      clearTimeout(hideTimeout);
+      popup.classList.add('visible');
+      game.storyframe.socketManager?.pollPlayerCinematicStatus();
+    });
+    wrapper.addEventListener('mouseleave', () => {
+      hideTimeout = setTimeout(() => popup.classList.remove('visible'), 200);
+    });
+  }
+
   static _onRelaunchForPlayers() {
     game.storyframe.socketManager.showSceneToPlayers();
     ui.notifications.info(game.i18n.localize('STORYFRAME.CinematicScene.Relaunched'));
+  }
+
+  static _onShowToPlayer(_event, target) {
+    const userId = target.closest('[data-user-id]')?.dataset.userId;
+    if (!userId) return;
+    game.storyframe.socketManager.showSceneToPlayer(userId);
+    const user = game.users.get(userId);
+    if (user) {
+      ui.notifications.info(game.i18n.format('STORYFRAME.CinematicScene.ShownToPlayer', { name: user.name }));
+    }
   }
 
   static async _onSwitchSpeaker(_event, target) {
