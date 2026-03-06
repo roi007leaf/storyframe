@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.1] - 2026-03-06
+
+### Fixed
+
+- **Prep banner persists when closing the cinematic Frame** — the "GM Prep Mode — Players cannot see this" banner now disappears immediately when the Frame is closed; previously it remained visible at full opacity for the entire 1-second fade-out duration because the banner lives at `document.body` level and was not affected by the CSS fade animation applied to the app element
+
 ## [2.6.0] - 2026-03-06
 
 ### Added
