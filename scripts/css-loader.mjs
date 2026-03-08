@@ -6,7 +6,7 @@
 
 import { MODULE_ID } from './constants.mjs';
 
-const _loaded = new Set();
+const _loaded = new Map(); // path → <link> element
 
 /**
  * Load one or more module CSS files on demand.
@@ -16,11 +16,27 @@ const _loaded = new Set();
 export function loadCSS(...paths) {
   for (const path of paths) {
     if (_loaded.has(path)) continue;
-    _loaded.add(path);
     const link = document.createElement('link');
     link.rel = 'stylesheet';
     link.href = `modules/${MODULE_ID}/${path}`;
     document.head.appendChild(link);
+    _loaded.set(path, link);
+  }
+}
+
+/**
+ * Unload previously loaded CSS files.
+ * Removes the <link> elements from <head> so the browser stops
+ * evaluating their rules during style recalculation.
+ * @param {...string} paths - CSS file paths relative to the module root
+ */
+export function unloadCSS(...paths) {
+  for (const path of paths) {
+    const link = _loaded.get(path);
+    if (link) {
+      link.remove();
+      _loaded.delete(path);
+    }
   }
 }
 
@@ -44,10 +60,16 @@ export function loadPlayerCSS() {
   );
 }
 
+const CINEMATIC_CSS = [
+  'styles/cinematic/base.css',
+  'styles/cinematic/gm.css',
+  'styles/cinematic/player.css',
+];
+
 export function loadCinematicCSS() {
-  loadCSS(
-    'styles/cinematic/base.css',
-    'styles/cinematic/gm.css',
-    'styles/cinematic/player.css',
-  );
+  loadCSS(...CINEMATIC_CSS);
+}
+
+export function unloadCinematicCSS() {
+  unloadCSS(...CINEMATIC_CSS);
 }
