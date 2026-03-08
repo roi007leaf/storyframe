@@ -1,3 +1,5 @@
+import { loadCSS } from '../../css-loader.mjs';
+
 /**
  * Dialog for picking a FoundryVTT game scene to navigate to.
  * Displays all scenes organized by folder hierarchy with thumbnails
@@ -39,6 +41,7 @@ export class ScenePickerDialog extends foundry.applications.api.HandlebarsApplic
 
   constructor(options = {}) {
     super(options);
+    loadCSS('styles/scene-picker-dialog.css');
     this.resolve = null;
     this.promise = new Promise((resolve) => {
       this.resolve = resolve;

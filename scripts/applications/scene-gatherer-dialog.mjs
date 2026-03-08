@@ -1,4 +1,5 @@
 import { MODULE_ID } from '../constants.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Dialog for gathering tokens from the current scene as StoryFrame speakers.
@@ -38,6 +39,7 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
 
   constructor(tokens, options = {}) {
     super(options);
+    loadCSS('styles/scene-gatherer-dialog.css');
     this.tokens = tokens;
     this.resolve = null;
     this.promise = new Promise((resolve) => {

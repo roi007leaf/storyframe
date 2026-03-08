@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from './constants.mjs';
+import { loadCSS } from './css-loader.mjs';
 
 /**
  * Show scene editor dialog
@@ -14,6 +15,7 @@ import { MODULE_ID } from './constants.mjs';
  * @param {HTMLElement} options.journalElement - Journal element for images/actors
  */
 export async function showSceneEditor({ sceneId = null, sceneName = '', speakers = [], _journalElement = null } = {}) {
+  loadCSS('styles/scene-editor.css');
   // Remove existing editor if any
   document.querySelector('.storyframe-scene-editor')?.remove();
 

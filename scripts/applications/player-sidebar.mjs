@@ -1,5 +1,6 @@
 import * as SystemAdapter from '../system-adapter.mjs';
 import { extractParentElement } from '../utils/element-utils.mjs';
+import { loadPlayerCSS } from '../css-loader.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { showActionVariantsPopup, hideActionVariantsPopup } from './gm-sidebar/managers/ui-helpers.mjs';
 
@@ -47,6 +48,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
   constructor(options = {}) {
     super(options);
+    loadPlayerCSS();
 
     // Tab state: null = challenge tab, 'rolls' = rolls tab
     // Default to rolls tab if there are pending rolls, else challenge
