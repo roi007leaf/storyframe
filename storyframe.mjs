@@ -1,8 +1,10 @@
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { MODULE_ID } from './scripts/constants.mjs';
-import { handleJournalClose, handleJournalRender, handleDaggerheartPageRender,
-  peekCanvasStart } from './scripts/hooks/journal-hooks.mjs';
+import {
+  handleJournalClose, handleJournalRender, handleDaggerheartPageRender,
+  peekCanvasStart
+} from './scripts/hooks/journal-hooks.mjs';
 import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
@@ -976,7 +978,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
     controls.tokens.tools.storyframe_scene = {
       name: 'storyframe_scene',
       title: 'STORYFRAME.ToolButtons.SceneMode',
-      icon: 'fas fa-film',
+      icon: 'fas fa-clapperboard',
       visible: true,
       button: true,
       onChange: (isActive) => {
