@@ -1,4 +1,5 @@
 import * as SystemAdapter from '../system-adapter.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Dialog for requesting rolls from selected journal text
@@ -36,6 +37,7 @@ export class RollRequestDialog extends foundry.applications.api.HandlebarsApplic
 
   constructor(checks, participants, options = {}) {
     super(options);
+    loadCSS('styles/roll-request-dialog.css');
     this.checks = checks.map(c => ({ ...c, _uid: c._uid || foundry.utils.randomID() }));
     this.participants = participants;
     // Map<checkUid, Set<pcId>> — explicit drag-links between a check and specific PCs.

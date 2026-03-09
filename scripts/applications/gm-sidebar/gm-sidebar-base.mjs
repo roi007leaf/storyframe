@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../../constants.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
+import { loadGMSidebarCSS } from '../../css-loader.mjs';
 
 // Import manager modules
 import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
@@ -103,6 +104,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   constructor(options = {}) {
     super(options);
+    loadGMSidebarCSS();
     this._stateRestored = false;
 
     // Tab state: 'npcs', 'pcs', 'challenges'

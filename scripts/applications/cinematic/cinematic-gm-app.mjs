@@ -517,7 +517,11 @@ export class CinematicGMApp extends CinematicSceneBase {
     // Relocate prep banner from inside app to document.body (ancestor transforms break position:fixed)
     const prepBanner = this.element?.querySelector('.cinematic-prep-banner');
     if (prepBanner) {
-      document.body.querySelector('.cinematic-prep-banner')?.remove();
+      // Remove ALL existing prep banners (querySelectorAll avoids matching the new one
+      // inside this.element and leaving the old body-level one behind)
+      for (const old of document.body.querySelectorAll('.cinematic-prep-banner')) {
+        if (old !== prepBanner) old.remove();
+      }
       document.body.appendChild(prepBanner);
     }
 

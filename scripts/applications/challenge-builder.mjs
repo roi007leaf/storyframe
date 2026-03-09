@@ -2,6 +2,7 @@ import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 import { createDCPresetDropdown } from '../utils/dc-preset-dropdown.mjs';
 import { PF2E_ACTION_VARIANTS } from '../system/pf2e/actions.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Challenge Builder Dialog
@@ -46,6 +47,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
   constructor(_selectedParticipants, options = {}) {
     super(options);
+    loadCSS('styles/challenge-builder.css');
     this.editMode = options.editMode || false;
     this.templateId = options.templateId || null;
     this.templateData = options.templateData || null;

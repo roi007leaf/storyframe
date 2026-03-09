@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
+import { loadPlayerCSS } from '../css-loader.mjs';
 import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
@@ -92,6 +93,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
   constructor(options = {}) {
     super(options);
+    loadPlayerCSS();
     this._stateRestored = false;
 
     // Load saved position with validation

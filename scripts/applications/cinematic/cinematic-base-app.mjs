@@ -1,5 +1,6 @@
 import { MODULE_ID } from '../../constants.mjs';
 import { getAllPlayerPCs } from '../../system-adapter.mjs';
+import { loadCinematicCSS, unloadCinematicCSS } from '../../css-loader.mjs';
 
 /**
  * Base class for Cinematic Scene apps.
@@ -33,6 +34,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
 
   constructor(options = {}) {
     super(options);
+    loadCinematicCSS();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
     this.challengePanelExpanded = false;
@@ -436,6 +438,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._introComplete = false;
     this._teardownCameraRow();
     game.storyframe.cinematicScene = null;
+    unloadCinematicCSS();
     document.getElementById('cinematic-context-menu')?.remove();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;

@@ -1,3 +1,5 @@
+import { loadCSS } from '../css-loader.mjs';
+
 /**
  * Target Selector Dialog
  * Opens when the GM Ctrl+clicks a damage roll link in a journal.
@@ -34,6 +36,7 @@ export class TargetSelectorDialog extends foundry.applications.api.HandlebarsApp
 
   constructor({ formula, flavor } = {}, options = {}) {
     super(options);
+    loadCSS('styles/target-selector-dialog.css');
     this.formula = formula ?? '';
     this.flavor = flavor ?? '';
     this.resolve = null;
