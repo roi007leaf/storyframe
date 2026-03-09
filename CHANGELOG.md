@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.2] - 2026-03-09
+
+### Fixed
+
+- **Performance: lazy CSS loading** — moved 19 of 20 stylesheets (~315KB, 251 `:hover` rules) out of the always-loaded `module.json` bundle; CSS is now loaded on-demand when each UI component first opens and unloaded when closed, reducing idle style recalculation overhead from ~2s to near-zero
+- **Performance: cinematic CSS unloaded on close** — cinematic mode's 3 stylesheets (~85KB) are removed from the document when the Frame closes, so their `:hover` rules and `backdrop-filter` declarations stop affecting FPS during normal gameplay
+- **Performance: targeted CSS transitions** — replaced 133 `transition: all` rules across all stylesheets with explicit property lists (`background-color`, `color`, `border-color`, `box-shadow`, `opacity`, `transform`), eliminating unnecessary layout-triggering transition calculations
+- **Performance: throttled mouse tracking** — the speaker wheel's global `mousemove` listener now uses `requestAnimationFrame` throttling and `{ passive: true }`, reducing event handler overhead from every raw mouse event to once per frame
+- **Prep banner duplicates on scene switch** — switching speaker scenes in cinematic mode no longer duplicates the "GM PREP MODE" banner; the relocate logic now removes all stale banners instead of potentially matching the wrong one via `querySelector`
+
 ## [2.6.1] - 2026-03-06
 
 ### Fixed
