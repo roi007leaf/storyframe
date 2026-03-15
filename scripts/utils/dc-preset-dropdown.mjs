@@ -95,6 +95,30 @@ export function createDCPresetDropdown({ inputGroup, partyLevel, calculateDCByLe
     });
   }
 
+  // Tab 3: Fixed difficulty options (D&D 5e, Daggerheart, ProjectFU, Draw Steel)
+  const dcOptions = SystemAdapter.getDCOptions();
+  if (dcOptions.length > 0 && !difficultyAdjustments?.length) {
+    const isDrawSteel = currentSystem === 'draw-steel';
+    tabs.push({
+      id: 'difficulty',
+      label: 'Difficulty',
+      content: dcOptions.map(opt => {
+        const name = opt.label.replace(/ \((?:DC|DL)? ?\d+\+?\)$/, '');
+        const dcDisplay = SystemAdapter.formatDC(opt.dc);
+        return `
+          <button type="button"
+                  class="preset-option"
+                  data-action="${actions.applyDifficulty}"
+                  data-dc="${opt.dc}"
+                  data-tooltip="${opt.label}">
+            ${!isDrawSteel ? `<span class="preset-dc">${dcDisplay}</span>` : ''}
+            <span class="preset-label">${name}</span>
+          </button>
+        `;
+      }).join(''),
+    });
+  }
+
   if (tabs.length === 0) {
     dropdown.innerHTML = '<div class="no-presets">No DC options available</div>';
   } else {

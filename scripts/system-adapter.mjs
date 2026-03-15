@@ -58,9 +58,22 @@ import {
 } from './system/projectfu/saves.mjs';
 import { getProjectFUDCOptions } from './system/projectfu/dc-tables.mjs';
 
+// Draw Steel imports
+import {
+  DRAWSTEEL_CHARACTERISTICS,
+  DRAWSTEEL_CHARACTERISTIC_SHORT_NAMES,
+  DRAWSTEEL_CHARACTERISTIC_NAME_MAP,
+} from './system/draw-steel/skills.mjs';
+import {
+  DRAWSTEEL_SAVES,
+  DRAWSTEEL_SAVE_SHORT_NAMES,
+  DRAWSTEEL_SAVE_NAME_MAP,
+} from './system/draw-steel/saves.mjs';
+import { getDrawSteelDCOptions, DRAWSTEEL_DC_BY_DIFFICULTY } from './system/draw-steel/dc-tables.mjs';
+
 /**
  * Detect the current game system
- * @returns {'pf2e'|'dnd5e'|'daggerheart'|'projectfu'|'other'}
+ * @returns {'pf2e'|'dnd5e'|'daggerheart'|'projectfu'|'draw-steel'|'other'}
  */
 export function detectSystem() {
   const systemId = game.system.id;
@@ -69,6 +82,7 @@ export function detectSystem() {
   if (systemId === 'dnd5e') return 'dnd5e';
   if (systemId === 'daggerheart') return 'daggerheart';
   if (systemId === 'projectfu') return 'projectfu';
+  if (systemId === 'draw-steel') return 'draw-steel';
 
   return 'other';
 }
@@ -93,6 +107,8 @@ export function getSkills() {
       return DAGGERHEART_TRAITS;
     case 'projectfu':
       return PROJECTFU_ATTRIBUTES;
+    case 'draw-steel':
+      return DRAWSTEEL_CHARACTERISTICS;
     default:
       return {}; // No skills for unsupported systems
   }
@@ -114,6 +130,8 @@ export function getDCOptions() {
       return getDaggerheartDCOptions();
     case 'projectfu':
       return getProjectFUDCOptions();
+    case 'draw-steel':
+      return getDrawSteelDCOptions();
     default:
       return [];
   }
@@ -135,6 +153,8 @@ export function getDifficultyAdjustments() {
       return null; // Daggerheart doesn't use adjustments, DCs are absolute
     case 'projectfu':
       return null; // Fabula Ultima doesn't use adjustments, DLs are absolute
+    case 'draw-steel':
+      return null; // Draw Steel doesn't use adjustments, DCs are absolute
     default:
       return null;
   }
@@ -172,6 +192,7 @@ export function getSkillShortName(slug) {
     dnd5e: DND5E_SKILL_SHORT_NAMES,
     daggerheart: DAGGERHEART_TRAIT_SHORT_NAMES,
     projectfu: PROJECTFU_ATTRIBUTE_SHORT_NAMES,
+    'draw-steel': DRAWSTEEL_CHARACTERISTIC_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -194,6 +215,8 @@ export function getSkillNameMap() {
       return DAGGERHEART_TRAIT_NAME_MAP;
     case 'projectfu':
       return PROJECTFU_ATTRIBUTE_NAME_MAP;
+    case 'draw-steel':
+      return DRAWSTEEL_CHARACTERISTIC_NAME_MAP;
     default:
       return {};
   }
@@ -215,6 +238,8 @@ export function getSaves() {
       return DAGGERHEART_SAVES;
     case 'projectfu':
       return PROJECTFU_SAVES;
+    case 'draw-steel':
+      return DRAWSTEEL_SAVES;
     default:
       return {}; // No saves for unsupported systems
   }
@@ -252,6 +277,7 @@ export function getSaveShortName(slug) {
     dnd5e: DND5E_SAVE_SHORT_NAMES,
     daggerheart: DAGGERHEART_SAVE_SHORT_NAMES,
     projectfu: PROJECTFU_SAVE_SHORT_NAMES,
+    'draw-steel': DRAWSTEEL_SAVE_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -274,6 +300,8 @@ export function getSaveNameMap() {
       return DAGGERHEART_SAVE_NAME_MAP;
     case 'projectfu':
       return PROJECTFU_SAVE_NAME_MAP;
+    case 'draw-steel':
+      return DRAWSTEEL_SAVE_NAME_MAP;
     default:
       return {};
   }
@@ -298,9 +326,31 @@ export async function getAllPlayerPCs() {
     // Fallback: all player-owned characters if no party found
   }
 
+  const validTypes = game.system.id === 'draw-steel' ? ['hero'] : ['character'];
   return game.actors
-    .filter(a => a.type === 'character' && a.hasPlayerOwner)
+    .filter(a => validTypes.includes(a.type) && a.hasPlayerOwner)
     .map(toEntry);
+}
+
+/**
+ * Format a DC value for display (system-aware).
+ * Most systems show the number. Draw Steel shows the difficulty tier name.
+ * @param {number|null} dc - The DC value
+ * @returns {string} Display string
+ */
+export function formatDC(dc) {
+  if (dc == null || isNaN(dc)) return '—';
+
+  const system = detectSystem();
+  if (system === 'draw-steel') {
+    // Map DC back to difficulty tier name
+    for (const [, data] of Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY)) {
+      if (data.dc === dc) return game.i18n.localize(data.label);
+    }
+    return String(dc);
+  }
+
+  return String(dc);
 }
 
 export default {
@@ -316,4 +366,5 @@ export default {
   getSkillNameMap,
   getSaveNameMap,
   getAllPlayerPCs,
+  formatDC,
 };

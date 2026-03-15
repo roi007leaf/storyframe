@@ -7,6 +7,15 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-03-15
+
+### Added
+
+- **Draw Steel system support** — full integration with the Draw Steel RPG system (`draw-steel`), including all 5 characteristics (Might, Agility, Reason, Intuition, Presence), tier-based difficulty (Easy/Medium/Hard), native journal enricher parsing, and power roll execution via `actor.rollCharacteristic()`
+- **System-aware DC display** — DC values now display contextually per system; Draw Steel shows difficulty tier names (Easy/Medium/Hard) instead of numeric DCs across all UI surfaces (sidebar, roll requests, challenges, cinematic mode)
+- **Draw Steel journal enricher integration** — parses native `<a class="roll-link" data-characteristic="..." data-difficulty="...">` elements from Draw Steel journals for one-click roll requests
+- **Draw Steel roll execution** — player rolls pass difficulty and type metadata to the Draw Steel system, producing properly formatted chat cards with tier outcomes
+
 ## [2.6.2] - 2026-03-09
 
 ### Fixed

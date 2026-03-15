@@ -6,6 +6,8 @@ import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 import { DAGGERHEART_TRAIT_FULL_NAMES } from '../system/daggerheart/skills.mjs';
 import { PROJECTFU_ATTRIBUTE_FULL_NAMES } from '../system/projectfu/skills.mjs';
+import { DRAWSTEEL_CHARACTERISTIC_FULL_NAMES } from '../system/draw-steel/skills.mjs';
+import { DRAWSTEEL_DC_BY_DIFFICULTY } from '../system/draw-steel/dc-tables.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
@@ -13,6 +15,7 @@ function getSkillSlugMap() {
   if (system === 'dnd5e') return DND5E_SKILL_SLUG_MAP;
   if (system === 'daggerheart') return DAGGERHEART_TRAIT_FULL_NAMES;
   if (system === 'projectfu') return PROJECTFU_ATTRIBUTE_FULL_NAMES;
+  if (system === 'draw-steel') return DRAWSTEEL_CHARACTERISTIC_FULL_NAMES;
   return PF2E_SKILL_SLUG_MAP;
 }
 
@@ -640,6 +643,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
           return;
         }
+      } else if (currentSystem === 'draw-steel') {
+        // Draw Steel: Use actor.rollCharacteristic(characteristic, options)
+        const dsOptions = { types: ['test'] };
+        // Map numeric DC back to difficulty name
+        const dsDifficulty = Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY).find(([, d]) => d.dc === request.dc)?.[0];
+        if (dsDifficulty) dsOptions.difficulty = dsDifficulty;
+        if (request.isSecretRoll) {
+          dsOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        }
+        roll = await actor.rollCharacteristic(fullSlug, dsOptions);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         if (request.isSecretRoll) {
@@ -893,6 +906,15 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
           return;
         }
+      } else if (currentSystem === 'draw-steel') {
+        // Draw Steel: Use actor.rollCharacteristic(characteristic, options)
+        const dsOptions = { types: ['test'] };
+        const dsDifficulty = Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY).find(([, d]) => d.dc === dc)?.[0];
+        if (dsDifficulty) dsOptions.difficulty = dsDifficulty;
+        if (rollOptions.rollMode) {
+          dsOptions.rollMode = rollOptions.rollMode;
+        }
+        roll = await actor.rollCharacteristic(fullSlug, dsOptions);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;

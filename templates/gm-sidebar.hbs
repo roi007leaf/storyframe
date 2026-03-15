@@ -425,7 +425,7 @@
                 <div class="opt-skills">
                   {{#each this.skillOptions}}
                   <span class="skill-dc-pill" data-check-type="{{this.checkType}}">
-                    {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
+                    {{this.displayText}}{{#if this.dc}} <strong>{{formatDC this.dc}}</strong>{{/if}}
                     {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
                     {{#if this.minProficiencyLabel}}<span class="prof-badge" data-prof="{{this.minProficiency}}">{{this.minProficiencyLabel}}</span>{{/if}}
                   </span>

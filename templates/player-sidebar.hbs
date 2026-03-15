@@ -68,7 +68,7 @@
                     {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
                     <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                     <span class="skill-name-short">{{#if this.variantDisplayName}}{{this.variantDisplayName}}{{else if this.actionName}}{{this.actionName}}{{else}}{{this.skillName}}{{/if}}</span>
-                    {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
+                    {{#if this.showDC}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{formatDC this.dc}}</span>{{/if}}
                   </button>
                   {{/each}}
                 </div>
@@ -109,7 +109,7 @@
                         aria-label="{{this.ariaLabel}}">
                   <i class="fas {{this.skillIcon}}" aria-hidden="true"></i>
                   <span class="skill-name-short">{{this.skillName}}{{#if this.actionName}}<span class="action-name-micro"> ({{this.actionName}})</span>{{/if}}</span>
-                  {{#if this.dc}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{this.dc}}</span>{{/if}}
+                  {{#if this.dc}}<span class="dc-badge-grid" data-difficulty="{{this.dcDifficulty}}">{{formatDC this.dc}}</span>{{/if}}
                 </button>
               {{/each}}
             </div>

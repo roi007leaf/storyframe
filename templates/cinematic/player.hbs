@@ -95,7 +95,7 @@
           {{#each this.rolls}}
           <button type="button" class="cinematic-roll-btn" data-action="executeRoll" data-request-id="{{this.id}}" data-check-type="{{this.checkType}}">
             <span class="roll-skill-name">{{this.skillName}}</span>
-            {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+            {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
           </button>
           {{/each}}
         </div>
@@ -134,7 +134,7 @@
                     {{#unless this.canRoll}}disabled{{/unless}}>
               {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
               <span class="roll-skill-name">{{this.skillName}}</span>
-              {{#if this.showDC}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+              {{#if this.showDC}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
             </button>
             {{/each}}
           </div>

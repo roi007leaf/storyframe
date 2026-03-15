@@ -740,6 +740,9 @@ export function getSkillIcon(slug) {
     dex: 'fa-crosshairs',
     mig: 'fa-fist-raised',
     wlp: 'fa-brain',
+    // Draw Steel characteristics
+    rea: 'fa-scroll',
+    int: 'fa-magnifying-glass',
   };
   return iconMap[slug] || 'fa-dice-d20';
 }

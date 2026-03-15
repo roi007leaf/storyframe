@@ -292,6 +292,9 @@ async function _attachSidebarToSheet(sheet) {
     } else if (system === 'projectfu') {
       const { GMSidebarAppProjectFU } = await import('../applications/gm-sidebar/gm-sidebar-projectfu.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+    } else if (system === 'draw-steel') {
+      const { GMSidebarAppDrawSteel } = await import('../applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
     } else {
       const { GMSidebarAppBase } = await import('../applications/gm-sidebar/gm-sidebar-base.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppBase();

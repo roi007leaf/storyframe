@@ -97,6 +97,9 @@ function setupPF2eRepostIntegration() {
       } else if (system === 'projectfu') {
         const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+      } else if (system === 'draw-steel') {
+        const { GMSidebarAppDrawSteel } = await import('./scripts/applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
       } else {
         const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -305,6 +308,16 @@ function setupDamageRollTargetInterception() {
 
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
+
+  // Register Handlebars helper for system-aware DC display
+  Handlebars.registerHelper('formatDC', function (dc) {
+    if (dc == null || isNaN(dc)) return '—';
+    if (game.system?.id === 'draw-steel') {
+      const labels = { 0: 'Easy', 12: 'Medium', 17: 'Hard' };
+      return labels[dc] || String(dc);
+    }
+    return `DC ${dc}`;
+  });
 
   // Create namespace if it doesn't exist (socketlib.ready may fire first)
   if (!game.storyframe) {
@@ -549,7 +562,9 @@ Hooks.once('init', () => {
     ? 'prc,ins,ste,per,inv,ath'     // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
     : game.system.id === 'daggerheart'
       ? 'agi,str,fin,ins,pre,kno'   // Daggerheart: all 6 traits
-      : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
+      : game.system.id === 'draw-steel'
+        ? 'mig,agi,rea,int,pre'     // Draw Steel: all 5 characteristics
+        : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
 
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'STORYFRAME.Settings.QuickButtonSkills',
@@ -947,6 +962,9 @@ Hooks.on('getSceneControlButtons', (controls) => {
           } else if (system === 'projectfu') {
             const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+          } else if (system === 'draw-steel') {
+            const { GMSidebarAppDrawSteel } = await import('./scripts/applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
           } else {
             const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppBase();

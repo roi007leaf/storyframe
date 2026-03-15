@@ -163,7 +163,7 @@
         <img src="{{this.actorImg}}" alt="{{this.actorName}}" class="pending-roll-avatar" loading="lazy">
         <div class="pending-roll-info">
           <span class="pending-roll-actor">{{this.actorName}}</span>
-          <span class="pending-roll-skill">{{this.skillName}}{{#if this.dc}} DC {{this.dc}}{{/if}}</span>
+          <span class="pending-roll-skill">{{this.skillName}}{{#if this.dc}} {{formatDC this.dc}}{{/if}}</span>
         </div>
         <button type="button" class="pending-roll-cancel" data-action="cancelPendingRoll" data-request-id="{{this.id}}">
           <i class="fas fa-times"></i>
@@ -493,7 +493,7 @@
               <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
                 <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}
@@ -507,7 +507,7 @@
               <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
                 <i class="fas fa-book" aria-hidden="true"></i>
                 <span>{{../displayName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}
@@ -521,7 +521,7 @@
               <button type="button" class="side-panel-skill-btn side-panel-save-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="save">
                 <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}

@@ -755,7 +755,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     const hasDc = check.dc != null && !isNaN(check.dc);
     const isVisible = hasDc && visibleDCs.has(String(check.dc));
     const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
-    const dcDisplay = hasDc ? check.dc : '—';
+    const dcDisplay = hasDc ? SystemAdapter.formatDC(check.dc) : '—';
     return `
         <button type="button"
                 class="dc-option ${isVisible ? 'in-view' : ''}"

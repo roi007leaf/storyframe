@@ -115,7 +115,7 @@ export function onTogglePresetDropdown(_event, target, sidebar) {
       if (isNaN(dc)) return;
       sidebar.currentDC = dc;
       const dcInput = sidebar.element.querySelector('#dc-input');
-      if (dcInput) dcInput.value = dc;
+      if (dcInput) dcInput.value = SystemAdapter.formatDC(dc);
       popup.remove();
     });
   });
@@ -178,7 +178,7 @@ function _buildPresetPopup(sidebar) {
   if (partyLevel !== null && difficultyAdjustments?.length > 0) {
     tabs.push({ id: 'party-level', label: `Party Lvl ${partyLevel}` });
   }
-  if ((currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu') && dcOptions.length > 0) {
+  if ((currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu' || currentSystem === 'draw-steel') && dcOptions.length > 0) {
     tabs.push({ id: 'difficulty', label: 'Difficulty' });
   }
 
@@ -215,11 +215,13 @@ function _buildPresetPopup(sidebar) {
       }).join('')
     : '';
 
-  const dnd5eDifficultyHtml = ((currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu') && dcOptions.length > 0)
+  const dnd5eDifficultyHtml = ((currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu' || currentSystem === 'draw-steel') && dcOptions.length > 0)
     ? dcOptions.map(opt => {
-        const name = opt.label.replace(/ \((?:DC|DL) \d+\)$/, '');
+        const name = opt.label.replace(/ \((?:DC|DL)? ?\d+\+?\)$/, '');
+        const dcDisplay = SystemAdapter.formatDC(opt.dc);
+        const showDcNumber = currentSystem !== 'draw-steel';
         return `<button type="button" class="preset-option difficulty-option-btn" data-dc="${opt.dc}" data-tooltip="${opt.label}">
-          <span class="preset-dc">${opt.dc}</span>
+          ${showDcNumber ? `<span class="preset-dc">${dcDisplay}</span>` : ''}
           <span class="preset-label">${name}</span>
         </button>`;
       }).join('')
@@ -230,7 +232,7 @@ function _buildPresetPopup(sidebar) {
     partyLevel !== null && difficultyAdjustments?.length > 0
       ? `<div class="dc-tab-content" data-tab-content="party-level">${difficultyHtml}</div>`
       : '',
-    (currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu') && dcOptions.length > 0
+    (currentSystem === 'dnd5e' || currentSystem === 'daggerheart' || currentSystem === 'projectfu' || currentSystem === 'draw-steel') && dcOptions.length > 0
       ? `<div class="dc-tab-content" data-tab-content="difficulty">${dnd5eDifficultyHtml}</div>`
       : '',
   ].join('');

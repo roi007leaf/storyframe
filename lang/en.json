@@ -455,6 +455,11 @@
         "Standard": "Standard",
         "Hard": "Hard",
         "VeryHard": "Very Hard"
+      },
+      "DrawSteel": {
+        "Easy": "Easy",
+        "Medium": "Medium",
+        "Hard": "Hard"
       }
     },
     "Keybindings": {
