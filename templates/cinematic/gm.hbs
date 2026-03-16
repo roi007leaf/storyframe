@@ -64,12 +64,13 @@
       <i class="fas fa-chevron-left"></i>
     </div>
     <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
-      {{#each inactiveSpeakers}}
+      {{#each allSpeakers}}
       <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}"
            role="listitem"
            data-speaker-id="{{this.id}}"
            data-action="switchSpeaker"
-           data-tooltip="{{this.name}}">
+           data-tooltip="{{this.name}}"
+           {{#if this.isActive}}style="display:none"{{/if}}>
         <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
         <span class="filmstrip-name">{{this.name}}</span>
         <div class="filmstrip-speaker-controls">

@@ -7,6 +7,17 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.8.0] - 2026-03-16
+
+### Added
+
+- **Raise My Hand integration** — when the Raise My Hand module is active, cinematic mode now shows raise-hand and urgent-speak buttons in the bottom bar, along with hand-raised indicator badges on PC portraits and camera feeds; supports both toggle and button modes, queue positions, speaking/urgent states
+- **Raise My Hand indicators on camera feeds** — camera feed items in cinematic mode display hand-raised badges with queue position, speaking (green megaphone), and urgent (red) states
+
+### Fixed
+
+- **Cinematic speaker switch flicker** — switching the active speaker no longer causes cameras and the player bar to flash; filmstrip cards are now pre-rendered for all speakers (active one hidden) so speaker switches toggle visibility instead of triggering a full re-render
+
 ## [2.7.0] - 2026-03-15
 
 ### Added

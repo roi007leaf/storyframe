@@ -1,6 +1,7 @@
 import { MODULE_ID } from '../../constants.mjs';
 import { getAllPlayerPCs } from '../../system-adapter.mjs';
 import { loadCinematicCSS, unloadCinematicCSS } from '../../css-loader.mjs';
+import { onCinematicRender as rmhRender, onCinematicClose as rmhClose } from '../../integrations/raise-my-hand.mjs';
 
 /**
  * Base class for Cinematic Scene apps.
@@ -78,6 +79,12 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       ? state.speakers || []
       : (state.speakers || []).filter(s => !s.isHidden || s.id === activeSpeakerId);
     const allSpeakers = await this._resolveSpeakers(visibleSpeakers);
+
+    // Mark active speaker so filmstrip can hide them without removing the card.
+    // This lets _swapActiveSpeaker toggle visibility instead of triggering a full re-render.
+    for (const s of allSpeakers) {
+      s.isActive = s.id === activeSpeakerId;
+    }
 
     let activeSpeaker = null;
     let inactiveSpeakers = allSpeakers;
@@ -230,26 +237,13 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const filmstrip = container.querySelector('.cinematic-filmstrip');
     const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
 
-    if (filmstrip && inactives.length > 0) {
-      // Check if all inactive speakers have filmstrip cards — if any are missing
-      // (e.g. the previously-active speaker that was in the spotlight, not in filmstrip),
-      // fall back to a full re-render so the card gets created.
-      const filmstripIds = new Set(
-        [...filmstrip.querySelectorAll('.filmstrip-speaker')].map(c => c.dataset.speakerId),
-      );
-      if (!inactives.every(s => filmstripIds.has(s.id))) {
-        return this.render();
-      }
-
-      // All cards present — just toggle visibility
+    if (filmstrip) {
+      // All speaker cards are always present (active one is just hidden).
+      // Toggle visibility based on new active speaker.
       for (const card of filmstrip.querySelectorAll('.filmstrip-speaker')) {
         const id = card.dataset.speakerId;
         card.style.display = (id === newActiveId) ? 'none' : '';
       }
-    }
-
-    if (inactives.length > 0 && !filmstripContainer) {
-      return this.render();
     }
     if (inactives.length === 0 && filmstripContainer) {
       filmstripContainer.style.display = 'none';
@@ -410,6 +404,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       this._prevParticipantKey = (_seedState.participants || []).map(p => p.id).join(',');
       this._prevBackgroundKey = _seedState.sceneBackground || '';
     }
+
+    // Raise My Hand integration: inject controls and indicators
+    const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
+    if (sceneContainer) rmhRender(sceneContainer);
   }
 
   // --- Fade out + close ---
@@ -439,6 +437,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._teardownCameraRow();
     game.storyframe.cinematicScene = null;
     unloadCinematicCSS();
+    rmhClose();
     document.getElementById('cinematic-context-menu')?.remove();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
