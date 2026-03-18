@@ -588,6 +588,11 @@
       "UpdatedInLibrary": "Updated \"{name}\" in library",
       "UpdateAndPresent": "Update & Present",
       "PresentChallenge": "Present Challenge"
+    },
+    "Integrations": {
+      "SimpleRequests": {
+        "CallNext": "Call next request"
+      }
     }
   }
 }

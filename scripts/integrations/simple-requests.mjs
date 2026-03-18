@@ -55,6 +55,22 @@ function injectCinematicControls(container) {
     className: 'sr-cinematic-controls',
   });
 
+  // GM: "Call Next" button to activate the top request in queue
+  if (game.user.isGM) {
+    const callNextBtn = Object.assign(document.createElement('button'), {
+      type: 'button',
+      className: 'player-utility-btn sr-cinematic-call-next',
+    });
+    callNextBtn.dataset.tooltip = game.i18n.localize('STORYFRAME.Integrations.SimpleRequests.CallNext');
+    callNextBtn.innerHTML = '<i class="fas fa-bullhorn" aria-hidden="true"></i>';
+    callNextBtn.addEventListener('click', () => {
+      if (getQueue().length > 0) {
+        window.SimplePrompts?.gm_callout_top_request();
+      }
+    });
+    controls.appendChild(callNextBtn);
+  }
+
   // Common request button
   const commonBtn = _createRequestButton('common', 'fa-comment', LEVEL_COMMON,
     game.i18n.localize('simple-requests.buttons.firstRequestTooltip'));
@@ -200,9 +216,18 @@ function _updateBadgesOnElements(elements, requestByUser) {
 
       if (!badge) {
         badge = Object.assign(document.createElement('div'), {
-          className: 'sr-cinematic-badge',
+          className: `sr-cinematic-badge${game.user.isGM ? ' sr-gm-clickable' : ''}`,
         });
         badge.innerHTML = `<i class="fas ${iconClass}"></i>`;
+
+        // GM can click badges to activate that player's request
+        if (game.user.isGM) {
+          badge.addEventListener('click', (e) => {
+            e.stopPropagation();
+            window.SimplePrompts?.activateRequest(userId);
+          });
+        }
+
         el.appendChild(badge);
       } else {
         badge.querySelector('i').className = `fas ${iconClass}`;
