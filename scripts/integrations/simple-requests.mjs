@@ -133,6 +133,27 @@ function _createRequestButton(levelClass, iconClass, level, tooltip) {
   return btn;
 }
 
+/**
+ * Give the floor to a specific user by removing their request and
+ * broadcasting the epic prompt (mirrors gm_callout_top_request but for any user).
+ * @param {string} userId
+ */
+function _calloutRequest(userId) {
+  const queue = getQueue();
+  const req = queue.find(r => r.userId === userId);
+  if (!req) return;
+
+  // Show epic prompt on all clients (handler also removes the request and syncs)
+  try {
+    window.SimplePrompts?.socket?.executeForEveryone('showEpicPrompt', req);
+  } catch {
+    // Fallback: just remove the request
+    window.SimplePrompts?.removeRequest(userId);
+  }
+
+  _lastQueueSignature = '';
+}
+
 // --- Control State Updates ---
 
 /**
@@ -199,6 +220,7 @@ function updateCinematicIndicators() {
 
 /**
  * Update badges on a set of elements.
+ * GM badges are clickable to activate that player's request.
  * @param {NodeList} elements
  * @param {Map<string, object>} requestByUser
  * @private
@@ -216,15 +238,18 @@ function _updateBadgesOnElements(elements, requestByUser) {
 
       if (!badge) {
         badge = Object.assign(document.createElement('div'), {
-          className: `sr-cinematic-badge${game.user.isGM ? ' sr-gm-clickable' : ''}`,
+          className: 'sr-cinematic-badge',
         });
         badge.innerHTML = `<i class="fas ${iconClass}"></i>`;
 
-        // GM can click badges to activate that player's request
         if (game.user.isGM) {
-          badge.addEventListener('click', (e) => {
+          badge.classList.add('sr-gm-clickable');
+          badge.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
             e.stopPropagation();
-            window.SimplePrompts?.activateRequest(userId);
+            e.stopImmediatePropagation();
+            badge.remove();
+            _calloutRequest(userId);
           });
         }
 
@@ -233,7 +258,6 @@ function _updateBadgesOnElements(elements, requestByUser) {
         badge.querySelector('i').className = `fas ${iconClass}`;
       }
 
-      // Reset and apply level class
       badge.classList.remove('common', 'important', 'urgent');
       badge.classList.add(levelClass);
     } else if (badge) {

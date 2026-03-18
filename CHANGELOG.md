@@ -12,7 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Starfinder 2e system support** — full compatibility with the SF2e system (`sf2e`), which shares the PF2e engine; Computers and Piloting skills are always available without requiring the sf2e-anachronism module; all PF2e features work identically (proficiency ranks, level-based DCs, difficulty adjustments, inline checks, action execution, lore skills, party detection)
-- **Simple Requests integration** — when the Simple Requests module is active, cinematic mode shows request buttons (common, important, urgent) in the bottom bar, along with request indicator badges on PC portraits and camera feeds; badges are color-coded by urgency level; clicking a button toggles the request on/off
+- **Simple Requests integration** — when the Simple Requests module is active, cinematic mode shows request buttons (common, important, urgent) in the bottom bar, along with request indicator badges on PC portraits and camera feeds; badges are color-coded by urgency level; clicking a button toggles the request on/off; GM gets a "Call Next" button to activate the top queued request, and can click any player's request badge to give them the floor directly
 
 ### Fixed
 
