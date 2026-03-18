@@ -331,7 +331,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       try {
         const sys = SystemAdapter.detectSystem();
         let SidebarClass;
-        if (sys === 'pf2e') {
+        if (sys === 'pf2e' || sys === 'sf2e') {
           ({ GMSidebarAppPF2e: SidebarClass } = await import('../gm-sidebar/gm-sidebar-pf2e.mjs'));
         } else if (sys === 'dnd5e') {
           ({ GMSidebarAppDND5e: SidebarClass } = await import('../gm-sidebar/gm-sidebar-dnd5e.mjs'));
@@ -1389,7 +1389,7 @@ export class CinematicGMApp extends CinematicSceneBase {
   static async _onOpenGMSidebar() {
     if (!game.storyframe.gmSidebar) {
       const system = game.system.id;
-      if (system === 'pf2e') {
+      if (system === 'pf2e' || system === 'sf2e') {
         const { GMSidebarAppPF2e } = await import('../gm-sidebar/gm-sidebar-pf2e.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppPF2e();
       } else if (system === 'dnd5e') {

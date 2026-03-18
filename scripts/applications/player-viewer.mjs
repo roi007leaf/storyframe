@@ -117,8 +117,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const currentSystem = SystemAdapter.detectSystem();
     let showDCs = true;
 
-    if (currentSystem === 'pf2e') {
-      // PF2e: Check metagame setting
+    if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
+      // PF2e/SF2e: Check metagame setting
       showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
     } else if (currentSystem === 'dnd5e') {
       // D&D 5e: Check challenge visibility setting
@@ -530,9 +530,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         };
       }
 
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         if (checkType === 'save') {
-          // PF2e: Saving throw
+          // PF2e/SF2e: Saving throw
           const save = actor.saves?.[fullSlug];
           if (!save) {
             ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: fullSlug, actor: actor.name }));
@@ -838,7 +838,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     try {
       let roll;
       let actionExecuted = false;
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         // Use action if provided, otherwise basic skill roll
         if (actionSlug && game.pf2e?.actions) {
           roll = await PlayerViewerApp._tryExecuteAction(actor, actionSlug, rollOptions);
@@ -953,7 +953,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     try {
       let roll;
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         const save = actor.saves?.[saveSlug];
         if (!save) {
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: saveSlug, actor: actor.name }));

@@ -85,7 +85,7 @@ function setupPF2eRepostIntegration() {
     // Need a sidebar instance for requestSkillCheck (used for DC/secret state)
     if (!game.storyframe.gmSidebar) {
       const system = game.system.id;
-      if (system === 'pf2e') {
+      if (system === 'pf2e' || system === 'sf2e') {
         const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppPF2e();
       } else if (system === 'dnd5e') {
@@ -950,7 +950,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         if (!game.storyframe.gmSidebar) {
           const system = game.system.id;
 
-          if (system === 'pf2e') {
+          if (system === 'pf2e' || system === 'sf2e') {
             const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppPF2e();
           } else if (system === 'dnd5e') {
@@ -1048,7 +1048,7 @@ Hooks.once('ready', async () => {
 
   // Setup inline check integrations (GM only)
   if (game.user.isGM) {
-    if (game.system.id === 'pf2e') {
+    if (game.system.id === 'pf2e' || game.system.id === 'sf2e') {
       setupPF2eRepostIntegration();
       setupPF2eActionEnricherIntegration();
     } else if (game.system.id === 'dnd5e') {

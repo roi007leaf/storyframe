@@ -27,7 +27,7 @@ function mapToMTBRequest(slug, checkType) {
   }
 
   const system = SystemAdapter.detectSystem();
-  if (system === 'pf2e') {
+  if (system === 'pf2e' || system === 'sf2e') {
     return { type: 'skill', key: PF2E_SKILL_SLUG_MAP[slug] || slug };
   }
   if (system === 'dnd5e') {

@@ -101,9 +101,9 @@ async function _handleJournalRenderImpl(sheet, html) {
   if (sidebar?.rendered) {
     // Sidebar is already open
     if (sidebar.parentInterface === sheet) {
-      // Already attached to this sheet — no sidebar re-render needed.
-      // Sidebar content is driven by StoryFrame state (updated via _broadcast),
-      // and new journal pages are detected by the MutationObserver.
+      // Already attached to this sheet — update journal checks for the new page.
+      // Only refreshes the checks/lore/saves sections, not the full sidebar.
+      sidebar.updateJournalChecks();
     } else if (!sidebar.parentInterface) {
       // Sidebar is open standalone (not attached to any journal)
       // Auto-attach it to this journal for better UX
@@ -280,7 +280,7 @@ async function _attachSidebarToSheet(sheet) {
     // Instantiate correct subclass based on system
     const system = game.system.id;
 
-    if (system === 'pf2e') {
+    if (system === 'pf2e' || system === 'sf2e') {
       const { GMSidebarAppPF2e } = await import('../applications/gm-sidebar/gm-sidebar-pf2e.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppPF2e();
     } else if (system === 'dnd5e') {

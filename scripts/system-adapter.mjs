@@ -73,18 +73,28 @@ import { getDrawSteelDCOptions, DRAWSTEEL_DC_BY_DIFFICULTY } from './system/draw
 
 /**
  * Detect the current game system
- * @returns {'pf2e'|'dnd5e'|'daggerheart'|'projectfu'|'draw-steel'|'other'}
+ * @returns {'pf2e'|'sf2e'|'dnd5e'|'daggerheart'|'projectfu'|'draw-steel'|'other'}
  */
 export function detectSystem() {
   const systemId = game.system.id;
 
   if (systemId === 'pf2e') return 'pf2e';
+  if (systemId === 'sf2e') return 'sf2e';
   if (systemId === 'dnd5e') return 'dnd5e';
   if (systemId === 'daggerheart') return 'daggerheart';
   if (systemId === 'projectfu') return 'projectfu';
   if (systemId === 'draw-steel') return 'draw-steel';
 
   return 'other';
+}
+
+/**
+ * Check if the current system is PF2e or SF2e (which share the same engine)
+ * @returns {boolean}
+ */
+export function isPF2eFamily() {
+  const system = detectSystem();
+  return system === 'pf2e' || system === 'sf2e';
 }
 
 /**
@@ -95,6 +105,8 @@ export function getSkills() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
+      return { ...PF2E_SKILLS, ...SF2E_SKILLS };
     case 'pf2e': {
       if (game.modules.get('sf2e-anachronism')?.active) {
         return { ...PF2E_SKILLS, ...SF2E_SKILLS };
@@ -122,6 +134,7 @@ export function getDCOptions() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return getPF2eDCOptions();
     case 'dnd5e':
@@ -145,6 +158,7 @@ export function getDifficultyAdjustments() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_DIFFICULTY_ADJUSTMENTS;
     case 'dnd5e':
@@ -189,6 +203,7 @@ export function getSkillShortName(slug) {
   // System-specific short names
   const shortNames = {
     pf2e: PF2E_SKILL_SHORT_NAMES,
+    sf2e: PF2E_SKILL_SHORT_NAMES,
     dnd5e: DND5E_SKILL_SHORT_NAMES,
     daggerheart: DAGGERHEART_TRAIT_SHORT_NAMES,
     projectfu: PROJECTFU_ATTRIBUTE_SHORT_NAMES,
@@ -207,6 +222,7 @@ export function getSkillNameMap() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SKILL_NAME_MAP;
     case 'dnd5e':
@@ -230,6 +246,7 @@ export function getSaves() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SAVES;
     case 'dnd5e':
@@ -274,6 +291,7 @@ export function getSaveShortName(slug) {
   // System-specific short names
   const shortNames = {
     pf2e: PF2E_SAVE_SHORT_NAMES,
+    sf2e: PF2E_SAVE_SHORT_NAMES,
     dnd5e: DND5E_SAVE_SHORT_NAMES,
     daggerheart: DAGGERHEART_SAVE_SHORT_NAMES,
     projectfu: PROJECTFU_SAVE_SHORT_NAMES,
@@ -292,6 +310,7 @@ export function getSaveNameMap() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SAVE_NAME_MAP;
     case 'dnd5e':
@@ -320,7 +339,7 @@ export async function getAllPlayerPCs() {
     return { id: a.uuid, name: a.name, img: a.img, actorUuid: a.uuid, userId: owner?.id };
   };
 
-  if (game.system.id === 'pf2e') {
+  if (isPF2eFamily()) {
     const partyPCs = await getPF2ePartyPCs(toEntry);
     if (partyPCs) return partyPCs;
     // Fallback: all player-owned characters if no party found
@@ -355,6 +374,7 @@ export function formatDC(dc) {
 
 export default {
   detectSystem,
+  isPF2eFamily,
   getSkills,
   getSaves,
   getDCOptions,

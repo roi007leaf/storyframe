@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.9.0] - 2026-03-18
+
+### Added
+
+- **Starfinder 2e system support** — full compatibility with the SF2e system (`sf2e`), which shares the PF2e engine; Computers and Piloting skills are always available without requiring the sf2e-anachronism module; all PF2e features work identically (proficiency ranks, level-based DCs, difficulty adjustments, inline checks, action execution, lore skills, party detection)
+
+### Fixed
+
+- **Journal checks not updating on page change** — switching between journal pages now correctly updates the skill checks, lore checks, and saves sections in the PCs tab; previously these sections were stale because the sidebar skipped re-parsing when the journal re-rendered
+
 ## [2.8.0] - 2026-03-16
 
 ### Added

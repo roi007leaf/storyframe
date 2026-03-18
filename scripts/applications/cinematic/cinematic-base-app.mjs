@@ -97,7 +97,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const pcRow = partyPCs.map(p => ({ actorUuid: p.actorUuid, name: p.name, img: p.img, userId: p.userId }));
 
     // PF2e party sheet availability
-    const partyActor = game.system.id === 'pf2e'
+    const partyActor = (game.system.id === 'pf2e' || game.system.id === 'sf2e')
       ? game.actors.find(a => a.type === 'party')
       : null;
 

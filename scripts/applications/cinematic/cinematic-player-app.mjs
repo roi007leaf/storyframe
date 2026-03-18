@@ -95,7 +95,7 @@ export class CinematicPlayerApp extends CinematicSceneBase {
 
             let showDC = true;
             const sys = SystemAdapter.detectSystem();
-            if (sys === 'pf2e') showDC = game.pf2e?.settings?.metagame?.dcs ?? true;
+            if (sys === 'pf2e' || sys === 'sf2e') showDC = game.pf2e?.settings?.metagame?.dcs ?? true;
             else if (sys === 'dnd5e') {
               const vis = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
               showDC = vis === 'all';
@@ -145,7 +145,7 @@ export class CinematicPlayerApp extends CinematicSceneBase {
     if (state.activeChallenges?.length > 0) {
       let showDCs = true;
       const sys = SystemAdapter.detectSystem();
-      if (sys === 'pf2e') showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
+      if (sys === 'pf2e' || sys === 'sf2e') showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
       else if (sys === 'dnd5e') {
         const vis = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
         showDCs = vis === 'all';
@@ -153,7 +153,7 @@ export class CinematicPlayerApp extends CinematicSceneBase {
 
       // Load system-specific class for proficiency checking (mirrors player-sidebar logic)
       let GMSidebar;
-      if (sys === 'pf2e') {
+      if (sys === 'pf2e' || sys === 'sf2e') {
         const { GMSidebarAppPF2e } = await import('../gm-sidebar/gm-sidebar-pf2e.mjs');
         GMSidebar = GMSidebarAppPF2e;
       } else if (sys === 'dnd5e') {

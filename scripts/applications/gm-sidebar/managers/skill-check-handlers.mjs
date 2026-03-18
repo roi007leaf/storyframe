@@ -780,7 +780,7 @@ export async function actorHasSkill(sidebar, actor, skillSlug) {
     return await sidebar._actorHasSkill(actor, skillSlug);
   }
   // Direct PF2e lore-skill check: lore skills are keyed by their slug in actor.skills
-  if (skillSlug.includes('-lore') && game.system.id === 'pf2e') {
+  if (skillSlug.includes('-lore') && (game.system.id === 'pf2e' || game.system.id === 'sf2e')) {
     return !!(actor?.skills?.[skillSlug]);
   }
   return true;
