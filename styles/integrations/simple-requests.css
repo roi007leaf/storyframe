@@ -1,0 +1,115 @@
+/* ===================================================================
+   Simple Requests — Cinematic Mode Integration
+   Styles for request indicators and control buttons in cinematic.
+   Loaded on-demand via css-loader when cinematic opens.
+   =================================================================== */
+
+/* Color tokens matching Simple Requests urgency levels */
+:root {
+  --sr-common: #5e81ac;
+  --sr-important: #ebcb8b;
+  --sr-urgent: #bf616a;
+}
+
+/* ===== Control Buttons (left side of bottom bar) ===== */
+.sr-cinematic-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  margin-right: 2px;
+}
+
+/* Common request button: blue when active */
+.sr-level-common.active {
+  color: var(--sr-common);
+  border-color: var(--sr-common);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+.sr-level-common.active:hover {
+  color: var(--sr-common);
+}
+
+/* Important request button: yellow when active */
+.sr-level-important.active {
+  color: var(--sr-important);
+  border-color: var(--sr-important);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+.sr-level-important.active:hover {
+  color: var(--sr-important);
+}
+
+/* Urgent request button: red when active */
+.sr-level-urgent.active {
+  color: var(--sr-urgent);
+  border-color: var(--sr-urgent);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+.sr-level-urgent.active:hover {
+  color: var(--sr-urgent);
+}
+
+/* ===== Indicator Badges (PC portraits + camera views) ===== */
+
+.sr-cinematic-badge {
+  position: absolute;
+  top: -4px;
+  left: -6px;
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  background: rgba(26, 26, 46, 0.9);
+  color: #fff;
+  padding: 0.15em 0.3em;
+  border-radius: 0.35em;
+  border: 1.5px solid var(--sr-common);
+  font-size: 0.7em;
+  font-weight: bold;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* Badge icon colors by level */
+.sr-cinematic-badge.common {
+  border-color: var(--sr-common);
+}
+
+.sr-cinematic-badge.common i {
+  color: var(--sr-common);
+}
+
+.sr-cinematic-badge.important {
+  border-color: var(--sr-important);
+}
+
+.sr-cinematic-badge.important i {
+  color: var(--sr-important);
+}
+
+.sr-cinematic-badge.urgent {
+  border-color: var(--sr-urgent);
+}
+
+.sr-cinematic-badge.urgent i {
+  color: var(--sr-urgent);
+}
+
+/* ===== Responsive scaling for camera/player bar resize ===== */
+
+.cinematic-bottom-row .sr-cinematic-badge {
+  font-size: clamp(0.55em, 1.5cqi, 0.85em);
+}
+
+.camera-feed-item .sr-cinematic-badge {
+  top: 0.35em;
+  left: 0.35em;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+}

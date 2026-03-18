@@ -2,6 +2,7 @@ import { MODULE_ID } from '../../constants.mjs';
 import { getAllPlayerPCs } from '../../system-adapter.mjs';
 import { loadCinematicCSS, unloadCinematicCSS } from '../../css-loader.mjs';
 import { onCinematicRender as rmhRender, onCinematicClose as rmhClose } from '../../integrations/raise-my-hand.mjs';
+import { onCinematicRender as srRender, onCinematicClose as srClose } from '../../integrations/simple-requests.mjs';
 
 /**
  * Base class for Cinematic Scene apps.
@@ -405,9 +406,12 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       this._prevBackgroundKey = _seedState.sceneBackground || '';
     }
 
-    // Raise My Hand integration: inject controls and indicators
+    // Module integrations: inject controls and indicators
     const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
-    if (sceneContainer) rmhRender(sceneContainer);
+    if (sceneContainer) {
+      rmhRender(sceneContainer);
+      srRender(sceneContainer);
+    }
   }
 
   // --- Fade out + close ---
@@ -438,6 +442,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     game.storyframe.cinematicScene = null;
     unloadCinematicCSS();
     rmhClose();
+    srClose();
     document.getElementById('cinematic-context-menu')?.remove();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
