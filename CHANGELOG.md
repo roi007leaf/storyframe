@@ -7,6 +7,12 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.10.0] - 2026-03-24
+
+### Added
+
+- **Video background support** — cinematic mode background now supports `.webm` and `.mp4` video files in addition to images; videos autoplay, loop, and are muted by default
+
 ## [2.9.0] - 2026-03-18
 
 ### Added

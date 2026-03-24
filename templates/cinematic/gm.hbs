@@ -1,7 +1,11 @@
 <div class="cinematic-scene-container">
-  {{!-- Scene background image --}}
+  {{!-- Scene background image/video --}}
   {{#if sceneBackground}}
-  <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{#if isVideoBackground}}
+    <video class="cinematic-bg" src="{{sceneBackground}}" autoplay loop muted playsinline></video>
+    {{else}}
+    <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{/if}}
   {{/if}}
 
   {{!-- GM Prep Mode banner (relocated to document.body in _onRender for correct positioning) --}}

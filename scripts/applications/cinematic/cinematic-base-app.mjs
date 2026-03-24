@@ -113,6 +113,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       previewImageSrc: this.previewImageSrc,
       speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
       sceneBackground: state.sceneBackground || null,
+      isVideoBackground: /\.(webm|mp4)$/i.test(state.sceneBackground || ''),
     };
   }
 
