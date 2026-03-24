@@ -46,6 +46,108 @@ export class SpeakerManager {
   }
 
   /**
+   * Set secondary (responding) speaker and persist.
+   * @param {string|null} speakerId - Speaker ID or null to clear
+   */
+  async setSecondarySpeaker(speakerId) {
+    if (!this.state) return;
+
+    const scene = game.scenes.current;
+    if (!scene) return;
+
+    this.state.secondarySpeaker = speakerId;
+
+    // Persist + broadcast to other clients only, skip local re-render
+    game.storyframe.stateManager._suppressNextRender = true;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+    if (this.socketManager) this.socketManager.broadcastStateToOthers();
+    game.storyframe.cinematicScene?._onStateChange();
+  }
+
+  /**
+   * Add a speaker request to the queue.
+   * @param {Object} request - { speakerId, userId, timestamp }
+   */
+  async addSpeakerRequest({ speakerId, userId, timestamp }) {
+    if (!this.state) return;
+
+    if (!this.state.speakerRequests) this.state.speakerRequests = [];
+
+    // Don't add duplicate requests from same speaker
+    if (this.state.speakerRequests.some(r => r.speakerId === speakerId)) return;
+
+    this.state.speakerRequests.push({ speakerId, userId, timestamp });
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
+   * Remove a speaker request from the queue.
+   * @param {string} speakerId - Speaker ID to remove from queue
+   */
+  async clearSpeakerRequest(speakerId) {
+    if (!this.state) return;
+
+    if (!this.state.speakerRequests) return;
+    this.state.speakerRequests = this.state.speakerRequests.filter(r => r.speakerId !== speakerId);
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
+   * Add a player speaker to the list (with userId ownership).
+   * @param {Object} data - { actorUuid, imagePath, label, userId }
+   * @returns {Object} Created speaker or existing speaker
+   */
+  async addPlayerSpeaker({ actorUuid = null, imagePath = null, label, userId }) {
+    if (!this.state) return null;
+
+    // Check for duplicate by actorUuid
+    if (actorUuid) {
+      const existing = this.state.speakers.find(s => s.actorUuid === actorUuid);
+      if (existing) return existing;
+    }
+
+    const speaker = {
+      id: foundry.utils.randomID(),
+      actorUuid,
+      imagePath,
+      label,
+      isNameHidden: false,
+      isHidden: false,
+      altImages: [],
+      userId,
+    };
+
+    this.state.speakers.push(speaker);
+    await this.updateSpeakers(this.state.speakers);
+    return speaker;
+  }
+
+  /**
+   * Remove a player speaker (validated by userId).
+   * @param {string} speakerId - Speaker ID
+   * @param {string} userId - Requesting user's ID (must match speaker's userId)
+   */
+  async removePlayerSpeaker(speakerId, userId) {
+    if (!this.state) return;
+
+    const speaker = this.state.speakers.find(s => s.id === speakerId);
+    if (!speaker || speaker.userId !== userId) return;
+
+    this.state.speakers = this.state.speakers.filter(s => s.id !== speakerId);
+
+    // Clear active/secondary if removed
+    if (this.state.activeSpeaker === speakerId) this.state.activeSpeaker = null;
+    if (this.state.secondarySpeaker === speakerId) this.state.secondarySpeaker = null;
+
+    // Clear any pending request
+    if (this.state.speakerRequests) {
+      this.state.speakerRequests = this.state.speakerRequests.filter(r => r.speakerId !== speakerId);
+    }
+
+    await this.updateSpeakers(this.state.speakers);
+  }
+
+  /**
    * Add a speaker to the list.
    * @param {Object} speaker - Speaker data (actorUuid or imagePath, label, isNameHidden)
    * @returns {Object} Created speaker with ID, or existing speaker if duplicate
@@ -94,9 +196,16 @@ export class SpeakerManager {
 
     this.state.speakers = this.state.speakers.filter((s) => s.id !== speakerId);
 
-    // Clear active speaker if removed
+    // Clear active/secondary speaker if removed
     if (this.state.activeSpeaker === speakerId) {
       this.state.activeSpeaker = null;
+    }
+    if (this.state.secondarySpeaker === speakerId) {
+      this.state.secondarySpeaker = null;
+    }
+    // Clear any pending request for this speaker
+    if (this.state.speakerRequests) {
+      this.state.speakerRequests = this.state.speakerRequests.filter(r => r.speakerId !== speakerId);
     }
 
     await this.updateSpeakers(this.state.speakers);

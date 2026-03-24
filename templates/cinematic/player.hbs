@@ -24,16 +24,30 @@
       <i class="fas fa-times"></i>
     </button>
   </div>
-  {{else if activeSpeaker}}
-  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
-    <div class="spotlight-glow-cinematic"></div>
-    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
-    <div class="spotlight-nameplate">
-      <span class="nameplate-text">{{activeSpeaker.name}}</span>
-      {{#if hasPartySheet}}
-      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
-        <i class="fas fa-users" aria-hidden="true"></i>
-      </button>
+  {{else if hasAnySpeakerActive}}
+  <div class="cinematic-spotlight-stage{{#if secondarySpeaker}}{{#if activeSpeaker}} dual{{/if}}{{/if}}">
+    {{#if activeSpeaker}}
+    <div class="cinematic-spotlight primary" data-speaker-id="{{activeSpeaker.id}}">
+      <div class="spotlight-glow-cinematic"></div>
+      <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{activeSpeaker.name}}</span>
+        {{#if hasPartySheet}}
+        <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+          <i class="fas fa-users" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+    </div>
+    {{/if}}
+    {{!-- Secondary (responding) speaker --}}
+    <div class="cinematic-spotlight secondary" data-speaker-id="{{#if secondarySpeaker}}{{secondarySpeaker.id}}{{/if}}" {{#unless secondarySpeaker}}style="display:none"{{/unless}}>
+      <div class="spotlight-glow-cinematic"></div>
+      {{#if secondarySpeaker}}
+      <img src="{{secondarySpeaker.img}}" alt="{{secondarySpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{secondarySpeaker.name}}</span>
+      </div>
       {{/if}}
     </div>
   </div>
@@ -51,7 +65,7 @@
     </div>
     <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
       {{#each allSpeakers}}
-      <div class="filmstrip-speaker"
+      <div class="filmstrip-speaker{{#if (lookup ../requestingSpeakerIds this.id)}} has-request{{/if}}"
            role="listitem"
            data-speaker-id="{{this.id}}"
            data-tooltip="{{this.name}}"
@@ -67,8 +81,43 @@
   </div>
   {{/if}}
 
-  {{!-- Bottom row: camera feeds + PC portraits --}}
+  {{!-- Bottom row: camera feeds + PC portraits + player speaker controls --}}
   <div class="cinematic-bottom-row">
+    {{#if allowPlayerSpeakers}}
+    <div class="player-speaker-controls">
+      {{#if canJoinMore}}
+      <button type="button" class="player-speaker-btn join-btn" data-action="joinAsSpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.JoinAsSpeaker'}}">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        {{#unless hasPlayerSpeakers}}<span>{{localize "STORYFRAME.CinematicScene.JoinAsSpeaker"}}</span>{{/unless}}
+      </button>
+      {{/if}}
+      {{#each playerSpeakers}}
+      <div class="player-speaker-group" data-speaker-id="{{this.id}}">
+        {{#if (eq this.state "joined")}}
+        <button type="button" class="player-speaker-btn request-btn" data-action="requestFloor" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RequestToSpeak'}}">
+          <i class="fas fa-hand-paper" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.RequestToSpeak"}}</span>{{/if}}
+        </button>
+        {{else if (eq this.state "requesting")}}
+        <button type="button" class="player-speaker-btn cancel-btn requesting" data-action="cancelFloorRequest" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.CancelRequest'}}">
+          <i class="fas fa-hand-paper" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.CancelRequest"}}</span>{{/if}}
+        </button>
+        {{else if (eq this.state "active")}}
+        <button type="button" class="player-speaker-btn stepdown-btn" data-action="stepDown" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.StepDown'}}">
+          <i class="fas fa-microphone-slash" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.StepDown"}}</span>{{/if}}
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+      {{#if hasPlayerSpeakers}}
+      <button type="button" class="player-speaker-btn leave-btn" data-action="leaveAsSpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.LeaveAsSpeaker'}}">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+      </button>
+      {{/if}}
+    </div>
+    {{/if}}
     {{#each pcRow}}
     <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-user-id="{{this.userId}}" data-tooltip="{{this.name}}">
       <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">

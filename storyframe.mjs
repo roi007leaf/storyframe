@@ -455,6 +455,22 @@ Hooks.once('init', () => {
     default: false,
   });
 
+  game.settings.register(MODULE_ID, 'allowPlayerSpeakers', {
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'playerSpeakerAutoActivate', {
+    name: 'STORYFRAME.Settings.PlayerSpeakerAutoActivate',
+    hint: 'STORYFRAME.Settings.PlayerSpeakerAutoActivateHint',
+    scope: 'world',
+    config: true,
+    type: Boolean,
+    default: false,
+  });
+
   game.settings.register(MODULE_ID, 'addSpeakersHidden', {
     name: 'STORYFRAME.Settings.AddSpeakersHidden',
     hint: 'STORYFRAME.Settings.AddSpeakersHiddenHint',

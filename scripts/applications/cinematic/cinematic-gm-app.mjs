@@ -63,6 +63,10 @@ export class CinematicGMApp extends CinematicSceneBase {
       incrementCounter: CinematicGMApp._onIncrementCounter,
       decrementCounter: CinematicGMApp._onDecrementCounter,
       showToPlayer: CinematicGMApp._onShowToPlayer,
+      togglePlayerSpeakers: CinematicGMApp._onTogglePlayerSpeakers,
+      approveSpeakerRequest: CinematicGMApp._onApproveSpeakerRequest,
+      dismissSpeakerRequest: CinematicGMApp._onDismissSpeakerRequest,
+      clearSecondarySpeaker: CinematicGMApp._onClearSecondarySpeaker,
     },
   };
 
@@ -1227,6 +1231,28 @@ export class CinematicGMApp extends CinematicSceneBase {
 
   static async _onSwitchSpeaker(_event, target) {
     const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+
+    // Player-owned speakers go to the secondary (responding) slot, not primary
+    if (speakerId) {
+      const state = game.storyframe.stateManager?.getState();
+      const speaker = (state?.speakers || []).find(s => s.id === speakerId);
+      if (speaker?.userId) {
+        // Toggle: if already secondary, clear it; otherwise set it
+        const newSecondary = state.secondarySpeaker === speakerId ? null : speakerId;
+        await game.storyframe.socketManager.requestSetSecondarySpeaker(newSecondary);
+        // Clear any pending request for this speaker
+        if (newSecondary) {
+          await game.storyframe.socketManager.requestClearSpeakerRequest(speakerId);
+        }
+        const updatedState = game.storyframe.stateManager?.getState();
+        if (updatedState) {
+          this._prevSecondaryKey = updatedState.secondarySpeaker ?? '';
+          await this._swapActiveSpeaker(updatedState);
+        }
+        return;
+      }
+    }
+
     await game.storyframe.socketManager.requestSetActiveSpeaker(speakerId || null);
     const state = game.storyframe.stateManager?.getState();
     if (state) {
@@ -1789,5 +1815,56 @@ export class CinematicGMApp extends CinematicSceneBase {
     // Play all tracks simultaneously regardless of playlist mode
     const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
     await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
+  }
+
+  // --- Player Speaker Actions ---
+
+  static async _onTogglePlayerSpeakers() {
+    const current = game.settings.get(MODULE_ID, 'allowPlayerSpeakers');
+    await game.settings.set(MODULE_ID, 'allowPlayerSpeakers', !current);
+    // Broadcast state so all player clients re-render with the new setting
+    game.storyframe.socketManager?.broadcastStateUpdate();
+  }
+
+  static async _onApproveSpeakerRequest(_event, target) {
+    const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+    if (!speakerId) return;
+    await game.storyframe.socketManager.requestSetSecondarySpeaker(speakerId);
+    await game.storyframe.socketManager.requestClearSpeakerRequest(speakerId);
+  }
+
+  static async _onDismissSpeakerRequest(_event, target) {
+    const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+    if (!speakerId) return;
+    await game.storyframe.socketManager.requestClearSpeakerRequest(speakerId);
+  }
+
+  static async _onClearSecondarySpeaker() {
+    await game.storyframe.socketManager.requestSetSecondarySpeaker(null);
+  }
+
+  _updateRequestIndicators(state) {
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) return;
+    const requests = state.speakerRequests || [];
+    const requestIds = new Set(requests.map(r => r.speakerId));
+
+    // Update request queue badge
+    const badge = container.querySelector('.speaker-request-badge');
+    if (badge) {
+      badge.textContent = requests.length;
+      badge.classList.toggle('hidden', requests.length === 0);
+    }
+
+    // Update filmstrip glow indicators
+    for (const card of container.querySelectorAll('.filmstrip-speaker')) {
+      card.classList.toggle('has-request', requestIds.has(card.dataset.speakerId));
+    }
+
+    // Update request queue panel
+    const panel = container.querySelector('.speaker-request-queue');
+    if (panel) {
+      panel.classList.toggle('hidden', requests.length === 0);
+    }
   }
 }

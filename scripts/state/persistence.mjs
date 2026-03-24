@@ -55,6 +55,8 @@ export class Persistence {
       activeSpeaker: null,
       sceneBackground: null,
       minimizedJournals: [],
+      secondarySpeaker: null,
+      speakerRequests: [],
       speakers: [],
       participants: [],
       pendingRolls: [],
@@ -89,6 +91,11 @@ export class Persistence {
     // Migration: v4 -> v5 (add minimizedJournals)
     if (data.version === 4) {
       data = this._migrateV4ToV5(data);
+    }
+
+    // Migration: v5 -> v6 (add secondarySpeaker, speakerRequests, speaker userId)
+    if (data.version === 5) {
+      data = this._migrateV5ToV6(data);
     }
 
     data.version = SCHEMA_VERSION;
@@ -143,6 +150,19 @@ export class Persistence {
       minimizedJournals: [],
       version: 5
     };
+  }
+
+  static _migrateV5ToV6(data) {
+    const migrated = { ...data };
+    migrated.secondarySpeaker = null;
+    migrated.speakerRequests = [];
+    // Add userId field to existing speakers (null = GM-created)
+    migrated.speakers = (data.speakers || []).map(s => ({
+      ...s,
+      userId: s.userId ?? null,
+    }));
+    migrated.version = 6;
+    return migrated;
   }
 
   static _migrateV3ToV4(data) {

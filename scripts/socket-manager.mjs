@@ -55,6 +55,14 @@ export class SocketManager {
     // Register blind roll notification handler
     this.socket.register('notifyBlindRoll', this._handleNotifyBlindRoll);
 
+    // Register player speaker handlers
+    this.socket.register('setSecondarySpeaker', this._handleSetSecondarySpeaker);
+    this.socket.register('addPlayerSpeaker', this._handleAddPlayerSpeaker);
+    this.socket.register('removePlayerSpeaker', this._handleRemovePlayerSpeaker);
+    this.socket.register('requestSpeakerFloor', this._handleRequestSpeakerFloor);
+    this.socket.register('clearSpeakerFloor', this._handleClearSpeakerFloor);
+    this.socket.register('clearSpeakerRequest', this._handleClearSpeakerRequest);
+
     // Register cinematic scene mode handlers
     this.socket.register('launchSceneMode', this._handleLaunchSceneMode);
     this.socket.register('launchSceneModeForPlayer', this._handleLaunchSceneMode);
@@ -241,6 +249,59 @@ export class SocketManager {
 
   async requestRemoveSpeakerAltImage(speakerId, img) {
     return await this.socket.executeAsGM('removeSpeakerAltImage', { speakerId, img });
+  }
+
+  // --- Player Speaker API ---
+
+  /**
+   * Request GM to set secondary (responding) speaker.
+   * @param {string|null} speakerId
+   */
+  async requestSetSecondarySpeaker(speakerId) {
+    return await this.socket.executeAsGM('setSecondarySpeaker', speakerId);
+  }
+
+  /**
+   * Request GM to add a player-owned speaker.
+   * @param {Object} data - { actorUuid, imagePath, label, userId }
+   */
+  async requestAddPlayerSpeaker(data) {
+    return await this.socket.executeAsGM('addPlayerSpeaker', data);
+  }
+
+  /**
+   * Request GM to remove a player-owned speaker.
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestRemovePlayerSpeaker(speakerId, userId) {
+    return await this.socket.executeAsGM('removePlayerSpeaker', { speakerId, userId });
+  }
+
+  /**
+   * Request the speaker floor (add to request queue or auto-activate).
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestSpeakerFloor(speakerId, userId) {
+    return await this.socket.executeAsGM('requestSpeakerFloor', { speakerId, userId });
+  }
+
+  /**
+   * Player voluntarily steps down from secondary speaker.
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestClearSpeakerFloor(speakerId, userId) {
+    return await this.socket.executeAsGM('clearSpeakerFloor', { speakerId, userId });
+  }
+
+  /**
+   * GM dismisses a speaker request from the queue.
+   * @param {string} speakerId
+   */
+  async requestClearSpeakerRequest(speakerId) {
+    return await this.socket.executeAsGM('clearSpeakerRequest', speakerId);
   }
 
   /**
@@ -803,6 +864,62 @@ export class SocketManager {
       }
     }
     this.socket.executeForOthers('queryCinematicStatus');
+  }
+
+  // --- Player Speaker Handlers ---
+
+  async _handleSetSecondarySpeaker(speakerId) {
+    await game.storyframe.stateManager?.setSecondarySpeaker(speakerId);
+  }
+
+  async _handleAddPlayerSpeaker(data) {
+    // Validate setting is enabled
+    if (!game.settings.get(MODULE_ID, 'allowPlayerSpeakers')) return null;
+    return await game.storyframe.stateManager?.addPlayerSpeaker(data);
+  }
+
+  async _handleRemovePlayerSpeaker({ speakerId, userId }) {
+    await game.storyframe.stateManager?.removePlayerSpeaker(speakerId, userId);
+  }
+
+  async _handleRequestSpeakerFloor({ speakerId, userId }) {
+    const stateManager = game.storyframe.stateManager;
+    if (!stateManager) return;
+
+    // Validate setting is enabled
+    if (!game.settings.get(MODULE_ID, 'allowPlayerSpeakers')) return;
+
+    // If already secondary, no-op
+    if (stateManager.getState()?.secondarySpeaker === speakerId) return;
+
+    // Auto-activate mode: set directly as secondary
+    if (game.settings.get(MODULE_ID, 'playerSpeakerAutoActivate')) {
+      await stateManager.setSecondarySpeaker(speakerId);
+      // Clear any pending request for this speaker
+      await stateManager.clearSpeakerRequest(speakerId);
+    } else {
+      // Queue mode: add to request queue for GM approval
+      await stateManager.addSpeakerRequest({ speakerId, userId, timestamp: Date.now() });
+    }
+  }
+
+  async _handleClearSpeakerFloor({ speakerId, userId }) {
+    const stateManager = game.storyframe.stateManager;
+    if (!stateManager) return;
+    const state = stateManager.getState();
+    if (!state) return;
+
+    // Validate ownership: only clear if this user's speaker is the secondary
+    const speaker = (state.speakers || []).find(s => s.id === speakerId);
+    if (!speaker || speaker.userId !== userId) return;
+
+    if (state.secondarySpeaker === speakerId) {
+      await stateManager.setSecondarySpeaker(null);
+    }
+  }
+
+  async _handleClearSpeakerRequest(speakerId) {
+    await game.storyframe.stateManager?.clearSpeakerRequest(speakerId);
   }
 
   // --- Challenge Handlers ---

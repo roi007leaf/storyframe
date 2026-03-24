@@ -27,6 +27,11 @@ export class CinematicPlayerApp extends CinematicSceneBase {
       createPlayerNote: CinematicPlayerApp._onCreatePlayerNote,
       togglePlayerJournalSwitcher: CinematicPlayerApp._onTogglePlayerJournalSwitcher,
       editPlayerJournal: CinematicPlayerApp._onEditPlayerJournal,
+      joinAsSpeaker: CinematicPlayerApp._onJoinAsSpeaker,
+      leaveAsSpeaker: CinematicPlayerApp._onLeaveAsSpeaker,
+      requestFloor: CinematicPlayerApp._onRequestFloor,
+      cancelFloorRequest: CinematicPlayerApp._onCancelFloorRequest,
+      stepDown: CinematicPlayerApp._onStepDown,
     },
   };
 
@@ -646,6 +651,150 @@ export class CinematicPlayerApp extends CinematicSceneBase {
           });
         }
       }
+    }
+  }
+
+  // --- Player Speaker Actions ---
+
+  static async _onJoinAsSpeaker(_event, target) {
+    const userId = game.user.id;
+    const ownedActors = game.actors.filter(a => a.isOwner && !a.pack && a.type === 'character');
+    if (ownedActors.length === 0) {
+      ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoAssignedCharacter'));
+      return;
+    }
+
+    // Filter out actors already in the speaker list
+    const state = game.storyframe.stateManager?.getState();
+    const existingUuids = new Set((state?.speakers || []).filter(s => s.userId === userId).map(s => s.actorUuid));
+    const available = ownedActors.filter(a => !existingUuids.has(a.uuid));
+    if (available.length === 0) return;
+
+    // Single actor — add directly
+    if (available.length === 1) {
+      await game.storyframe.socketManager.requestAddPlayerSpeaker({
+        actorUuid: available[0].uuid, label: available[0].name, imagePath: null, userId,
+      });
+      return;
+    }
+
+    // Multiple actors — show inline picker popup above the button
+    const popup = document.createElement('div');
+    popup.className = 'speaker-picker-popup';
+    for (const actor of available) {
+      const item = document.createElement('div');
+      item.className = 'speaker-picker-item';
+      item.dataset.actorUuid = actor.uuid;
+      item.innerHTML = `<img src="${actor.img}" alt="${actor.name}"><span>${actor.name}</span>`;
+      item.addEventListener('click', async () => {
+        popup.remove();
+        await game.storyframe.socketManager.requestAddPlayerSpeaker({
+          actorUuid: actor.uuid, label: actor.name, imagePath: null, userId,
+        });
+      });
+      popup.appendChild(item);
+    }
+
+    CinematicPlayerApp._showPickerPopup(target, popup);
+  }
+
+  static async _onLeaveAsSpeaker(_event, target) {
+    const state = game.storyframe.stateManager?.getState();
+    if (!state) return;
+    const userId = game.user.id;
+    const owned = (state.speakers || []).filter(s => s.userId === userId);
+    if (owned.length === 0) return;
+
+    // Single speaker — remove directly
+    if (owned.length === 1) {
+      await game.storyframe.socketManager.requestRemovePlayerSpeaker(owned[0].id, userId);
+      return;
+    }
+
+    // Multiple speakers — show picker to choose which to remove
+    // Resolve names for display
+    const allResolved = await game.storyframe.cinematicScene?._resolveSpeakers(owned) || [];
+
+    const popup = document.createElement('div');
+    popup.className = 'speaker-picker-popup';
+    for (let i = 0; i < owned.length; i++) {
+      const speaker = owned[i];
+      const resolved = allResolved[i];
+      const item = document.createElement('div');
+      item.className = 'speaker-picker-item leave-item';
+      item.innerHTML = `<img src="${resolved?.img || 'icons/svg/mystery-man.svg'}" alt="${resolved?.name || speaker.label}"><span>${resolved?.name || speaker.label}</span>`;
+      item.addEventListener('click', async () => {
+        popup.remove();
+        await game.storyframe.socketManager.requestRemovePlayerSpeaker(speaker.id, userId);
+      });
+      popup.appendChild(item);
+    }
+
+    CinematicPlayerApp._showPickerPopup(target, popup);
+  }
+
+  static _showPickerPopup(anchorBtn, popup) {
+    const controls = anchorBtn.closest('.player-speaker-controls');
+    if (!controls) return;
+
+    // Remove any existing popup
+    controls.querySelector('.speaker-picker-popup')?.remove();
+
+    // Position popup above the clicked button
+    const controlsRect = controls.getBoundingClientRect();
+    const btnRect = anchorBtn.getBoundingClientRect();
+    popup.style.left = `${btnRect.left - controlsRect.left}px`;
+
+    controls.appendChild(popup);
+
+    // Close on outside click
+    const close = (e) => {
+      if (!popup.contains(e.target) && e.target !== anchorBtn) {
+        popup.remove();
+        document.removeEventListener('pointerdown', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('pointerdown', close), 0);
+  }
+
+  static async _onRequestFloor(_event, target) {
+    const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+    if (!speakerId) return;
+    await game.storyframe.socketManager.requestSpeakerFloor(speakerId, game.user.id);
+  }
+
+  static async _onCancelFloorRequest(_event, target) {
+    const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+    if (!speakerId) return;
+    await game.storyframe.socketManager.requestClearSpeakerRequest(speakerId);
+  }
+
+  static async _onStepDown(_event, target) {
+    const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
+    if (!speakerId) return;
+    await game.storyframe.socketManager.requestClearSpeakerFloor(speakerId, game.user.id);
+  }
+
+  _updateRequestIndicators(state) {
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) return;
+    const requests = state.speakerRequests || [];
+    const requestIds = new Set(requests.map(r => r.speakerId));
+
+    // Update filmstrip glow indicators
+    for (const card of container.querySelectorAll('.filmstrip-speaker')) {
+      card.classList.toggle('has-request', requestIds.has(card.dataset.speakerId));
+    }
+
+    // Update player's own PC item state
+    const userId = game.user.id;
+    const speaker = (state.speakers || []).find(s => s.userId === userId);
+    const pcItem = container.querySelector(`.cinematic-pc-item[data-user-id="${userId}"]`);
+    if (pcItem && speaker) {
+      const isRequesting = requestIds.has(speaker.id);
+      const isActive = state.secondarySpeaker === speaker.id;
+      pcItem.classList.toggle('requesting', isRequesting);
+      pcItem.classList.toggle('speaker-active', isActive);
     }
   }
 }

@@ -6,7 +6,7 @@
 // Module identification
 export const MODULE_ID = 'storyframe';
 export const FLAG_KEY = 'data';
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 // System IDs
 export const SYSTEMS = {

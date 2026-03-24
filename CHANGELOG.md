@@ -12,6 +12,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **Video background support** — cinematic mode background now supports `.webm` and `.mp4` video files in addition to images; videos autoplay, loop, and are muted by default
+- **Player Speaker Participation** — a new dual-spotlight conversation system that lets players actively participate as speakers in cinematic mode, solving the common issue of players accidentally speaking over each other or waiting in silence during social encounters
+
+  **How it works:**
+  1. **GM enables it** — click the people-arrows (⇄) toggle button in the GM cinematic controls (top-right); this can be toggled on/off at any time during a session
+  2. **Players join** — a "Join as Speaker" button appears in the player's bottom bar; if the player owns multiple characters, a picker popup lets them choose which PC to add; they can join with multiple PCs
+  3. **Players request the floor** — once joined, each PC gets a "Request to Speak" button; clicking it sends a request to the GM and shows a pulsing amber glow on the speaker's filmstrip portrait so everyone can see who wants to talk
+  4. **GM approves** — a request queue panel appears showing pending requests with approve/dismiss buttons; approving sets the player as the secondary (responding) speaker, shown side-by-side with the active NPC in a dual spotlight layout
+  5. **Player steps down** — the active player speaker can click "Step Down" to voluntarily leave the spotlight, returning to the "Request to Speak" state
+  6. **GM can also activate directly** — clicking a player-owned speaker in the filmstrip sets them as the secondary speaker (toggling on/off), bypassing the request queue
+
+  **Additional details:**
+  - The "Auto-Activate Player Speakers" world setting skips GM approval — player requests immediately activate as the responding speaker
+  - Player-added speakers show a small amber dot indicator on their filmstrip card
+  - The GM retains full control: can dismiss the secondary speaker, remove player speakers, or toggle the feature off
+  - Both spotlights are equal size with bottom-aligned portraits; the NPC uses a blue glow, the PC uses an amber/gold glow
+  - When no NPC is active, a PC speaker alone still displays in the spotlight
 
 ## [2.9.0] - 2026-03-18
 

@@ -31,33 +31,72 @@
       <i class="fas fa-times"></i>
     </button>
   </div>
-  {{else if activeSpeaker}}
-  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
-    <div class="spotlight-glow-cinematic"></div>
-    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
-    <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
-      <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
-        <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
-      </button>
-      <span class="nameplate-text">{{activeSpeaker.name}}</span>
-      <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
-        <i class="fas fa-user-slash" aria-hidden="true"></i>
-      </button>
-      <div class="speaker-counter">
-        <button type="button" class="counter-btn" data-action="decrementCounter">−</button>
-        <span class="counter-value">{{activeSpeakerCounter}}</span>
-        <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
+  {{else if hasAnySpeakerActive}}
+  <div class="cinematic-spotlight-stage{{#if secondarySpeaker}}{{#if activeSpeaker}} dual{{/if}}{{/if}}">
+    {{#if activeSpeaker}}
+    <div class="cinematic-spotlight primary" data-speaker-id="{{activeSpeaker.id}}">
+      <div class="spotlight-glow-cinematic"></div>
+      <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
+        <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
+          <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+        </button>
+        <span class="nameplate-text">{{activeSpeaker.name}}</span>
+        <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
+          <i class="fas fa-user-slash" aria-hidden="true"></i>
+        </button>
+        <div class="speaker-counter">
+          <button type="button" class="counter-btn" data-action="decrementCounter">−</button>
+          <span class="counter-value">{{activeSpeakerCounter}}</span>
+          <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
+        </div>
+        {{#if hasPartySheet}}
+        <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+          <i class="fas fa-users" aria-hidden="true"></i>
+        </button>
+        {{/if}}
       </div>
-      {{#if hasPartySheet}}
-      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
-        <i class="fas fa-users" aria-hidden="true"></i>
-      </button>
+    </div>
+    {{/if}}
+    {{!-- Secondary (responding) speaker --}}
+    <div class="cinematic-spotlight secondary" data-speaker-id="{{#if secondarySpeaker}}{{secondarySpeaker.id}}{{/if}}" {{#unless secondarySpeaker}}style="display:none"{{/unless}}>
+      <div class="spotlight-glow-cinematic"></div>
+      {{#if secondarySpeaker}}
+      <img src="{{secondarySpeaker.img}}" alt="{{secondarySpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{secondarySpeaker.name}}</span>
+        <button type="button" class="spotlight-dismiss-btn" data-action="clearSecondarySpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DismissSecondary'}}">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
       {{/if}}
     </div>
   </div>
   {{else}}
   <div class="cinematic-no-active">
     <i class="fas fa-masks-theater" aria-hidden="true"></i>
+  </div>
+  {{/if}}
+
+  {{!-- Speaker request queue (GM only) --}}
+  {{#if speakerRequests.length}}
+  <div class="speaker-request-queue">
+    <div class="request-queue-header">
+      <i class="fas fa-hand-paper" aria-hidden="true"></i>
+      <span>{{localize "STORYFRAME.CinematicScene.SpeakerRequests"}}</span>
+      <span class="speaker-request-badge">{{speakerRequests.length}}</span>
+    </div>
+    {{#each speakerRequests}}
+    <div class="request-queue-item" data-speaker-id="{{this.speakerId}}">
+      <span class="request-speaker-name">{{this.speakerName}}</span>
+      <button type="button" class="request-approve-btn" data-action="approveSpeakerRequest" data-speaker-id="{{this.speakerId}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ApproveRequest'}}">
+        <i class="fas fa-check" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="request-dismiss-btn" data-action="dismissSpeakerRequest" data-speaker-id="{{this.speakerId}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DismissRequest'}}">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    {{/each}}
   </div>
   {{/if}}
 
@@ -69,7 +108,7 @@
     </div>
     <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
       {{#each allSpeakers}}
-      <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}"
+      <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}{{#if (lookup ../requestingSpeakerIds this.id)}} has-request{{/if}}{{#if this.userId}} player-speaker{{/if}}"
            role="listitem"
            data-speaker-id="{{this.id}}"
            data-action="switchSpeaker"
@@ -139,6 +178,9 @@
     {{/if}}
     <button type="button" class="gm-control-btn" data-action="openScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.OpenScene'}}">
       <i class="fas fa-map" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn {{#if allowPlayerSpeakers}}active{{/if}}" data-action="togglePlayerSpeakers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.TogglePlayerSpeakers'}}">
+      <i class="fas fa-people-arrows" aria-hidden="true"></i>
     </button>
     <button type="button" class="gm-control-btn broadcast-status-btn {{#if playersSeeCinematic}}active{{/if}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ShowToPlayers'}}">
       <i class="fas fa-clapperboard-play" aria-hidden="true"></i>
