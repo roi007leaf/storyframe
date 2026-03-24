@@ -58,6 +58,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       clearBackground: CinematicGMApp._onClearBackground,
       saveSceneState: CinematicGMApp._onSaveSceneState,
       saveCurrentScene: CinematicGMApp._onSaveCurrentScene,
+      deleteSpeakerScene: CinematicGMApp._onDeleteSpeakerScene,
       openScene: CinematicGMApp._onOpenScene,
       incrementCounter: CinematicGMApp._onIncrementCounter,
       decrementCounter: CinematicGMApp._onDecrementCounter,
@@ -1310,6 +1311,25 @@ export class CinematicGMApp extends CinematicSceneBase {
     await showSceneEditor({
       speakers: [...speakers],
     });
+  }
+
+  static async _onDeleteSpeakerScene(_event, target) {
+    const sceneId = target.closest('[data-scene-id]')?.dataset.sceneId;
+    if (!sceneId) return;
+    const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
+    const scene = scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Title') },
+      content: `<p>${game.i18n.format('STORYFRAME.Dialogs.DeleteScene.Content', { name: scene.name })}</p>`,
+      yes: { label: game.i18n.localize('STORYFRAME.Dialogs.DeleteScene.Button') },
+    });
+    if (!confirmed) return;
+
+    const updatedScenes = scenes.filter(s => s.id !== sceneId);
+    await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
+    this.render();
   }
 
   static async _onRequestQuickSkill(_event, target) {

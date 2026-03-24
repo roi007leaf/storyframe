@@ -229,6 +229,10 @@
             data-tooltip="{{localize 'STORYFRAME.CinematicScene.SaveSceneState'}}">
             <i class="fas fa-floppy-disk" aria-hidden="true"></i>
           </button>
+          <button type="button" class="scene-delete-btn" data-action="deleteSpeakerScene" data-scene-id="{{this.id}}"
+            data-tooltip="{{localize 'STORYFRAME.Dialogs.DeleteScene.Title'}}">
+            <i class="fas fa-trash" aria-hidden="true"></i>
+          </button>
         </div>
         {{/each}}
         {{#unless speakerScenes.length}}

@@ -952,6 +952,28 @@
   background: rgba(163, 190, 140, 0.15);
 }
 
+.cinematic-scene-container .scene-delete-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: var(--sf-radius-sm, 4px);
+  font-size: 0.65rem;
+  opacity: 0;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .left-panel-scene-item:hover .scene-delete-btn {
+  opacity: 1;
+}
+
+.cinematic-scene-container .scene-delete-btn:hover {
+  color: rgba(191, 97, 106, 0.9);
+  background: rgba(191, 97, 106, 0.15);
+}
+
 .cinematic-scene-container .scene-state-dot {
   font-size: 0.35rem;
   color: rgba(163, 190, 140, 0.6);

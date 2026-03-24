@@ -97,6 +97,12 @@
   border-color: var(--sf-accent-primary);
 }
 
+/* World Actors Section — visual separator from scene tokens */
+.scene-gatherer-dialog .world-actors-section {
+  border-top: 1px solid rgba(94, 129, 172, 0.25);
+  padding-top: var(--sf-space-md);
+}
+
 /* Participants Grid — matches roll-request-dialog */
 .scene-gatherer-dialog .participants-grid {
   display: grid;

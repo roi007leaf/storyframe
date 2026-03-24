@@ -119,8 +119,9 @@
         "SelectActors": "Select actors to add as speakers:",
         "GatherButton": "Populate & Save",
         "NoTokensOnScene": "No tokens found on the current scene",
-        "NoActorsFound": "No valid actors found on scene tokens",
-        "TokenCount": "{count} actor(s) on scene"
+        "NoActorsFound": "No valid actors found",
+        "TokenCount": "{count} actor(s) on scene",
+        "WorldActorCount": "{count} actor(s) in world"
       },
       "TargetSelector": {
         "Rolling": "Rolling",
@@ -552,6 +553,8 @@
       "JournalActorsCount": "Journal Actors ({count})",
       "Current": "Current",
       "NoSpeakersMessage": "No speakers. Add from sources below or drag actors here.",
+      "WorldActorsCount": "World Actors ({count})",
+      "SearchActors": "Search actors...",
       "SaveChanges": "Save Changes",
       "CreateScene": "Create Scene"
     },

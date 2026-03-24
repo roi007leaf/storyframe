@@ -310,6 +310,45 @@
   text-overflow: ellipsis;
 }
 
+/* World Actors Section */
+.storyframe-scene-editor .world-actors-section {
+  border-top: 1px solid rgba(94, 129, 172, 0.25);
+  padding-top: 12px;
+}
+
+.storyframe-scene-editor .world-actors-section .section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.storyframe-scene-editor .world-actors-search {
+  flex: 1;
+  max-width: 200px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(94, 129, 172, 0.4);
+  border-radius: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-family: inherit;
+  transition: all var(--sf-transition-base);
+}
+
+.storyframe-scene-editor .world-actors-search:focus {
+  outline: none;
+  border-color: rgba(94, 129, 172, 0.8);
+  background: rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
+}
+
+.storyframe-scene-editor .world-actors-grid {
+  max-height: 240px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
 .storyframe-scene-editor .editor-footer {
   display: flex;
   gap: 12px;

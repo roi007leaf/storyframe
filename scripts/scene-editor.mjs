@@ -122,6 +122,18 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
   await extractJournalContent();
 
+  // Gather all world actors (from the Actors tab), excluding loot/hazard/player-owned
+  const allWorldActors = [];
+  for (const actor of game.actors) {
+    if (actor.type === 'loot' || actor.type === 'hazard') continue;
+    if (actor.hasPlayerOwner) continue;
+    allWorldActors.push({
+      uuid: actor.uuid,
+      name: actor.name,
+      img: actor.img || 'icons/svg/mystery-man.svg',
+    });
+  }
+
   const i18nTitle = isEditing
     ? game.i18n.localize('STORYFRAME.SceneEditor.TitleEdit')
     : game.i18n.localize('STORYFRAME.SceneEditor.TitleCreate');
@@ -133,6 +145,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   const i18nNoSpeakers = game.i18n.localize('STORYFRAME.SceneEditor.NoSpeakersMessage');
   const i18nJournalImages = game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length });
   const i18nJournalActors = game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length });
+  const i18nWorldActors = game.i18n.format('STORYFRAME.SceneEditor.WorldActorsCount', { count: allWorldActors.length });
   const i18nCancel = game.i18n.localize('STORYFRAME.Dialogs.Cancel');
   const i18nSaveBtn = isEditing
     ? game.i18n.localize('STORYFRAME.SceneEditor.SaveChanges')
@@ -176,6 +189,14 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         <h3>${i18nJournalActors}</h3>
         <div class="source-grid actors-grid"></div>
       </div>
+
+      <div class="editor-section world-actors-section" style="display: ${allWorldActors.length > 0 ? 'flex' : 'none'}">
+        <div class="section-header">
+          <h3>${i18nWorldActors}</h3>
+          <input type="text" class="world-actors-search" placeholder="${game.i18n.localize('STORYFRAME.SceneEditor.SearchActors')}" />
+        </div>
+        <div class="source-grid world-actors-grid"></div>
+      </div>
     </div>
 
     <div class="editor-footer">
@@ -191,6 +212,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   const speakersList = editor.querySelector('.speakers-list');
   const imagesGrid = editor.querySelector('.images-grid');
   const actorsGrid = editor.querySelector('.actors-grid');
+  const worldActorsGrid = editor.querySelector('.world-actors-grid');
+  const worldActorsSearch = editor.querySelector('.world-actors-search');
   const btnAddCurrent = editor.querySelector('.btn-add-current');
   const btnSave = editor.querySelector('.btn-save');
   const btnCancel = editor.querySelector('.btn-cancel');
@@ -225,6 +248,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
     });
   }
@@ -305,6 +329,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
     });
   }
@@ -361,7 +386,75 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
+    });
+  }
+
+  let worldActorsFilter = '';
+
+  function renderWorldActors() {
+    const section = editor.querySelector('.editor-section.world-actors-section');
+    if (!section || !worldActorsGrid) return;
+
+    if (allWorldActors.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'flex';
+
+    // Filter out actors already in speakers, then apply search filter
+    const available = allWorldActors.filter(actor =>
+      !editorSpeakers.some(s => s.actorUuid === actor.uuid)
+    );
+    const filtered = worldActorsFilter
+      ? available.filter(a => a.name.toLowerCase().includes(worldActorsFilter))
+      : available;
+
+    // Update count in header
+    const header = section.querySelector('h3');
+    if (header) {
+      header.textContent = game.i18n.format('STORYFRAME.SceneEditor.WorldActorsCount', { count: available.length });
+    }
+
+    const addToSceneTooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.AddToScene');
+    worldActorsGrid.innerHTML = filtered.map((actor, idx) => `
+      <div class="source-item" data-type="world-actor" data-index="${idx}">
+        <img src="${actor.img}" alt="${actor.name}">
+        <span class="source-name">${actor.name}</span>
+        <button type="button" class="btn-add" data-tooltip="${addToSceneTooltip}">
+          <i class="fas fa-plus"></i>
+        </button>
+      </div>
+    `).join('');
+
+    worldActorsGrid.querySelectorAll('.btn-add').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.closest('.source-item').dataset.index);
+        const actor = filtered[idx];
+        if (!actor) return;
+
+        editorSpeakers.push({
+          id: foundry.utils.randomID(),
+          name: actor.name,
+          img: actor.img,
+          actorUuid: actor.uuid,
+          label: actor.name,
+          imagePath: actor.img,
+        });
+        renderSpeakers();
+        renderImages();
+        renderActors();
+        renderWorldActors();
+      });
+    });
+  }
+
+  // Wire up world actors search
+  if (worldActorsSearch) {
+    worldActorsSearch.addEventListener('input', () => {
+      worldActorsFilter = worldActorsSearch.value.trim().toLowerCase();
+      renderWorldActors();
     });
   }
 
@@ -369,6 +462,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   renderSpeakers();
   renderImages();
   renderActors();
+  renderWorldActors();
 
   // Add current speakers button
   if (btnAddCurrent) {
@@ -405,6 +499,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       renderSpeakers();
       renderImages();
       renderActors();
+      renderWorldActors();
       ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SpeakersAdded', { count: addedCount }));
     });
   }
@@ -453,6 +548,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       }
     } catch (err) {
       console.warn('StoryFrame | Drop failed:', err);

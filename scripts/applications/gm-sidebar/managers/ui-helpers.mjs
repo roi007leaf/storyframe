@@ -47,8 +47,12 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
   // Use default width for drawer mode (user may have resized in floating mode)
   const defaultWidth = sidebar.constructor.DEFAULT_OPTIONS?.position?.width || 330;
 
-  // Check if it would go off-screen, if so position to the left instead
-  const maxLeft = window.innerWidth - defaultWidth;
+  // Account for FoundryVTT's right sidebar so we don't overlap its tab buttons
+  const foundrySidebar = document.getElementById('sidebar');
+  const sidebarWidth = foundrySidebar ? foundrySidebar.offsetWidth : 0;
+
+  // Check if it would overlap the Foundry sidebar or go off-screen
+  const maxLeft = window.innerWidth - defaultWidth - sidebarWidth;
   let adjustedLeft = newLeft;
 
   if (newLeft > maxLeft) {
