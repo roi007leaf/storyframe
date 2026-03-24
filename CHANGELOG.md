@@ -7,11 +7,17 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.10.0] - 2026-03-24
+## [2.10.2] - 2026-03-24
+
+### Fixed
+
+- **GM cinematic controls not clickable when side panel is open** — GM control buttons (background, player speakers, broadcast, exit) now render above the side panel and are always clickable regardless of panel state
+- **Speaker removal caused full re-render flash** — removing speakers from the filmstrip now uses targeted DOM patching instead of a full application re-render
+
+## [2.10.1] - 2026-03-24
 
 ### Added
 
-- **Video background support** — cinematic mode background now supports `.webm` and `.mp4` video files in addition to images; videos autoplay, loop, and are muted by default
 - **Player Speaker Participation** — a new dual-spotlight conversation system that lets players actively participate as speakers in cinematic mode, solving the common issue of players accidentally speaking over each other or waiting in silence during social encounters
 
   **How it works:**
@@ -28,6 +34,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - The GM retains full control: can dismiss the secondary speaker, remove player speakers, or toggle the feature off
   - Both spotlights are equal size with bottom-aligned portraits; the NPC uses a blue glow, the PC uses an amber/gold glow
   - When no NPC is active, a PC speaker alone still displays in the spotlight
+
+## [2.10.0] - 2026-03-24
+
+### Added
+
+- **Video background support** — cinematic mode background now supports `.webm` and `.mp4` video files in addition to images; videos autoplay, loop, and are muted by default;
 
 ## [2.9.0] - 2026-03-18
 

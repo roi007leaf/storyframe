@@ -1,7 +1,7 @@
 /* ===== GM Controls (Top-Right) ===== */
 .cinematic-scene-container .cinematic-gm-controls {
-  position: absolute;
-  top: calc(12px);
+  position: fixed;
+  top: 12px;
   right: var(--sf-space-lg, 24px);
   z-index: 15;
   display: flex;

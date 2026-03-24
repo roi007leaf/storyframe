@@ -228,7 +228,6 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevBackgroundKey = backgroundKey;
     this._prevRequestsKey = requestsKey;
     this._prevPlayerSpeakersKey = playerSpeakersKey;
-    this._prevSpeakerIdsKeyRaw = (state.speakers || []).map(s => s.id);
 
     if (structuralChange) {
       // Check if this is purely a speaker removal (no additions) —
@@ -240,15 +239,15 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         const added = [...currIds].filter(id => !prevIds.has(id));
         if (removed.length > 0 && added.length === 0) {
           // Pure removal — patch DOM
+          this._prevSpeakerIdsKeyRaw = [...currIds];
           this._removeSpeakersFromDOM(removed, state);
           this._onFlagsChanged?.(state, flagsChanged);
           this._refreshRollPanel();
           if (requestsChanged) this._updateRequestIndicators?.(state);
-          // Store raw IDs for next comparison
-          this._prevSpeakerIdsKeyRaw = [...currIds];
           return;
         }
       }
+      this._prevSpeakerIdsKeyRaw = (state.speakers || []).map(s => s.id);
       this.render();
     } else if (secondaryChanged && !game.user.isGM) {
       // Player: secondary change affects control buttons — full re-render
