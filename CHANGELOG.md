@@ -7,6 +7,22 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.11.0] - 2026-03-25
+
+### Added
+
+- **Music playlist folder support** — the cinematic left panel now organizes playlists into collapsible folder groups matching your Foundry folder structure; folders can be expanded/collapsed by clicking the chevron or folder name; search results also show expandable playlist rows with individual track access
+- **Scene editor saves playlist and background** — creating or editing a speaker scene now automatically captures the currently playing playlist and scene background; loading a scene with no saved playlist stops all playing music and clears the background
+- **Scene editor reads cinematic journal content** — the "Create Scene" dialog now extracts images and actor links from the active cinematic journal page; switching journal pages while the editor is open automatically refreshes the available images and actors
+- **Scene editor search for world actors** — added a search input to the World Actors section for quickly finding specific actors; results filter as you type
+- **Scene editor collapsible sections** — Journal Images, Journal Actors, and World Actors sections can be collapsed/expanded by clicking their header
+- **World actors infinite scroll** — the World Actors grid in the scene editor loads 40 actors at a time with automatic loading on scroll, preventing browser freezes with large actor collections
+- **Scene gatherer search filter** — added a search input to the World Actors section in the Scene Gatherer dialog with lazy-loaded images for better performance
+
+### Fixed
+
+- **Scene editor world actors visual overlap** — fixed grid items overlapping by using fixed-size items instead of aspect-ratio, preventing layout instability during image loading
+
 ## [2.10.2] - 2026-03-24
 
 ### Fixed

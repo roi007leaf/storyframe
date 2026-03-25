@@ -569,6 +569,8 @@
       "NoSpeakersMessage": "No speakers. Add from sources below or drag actors here.",
       "WorldActorsCount": "World Actors ({count})",
       "SearchActors": "Search actors...",
+      "SearchToShowActors": "Type in the search box to find actors",
+      "ShowMore": "Show more ({remaining} remaining)",
       "SaveChanges": "Save Changes",
       "CreateScene": "Create Scene"
     },

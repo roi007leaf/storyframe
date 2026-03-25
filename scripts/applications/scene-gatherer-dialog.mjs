@@ -114,11 +114,15 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
 
   async _prepareContext(_options) {
     const unknownLabel = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
-    const enrich = (t) => ({
-      actorUuid: t.actorUuid,
-      name: t.name || unknownLabel,
-      img: t.img || 'icons/svg/mystery-man.svg',
-    });
+    const enrich = (t) => {
+      const name = t.name || unknownLabel;
+      return {
+        actorUuid: t.actorUuid,
+        name,
+        nameLower: name.toLowerCase(),
+        img: t.img || 'icons/svg/mystery-man.svg',
+      };
+    };
 
     const enrichedSceneTokens = this.sceneTokens.map((t, i) => ({ ...enrich(t), index: i }));
     const worldActorOffset = enrichedSceneTokens.length;
@@ -140,6 +144,7 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
         gather: game.i18n.localize('STORYFRAME.Dialogs.SceneGatherer.GatherButton'),
         sceneTokenCount: game.i18n.format('STORYFRAME.Dialogs.SceneGatherer.TokenCount', { count: enrichedSceneTokens.length }),
         worldActorCount: game.i18n.format('STORYFRAME.Dialogs.SceneGatherer.WorldActorCount', { count: enrichedWorldActors.length }),
+        searchActors: game.i18n.localize('STORYFRAME.UI.Placeholders.SearchActors'),
       },
     };
   }
@@ -161,6 +166,18 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
     const nameInput = this.element.querySelector('input[name="sceneName"]');
     if (nameInput) {
       nameInput.addEventListener('input', () => this._updateSubmitState());
+    }
+
+    // Wire up world actor search filter
+    const worldSearch = this.element.querySelector('.world-actor-search');
+    if (worldSearch) {
+      worldSearch.addEventListener('input', () => {
+        const q = worldSearch.value.toLowerCase().trim();
+        const cards = this.element.querySelectorAll('.world-actors-section .participant-card');
+        for (const card of cards) {
+          card.style.display = !q || card.dataset.name.includes(q) ? '' : 'none';
+        }
+      });
     }
 
     this._updateSubmitState();

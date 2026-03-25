@@ -418,51 +418,14 @@
 
       </div>{{!-- end music-controls-sticky --}}
 
-      {{!-- Search Results --}}
+      {{!-- Search Results — rendered dynamically by _updateMusicSearchDOM --}}
       {{#if musicSearchQuery}}
       <div class="music-search-results">
-        {{#each musicSearchPlaylists}}
-        <div class="left-panel-playlist-result" data-action="musicPlayPlaylist" data-playlist-id="{{this.id}}">
-          <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-          <span class="playlist-name">{{this.name}}</span>
-          <span class="playlist-track-count">{{this.trackCount}}</span>
-        </div>
-        {{/each}}
-        {{#each musicSearchResults}}
-        <div class="left-panel-track-item" data-action="musicPlayTrack" data-playlist-id="{{this.playlistId}}" data-sound-id="{{this.id}}">
-          <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-          <div class="search-result-info">
-            <span class="search-result-track">{{this.name}}</span>
-            <span class="search-result-playlist">{{this.playlistName}}</span>
-          </div>
-        </div>
-        {{/each}}
       </div>
       {{else}}
 
-      {{!-- Playlists with expandable tracks --}}
-      <div class="left-panel-playlists">
-        {{#each playlists}}
-        <div class="left-panel-playlist-item {{#if this.playing}}playing{{/if}}">
-          <button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="{{this.id}}">
-            <i class="fas {{#if this.expanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
-          </button>
-          <span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="{{this.id}}">{{this.name}}</span>
-          <span class="playlist-track-count">{{this.trackCount}}</span>
-        </div>
-        {{#if this.expanded}}
-        <div class="playlist-tracks-inline">
-          {{#each this.tracks}}
-          <div class="left-panel-track-item {{#if this.playing}}playing{{/if}}"
-               data-action="musicPlayTrack" data-playlist-id="{{../id}}" data-sound-id="{{this.id}}">
-            <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-            <span>{{this.name}}</span>
-          </div>
-          {{/each}}
-        </div>
-        {{/if}}
-        {{/each}}
-      </div>
+      {{!-- Playlists with folder tree — rendered by _buildPlaylistTree --}}
+      <div class="left-panel-playlists"></div>
       {{/if}}
     </div>
   </div>

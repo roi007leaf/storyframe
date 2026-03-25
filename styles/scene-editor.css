@@ -245,17 +245,17 @@
 
 .storyframe-scene-editor .source-item {
   position: relative;
-  aspect-ratio: 1;
+  width: 80px;
+  height: 80px;
   border-radius: 8px;
   overflow: hidden;
   background: rgba(0, 0, 0, 0.3);
   border: 2px solid rgba(94, 129, 172, 0.3);
-  transition: all var(--sf-transition-base);
+  transition: border-color var(--sf-transition-base);
 }
 
 .storyframe-scene-editor .source-item:hover {
   border-color: rgba(94, 129, 172, 0.6);
-  transform: scale(1.05);
 }
 
 .storyframe-scene-editor .source-item img {
@@ -343,10 +343,49 @@
   box-shadow: 0 0 0 3px rgba(94, 129, 172, 0.2);
 }
 
-.storyframe-scene-editor .world-actors-grid {
+.storyframe-scene-editor .btn-show-more {
+  grid-column: 1 / -1;
+  padding: 8px;
+  background: rgba(94, 129, 172, 0.15);
+  border: 1px dashed rgba(94, 129, 172, 0.4);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.storyframe-scene-editor .btn-show-more:hover {
+  background: rgba(94, 129, 172, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.storyframe-scene-editor .world-actors-grid.source-grid {
   max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
   scrollbar-width: thin;
+}
+
+/* Collapsible sections */
+.storyframe-scene-editor .section-toggle {
+  cursor: pointer;
+  user-select: none;
+}
+
+.storyframe-scene-editor .section-collapse-icon {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease;
+  margin-right: 4px;
+}
+
+.storyframe-scene-editor .editor-section.collapsed .section-collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.storyframe-scene-editor .editor-section.collapsed .source-grid,
+.storyframe-scene-editor .editor-section.collapsed .world-actors-search {
+  display: none;
 }
 
 .storyframe-scene-editor .editor-footer {

@@ -45,6 +45,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       trackRepeat: CinematicGMApp._onTrackRepeat,
       toggleNowPlayingPlaylist: CinematicGMApp._onToggleNowPlayingPlaylist,
       togglePlaylistExpand: CinematicGMApp._onTogglePlaylistExpand,
+      toggleFolderExpand: CinematicGMApp._onToggleFolderExpand,
       musicPlayPlaylist: CinematicGMApp._onMusicPlayPlaylist,
       editSpeaker: CinematicGMApp._onEditSpeaker,
       removeSpeaker: CinematicGMApp._onRemoveSpeaker,
@@ -86,6 +87,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     // Only auto-open left panel if launched from sidebar (journal context exists)
     this.leftPanelOpen = !!game.storyframe.gmSidebar?.parentInterface?.document;
     this.expandedPlaylistIds = new Set();
+    this.expandedFolderIds = new Set();
     this._savedGlobalVolume = null; // original globalPlaylistVolume before cinematic adjustment
     this.musicSearchQuery = '';
     this.openJournalId = null;
@@ -205,27 +207,60 @@ export class CinematicGMApp extends CinematicSceneBase {
       ...s,
       hasState: !!(s.playlistId || s.sceneBackground),
     }));
-    const playlists = game.playlists.contents.map(p => ({
-      id: p.id, name: p.name, playing: p.playing, mode: p.mode,
-      expanded: this.expandedPlaylistIds.has(p.id),
-      trackCount: p.sounds.size,
-      tracks: this.expandedPlaylistIds.has(p.id)
-        ? p.sounds.contents.map(s => ({ id: s.id, name: s.name, playing: s.playing, volume: s.volume }))
-        : [],
-    }));
-    // Auto-expand playlists with currently-playing sounds
-    for (const p of game.playlists) {
-      if (p.sounds.some(s => s.playing) && !this.expandedPlaylistIds.has(p.id)) {
-        this.expandedPlaylistIds.add(p.id);
-        const idx = playlists.findIndex(pl => pl.id === p.id);
-        if (idx >= 0) {
-          playlists[idx].expanded = true;
-          playlists[idx].tracks = p.sounds.contents.map(s => ({
-            id: s.id, name: s.name, playing: s.playing, volume: s.volume,
-          }));
-        }
+    // Build playlist data with auto-expand for playing playlists
+    const playlistData = game.playlists.contents.map(p => {
+      const autoExpand = p.sounds.some(s => s.playing) && !this.expandedPlaylistIds.has(p.id);
+      if (autoExpand) this.expandedPlaylistIds.add(p.id);
+      const expanded = this.expandedPlaylistIds.has(p.id);
+      return {
+        id: p.id, name: p.name, playing: p.playing, mode: p.mode,
+        folderId: p.folder?.id || null,
+        expanded,
+        trackCount: p.sounds.size,
+        tracks: expanded
+          ? p.sounds.contents.map(s => ({ id: s.id, name: s.name, playing: s.playing, volume: s.volume }))
+          : [],
+      };
+    });
+
+    // Build folder tree for playlists
+    const playlistFolders = game.folders.filter(f => f.type === 'Playlist')
+      .sort((a, b) => a.sort - b.sort);
+    const folderTree = [];
+    const folderMap = new Map();
+
+    // Create folder nodes
+    for (const f of playlistFolders) {
+      const node = {
+        id: f.id, name: f.name, type: 'folder',
+        parentId: f.folder?.id || null,
+        expanded: this.expandedFolderIds.has(f.id),
+        children: [], playlists: [],
+      };
+      folderMap.set(f.id, node);
+    }
+
+    // Nest folders into parents
+    for (const node of folderMap.values()) {
+      if (node.parentId && folderMap.has(node.parentId)) {
+        folderMap.get(node.parentId).children.push(node);
+      } else {
+        folderTree.push(node);
       }
     }
+
+    // Assign playlists to their folders
+    const rootPlaylists = [];
+    for (const p of playlistData) {
+      if (p.folderId && folderMap.has(p.folderId)) {
+        folderMap.get(p.folderId).playlists.push(p);
+      } else {
+        rootPlaylists.push(p);
+      }
+    }
+
+    // Keep flat list for backwards compat (search, etc.)
+    const playlists = playlistData;
     const nowPlaying = this._getNowPlaying();
     let currentVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
     let shuffleActive = false;
@@ -399,6 +434,8 @@ export class CinematicGMApp extends CinematicSceneBase {
       secretRollEnabled: this.secretRollEnabled,
       speakerScenes,
       playlists,
+      folderTree,
+      rootPlaylists,
       nowPlaying,
       currentVolume,
       playingByPlaylist,
@@ -612,12 +649,20 @@ export class CinematicGMApp extends CinematicSceneBase {
     // Per-track volume sliders (in now-playing section)
     this.element?.querySelectorAll('.track-volume-slider').forEach(s => this._bindTrackVolumeSlider(s));
 
+    // Build playlist folder tree (template renders empty container)
+    const playlistListEl = this.element?.querySelector('.left-panel-playlists');
+    if (playlistListEl && !this.musicSearchQuery) {
+      this._buildPlaylistTreeDOM(playlistListEl);
+    }
+
     // Music search
     const searchInput = this.element?.querySelector('.music-search-input');
     if (searchInput) {
       if (this.musicSearchQuery) {
         searchInput.focus();
         searchInput.setSelectionRange(searchInput.value.length, searchInput.value.length);
+        // Populate search results (template renders empty container)
+        this._updateMusicSearchDOM();
       }
       searchInput.addEventListener('input', (e) => {
         this.musicSearchQuery = e.target.value;
@@ -775,66 +820,165 @@ export class CinematicGMApp extends CinematicSceneBase {
       wrapper.className = 'music-search-results';
 
       for (const p of game.playlists) {
-        if (p.name.toLowerCase().includes(q)) {
-          const el = document.createElement('div');
-          el.className = 'left-panel-playlist-result';
-          el.dataset.action = 'musicPlayPlaylist';
-          el.dataset.playlistId = p.id;
-          el.innerHTML = `<i class="fas ${p.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
-            + `<span class="playlist-name">${foundry.utils.escapeHTML(p.name)}</span>`
-            + `<span class="playlist-track-count">${p.sounds.size}</span>`;
-          wrapper.appendChild(el);
-        }
-        for (const s of p.sounds) {
-          if (s.name.toLowerCase().includes(q)) {
-            const el = document.createElement('div');
-            el.className = 'left-panel-track-item';
-            el.dataset.action = 'musicPlayTrack';
-            el.dataset.playlistId = p.id;
-            el.dataset.soundId = s.id;
-            el.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
-              + `<div class="search-result-info">`
-              + `<span class="search-result-track">${foundry.utils.escapeHTML(s.name)}</span>`
-              + `<span class="search-result-playlist">${foundry.utils.escapeHTML(p.name)}</span>`
-              + `</div>`;
-            wrapper.appendChild(el);
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const trackMatches = [...p.sounds].filter(s => s.name.toLowerCase().includes(q));
+        if (!nameMatch && trackMatches.length === 0) continue;
+
+        // Always show the playlist row when it or any of its tracks match
+        const isExpanded = this.expandedPlaylistIds.has(p.id);
+        const el = document.createElement('div');
+        el.className = `left-panel-playlist-item${p.playing ? ' playing' : ''}`;
+        el.innerHTML = `<button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="${p.id}">`
+          + `<i class="fas fa-chevron-right" aria-hidden="true" style="${isExpanded ? 'transform:rotate(90deg)' : ''}"></i></button>`
+          + `<span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="${p.id}">${foundry.utils.escapeHTML(p.name)}</span>`
+          + `<span class="playlist-track-count">${p.sounds.size}</span>`;
+        wrapper.appendChild(el);
+
+        // Show inline tracks if expanded, or show matching tracks directly
+        if (isExpanded || trackMatches.length > 0) {
+          const tracksContainer = document.createElement('div');
+          tracksContainer.className = 'playlist-tracks-inline';
+          if (!isExpanded && trackMatches.length > 0) {
+            // Not expanded but has track matches — show only matching tracks
+            for (const s of trackMatches) {
+              const tEl = document.createElement('div');
+              tEl.className = `left-panel-track-item${s.playing ? ' playing' : ''}`;
+              tEl.dataset.action = 'musicPlayTrack';
+              tEl.dataset.playlistId = p.id;
+              tEl.dataset.soundId = s.id;
+              tEl.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+                + `<span>${foundry.utils.escapeHTML(s.name)}</span>`;
+              tracksContainer.appendChild(tEl);
+            }
+          } else {
+            // Expanded — show all tracks
+            for (const s of p.sounds) {
+              const tEl = document.createElement('div');
+              tEl.className = `left-panel-track-item${s.playing ? ' playing' : ''}`;
+              tEl.dataset.action = 'musicPlayTrack';
+              tEl.dataset.playlistId = p.id;
+              tEl.dataset.soundId = s.id;
+              tEl.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+                + `<span>${foundry.utils.escapeHTML(s.name)}</span>`;
+              tracksContainer.appendChild(tEl);
+            }
           }
+          wrapper.appendChild(tracksContainer);
         }
       }
       frag.appendChild(wrapper);
       musicSection.appendChild(frag);
     } else {
-      // Rebuild playlist list directly
+      // Rebuild playlist list with folder tree
       const listEl = document.createElement('div');
       listEl.className = 'left-panel-playlists';
-      for (const p of game.playlists) {
-        const expanded = this.expandedPlaylistIds.has(p.id);
-        const item = document.createElement('div');
-        item.className = `left-panel-playlist-item${p.playing ? ' playing' : ''}`;
-        item.innerHTML = `<button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="${p.id}">`
-          + `<i class="fas ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" aria-hidden="true"></i></button>`
-          + `<span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="${p.id}">${foundry.utils.escapeHTML(p.name)}</span>`
-          + `<span class="playlist-track-count">${p.sounds.size}</span>`;
-        listEl.appendChild(item);
-        if (expanded) {
-          const tracksEl = document.createElement('div');
-          tracksEl.className = 'playlist-tracks-inline';
-          for (const s of p.sounds.contents) {
-            const t = document.createElement('div');
-            t.className = `left-panel-track-item${s.playing ? ' playing' : ''}`;
-            t.dataset.action = 'musicPlayTrack';
-            t.dataset.playlistId = p.id;
-            t.dataset.soundId = s.id;
-            t.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
-              + `<span>${foundry.utils.escapeHTML(s.name)}</span>`;
-            tracksEl.appendChild(t);
-          }
-          listEl.appendChild(tracksEl);
-        }
-      }
+      this._buildPlaylistTreeDOM(listEl);
       musicSection.appendChild(listEl);
     }
   }, 150);
+
+  /**
+   * Build the playlist folder tree into a container element.
+   * Renders folders as collapsible groups, playlists as expandable items with tracks.
+   */
+  _buildPlaylistTreeDOM(container) {
+    // Build folder structure
+    const playlistFolders = game.folders.filter(f => f.type === 'Playlist');
+    const folderMap = new Map();
+    for (const f of playlistFolders) {
+      folderMap.set(f.id, { folder: f, children: [], playlists: [] });
+    }
+    // Nest children
+    const rootFolders = [];
+    for (const node of folderMap.values()) {
+      const parentId = node.folder.folder?.id;
+      if (parentId && folderMap.has(parentId)) {
+        folderMap.get(parentId).children.push(node);
+      } else {
+        rootFolders.push(node);
+      }
+    }
+    // Sort folders by sort order
+    rootFolders.sort((a, b) => a.folder.sort - b.folder.sort);
+    for (const node of folderMap.values()) {
+      node.children.sort((a, b) => a.folder.sort - b.folder.sort);
+    }
+
+    // Assign playlists to folders
+    const rootPlaylists = [];
+    for (const p of game.playlists.contents) {
+      const fId = p.folder?.id;
+      if (fId && folderMap.has(fId)) {
+        folderMap.get(fId).playlists.push(p);
+      } else {
+        rootPlaylists.push(p);
+      }
+    }
+
+    // Recursive render
+    const renderFolder = (node, parent, indent) => {
+      const expanded = this.expandedFolderIds.has(node.folder.id);
+      const folderEl = document.createElement('div');
+      folderEl.className = 'left-panel-folder-item';
+      if (indent > 0) folderEl.style.paddingLeft = `${indent * 12}px`;
+      folderEl.innerHTML = `<button type="button" class="playlist-expand-btn" data-action="toggleFolderExpand" data-folder-id="${node.folder.id}">`
+        + `<i class="fas ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" aria-hidden="true"></i></button>`
+        + `<i class="fas fa-folder${expanded ? '-open' : ''} folder-icon" aria-hidden="true"></i>`
+        + `<span class="folder-name" data-action="toggleFolderExpand" data-folder-id="${node.folder.id}">${foundry.utils.escapeHTML(node.folder.name)}</span>`;
+      parent.appendChild(folderEl);
+
+      if (expanded) {
+        const contents = document.createElement('div');
+        contents.className = 'folder-contents';
+        // Sub-folders first
+        for (const child of node.children) {
+          renderFolder(child, contents, indent + 1);
+        }
+        // Then playlists
+        for (const p of node.playlists) {
+          renderPlaylist(p, contents, indent + 1);
+        }
+        parent.appendChild(contents);
+      }
+    };
+
+    const renderPlaylist = (p, parent, indent) => {
+      const expanded = this.expandedPlaylistIds.has(p.id);
+      const item = document.createElement('div');
+      item.className = `left-panel-playlist-item${p.playing ? ' playing' : ''}`;
+      if (indent > 0) item.style.paddingLeft = `${indent * 12}px`;
+      item.innerHTML = `<button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="${p.id}">`
+        + `<i class="fas ${expanded ? 'fa-chevron-down' : 'fa-chevron-right'}" aria-hidden="true"></i></button>`
+        + `<span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="${p.id}">${foundry.utils.escapeHTML(p.name)}</span>`
+        + `<span class="playlist-track-count">${p.sounds.size}</span>`;
+      parent.appendChild(item);
+      if (expanded) {
+        const tracksEl = document.createElement('div');
+        tracksEl.className = 'playlist-tracks-inline';
+        if (indent > 0) tracksEl.style.paddingLeft = `${indent * 12}px`;
+        for (const s of p.sounds.contents) {
+          const t = document.createElement('div');
+          t.className = `left-panel-track-item${s.playing ? ' playing' : ''}`;
+          t.dataset.action = 'musicPlayTrack';
+          t.dataset.playlistId = p.id;
+          t.dataset.soundId = s.id;
+          t.innerHTML = `<i class="fas ${s.playing ? 'fa-pause' : 'fa-play'}" aria-hidden="true"></i>`
+            + `<span>${foundry.utils.escapeHTML(s.name)}</span>`;
+          tracksEl.appendChild(t);
+        }
+        parent.appendChild(tracksEl);
+      }
+    };
+
+    // Render root folders
+    for (const node of rootFolders) {
+      renderFolder(node, container, 0);
+    }
+    // Render root-level playlists (no folder)
+    for (const p of rootPlaylists) {
+      renderPlaylist(p, container, 0);
+    }
+  }
 
   // --- Targeted journal search DOM update ---
 
@@ -1025,6 +1169,7 @@ export class CinematicGMApp extends CinematicSceneBase {
 
     sectionEl.innerHTML = html;
     this._bindJournalListeners();
+    Hooks.callAll('storyframe.journalContentChanged');
   }
 
   /** Bind journal-specific event listeners (search input, font size slider, etc.) */
@@ -1279,11 +1424,11 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (scene?.speakers) {
       await game.storyframe.socketManager.requestUpdateSpeakers(scene.speakers);
 
-      // Start saved playlist (if any)
+      // Stop all playing playlists, then start saved one (if any)
+      for (const p of game.playlists) {
+        if (p.playing) await p.stopAll();
+      }
       if (scene.playlistId) {
-        for (const p of game.playlists) {
-          if (p.playing) await p.stopAll();
-        }
         const playlist = game.playlists.get(scene.playlistId);
         if (playlist) {
           const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
@@ -1291,10 +1436,8 @@ export class CinematicGMApp extends CinematicSceneBase {
         }
       }
 
-      // Set saved background (if any)
-      if (scene.sceneBackground) {
-        await game.storyframe.stateManager.setSceneBackground(scene.sceneBackground);
-      }
+      // Set or clear background
+      await game.storyframe.stateManager.setSceneBackground(scene.sceneBackground || null);
 
       // Restore minimized journals (if any)
       this.minimizedJournals = Array.isArray(scene.minimizedJournals) ? [...scene.minimizedJournals] : [];
@@ -1801,6 +1944,22 @@ export class CinematicGMApp extends CinematicSceneBase {
         tracksDiv.appendChild(item);
       }
       row.insertAdjacentElement('afterend', tracksDiv);
+    }
+  }
+
+  static _onToggleFolderExpand(_event, target) {
+    const folderId = target.closest('[data-folder-id]')?.dataset.folderId;
+    if (!folderId) return;
+    if (this.expandedFolderIds.has(folderId)) {
+      this.expandedFolderIds.delete(folderId);
+    } else {
+      this.expandedFolderIds.add(folderId);
+    }
+    // Rebuild the playlist tree in place
+    const listEl = this.element?.querySelector('.left-panel-playlists');
+    if (listEl) {
+      listEl.innerHTML = '';
+      this._buildPlaylistTreeDOM(listEl);
     }
   }
 

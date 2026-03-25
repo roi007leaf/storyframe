@@ -69,8 +69,23 @@
 .scene-gatherer-dialog .actors-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: var(--sf-space-sm, 8px);
   margin-bottom: var(--sf-space-sm);
+}
+
+.scene-gatherer-dialog .world-actor-search {
+  flex: 1;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: var(--sf-surface-secondary, rgba(0, 0, 0, 0.2));
+  border: 1px solid var(--sf-border-primary, rgba(255, 255, 255, 0.1));
+  border-radius: var(--sf-radius-sm, 4px);
+  color: var(--sf-text-primary, #eee);
+  outline: none;
+}
+
+.scene-gatherer-dialog .world-actor-search:focus {
+  border-color: var(--sf-accent-primary, rgba(94, 129, 172, 0.6));
 }
 
 .scene-gatherer-dialog .actors-header h3 {

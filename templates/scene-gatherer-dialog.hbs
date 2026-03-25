@@ -34,14 +34,15 @@
     <section class="actors-selection world-actors-section">
       <div class="actors-header">
         <h3>{{i18n.worldActorCount}}</h3>
+        <input type="text" class="world-actor-search" placeholder="{{i18n.searchActors}}" />
         <button type="button" class="select-all-btn" data-group="world">{{i18n.selectAll}}</button>
       </div>
       <div class="participants-grid" data-group="world">
         {{#each worldActors}}
-        <label class="participant-card">
+        <label class="participant-card" data-name="{{this.nameLower}}">
           <input type="checkbox" name="actor" value="{{this.index}}">
           <div class="participant-content">
-            <img src="{{this.img}}" alt="{{this.name}}">
+            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
             <span class="participant-name">{{this.name}}</span>
             <i class="fas fa-check-circle check-icon"></i>
           </div>
