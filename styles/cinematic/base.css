@@ -812,6 +812,7 @@ video.cinematic-bg {
 }
 
 .cinematic-spotlight-stage .cinematic-spotlight .spotlight-portrait {
+  max-width: 100%;
   max-height: calc(
     100vh - (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) -
       var(--_camera-row-reserve) - 120px
@@ -820,6 +821,7 @@ video.cinematic-bg {
 
 .cinematic-spotlight-stage .cinematic-spotlight.primary {
   flex: 0 1 auto;
+  min-width: 0;
   max-width: calc(50vw - var(--_open-left-width) / 2 - var(--_open-right-width) / 2 - 48px);
 }
 
@@ -830,6 +832,7 @@ video.cinematic-bg {
 /* Secondary spotlight — same size, amber glow */
 .cinematic-spotlight-stage .cinematic-spotlight.secondary {
   flex: 0 1 auto;
+  min-width: 0;
   max-width: calc(50vw - var(--_open-left-width) / 2 - var(--_open-right-width) / 2 - 48px);
 }
 
