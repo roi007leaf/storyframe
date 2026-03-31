@@ -1568,6 +1568,33 @@
   color: rgba(255, 255, 255, 0.7);
 }
 
+/* Auto-Scroll Controls */
+.cinematic-scene-container .journal-autoscroll-controls {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  margin-left: 4px;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  padding-left: 6px;
+}
+
+.cinematic-scene-container .autoscroll-toggle.active {
+  color: rgba(163, 190, 140, 0.9);
+}
+
+.cinematic-scene-container .autoscroll-toggle.active:hover {
+  color: rgba(163, 190, 140, 1);
+}
+
+.cinematic-scene-container .autoscroll-speed-label {
+  font-size: 0.55rem;
+  color: rgba(163, 190, 140, 0.7);
+  min-width: 18px;
+  text-align: center;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
 .cinematic-scene-container .journal-font-size-slider {
   width: 52px;
   cursor: pointer;

@@ -2,7 +2,7 @@
   "id": "storyframe",
   "title": "Storyframe",
   "description": "Journal-integrated speaker and skill check manager with synchronized player portraits",
-  "version": "2.11.1",
+  "version": "2.12.0",
   "compatibility": {
     "minimum": "13",
     "verified": "13"
@@ -18,7 +18,8 @@
     "storyframe.mjs"
   ],
   "styles": [
-    "styles/design-tokens.css"
+    "styles/design-tokens.css",
+    "styles/dc-preset-dropdown.css"
   ],
   "socket": true,
   "relationships": {

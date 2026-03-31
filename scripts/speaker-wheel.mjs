@@ -7,6 +7,7 @@
 import { MODULE_ID } from './constants.mjs';
 import { showSceneEditor } from './scene-editor.mjs';
 import { loadCSS } from './css-loader.mjs';
+import { animateWheelEntrance } from './spotlight-animator.mjs';
 
 // Remember last selected scene for the session
 let lastSelectedSceneId = null;
@@ -174,6 +175,7 @@ async function showSceneWheel(scenes) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**
@@ -326,6 +328,7 @@ async function showSceneSpeakers(sceneId) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**
@@ -452,6 +455,7 @@ async function showSpeakersWheel() {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**

@@ -152,7 +152,9 @@
 
 /* Drag and Drop Reordering */
 .gm-sidebar .skill-category {
-  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+              background 0.12s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.12s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .gm-sidebar .skill-category.dragging {
@@ -168,7 +170,7 @@
 }
 
 .gm-sidebar .skill-btn-wrapper {
-  transition: all 0.1s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: opacity 0.1s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .gm-sidebar .skill-btn-wrapper.dragging {

@@ -1,0 +1,150 @@
+/* ========================================
+   Speaker Visual States — CSS Filters
+   ========================================
+   GPU-accelerated visual states for speaker portraits
+   across filmstrip, sidebar, and spotlight.
+   ======================================== */
+
+/* ===== Filmstrip: Active Speaker Highlight ===== */
+.cinematic-scene-container .filmstrip-speaker.active {
+  opacity: 1;
+}
+
+.cinematic-scene-container .filmstrip-speaker.active img {
+  border-color: rgba(94, 129, 172, 0.8);
+  box-shadow: 0 0 16px rgba(94, 129, 172, 0.4);
+}
+
+/* ===== Filmstrip: Inactive Speakers — Dimmed ===== */
+.cinematic-scene-container .filmstrip-speaker:not(.active):not(:hover) img {
+  filter: brightness(0.55) saturate(0.6);
+  transition: filter 0.3s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cinematic-scene-container .filmstrip-speaker:not(.active):hover img {
+  filter: brightness(0.85) saturate(0.85);
+}
+
+/* ===== Filmstrip: Rolling Pulse ===== */
+.cinematic-scene-container .filmstrip-speaker.rolling img {
+  animation: sf-roll-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes sf-roll-pulse {
+  0%, 100% {
+    filter: brightness(1) drop-shadow(0 0 4px rgba(94, 129, 172, 0.3));
+  }
+  50% {
+    filter: brightness(1.15) drop-shadow(0 0 14px rgba(94, 129, 172, 0.7));
+  }
+}
+
+/* ===== GM Sidebar: Hidden-Name Speaker — Desaturated ===== */
+.gm-sidebar [data-speaker-id].name-hidden .speaker-portrait {
+  filter: grayscale(0.65) opacity(0.7);
+  transition: filter 0.25s ease;
+}
+
+.gm-sidebar [data-speaker-id].name-hidden:hover .speaker-portrait {
+  filter: grayscale(0.3) opacity(0.85);
+}
+
+/* ===== Scene Mood Filters ===== */
+
+/* Flashback — warm sepia tones */
+.cinematic-scene-container.mood-flashback .spotlight-portrait {
+  filter: sepia(0.55) brightness(0.88);
+  transition: filter 0.6s ease;
+}
+
+.cinematic-scene-container.mood-flashback .spotlight-glow-cinematic {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(180, 140, 60, 0.5) 0%,
+    rgba(180, 140, 60, 0.15) 45%,
+    transparent 70%
+  ) !important;
+}
+
+.cinematic-scene-container.mood-flashback .filmstrip-speaker:not(.active) img {
+  filter: sepia(0.4) brightness(0.5);
+}
+
+/* Dark / Horror — high contrast, low brightness */
+.cinematic-scene-container.mood-dark .spotlight-portrait {
+  filter: brightness(0.6) contrast(1.3);
+  transition: filter 0.6s ease;
+}
+
+.cinematic-scene-container.mood-dark .spotlight-glow-cinematic {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(140, 40, 40, 0.4) 0%,
+    rgba(80, 20, 20, 0.15) 45%,
+    transparent 70%
+  ) !important;
+}
+
+/* Ethereal / Dream — soft, desaturated, slight blur */
+.cinematic-scene-container.mood-ethereal .spotlight-portrait {
+  filter: brightness(1.1) saturate(0.5) blur(0.5px);
+  transition: filter 0.6s ease;
+}
+
+.cinematic-scene-container.mood-ethereal .spotlight-glow-cinematic {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(180, 160, 220, 0.5) 0%,
+    rgba(180, 160, 220, 0.15) 45%,
+    transparent 70%
+  ) !important;
+}
+
+/* Dramatic — vignette intensified, high contrast */
+.cinematic-scene-container.mood-dramatic .spotlight-portrait {
+  filter: contrast(1.15) saturate(1.2);
+  transition: filter 0.6s ease;
+}
+
+.cinematic-scene-container.mood-dramatic .vignette-overlay {
+  background: radial-gradient(ellipse at center, transparent 25%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+/* ===== Cinematic Dialogue Box (TypeIt) ===== */
+.cinematic-dialogue-box {
+  position: absolute;
+  bottom: calc(
+    (var(--filmstrip-speaker-size, 64px) + 76px) * var(--_filmstrip-visible, 1)
+    + var(--_camera-row-reserve, 0px) + 24px
+  );
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  max-width: 700px;
+  width: 90%;
+  padding: 16px 24px;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(94, 129, 172, 0.3);
+  border-radius: var(--sf-radius-lg, 12px);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 1.15rem;
+  line-height: 1.65;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+  animation: sf-dialogue-fade-in 0.3s ease-out;
+}
+
+@keyframes sf-dialogue-fade-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(8px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* ===== Particle Overlay ===== */
+.sf-particle-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}

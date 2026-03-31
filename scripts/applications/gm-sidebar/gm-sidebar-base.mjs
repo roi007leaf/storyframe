@@ -1,6 +1,7 @@
 import { MODULE_ID } from '../../constants.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
 import { loadGMSidebarCSS } from '../../css-loader.mjs';
+import { getAutoAnimate } from '../../vendor-loader.mjs';
 
 // Import manager modules
 import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
@@ -764,6 +765,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach skill reordering handlers
     SkillReorderHandlers.attachSkillReorderHandlers(this);
 
+    // Attach auto-animate to speaker gallery and challenge list
+    this._attachAutoAnimate();
+
     // Grid size slider — direct DOM update for real-time resizing
     const slider = this.element.querySelector('.grid-size-slider');
     if (slider) {
@@ -780,6 +784,34 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         slider.dataset.tooltip = `Card size: ${size}px`;
       });
     }
+  }
+
+  /**
+   * Attach auto-animate to list containers for smooth add/remove/reorder transitions.
+   * Non-blocking — falls back silently if the library doesn't load.
+   */
+  _attachAutoAnimate() {
+    getAutoAnimate().then((autoAnimate) => {
+      if (!this.element || !autoAnimate) return;
+
+      // Speaker gallery — animate speaker card add/remove
+      const gallery = this.element.querySelector('.speaker-gallery');
+      if (gallery && !gallery._aaController) {
+        gallery._aaController = autoAnimate(gallery, { duration: 250, easing: 'ease-out' });
+      }
+
+      // Challenge list — animate challenge add/remove
+      const challengeList = this.element.querySelector('.challenge-list');
+      if (challengeList && !challengeList._aaController) {
+        challengeList._aaController = autoAnimate(challengeList, { duration: 200 });
+      }
+
+      // Pending rolls list
+      const rollsList = this.element.querySelector('.pending-rolls-list');
+      if (rollsList && !rollsList._aaController) {
+        rollsList._aaController = autoAnimate(rollsList, { duration: 200 });
+      }
+    }).catch(() => {}); // Silently swallow — library is optional
   }
 
   /**

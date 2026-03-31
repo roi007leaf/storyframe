@@ -27,6 +27,9 @@ export class CinematicGMApp extends CinematicSceneBase {
       journalOpen: CinematicGMApp._onJournalOpen,
       journalClose: CinematicGMApp._onJournalClose,
       toggleJournalSwitcher: CinematicGMApp._onToggleJournalSwitcher,
+      toggleAutoScroll: CinematicGMApp._onToggleAutoScroll,
+      autoScrollFaster: CinematicGMApp._onAutoScrollFaster,
+      autoScrollSlower: CinematicGMApp._onAutoScrollSlower,
       journalMinimize: CinematicGMApp._onJournalMinimize,
       journalRestoreMinimized: CinematicGMApp._onJournalRestoreMinimized,
       journalCloseMinimized: CinematicGMApp._onJournalCloseMinimized,
@@ -754,6 +757,9 @@ export class CinematicGMApp extends CinematicSceneBase {
   }
 
   async _onClose(_options) {
+    // Stop auto-scroll
+    this._stopAutoScroll();
+
     // Stop all playing playlists (volume is already at 0 from fade)
     for (const p of game.playlists) {
       if (p.playing) p.stopAll();
@@ -1118,6 +1124,12 @@ export class CinematicGMApp extends CinematicSceneBase {
         + `<i class="fas fa-font journal-font-icon-sm" aria-hidden="true"></i>`
         + `<input type="range" class="journal-font-size-slider" min="0.5" max="1.5" step="0.05" value="${this.journalFontSize}" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.JournalFontSize')}">`
         + `<i class="fas fa-font journal-font-icon-lg" aria-hidden="true"></i>`
+        + `<div class="journal-autoscroll-controls">`
+        + `<button type="button" class="journal-header-btn autoscroll-slower" data-action="autoScrollSlower" data-tooltip="Slower"><i class="fas fa-backward" aria-hidden="true"></i></button>`
+        + `<button type="button" class="journal-header-btn autoscroll-toggle${this._autoScrollActive ? ' active' : ''}" data-action="toggleAutoScroll" data-tooltip="Auto-Scroll"><i class="fas fa-scroll" aria-hidden="true"></i></button>`
+        + `<button type="button" class="journal-header-btn autoscroll-faster" data-action="autoScrollFaster" data-tooltip="Faster"><i class="fas fa-forward" aria-hidden="true"></i></button>`
+        + `<span class="autoscroll-speed-label" style="display:none"></span>`
+        + `</div>`
         + `<button type="button" class="journal-header-btn" data-action="journalMinimize" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.Minimize')}">`
         + `<i class="fas fa-minus" aria-hidden="true"></i></button>`
         + `<button type="button" class="journal-header-btn" data-action="journalClose" data-tooltip="${game.i18n.localize('STORYFRAME.UI.Labels.Close')}">`
@@ -1209,6 +1221,14 @@ export class CinematicGMApp extends CinematicSceneBase {
       const overflow = inner.scrollWidth - outer.clientWidth;
       inner.style.setProperty('--sf-scroll-distance', overflow > 0 ? `-${overflow}px` : '0px');
     });
+
+    // Pause auto-scroll on manual wheel scroll
+    const scrollContainer = this.element?.querySelector('.journal-content-scroll');
+    if (scrollContainer) {
+      scrollContainer.addEventListener('wheel', () => {
+        if (this._autoScrollActive) this._stopAutoScroll();
+      }, { passive: true });
+    }
 
     // Journal image "show to players" buttons
     this.element?.querySelectorAll('.journal-content-body img').forEach(img => {
@@ -1659,14 +1679,8 @@ export class CinematicGMApp extends CinematicSceneBase {
   static _onJournalOpen(_event, target) {
     const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
     if (!journalId) return;
-    // Auto-minimize the currently open journal when switching via list or dropdown
-    if (this.openJournalId && this.openJournalId !== journalId) {
-      // Don't duplicate if already minimized
-      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
-        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
-      }
-    }
-    // Remove from minimized list if restoring a minimized journal via list/dropdown
+    this._stopAutoScroll();
+    // Remove from minimized list if restoring a minimized journal
     this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
     this.openJournalId = journalId;
     this.openJournalPageId = null;
@@ -1678,11 +1692,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     const journalId = target.closest('[data-journal-id]')?.dataset.journalId;
     const pageId = target.dataset.pageId;
     if (!journalId) return;
-    if (this.openJournalId && this.openJournalId !== journalId) {
-      if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
-        this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });
-      }
-    }
+    this._stopAutoScroll();
     this.minimizedJournals = this.minimizedJournals.filter(m => m.id !== journalId);
     this.openJournalId = journalId;
     this.openJournalPageId = pageId || null;
@@ -1691,12 +1701,98 @@ export class CinematicGMApp extends CinematicSceneBase {
   }
 
   static _onJournalClose() {
+    this._stopAutoScroll();
     this.openJournalId = null;
     this.openJournalPageId = null;
     this._updateJournalSection();
   }
 
+  // --- Auto-Scroll ---
+
+  /** Pixels per second — speed presets */
+  static AUTO_SCROLL_SPEEDS = [15, 25, 40, 60, 90];
+  static AUTO_SCROLL_DEFAULT_INDEX = 2; // 40 px/s
+
+  static _onToggleAutoScroll() {
+    if (this._autoScrollActive) {
+      this._stopAutoScroll();
+    } else {
+      this._startAutoScroll();
+    }
+  }
+
+  static _onAutoScrollFaster() {
+    if (this._autoScrollSpeedIndex == null) this._autoScrollSpeedIndex = CinematicGMApp.AUTO_SCROLL_DEFAULT_INDEX;
+    this._autoScrollSpeedIndex = Math.min(this._autoScrollSpeedIndex + 1, CinematicGMApp.AUTO_SCROLL_SPEEDS.length - 1);
+    this._updateAutoScrollSpeedDisplay();
+  }
+
+  static _onAutoScrollSlower() {
+    if (this._autoScrollSpeedIndex == null) this._autoScrollSpeedIndex = CinematicGMApp.AUTO_SCROLL_DEFAULT_INDEX;
+    this._autoScrollSpeedIndex = Math.max(this._autoScrollSpeedIndex - 1, 0);
+    this._updateAutoScrollSpeedDisplay();
+  }
+
+  _startAutoScroll() {
+    const scrollEl = this.element?.querySelector('.journal-content-scroll');
+    if (!scrollEl) return;
+
+    if (this._autoScrollSpeedIndex == null) this._autoScrollSpeedIndex = CinematicGMApp.AUTO_SCROLL_DEFAULT_INDEX;
+    this._autoScrollActive = true;
+    this._autoScrollAccum = 0; // Sub-pixel accumulator
+
+    // Use a fixed-interval approach instead of RAF for consistent, smooth scrolling
+    this._autoScrollInterval = setInterval(() => {
+      if (!this._autoScrollActive) return;
+
+      const speed = CinematicGMApp.AUTO_SCROLL_SPEEDS[this._autoScrollSpeedIndex ?? CinematicGMApp.AUTO_SCROLL_DEFAULT_INDEX];
+      // 50ms interval = 20 ticks/sec → accumulate fractional pixels
+      this._autoScrollAccum += speed / 20;
+
+      if (this._autoScrollAccum >= 1) {
+        const px = Math.floor(this._autoScrollAccum);
+        this._autoScrollAccum -= px;
+        scrollEl.scrollTop += px;
+      }
+
+      // Stop at bottom
+      if (scrollEl.scrollTop + scrollEl.clientHeight >= scrollEl.scrollHeight - 1) {
+        this._stopAutoScroll();
+      }
+    }, 50);
+
+    // Update toggle button state
+    const btn = this.element?.querySelector('.autoscroll-toggle');
+    btn?.classList.add('active');
+    this._updateAutoScrollSpeedDisplay();
+  }
+
+  _stopAutoScroll() {
+    this._autoScrollActive = false;
+    if (this._autoScrollInterval) {
+      clearInterval(this._autoScrollInterval);
+      this._autoScrollInterval = null;
+    }
+    const btn = this.element?.querySelector('.autoscroll-toggle');
+    btn?.classList.remove('active');
+    this._hideAutoScrollSpeed();
+  }
+
+  _updateAutoScrollSpeedDisplay() {
+    const speedLabel = this.element?.querySelector('.autoscroll-speed-label');
+    if (!speedLabel) return;
+    const speed = CinematicGMApp.AUTO_SCROLL_SPEEDS[this._autoScrollSpeedIndex ?? CinematicGMApp.AUTO_SCROLL_DEFAULT_INDEX];
+    speedLabel.textContent = `${speed}`;
+    speedLabel.style.display = '';
+  }
+
+  _hideAutoScrollSpeed() {
+    const speedLabel = this.element?.querySelector('.autoscroll-speed-label');
+    if (speedLabel) speedLabel.style.display = 'none';
+  }
+
   static _onJournalMinimize() {
+    this._stopAutoScroll();
     if (this.openJournalId) {
       if (!this.minimizedJournals.some(m => m.id === this.openJournalId)) {
         this.minimizedJournals.push({ id: this.openJournalId, pageId: this.openJournalPageId });

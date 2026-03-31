@@ -164,8 +164,17 @@ export function onTogglePresetDropdown(_event, target, sidebar) {
 function _buildPresetPopup(sidebar) {
   const popup = document.createElement('div');
   popup.className = 'storyframe-dc-preset-popup preset-dropdown';
-  popup.style.position = 'fixed';
-  popup.style.zIndex = _aboveSidebarZIndex(sidebar);
+  popup.style.cssText = `
+    position: fixed;
+    z-index: ${_aboveSidebarZIndex(sidebar)};
+    width: 220px;
+    background: var(--sf-surface-secondary, rgba(40, 45, 55, 0.95));
+    border: 1px solid var(--sf-border-primary, rgba(94, 129, 172, 0.25));
+    border-radius: 8px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  `;
 
   const allPresets = game.settings.get(MODULE_ID, 'dcPresets') || [];
   const currentSystem = SystemAdapter.detectSystem();

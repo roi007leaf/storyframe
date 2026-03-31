@@ -3,6 +3,8 @@ import { getAllPlayerPCs } from '../../system-adapter.mjs';
 import { loadCinematicCSS, unloadCinematicCSS } from '../../css-loader.mjs';
 import { onCinematicRender as rmhRender, onCinematicClose as rmhClose } from '../../integrations/raise-my-hand.mjs';
 import { onCinematicRender as srRender, onCinematicClose as srClose } from '../../integrations/simple-requests.mjs';
+import { animateSpeakerEntrance, animateSecondaryEntrance } from '../../spotlight-animator.mjs';
+import { SpotlightParticles } from '../../canvas-effects.mjs';
 
 /**
  * Base class for Cinematic Scene apps.
@@ -355,6 +357,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
           const vignette = container.querySelector('.vignette-overlay');
           if (vignette) { vignette.after(newStage); } else { container.prepend(newStage); }
         }
+
+        // Animate entrance with spring physics (non-blocking)
+        animateSpeakerEntrance(spot);
       }
     } else {
       // No primary — if secondary is active, ensure stage exists for it
@@ -434,6 +439,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
           + `<img src="${newSecondary.img}" alt="${newSecondary.name}" class="spotlight-portrait" loading="eager">`
           + secNameplateHTML;
         oldSecondary.style.display = '';
+        animateSecondaryEntrance(oldSecondary);
       } else if (updatedStage) {
         // No secondary element at all — create one
         const secEl = document.createElement('div');
@@ -448,6 +454,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
           + `<img src="${newSecondary.img}" alt="${newSecondary.name}" class="spotlight-portrait" loading="eager">`
           + secNameplateHTML;
         updatedStage.appendChild(secEl);
+        animateSecondaryEntrance(secEl);
       }
     } else if (oldSecondary) {
       oldSecondary.style.display = 'none';
@@ -687,8 +694,14 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       this._prevSpeakerIdsKeyRaw = (_seedState.speakers || []).map(s => s.id);
     }
 
-    // Module integrations: inject controls and indicators
+    // Start ambient particles behind spotlight
     const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
+    if (sceneContainer && !this._spotlightParticles) {
+      this._spotlightParticles = new SpotlightParticles(sceneContainer, { count: 20, opacity: 0.35 });
+      this._spotlightParticles.start();
+    }
+
+    // Module integrations: inject controls and indicators
     if (sceneContainer) {
       rmhRender(sceneContainer);
       srRender(sceneContainer);
@@ -720,6 +733,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   async _onClose(_options) {
     this._introComplete = false;
     this._teardownCameraRow();
+    // Stop ambient particles
+    this._spotlightParticles?.stop();
+    this._spotlightParticles = null;
     game.storyframe.cinematicScene = null;
     unloadCinematicCSS();
     rmhClose();

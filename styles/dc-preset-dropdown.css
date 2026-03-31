@@ -5,17 +5,20 @@
 
 /* Dropdown Container */
 .preset-dropdown,
-.dc-preset-dropdown {
+.dc-preset-dropdown,
+.storyframe-dc-preset-popup {
   position: absolute;
   top: 100%;
   right: 0;
   margin-top: 4px;
-  background: var(--sf-surface-secondary);
-  border: 1px solid var(--sf-border-primary);
+  background: var(--sf-surface-secondary, rgba(40, 45, 55, 0.95));
+  border: 1px solid var(--sf-border-primary, rgba(94, 129, 172, 0.25));
   border-radius: 8px;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
   z-index: 300000;
   width: 220px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 /* Tabs Header */

@@ -1130,3 +1130,38 @@ video.cinematic-bg {
   border-radius: var(--sf-radius-sm, 4px);
   border: 2px solid rgba(218, 165, 32, 0.5);
 }
+
+/* ===== Responsive Dual Spotlight (narrow viewports) ===== */
+@media (max-width: 700px) {
+  .cinematic-spotlight-stage.dual {
+    grid-auto-flow: row;
+    column-gap: 0;
+    row-gap: 0.5rem;
+  }
+
+  .cinematic-spotlight-stage.dual .cinematic-spotlight {
+    max-width: 100%;
+  }
+
+  .cinematic-spotlight-stage.dual .spotlight-portrait {
+    max-height: 30vh;
+  }
+
+  .cinematic-spotlight-stage .spotlight-nameplate {
+    padding: var(--sf-space-xs, 4px) var(--sf-space-md, 16px);
+  }
+
+  .cinematic-spotlight-stage .nameplate-text {
+    font-size: 1rem;
+  }
+}
+
+/* ===== Responsive Filmstrip (narrow viewports) ===== */
+@media (max-width: 500px) {
+  .cinematic-filmstrip .filmstrip-speaker {
+    --filmstrip-speaker-size: 48px;
+  }
+  .cinematic-filmstrip .filmstrip-name {
+    display: none;
+  }
+}

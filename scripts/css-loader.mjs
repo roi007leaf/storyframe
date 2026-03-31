@@ -64,6 +64,7 @@ const CINEMATIC_CSS = [
   'styles/cinematic/base.css',
   'styles/cinematic/gm.css',
   'styles/cinematic/player.css',
+  'styles/speaker-states.css',
 ];
 
 export function loadCinematicCSS() {

@@ -1062,6 +1062,20 @@ Hooks.once('ready', async () => {
   const { initMouseTracking } = await import('./scripts/speaker-wheel.mjs');
   initMouseTracking();
 
+  // Pre-warm vendor libraries in the background (non-blocking)
+  import('./scripts/vendor-loader.mjs').then(({ preload }) => {
+    preload('autoAnimate', 'sortable', 'motion');
+  }).catch(() => {}); // Silently swallow — libraries are optional enhancements
+
+  // Initialize TTS manager and dialogue typer
+  import('./scripts/tts-manager.mjs').then(({ TTSManager }) => {
+    game.storyframe.tts = new TTSManager();
+  }).catch(() => {});
+
+  import('./scripts/dialogue-typer.mjs').then((mod) => {
+    game.storyframe.dialogue = mod;
+  }).catch(() => {});
+
   // Setup inline check integrations (GM only)
   if (game.user.isGM) {
     if (game.system.id === 'pf2e' || game.system.id === 'sf2e') {

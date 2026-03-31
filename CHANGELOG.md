@@ -7,6 +7,32 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.0] - 2026-03-31
+
+### Added
+
+- **Journal auto-scroll** — teleprompter-style auto-scrolling for journal content in cinematic mode with adjustable speed (5 presets: 15–90 px/s), pause on manual scroll, and auto-stop at bottom
+- **Speaker visual state filters** — CSS filter effects for cinematic filmstrip: inactive speakers dimmed, active speakers highlighted, rolling pulse animation, and hidden speaker desaturation in the GM sidebar
+- **Scene mood themes** — four cinematic mood presets (flashback, dark, ethereal, dramatic) that apply GPU-accelerated CSS filters to speaker portraits and spotlight glows
+- **Spotlight spring animations** — speaker entrance and secondary speaker slide-in now use spring physics via the Motion library for more natural, cinematic transitions
+- **Speaker wheel staggered entrance** — wheel items animate in with a staggered spring effect when opened
+- **Sidebar list animations** — speaker gallery, challenge list, and pending rolls animate smoothly on add/remove/reorder via auto-animate
+- **SortableJS drag-and-drop** — skill and category reordering now uses SortableJS with smooth 200ms slide animations and touch support, with native drag-and-drop fallback if CDN is unavailable
+- **Dialogue typer utility** — TypeIt-powered typewriter text effect for cinematic dialogue display (available via `game.storyframe.dialogue`)
+- **TTS manager** — per-speaker text-to-speech via the Web Speech Synthesis API with voice, pitch, and rate configuration (available via `game.storyframe.tts`)
+- **Ambient spotlight particles** — floating canvas particles behind the cinematic spotlight for atmospheric depth
+- **Responsive cinematic layout** — media queries for narrow viewports: dual spotlights stack vertically, filmstrip shrinks and hides labels
+- **Vendor library loader** — lazy CDN loader with fallback URLs for auto-animate, SortableJS, Motion, and TypeIt; libraries pre-warm on module ready
+
+### Fixed
+
+- **DC preset dropdown styling** — added `dc-preset-dropdown.css` to `module.json` styles to ensure correct CSS layer priority in Foundry v13
+- **Skill reorder stacking context** — narrowed `transition: all` on skill categories to specific properties to prevent SortableJS transforms from trapping fixed-position popups
+
+### Changed
+
+- **Journal switching no longer auto-minimizes** — opening a different journal now replaces the current one; use the explicit minimize button to minimize
+
 ## [2.11.1] - 2026-03-28
 
 ### Fixed
