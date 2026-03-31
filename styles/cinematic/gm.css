@@ -2070,3 +2070,86 @@ body:has(.storyframe.cinematic-scene) .application.sheet:not(.storyframe),
 body:has(.storyframe.cinematic-scene) .application.journal-entry-page {
   z-index: 200000 !important;
 }
+
+/* ===== Cinematic Dialogue Input Bar ===== */
+.cinematic-scene-container .cinematic-dialogue-input-bar {
+  position: absolute;
+  bottom: var(--_camera-row-reserve, 0px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 48px);
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--sf-radius-xl, 16px) var(--sf-radius-xl, 16px) 0 0;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: 0.95rem;
+  outline: none;
+  padding: 4px 0;
+  min-width: 0;
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar input::placeholder {
+  color: rgba(255, 255, 255, 0.25);
+  font-style: italic;
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-send-btn,
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-speak-btn {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 4px 6px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-send-btn:hover,
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-speak-btn:hover {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-speak-btn.active {
+  color: rgba(163, 190, 140, 0.9);
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-speak-btn.active:hover {
+  color: rgba(163, 190, 140, 1);
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-language-select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.75rem;
+  padding: 4px 6px;
+  cursor: pointer;
+  max-width: 110px;
+  flex-shrink: 0;
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-language-select:focus {
+  border-color: rgba(94, 129, 172, 0.5);
+  outline: none;
+}
+
+.cinematic-scene-container .cinematic-dialogue-input-bar .dialogue-language-select option {
+  background: rgba(30, 35, 45, 0.98);
+  color: rgba(255, 255, 255, 0.9);
+}

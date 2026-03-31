@@ -68,6 +68,7 @@ export class SocketManager {
     this.socket.register('launchSceneModeForPlayer', this._handleLaunchSceneMode);
     this.socket.register('closeSceneMode', this._handleCloseSceneMode);
     this.socket.register('showImagePreview', this._handleShowImagePreview);
+    this.socket.register('showDialogue', this._handleShowDialogue);
     this.socket.register('reportCinematicStatus', this._handleReportCinematicStatus.bind(this));
     this.socket.register('queryCinematicStatus', this._handleQueryCinematicStatus.bind(this));
 
@@ -796,6 +797,65 @@ export class SocketManager {
     const scene = game.storyframe.cinematicScene;
     if (!scene?.rendered) return;
     scene.showImagePreview(src);
+  }
+
+  /**
+   * Broadcast dialogue text to all clients for typewriter display.
+   * @param {Object} data - { text, fontFamily }
+   */
+  broadcastDialogue(data) {
+    this.socket.executeForOthers('showDialogue', data);
+  }
+
+  _handleShowDialogue(data) {
+    const scene = game.storyframe.cinematicScene;
+    if (!scene?.rendered) return;
+    const container = scene.element?.querySelector('.cinematic-scene-container');
+    if (!container || !game.storyframe.dialogue) return;
+
+    // Determine which text to show based on whether the player knows the language
+    let displayText = data.originalText;
+    let useFont = false;
+
+    if (data.lang) {
+      let knows = false;
+
+      // Check all actors the player owns (not just the assigned character)
+      const ownedActors = game.actors?.filter(a => a.isOwner && a.type === 'character') ?? [];
+      // Also include the assigned character in case it's not in the world actors
+      if (game.user?.character) ownedActors.push(game.user.character);
+      for (const actor of ownedActors) {
+        const knownLangs = actor.knownLanguages
+          ?? actor.system?.details?.languages?.value
+          ?? actor.system?.traits?.languages?.value
+          ?? [];
+        const langSet = knownLangs instanceof Set ? knownLangs : new Set(knownLangs);
+        if (langSet.has(data.lang)) {
+          knows = true;
+          break;
+        }
+      }
+
+      if (!knows) {
+        displayText = data.scrambledText;
+        useFont = true;
+      }
+    }
+
+    game.storyframe.dialogue.typeDialogue(container, displayText, {
+      speed: 'normal',
+      onComplete: () => {
+        setTimeout(() => {
+          game.storyframe.dialogue?.destroyDialogue(container);
+        }, 6000);
+      },
+    });
+
+    // Apply fantasy font only if the player doesn't know the language
+    if (useFont && data.fontFamily) {
+      const box = container.querySelector('.cinematic-dialogue-box');
+      if (box) box.style.fontFamily = `"${data.fontFamily}", serif`;
+    }
   }
 
   async _handleLaunchSceneMode() {

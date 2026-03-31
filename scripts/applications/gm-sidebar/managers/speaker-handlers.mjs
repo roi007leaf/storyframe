@@ -58,43 +58,139 @@ export async function onSetSpeaker(_event, target, _sidebar) {
 }
 
 /**
- * Edit a speaker's name
+ * Edit a speaker's name and voice settings
  */
 export async function onEditSpeaker(event, target) {
   event.stopPropagation();
   const speakerId = target.closest('[data-speaker-id]')?.dataset.speakerId;
   if (!speakerId) return;
 
-  // Get current speaker data from state
   const state = game.storyframe.stateManager.getState();
   const speaker = state?.speakers?.find((s) => s.id === speakerId);
   if (!speaker) return;
 
-  // Get current name (label is the source of truth in state)
   const currentName = speaker.label || '';
+  const tts = game.storyframe.tts;
+  const voices = tts?.getVoices() ?? [];
+  const currentVoice = speaker.voiceConfig || {};
 
-  // Prompt for new name
-  const newName = await foundry.applications.api.DialogV2.prompt({
+  // Build voice options grouped by language
+  let voiceOptions = '<option value="">— None —</option>';
+  if (voices.length > 0) {
+    const byLang = new Map();
+    for (const v of voices) {
+      const lang = v.lang;
+      if (!byLang.has(lang)) byLang.set(lang, []);
+      byLang.get(lang).push(v);
+    }
+    for (const [lang, langVoices] of byLang) {
+      voiceOptions += `<optgroup label="${lang}">`;
+      for (const v of langVoices) {
+        const sel = v.name === currentVoice.voiceName ? ' selected' : '';
+        voiceOptions += `<option value="${v.name}"${sel}>${v.name}</option>`;
+      }
+      voiceOptions += '</optgroup>';
+    }
+  }
+
+  const content = `
+    <div class="sf-edit-speaker-form">
+      <div class="sf-form-group">
+        <label>Name</label>
+        <input type="text" name="label" value="${currentName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Label')}" autofocus>
+      </div>
+      <fieldset class="sf-form-fieldset">
+        <legend><i class="fas fa-microphone"></i> Voice</legend>
+        <div class="sf-form-group">
+          <label>Voice</label>
+          <select name="voiceName">${voiceOptions}</select>
+        </div>
+        <div class="sf-form-row">
+          <div class="sf-form-group">
+            <label>Pitch <span class="sf-range-value" data-for="pitch">${currentVoice.pitch ?? 1.0}</span></label>
+            <input type="range" name="pitch" min="0.1" max="2" step="0.1" value="${currentVoice.pitch ?? 1.0}">
+          </div>
+          <div class="sf-form-group">
+            <label>Rate <span class="sf-range-value" data-for="rate">${currentVoice.rate ?? 1.0}</span></label>
+            <input type="range" name="rate" min="0.5" max="2" step="0.1" value="${currentVoice.rate ?? 1.0}">
+          </div>
+        </div>
+        <button type="button" class="sf-preview-voice-btn"><i class="fas fa-play"></i> Preview</button>
+      </fieldset>
+    </div>
+  `;
+
+  const result = await foundry.applications.api.DialogV2.prompt({
     window: { title: game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Title') },
-    content: `<input type="text" name="label" value="${currentName}" placeholder="${game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Label')}" autofocus>`,
+    content,
     ok: {
       label: game.i18n.localize('STORYFRAME.Dialogs.EditNPCName.Button'),
-      callback: (event, button, _dialog) => button.form.elements.label.value,
+      callback: (_event, button, _dialog) => {
+        const form = button.form.elements;
+        return {
+          label: form.label.value,
+          voiceName: form.voiceName.value,
+          pitch: parseFloat(form.pitch.value),
+          rate: parseFloat(form.rate.value),
+        };
+      },
     },
     rejectClose: false,
+    render: (_event, html) => {
+      // Live range value display
+      html.querySelectorAll('input[type="range"]').forEach(slider => {
+        slider.addEventListener('input', () => {
+          const label = html.querySelector(`.sf-range-value[data-for="${slider.name}"]`);
+          if (label) label.textContent = slider.value;
+        });
+      });
+      // Preview button
+      const previewBtn = html.querySelector('.sf-preview-voice-btn');
+      previewBtn?.addEventListener('click', () => {
+        const voiceName = html.querySelector('[name="voiceName"]').value;
+        const pitch = parseFloat(html.querySelector('[name="pitch"]').value);
+        const rate = parseFloat(html.querySelector('[name="rate"]').value);
+        if (!voiceName || !tts) return;
+        tts.stop();
+        const utterance = new SpeechSynthesisUtterance(currentName || 'Hello adventurers');
+        utterance.voice = voices.find(v => v.name === voiceName);
+        utterance.pitch = pitch;
+        utterance.rate = rate;
+        window.speechSynthesis.speak(utterance);
+      });
+    },
   });
 
-  // Update if name changed
-  if (newName && newName !== currentName) {
-    // Update speaker label in state
+  if (!result) return;
+
+  // Build voice config (only if a voice was selected)
+  const voiceConfig = result.voiceName
+    ? { voiceName: result.voiceName, pitch: result.pitch, rate: result.rate }
+    : null;
+
+  // Update speaker
+  const nameChanged = result.label && result.label !== currentName;
+  const voiceChanged = JSON.stringify(voiceConfig) !== JSON.stringify(speaker.voiceConfig || null);
+
+  if (nameChanged || voiceChanged) {
     const updatedSpeakers = state.speakers.map((s) => {
       if (s.id === speakerId) {
-        return { ...s, label: newName };
+        const updated = { ...s };
+        if (nameChanged) updated.label = result.label;
+        if (voiceChanged) updated.voiceConfig = voiceConfig;
+        return updated;
       }
       return s;
     });
 
     await game.storyframe.socketManager.requestUpdateSpeakers(updatedSpeakers);
+
+    // Update TTS manager with new voice config
+    if (tts && voiceConfig) {
+      tts.setVoice(speakerId, voiceConfig);
+    } else if (tts && !voiceConfig) {
+      tts.removeVoice(speakerId);
+    }
   }
 }
 

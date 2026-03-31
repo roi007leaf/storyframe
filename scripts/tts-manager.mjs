@@ -1,31 +1,110 @@
 /**
- * TTS Manager
- * Per-speaker text-to-speech using the Web Speech Synthesis API (browser-native).
- * Allows assigning distinct voices, pitch, and rate to each speaker.
+ * Speech Manager
+ * Speech-to-text (dictation) via Web Speech Recognition API (browser-native).
+ * Also provides text-to-speech for voice preview in the Edit Speaker dialog.
  */
 
 export class TTSManager {
   constructor() {
+    // --- Speech Recognition (speech-to-text) ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    this._recognition = SpeechRecognition ? new SpeechRecognition() : null;
+    this._listening = false;
+    this._onResult = null;
+    this._onEnd = null;
+
+    if (this._recognition) {
+      this._recognition.continuous = true;
+      this._recognition.interimResults = true;
+      this._recognition.lang = navigator.language || 'en-US';
+
+      this._recognition.onresult = (event) => {
+        let interim = '';
+        let final = '';
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          const transcript = event.results[i][0].transcript;
+          if (event.results[i].isFinal) {
+            final += transcript;
+          } else {
+            interim += transcript;
+          }
+        }
+        this._onResult?.(final, interim);
+      };
+
+      this._recognition.onend = () => {
+        this._listening = false;
+        this._onEnd?.();
+      };
+
+      this._recognition.onerror = (event) => {
+        if (event.error !== 'aborted') {
+          console.warn('StoryFrame | Speech recognition error:', event.error);
+        }
+        this._listening = false;
+        this._onEnd?.();
+      };
+    }
+
+    // --- Text-to-Speech (for voice preview only) ---
+    this._synth = window.speechSynthesis ?? null;
     /** @type {Map<string, {voice: SpeechSynthesisVoice, pitch: number, rate: number}>} */
     this._voiceMap = new Map();
-    this.enabled = false;
-    this._synth = window.speechSynthesis ?? null;
-    this._voicesReady = false;
+  }
 
-    // Voices load asynchronously in most browsers
-    if (this._synth) {
-      this._synth.addEventListener?.('voiceschanged', () => {
-        this._voicesReady = true;
-      });
-      // Some browsers populate immediately
-      if (this._synth.getVoices().length > 0) this._voicesReady = true;
+  // --- Speech-to-Text ---
+
+  /** Whether the browser supports speech recognition */
+  get isSupported() {
+    return !!this._recognition;
+  }
+
+  /** Whether currently listening */
+  get isListening() {
+    return this._listening;
+  }
+
+  /**
+   * Start listening for speech and transcribing to text.
+   * @param {Object} callbacks
+   * @param {Function} callbacks.onResult - (finalText, interimText) => void
+   * @param {Function} [callbacks.onEnd] - () => void (called when recognition stops)
+   */
+  startListening({ onResult, onEnd } = {}) {
+    if (!this._recognition || this._listening) return;
+    this._onResult = onResult;
+    this._onEnd = onEnd;
+    this._listening = true;
+    try {
+      this._recognition.start();
+    } catch {
+      // Already started
+      this._listening = false;
     }
   }
 
-  /** Whether the browser supports speech synthesis */
-  get isSupported() {
-    return !!this._synth;
+  /** Stop listening */
+  stopListening() {
+    if (!this._recognition) return;
+    this._listening = false;
+    try {
+      this._recognition.stop();
+    } catch {
+      // Already stopped
+    }
   }
+
+  /**
+   * Set the recognition language.
+   * @param {string} lang - BCP 47 language tag (e.g. 'en-US', 'ja-JP')
+   */
+  setLanguage(lang) {
+    if (this._recognition) {
+      this._recognition.lang = lang;
+    }
+  }
+
+  // --- Text-to-Speech (voice preview) ---
 
   /**
    * Get available system voices.
@@ -36,26 +115,12 @@ export class TTSManager {
   }
 
   /**
-   * Get voices grouped by language for UI display.
-   * @returns {Map<string, SpeechSynthesisVoice[]>}
-   */
-  getVoicesByLanguage() {
-    const map = new Map();
-    for (const voice of this.getVoices()) {
-      const lang = voice.lang.split('-')[0];
-      if (!map.has(lang)) map.set(lang, []);
-      map.get(lang).push(voice);
-    }
-    return map;
-  }
-
-  /**
-   * Assign a voice configuration to a speaker.
+   * Assign a voice configuration to a speaker (for preview/future TTS use).
    * @param {string} speakerId
    * @param {Object} config
-   * @param {string} config.voiceName - SpeechSynthesisVoice.name to match
-   * @param {number} [config.pitch=1.0] - 0 to 2
-   * @param {number} [config.rate=1.0] - 0.1 to 10
+   * @param {string} config.voiceName
+   * @param {number} [config.pitch=1.0]
+   * @param {number} [config.rate=1.0]
    */
   setVoice(speakerId, { voiceName, pitch = 1.0, rate = 1.0 }) {
     const voice = this.getVoices().find(v => v.name === voiceName);
@@ -73,19 +138,16 @@ export class TTSManager {
   }
 
   /**
-   * Speak text as a specific speaker.
+   * Speak text (used for voice preview in Edit Speaker dialog).
    * @param {string} speakerId
    * @param {string} text
    */
   speak(speakerId, text) {
-    if (!this.enabled || !this._synth || !text) return;
-
-    // Cancel any ongoing speech
+    if (!this._synth || !text) return;
     this._synth.cancel();
 
     const utterance = new SpeechSynthesisUtterance(text);
     const config = this._voiceMap.get(speakerId);
-
     if (config) {
       utterance.voice = config.voice;
       utterance.pitch = config.pitch;
@@ -95,40 +157,9 @@ export class TTSManager {
     this._synth.speak(utterance);
   }
 
-  /** Stop any ongoing speech immediately. */
+  /** Stop any ongoing speech. */
   stop() {
+    this.stopListening();
     this._synth?.cancel();
-  }
-
-  /** Check if speech is in progress. */
-  get isSpeaking() {
-    return this._synth?.speaking ?? false;
-  }
-
-  /**
-   * Serialize voice assignments for persistence.
-   * @returns {Object} Map of speakerId → { voiceName, pitch, rate }
-   */
-  serialize() {
-    const data = {};
-    for (const [id, config] of this._voiceMap) {
-      data[id] = {
-        voiceName: config.voice.name,
-        pitch: config.pitch,
-        rate: config.rate,
-      };
-    }
-    return data;
-  }
-
-  /**
-   * Restore voice assignments from serialized data.
-   * @param {Object} data - Output of serialize()
-   */
-  restore(data) {
-    if (!data) return;
-    for (const [id, config] of Object.entries(data)) {
-      this.setVoice(id, config);
-    }
   }
 }

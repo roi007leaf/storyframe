@@ -50,6 +50,9 @@ export class CinematicGMApp extends CinematicSceneBase {
       togglePlaylistExpand: CinematicGMApp._onTogglePlaylistExpand,
       toggleFolderExpand: CinematicGMApp._onToggleFolderExpand,
       musicPlayPlaylist: CinematicGMApp._onMusicPlayPlaylist,
+      sendDialogue: CinematicGMApp._onSendDialogue,
+      toggleDialogueTTS: CinematicGMApp._onToggleDialogueTTS,
+      toggleDialogueBar: CinematicGMApp._onToggleDialogueBar,
       editSpeaker: CinematicGMApp._onEditSpeaker,
       removeSpeaker: CinematicGMApp._onRemoveSpeaker,
       toggleSpeakerVisibility: CinematicGMApp._onToggleSpeakerVisibility,
@@ -594,6 +597,19 @@ export class CinematicGMApp extends CinematicSceneBase {
       });
     }
 
+    // Dialogue input: Enter to send + populate language dropdown
+    const dialogueInput = this.element?.querySelector('.dialogue-input');
+    if (dialogueInput) {
+      dialogueInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          e.stopPropagation();
+          CinematicGMApp._onSendDialogue.call(this, e);
+        }
+      });
+    }
+    this._populateLanguageDropdown();
+
     // Playlist reactivity hooks (register once)
     if (this._playlistHookIds.length === 0) {
       this._playlistHookIds.push(
@@ -757,8 +773,9 @@ export class CinematicGMApp extends CinematicSceneBase {
   }
 
   async _onClose(_options) {
-    // Stop auto-scroll
+    // Stop auto-scroll + TTS
     this._stopAutoScroll();
+    game.storyframe.tts?.stop();
 
     // Stop all playing playlists (volume is already at 0 from fade)
     for (const p of game.playlists) {
@@ -1630,6 +1647,206 @@ export class CinematicGMApp extends CinematicSceneBase {
   static async _onCancelPendingRoll(_event, target) {
     const requestId = target.closest('[data-request-id]')?.dataset.requestId;
     if (requestId) await game.storyframe.socketManager.requestRemovePendingRoll(requestId);
+  }
+
+  // --- Dialogue bar ---
+
+  /**
+   * Populate the language dropdown from Polyglot (if installed) or the game system.
+   */
+  _populateLanguageDropdown() {
+    const select = this.element?.querySelector('.dialogue-language-select');
+    if (!select) return;
+
+    // Preserve current selection
+    const current = select.value;
+
+    // Clear and rebuild
+    select.innerHTML = '<option value="">Common</option>';
+
+    const polyglot = game.polyglot;
+    if (polyglot?.languageProvider) {
+      // Polyglot is available — use its languages
+      const langs = polyglot.languageProvider?.languages ?? polyglot.languages ?? {};
+      for (const [key, data] of Object.entries(langs)) {
+        const label = data?.label ?? game.i18n.localize(key) ?? key;
+        select.innerHTML += `<option value="${key}">${label}</option>`;
+      }
+    } else {
+      // Fallback: get languages from the game system config
+      const systemLangs = this._getSystemLanguages();
+      for (const [key, label] of systemLangs) {
+        select.innerHTML += `<option value="${key}">${label}</option>`;
+      }
+    }
+
+    // Restore selection if still valid
+    if (current && select.querySelector(`option[value="${current}"]`)) {
+      select.value = current;
+    }
+  }
+
+  /**
+   * Extract languages from the game system config with localized labels.
+   * @returns {Array<[string, string]>} Array of [key, localizedLabel] pairs
+   */
+  _getSystemLanguages() {
+    const results = [];
+
+    // Try to get languages from actor schema or CONFIG
+    const extract = (obj) => {
+      for (const [key, val] of Object.entries(obj)) {
+        if (typeof val === 'string') {
+          // Localize if it looks like an i18n key, otherwise use as-is
+          let label = game.i18n.localize(val);
+          // If localize returned the key unchanged and it has dots, use the last segment
+          if (label === val && val.includes('.')) {
+            label = val.split('.').pop().replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+          }
+          results.push([key, label]);
+        } else if (val?.label) {
+          const label = game.i18n.localize(val.label);
+          results.push([key, label]);
+          if (val.children) extract(val.children);
+        } else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+          extract(val);
+        }
+      }
+    };
+
+    // PF2E / SF2E
+    if (CONFIG.PF2E?.languages) {
+      extract(CONFIG.PF2E.languages);
+    }
+    // D&D 5e
+    else if (CONFIG.DND5E?.languages) {
+      extract(CONFIG.DND5E.languages);
+    }
+
+    // Sort alphabetically by label
+    results.sort((a, b) => a[1].localeCompare(b[1]));
+    return results;
+  }
+
+  static _onToggleDialogueBar() {
+    const bar = this.element?.querySelector('.cinematic-dialogue-input-bar');
+    if (!bar) return;
+    const visible = bar.style.display !== 'none';
+    bar.style.display = visible ? 'none' : '';
+    if (!visible) {
+      bar.querySelector('.dialogue-input')?.focus();
+    }
+  }
+
+  static _onToggleDialogueTTS() {
+    const tts = game.storyframe.tts;
+    if (!tts?.isSupported) {
+      ui.notifications.warn('Speech recognition is not supported in this browser.');
+      return;
+    }
+
+    const btn = this.element?.querySelector('.dialogue-speak-btn');
+    const input = this.element?.querySelector('.dialogue-input');
+
+    if (tts.isListening) {
+      tts.stopListening();
+      btn?.classList.remove('active');
+      // Send any accumulated text
+      if (input?.value?.trim()) {
+        CinematicGMApp._onSendDialogue.call(this, new KeyboardEvent('keydown', { key: 'Enter' }));
+      }
+    } else {
+      btn?.classList.add('active');
+      let autoSendTimer = null;
+
+      tts.startListening({
+        onResult: (finalText, interimText) => {
+          if (!input) return;
+
+          if (finalText) {
+            input.value = (input.value ? input.value + ' ' : '') + finalText;
+            input.placeholder = 'Listening...';
+
+            // Auto-send after 2s of silence following finalized text
+            clearTimeout(autoSendTimer);
+            autoSendTimer = setTimeout(() => {
+              if (input.value?.trim()) {
+                CinematicGMApp._onSendDialogue.call(this, new KeyboardEvent('keydown', { key: 'Enter' }));
+              }
+            }, 2000);
+          } else if (interimText) {
+            input.placeholder = interimText;
+            // Reset the auto-send timer while still speaking
+            clearTimeout(autoSendTimer);
+          }
+        },
+        onEnd: () => {
+          clearTimeout(autoSendTimer);
+          btn?.classList.remove('active');
+          if (input) input.placeholder = 'Type dialogue for the active speaker...';
+          // Send any remaining text
+          if (input?.value?.trim()) {
+            CinematicGMApp._onSendDialogue.call(this, new KeyboardEvent('keydown', { key: 'Enter' }));
+          }
+        },
+      });
+      if (input) input.placeholder = 'Listening...';
+    }
+  }
+
+  static async _onSendDialogue(event) {
+    // Handle Enter key on input or click on send button
+    if (event.type === 'click' || (event.type === 'keydown' && event.key === 'Enter')) {
+      const input = this.element?.querySelector('.dialogue-input');
+      const text = input?.value?.trim();
+      if (!text) return;
+
+      const langSelect = this.element?.querySelector('.dialogue-language-select');
+      const lang = langSelect?.value || '';
+
+      // Build scrambled version for players who don't know the language
+      let scrambledText = text;
+      let fontFamily = null;
+      if (lang && game.polyglot) {
+        try {
+          const salt = lang + Date.now();
+          scrambledText = game.polyglot.scrambleString?.(text, salt, lang) ?? text;
+          const langData = game.polyglot.languageProvider?.languages?.[lang]
+            ?? game.polyglot.languages?.[lang];
+          fontFamily = langData?.font ?? null;
+        } catch {
+          scrambledText = text;
+        }
+      }
+
+      // GM always sees the original text
+      const container = this.element?.querySelector('.cinematic-scene-container');
+      if (container && game.storyframe.dialogue) {
+        game.storyframe.dialogue.typeDialogue(container, text, {
+          speed: 'normal',
+          onComplete: () => {
+            setTimeout(() => {
+              game.storyframe.dialogue?.destroyDialogue(container);
+            }, 6000);
+          },
+        });
+      }
+
+      // Broadcast to players — send both versions + language key so players
+      // can check if their character knows the language
+      game.storyframe.socketManager?.broadcastDialogue({
+        originalText: text,
+        scrambledText,
+        fontFamily,
+        lang,
+      });
+
+      // TTS is triggered directly from the keydown/click event handler
+      // (browsers require speechSynthesis.speak() in the direct user event chain)
+
+      // Clear input
+      input.value = '';
+    }
   }
 
   // --- Speaker actions ---

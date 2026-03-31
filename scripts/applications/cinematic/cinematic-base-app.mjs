@@ -738,6 +738,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._spotlightParticles = null;
     game.storyframe.cinematicScene = null;
     unloadCinematicCSS();
+    // Force browsers to recalculate styles after removing cinematic CSS
+    // (prevents body:has() z-index overrides from persisting)
+    document.body.offsetHeight;
     rmhClose();
     srClose();
     document.getElementById('cinematic-context-menu')?.remove();

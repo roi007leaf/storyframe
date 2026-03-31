@@ -153,6 +153,20 @@
   </div>
   {{/if}}
 
+  {{!-- Dialogue Input Bar --}}
+  <div class="cinematic-dialogue-input-bar" style="display: none;">
+    <button type="button" class="dialogue-speak-btn" data-action="toggleDialogueTTS" data-tooltip="Dictate (Speech-to-Text)">
+      <i class="fas fa-microphone" aria-hidden="true"></i>
+    </button>
+    <select class="dialogue-language-select" data-tooltip="Language">
+      <option value="">Common</option>
+    </select>
+    <input type="text" class="dialogue-input" placeholder="Type dialogue for the active speaker...">
+    <button type="button" class="dialogue-send-btn" data-action="sendDialogue" data-tooltip="Send">
+      <i class="fas fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </div>
+
   {{!-- Bottom row: camera feeds + PC portraits --}}
   <div class="cinematic-bottom-row">
     {{#each pcRow}}
@@ -596,6 +610,9 @@
     <button type="button" class="gm-control-btn" data-action="openScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.OpenScene'}}">
       <i class="fas fa-map" aria-hidden="true"></i>
     </button>
+    <button type="button" class="gm-control-btn" data-action="toggleDialogueBar" data-tooltip="Dialogue">
+      <i class="fas fa-comment" aria-hidden="true"></i>
+    </button>
     <button type="button" class="gm-control-btn {{#if allowPlayerSpeakers}}active{{/if}}" data-action="togglePlayerSpeakers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.TogglePlayerSpeakers'}}">
       <i class="fas fa-people-arrows" aria-hidden="true"></i>
     </button>
@@ -606,4 +623,5 @@
       <i class="fas fa-times" aria-hidden="true"></i>
     </button>
   </div>
+
 </div>

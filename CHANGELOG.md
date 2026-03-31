@@ -7,6 +7,20 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.12.1] - 2026-03-31
+
+### Fixed
+
+- **Dialogue bar positioning** — moved dialogue input bar to sit above the PC camera row instead of overlapping the filmstrip and speaker nameplate controls
+- **Dialogue broadcast to players** — dialogue text is now sent via socket so players see the typewriter effect; players whose characters know the selected language see original text, others see scrambled fantasy font
+- **Speech-to-text auto-send** — dictated text now auto-sends after 2 seconds of silence instead of requiring manual Enter
+- **GM always sees original dialogue** — GM no longer sees scrambled text when selecting a fantasy language; only players who don't know the language see the scrambled version
+- **Style recalculation on cinematic close** — forces browser reflow after unloading cinematic CSS to prevent stale z-index overrides on Foundry UI elements
+
+### Changed
+
+- **Speech manager rewrite** — replaced text-to-speech focus with speech-to-text (dictation) as primary feature; microphone button in dialogue bar starts browser speech recognition; text-to-speech retained for voice preview in Edit Speaker dialog only
+
 ## [2.12.0] - 2026-03-31
 
 ### Added
@@ -18,8 +32,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Speaker wheel staggered entrance** — wheel items animate in with a staggered spring effect when opened
 - **Sidebar list animations** — speaker gallery, challenge list, and pending rolls animate smoothly on add/remove/reorder via auto-animate
 - **SortableJS drag-and-drop** — skill and category reordering now uses SortableJS with smooth 200ms slide animations and touch support, with native drag-and-drop fallback if CDN is unavailable
-- **Dialogue typer utility** — TypeIt-powered typewriter text effect for cinematic dialogue display (available via `game.storyframe.dialogue`)
-- **TTS manager** — per-speaker text-to-speech via the Web Speech Synthesis API with voice, pitch, and rate configuration (available via `game.storyframe.tts`)
+- **Cinematic dialogue bar** — type dialogue for the active speaker in cinematic mode; text appears as a typewriter effect below the spotlight and can optionally be read aloud via TTS; toggle with the speech bubble button in the GM controls; supports language selection with Polyglot integration for scrambled fantasy language fonts
+- **Speech-to-text dictation** — click the microphone button in the dialogue bar to dictate dialogue via the Web Speech Recognition API; interim results show as placeholder text, final text populates the input field; supports continuous dictation
+- **Per-speaker voice preview** — assign distinct browser voices to each speaker via the expanded Edit Speaker dialog; configure voice, pitch, and rate with a live preview button; voices persist in speaker state
+- **Polyglot integration** — dialogue bar includes a language dropdown populated from Polyglot (if installed); selecting a language scrambles the displayed text and renders it in the appropriate fantasy font while TTS still reads the original text
 - **Ambient spotlight particles** — floating canvas particles behind the cinematic spotlight for atmospheric depth
 - **Responsive cinematic layout** — media queries for narrow viewports: dual spotlights stack vertically, filmstrip shrinks and hides labels
 - **Vendor library loader** — lazy CDN loader with fallback URLs for auto-animate, SortableJS, Motion, and TypeIt; libraries pre-warm on module ready

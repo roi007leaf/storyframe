@@ -192,3 +192,88 @@
 .sf-scrollbar::-webkit-scrollbar-thumb:hover {
   background: var(--sf-border-subtle);
 }
+
+/* ===== Edit Speaker Dialog Form ===== */
+.sf-edit-speaker-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.sf-edit-speaker-form .sf-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sf-edit-speaker-form .sf-form-group label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--sf-text-muted, rgba(200, 200, 200, 0.7));
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sf-edit-speaker-form .sf-range-value {
+  font-weight: 400;
+  opacity: 0.7;
+  font-variant-numeric: tabular-nums;
+}
+
+.sf-edit-speaker-form .sf-form-fieldset {
+  border: 1px solid var(--sf-border-primary, rgba(94, 129, 172, 0.25));
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sf-edit-speaker-form .sf-form-fieldset legend {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--sf-accent-primary, rgba(94, 129, 172, 0.8));
+  padding: 0 4px;
+}
+
+.sf-edit-speaker-form .sf-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.sf-edit-speaker-form select,
+.sf-edit-speaker-form input[type="text"] {
+  padding: 6px 8px;
+  background: var(--sf-bg-elevated, rgba(0, 0, 0, 0.3));
+  border: 1px solid var(--sf-border-primary, rgba(94, 129, 172, 0.25));
+  border-radius: 4px;
+  color: var(--sf-text-primary, #e8e8e8);
+  font-size: 0.85rem;
+}
+
+.sf-edit-speaker-form input[type="range"] {
+  width: 100%;
+  accent-color: var(--sf-accent-primary, rgba(94, 129, 172, 0.8));
+}
+
+.sf-edit-speaker-form .sf-preview-voice-btn {
+  align-self: flex-start;
+  padding: 4px 12px;
+  background: var(--sf-accent-primary, rgba(94, 129, 172, 0.2));
+  border: 1px solid var(--sf-accent-primary, rgba(94, 129, 172, 0.4));
+  border-radius: 4px;
+  color: var(--sf-accent-primary, rgba(94, 129, 172, 0.9));
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.sf-edit-speaker-form .sf-preview-voice-btn:hover {
+  background: var(--sf-accent-primary, rgba(94, 129, 172, 0.35));
+  color: #a0c0f0;
+}
+

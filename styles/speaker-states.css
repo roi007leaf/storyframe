@@ -115,24 +115,25 @@
   position: absolute;
   bottom: calc(
     (var(--filmstrip-speaker-size, 64px) + 76px) * var(--_filmstrip-visible, 1)
-    + var(--_camera-row-reserve, 0px) + 24px
+    + var(--_camera-row-reserve, 0px) + 16px
   );
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  max-width: 700px;
-  width: 90%;
-  padding: 16px 24px;
-  background: rgba(0, 0, 0, 0.85);
-  border: 1px solid rgba(94, 129, 172, 0.3);
+  max-width: 600px;
+  width: 80%;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid rgba(94, 129, 172, 0.2);
   border-radius: var(--sf-radius-lg, 12px);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   color: rgba(255, 255, 255, 0.95);
-  font-size: 1.15rem;
-  line-height: 1.65;
+  font-size: 1.1rem;
+  line-height: 1.6;
   letter-spacing: 0.02em;
   pointer-events: none;
+  text-align: center;
   animation: sf-dialogue-fade-in 0.3s ease-out;
 }
 

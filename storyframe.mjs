@@ -1069,7 +1069,21 @@ Hooks.once('ready', async () => {
 
   // Initialize TTS manager and dialogue typer
   import('./scripts/tts-manager.mjs').then(({ TTSManager }) => {
-    game.storyframe.tts = new TTSManager();
+    const tts = new TTSManager();
+    game.storyframe.tts = tts;
+    // Restore voice configs from speaker state (voices may load async)
+    const restoreVoices = () => {
+      const state = game.storyframe.stateManager?.getState();
+      if (!state?.speakers) return;
+      for (const speaker of state.speakers) {
+        if (speaker.voiceConfig) {
+          tts.setVoice(speaker.id, speaker.voiceConfig);
+        }
+      }
+    };
+    // Try immediately, retry after voices load
+    restoreVoices();
+    window.speechSynthesis?.addEventListener?.('voiceschanged', restoreVoices);
   }).catch(() => {});
 
   import('./scripts/dialogue-typer.mjs').then((mod) => {
