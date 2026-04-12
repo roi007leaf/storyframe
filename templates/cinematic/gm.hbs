@@ -1,9 +1,20 @@
 <div class="cinematic-scene-container">
-  {{!-- Scene background image --}}
+  {{!-- Scene background image/video --}}
   {{#if sceneBackground}}
-  <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{#if isVideoBackground}}
+    <video class="cinematic-bg" src="{{sceneBackground}}" autoplay loop muted playsinline></video>
+    {{else}}
+    <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{/if}}
   {{/if}}
 
+  {{!-- GM Prep Mode banner (relocated to document.body in _onRender for correct positioning) --}}
+  {{#if showPrepBanner}}
+  <div class="cinematic-prep-banner">
+    <i class="fas fa-eye-slash" aria-hidden="true"></i>
+    <span>{{localize "STORYFRAME.CinematicScene.PrepModeBanner"}}</span>
+  </div>
+  {{/if}}
 
   {{!-- Dark vignette overlay --}}
   <div class="vignette-overlay"></div>
@@ -12,37 +23,80 @@
   {{#if previewImageSrc}}
   <div class="cinematic-image-preview">
     <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.PopoutImage'}}">
+      <i class="fas fa-up-right-from-square"></i>
+    </button>
     <button type="button" class="preview-close-btn" data-action="closeImagePreview">
       <i class="fas fa-times"></i>
     </button>
   </div>
-  {{else if activeSpeaker}}
-  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
-    <div class="spotlight-glow-cinematic"></div>
-    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
-    <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
-      <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
-        <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
-      </button>
-      <span class="nameplate-text">{{activeSpeaker.name}}</span>
-      <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
-        <i class="fas fa-user-slash" aria-hidden="true"></i>
-      </button>
-      <div class="speaker-counter">
-        <button type="button" class="counter-btn" data-action="decrementCounter">−</button>
-        <span class="counter-value">{{activeSpeakerCounter}}</span>
-        <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
+  {{else if hasAnySpeakerActive}}
+  <div class="cinematic-spotlight-stage{{#if secondarySpeaker}}{{#if activeSpeaker}} dual{{/if}}{{/if}}">
+    {{#if activeSpeaker}}
+    <div class="cinematic-spotlight primary" data-speaker-id="{{activeSpeaker.id}}">
+      <div class="spotlight-glow-cinematic"></div>
+      <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate{{#if activeSpeaker.isNameHidden}} name-is-hidden{{/if}}">
+        <button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="{{activeSpeaker.id}}" data-tooltip="{{#if activeSpeaker.isNameHidden}}{{localize 'STORYFRAME.CinematicScene.ShowName'}}{{else}}{{localize 'STORYFRAME.CinematicScene.HideName'}}{{/if}}">
+          <i class="fas {{#if activeSpeaker.isNameHidden}}fa-eye{{else}}fa-eye-slash{{/if}}" aria-hidden="true"></i>
+        </button>
+        <span class="nameplate-text">{{activeSpeaker.name}}</span>
+        <button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DeselectSpeaker'}}">
+          <i class="fas fa-user-slash" aria-hidden="true"></i>
+        </button>
+        <div class="speaker-counter">
+          <button type="button" class="counter-btn" data-action="decrementCounter">−</button>
+          <span class="counter-value">{{activeSpeakerCounter}}</span>
+          <button type="button" class="counter-btn" data-action="incrementCounter">+</button>
+        </div>
+        {{#if hasPartySheet}}
+        <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+          <i class="fas fa-users" aria-hidden="true"></i>
+        </button>
+        {{/if}}
       </div>
-      {{#if hasPartySheet}}
-      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
-        <i class="fas fa-users" aria-hidden="true"></i>
-      </button>
+    </div>
+    {{/if}}
+    {{!-- Secondary (responding) speaker --}}
+    <div class="cinematic-spotlight secondary" data-speaker-id="{{#if secondarySpeaker}}{{secondarySpeaker.id}}{{/if}}" {{#unless secondarySpeaker}}style="display:none"{{/unless}}>
+      <div class="spotlight-glow-cinematic"></div>
+      {{#if secondarySpeaker}}
+      <img src="{{secondarySpeaker.img}}" alt="{{secondarySpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{secondarySpeaker.name}}</span>
+        <button type="button" class="spotlight-dismiss-btn" data-action="clearSecondarySpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DismissSecondary'}}">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
       {{/if}}
     </div>
   </div>
   {{else}}
   <div class="cinematic-no-active">
     <i class="fas fa-masks-theater" aria-hidden="true"></i>
+  </div>
+  {{/if}}
+
+  {{!-- Speaker request queue (GM only) --}}
+  {{#if speakerRequests.length}}
+  <div class="speaker-request-queue">
+    <div class="request-queue-header">
+      <i class="fas fa-hand-paper" aria-hidden="true"></i>
+      <span>{{localize "STORYFRAME.CinematicScene.SpeakerRequests"}}</span>
+      <span class="speaker-request-badge">{{speakerRequests.length}}</span>
+    </div>
+    {{#each speakerRequests}}
+    <div class="request-queue-item" data-speaker-id="{{this.speakerId}}">
+      <span class="request-speaker-name">{{this.speakerName}}</span>
+      <button type="button" class="request-approve-btn" data-action="approveSpeakerRequest" data-speaker-id="{{this.speakerId}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ApproveRequest'}}">
+        <i class="fas fa-check" aria-hidden="true"></i>
+      </button>
+      <button type="button" class="request-dismiss-btn" data-action="dismissSpeakerRequest" data-speaker-id="{{this.speakerId}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.DismissRequest'}}">
+        <i class="fas fa-times" aria-hidden="true"></i>
+      </button>
+    </div>
+    {{/each}}
   </div>
   {{/if}}
 
@@ -53,12 +107,13 @@
       <i class="fas fa-chevron-left"></i>
     </div>
     <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
-      {{#each inactiveSpeakers}}
-      <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}"
+      {{#each allSpeakers}}
+      <div class="filmstrip-speaker gm-clickable{{#if this.isHidden}} speaker-is-hidden{{/if}}{{#if this.isNameHidden}} name-is-hidden{{/if}}{{#if (lookup ../requestingSpeakerIds this.id)}} has-request{{/if}}{{#if this.userId}} player-speaker{{/if}}"
            role="listitem"
            data-speaker-id="{{this.id}}"
            data-action="switchSpeaker"
-           data-tooltip="{{this.name}}">
+           data-tooltip="{{this.name}}"
+           {{#if this.isActive}}style="display:none"{{/if}}>
         <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
         <span class="filmstrip-name">{{this.name}}</span>
         <div class="filmstrip-speaker-controls">
@@ -98,6 +153,20 @@
   </div>
   {{/if}}
 
+  {{!-- Dialogue Input Bar --}}
+  <div class="cinematic-dialogue-input-bar" style="display: none;">
+    <button type="button" class="dialogue-speak-btn" data-action="toggleDialogueTTS" data-tooltip="Dictate (Speech-to-Text)">
+      <i class="fas fa-microphone" aria-hidden="true"></i>
+    </button>
+    <select class="dialogue-language-select" data-tooltip="Language">
+      <option value="">Common</option>
+    </select>
+    <input type="text" class="dialogue-input" placeholder="Type dialogue for the active speaker...">
+    <button type="button" class="dialogue-send-btn" data-action="sendDialogue" data-tooltip="Send">
+      <i class="fas fa-paper-plane" aria-hidden="true"></i>
+    </button>
+  </div>
+
   {{!-- Bottom row: camera feeds + PC portraits --}}
   <div class="cinematic-bottom-row">
     {{#each pcRow}}
@@ -106,30 +175,6 @@
       <span class="pc-item-name">{{this.name}}</span>
     </div>
     {{/each}}
-  </div>
-
-  {{!-- GM floating controls (top-right) --}}
-  <div class="cinematic-gm-controls">
-    <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
-      <i class="fas fa-sliders-h" aria-hidden="true"></i>
-    </button>
-    <button type="button" class="gm-control-btn {{#if sceneBackground}}active{{/if}}" data-action="setBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.SetBackground'}}">
-      <i class="fas fa-image" aria-hidden="true"></i>
-    </button>
-    {{#if sceneBackground}}
-    <button type="button" class="gm-control-btn" data-action="clearBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ClearBackground'}}">
-      <i class="fas fa-image-slash" aria-hidden="true"></i>
-    </button>
-    {{/if}}
-    <button type="button" class="gm-control-btn" data-action="openScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.OpenScene'}}">
-      <i class="fas fa-map" aria-hidden="true"></i>
-    </button>
-    <button type="button" class="gm-control-btn" data-action="relaunchForPlayers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ShowToPlayers'}}">
-      <i class="fas fa-broadcast-tower" aria-hidden="true"></i>
-    </button>
-    <button type="button" class="gm-control-btn exit-btn" data-action="exitScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ExitScene'}}">
-      <i class="fas fa-times" aria-hidden="true"></i>
-    </button>
   </div>
 
   {{!-- Left panel toggle (top-left) --}}
@@ -152,7 +197,7 @@
         <img src="{{this.actorImg}}" alt="{{this.actorName}}" class="pending-roll-avatar" loading="lazy">
         <div class="pending-roll-info">
           <span class="pending-roll-actor">{{this.actorName}}</span>
-          <span class="pending-roll-skill">{{this.skillName}}{{#if this.dc}} DC {{this.dc}}{{/if}}</span>
+          <span class="pending-roll-skill">{{this.skillName}}{{#if this.dc}} {{formatDC this.dc}}{{/if}}</span>
         </div>
         <button type="button" class="pending-roll-cancel" data-action="cancelPendingRoll" data-request-id="{{this.id}}">
           <i class="fas fa-times"></i>
@@ -213,6 +258,10 @@
             data-tooltip="{{localize 'STORYFRAME.CinematicScene.SaveSceneState'}}">
             <i class="fas fa-floppy-disk" aria-hidden="true"></i>
           </button>
+          <button type="button" class="scene-delete-btn" data-action="deleteSpeakerScene" data-scene-id="{{this.id}}"
+            data-tooltip="{{localize 'STORYFRAME.Dialogs.DeleteScene.Title'}}">
+            <i class="fas fa-trash" aria-hidden="true"></i>
+          </button>
         </div>
         {{/each}}
         {{#unless speakerScenes.length}}
@@ -225,19 +274,24 @@
 
     {{!-- Journal --}}
     <div class="side-panel-section left-panel-journal left-panel-section" data-section="journal">
+      {{!-- Minimized journal pills --}}
+      {{#each minimizedJournals}}
+      <div class="journal-minimized-pill" data-action="journalRestoreMinimized" data-journal-id="{{this.id}}">
+        <i class="fas fa-book-open" aria-hidden="true"></i>
+        <span class="journal-pill-text"><span>{{this.name}}{{#if this.pageName}} ({{this.pageName}}){{/if}}</span></span>
+        <button type="button" class="journal-pill-close" data-action="journalCloseMinimized" data-journal-id="{{this.id}}">
+          <i class="fas fa-times" aria-hidden="true"></i>
+        </button>
+      </div>
+      {{/each}}
+
       {{#if openJournal}}
-        {{#if journalMinimized}}
-        <div class="journal-minimized-pill" data-action="journalExpand">
-          <i class="fas fa-book-open" aria-hidden="true"></i>
-          <span>{{openJournal.name}}</span>
-          <button type="button" class="journal-pill-close" data-action="journalClose">
-            <i class="fas fa-times" aria-hidden="true"></i>
-          </button>
-        </div>
-        {{else}}
         <div class="journal-viewer-header">
           <i class="fas fa-book-open" aria-hidden="true"></i>
-          <span class="journal-viewer-title">{{openJournal.name}}</span>
+          <button type="button" class="journal-viewer-title" data-action="toggleJournalSwitcher">
+            {{openJournal.name}}
+            <i class="fas fa-caret-down journal-switcher-caret" aria-hidden="true"></i>
+          </button>
           <i class="fas fa-font journal-font-icon-sm" aria-hidden="true"></i>
           <input type="range" class="journal-font-size-slider" min="0.5" max="1.5" step="0.05"
                  value="{{journalFontSize}}"
@@ -249,6 +303,17 @@
           <button type="button" class="journal-header-btn" data-action="journalClose" data-tooltip="{{localize 'STORYFRAME.UI.Labels.Close'}}">
             <i class="fas fa-times" aria-hidden="true"></i>
           </button>
+        </div>
+        <div class="journal-switcher-dropdown hidden">
+          <input type="text" class="journal-switcher-search" placeholder="{{localize 'STORYFRAME.CinematicScene.SearchJournals'}}">
+          <div class="journal-switcher-list">
+            {{#each journalEntries}}
+            <div class="journal-switcher-item{{#if (eq this.id ../openJournal.id)}} active{{/if}}" data-action="journalOpen" data-journal-id="{{this.id}}">
+              <i class="fas fa-book" aria-hidden="true"></i>
+              <span>{{this.name}}</span>
+            </div>
+            {{/each}}
+          </div>
         </div>
         {{#if openJournal.pages.length}}
         {{#unless (eq openJournal.pages.length 1)}}
@@ -265,7 +330,6 @@
         <div class="journal-content-scroll">
           <div class="journal-content-body">{{{openJournal.enrichedContent}}}</div>
         </div>
-        {{/if}}
       {{else}}
         <h4><i class="fas fa-book" aria-hidden="true"></i> {{localize 'STORYFRAME.CinematicScene.Journal'}}</h4>
         <div class="journal-search-row">
@@ -368,44 +432,14 @@
 
       </div>{{!-- end music-controls-sticky --}}
 
-      {{!-- Search Results --}}
-      {{#if musicSearchResults.length}}
+      {{!-- Search Results — rendered dynamically by _updateMusicSearchDOM --}}
+      {{#if musicSearchQuery}}
       <div class="music-search-results">
-        {{#each musicSearchResults}}
-        <div class="left-panel-track-item" data-action="musicPlayTrack" data-playlist-id="{{this.playlistId}}" data-sound-id="{{this.id}}">
-          <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-          <div class="search-result-info">
-            <span class="search-result-track">{{this.name}}</span>
-            <span class="search-result-playlist">{{this.playlistName}}</span>
-          </div>
-        </div>
-        {{/each}}
       </div>
       {{else}}
 
-      {{!-- Playlists with expandable tracks --}}
-      <div class="left-panel-playlists">
-        {{#each playlists}}
-        <div class="left-panel-playlist-item {{#if this.playing}}playing{{/if}}">
-          <button type="button" class="playlist-expand-btn" data-action="togglePlaylistExpand" data-playlist-id="{{this.id}}">
-            <i class="fas {{#if this.expanded}}fa-chevron-down{{else}}fa-chevron-right{{/if}}" aria-hidden="true"></i>
-          </button>
-          <span class="playlist-name" data-action="musicPlayPlaylist" data-playlist-id="{{this.id}}">{{this.name}}</span>
-          <span class="playlist-track-count">{{this.trackCount}}</span>
-        </div>
-        {{#if this.expanded}}
-        <div class="playlist-tracks-inline">
-          {{#each this.tracks}}
-          <div class="left-panel-track-item {{#if this.playing}}playing{{/if}}"
-               data-action="musicPlayTrack" data-playlist-id="{{../id}}" data-sound-id="{{this.id}}">
-            <i class="fas {{#if this.playing}}fa-pause{{else}}fa-play{{/if}}" aria-hidden="true"></i>
-            <span>{{this.name}}</span>
-          </div>
-          {{/each}}
-        </div>
-        {{/if}}
-        {{/each}}
-      </div>
+      {{!-- Playlists with folder tree — rendered by _buildPlaylistTree --}}
+      <div class="left-panel-playlists"></div>
       {{/if}}
     </div>
   </div>
@@ -460,7 +494,7 @@
               <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
                 <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}
@@ -474,7 +508,7 @@
               <button type="button" class="side-panel-skill-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="skill">
                 <i class="fas fa-book" aria-hidden="true"></i>
                 <span>{{../displayName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}
@@ -488,7 +522,7 @@
               <button type="button" class="side-panel-skill-btn side-panel-save-btn" data-action="requestJournalCheck" data-skill="{{../skillSlug}}" data-dc="{{this.dc}}" data-check-type="save">
                 <i class="fas {{../icon}}" aria-hidden="true"></i>
                 <span>{{../skillName}}</span>
-                {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+                {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
               </button>
               {{/each}}
             {{/each}}
@@ -559,4 +593,35 @@
       </div>
     </div>
   </div>
+
+  {{!-- GM floating controls (top-right) — rendered last so they paint above panels --}}
+  <div class="cinematic-gm-controls">
+    <button type="button" class="gm-control-btn" data-action="toggleSidePanel" data-tooltip="{{localize 'STORYFRAME.CinematicScene.GMControls'}}">
+      <i class="fas fa-dice-d20" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn {{#if sceneBackground}}active{{/if}}" data-action="setBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.SetBackground'}}">
+      <i class="fas fa-image" aria-hidden="true"></i>
+    </button>
+    {{#if sceneBackground}}
+    <button type="button" class="gm-control-btn" data-action="clearBackground" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ClearBackground'}}">
+      <i class="fas fa-image-slash" aria-hidden="true"></i>
+    </button>
+    {{/if}}
+    <button type="button" class="gm-control-btn" data-action="openScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.OpenScene'}}">
+      <i class="fas fa-map" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn" data-action="toggleDialogueBar" data-tooltip="Dialogue">
+      <i class="fas fa-comment" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn {{#if allowPlayerSpeakers}}active{{/if}}" data-action="togglePlayerSpeakers" data-tooltip="{{localize 'STORYFRAME.CinematicScene.TogglePlayerSpeakers'}}">
+      <i class="fas fa-people-arrows" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn broadcast-status-btn {{#if playersSeeCinematic}}active{{/if}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ShowToPlayers'}}">
+      <i class="fas fa-clapperboard-play" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="gm-control-btn exit-btn" data-action="exitScene" data-tooltip="{{localize 'STORYFRAME.CinematicScene.ExitScene'}}">
+      <i class="fas fa-times" aria-hidden="true"></i>
+    </button>
+  </div>
+
 </div>

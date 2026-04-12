@@ -277,7 +277,7 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
       social: ['dec', 'dip', 'itm', 'prf', 'soc'],
       utility: ['cra', 'med', 'per', 'sur'],
     };
-    if (game.modules.get('sf2e-anachronism')?.active) {
+    if (game.system.id === 'sf2e' || game.modules.get('sf2e-anachronism')?.active) {
       categories.physical.push('pil');
       categories.utility.push('com');
     }

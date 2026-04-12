@@ -1,5 +1,6 @@
 import * as SystemAdapter from '../system-adapter.mjs';
 import { extractParentElement } from '../utils/element-utils.mjs';
+import { loadPlayerCSS } from '../css-loader.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { showActionVariantsPopup, hideActionVariantsPopup } from './gm-sidebar/managers/ui-helpers.mjs';
 
@@ -47,6 +48,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
   constructor(options = {}) {
     super(options);
+    loadPlayerCSS();
 
     // Tab state: null = challenge tab, 'rolls' = rolls tab
     // Default to rolls tab if there are pending rolls, else challenge
@@ -117,12 +119,15 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
   async _prepareContext(_options) {
     const state = game.storyframe.stateManager.getState();
 
+    const currentVolume = game.settings.get('core', 'globalPlaylistVolume') ?? 0.5;
+
     if (!state) {
       return {
         actorRollGroups: [],
         activeChallenge: null,
         currentTab: this.currentTab,
         totalPendingRolls: 0,
+        currentVolume,
       };
     }
 
@@ -130,10 +135,10 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     const myUserId = game.user.id;
 
     // Check if DCs should be shown
-    const currentSystem = game.pf2e ? 'pf2e' : (game.dnd5e ? 'dnd5e' : 'unknown');
+    const currentSystem = game.pf2e ? (game.system.id === 'sf2e' ? 'sf2e' : 'pf2e') : (game.dnd5e ? 'dnd5e' : 'unknown');
     let showDCs = true;
 
-    if (currentSystem === 'pf2e') {
+    if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
       showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
     } else if (currentSystem === 'dnd5e') {
       const challengeVisibility = game.settings?.get('dnd5e', 'challengeVisibility') ?? 'all';
@@ -210,7 +215,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
 
       let actionName;
       // For PF2e, use the action display names mapping
-      if (game.system.id === 'pf2e' && PF2E_ACTION_DISPLAY_NAMES[actionSlug]) {
+      if ((game.system.id === 'pf2e' || game.system.id === 'sf2e') && PF2E_ACTION_DISPLAY_NAMES[actionSlug]) {
         actionName = PF2E_ACTION_DISPLAY_NAMES[actionSlug];
       } else {
         // Fallback: convert slug to title case
@@ -231,7 +236,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     if (state?.activeChallenges) {
       // Get system-specific GM sidebar class for proficiency checking (once)
       let GMSidebar;
-      if (game.system.id === 'pf2e') {
+      if (game.system.id === 'pf2e' || game.system.id === 'sf2e') {
         const { GMSidebarAppPF2e } = await import('./gm-sidebar/gm-sidebar-pf2e.mjs');
         GMSidebar = GMSidebarAppPF2e;
       } else if (game.system.id === 'dnd5e') {
@@ -445,6 +450,7 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
       hasActiveChallenges,
       currentTab: this.currentTab,
       totalPendingRolls,
+      currentVolume,
     };
   }
 
@@ -467,6 +473,21 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
     // Add keyboard shortcuts
     this._setupKeyboardShortcuts();
 
+    // Volume slider
+    this._bindVolumeSlider();
+  }
+
+  _bindVolumeSlider() {
+    const slider = this.element?.querySelector('.player-volume-slider');
+    if (!slider) return;
+    let volTimer = null;
+    slider.addEventListener('input', (e) => {
+      const vol = parseFloat(e.target.value);
+      clearTimeout(volTimer);
+      volTimer = setTimeout(() => {
+        game.settings.set('core', 'globalPlaylistVolume', vol);
+      }, 150);
+    });
   }
 
   /**

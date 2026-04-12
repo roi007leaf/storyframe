@@ -1,10 +1,13 @@
 import { MODULE_ID } from '../constants.mjs';
 import SystemAdapter from '../system-adapter.mjs';
+import { loadPlayerCSS } from '../css-loader.mjs';
 import { DND5E_SKILL_SLUG_MAP } from '../system/dnd5e/skills.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../system/pf2e/actions.mjs';
 import { PF2E_SKILL_SLUG_MAP } from '../system/pf2e/skills.mjs';
 import { DAGGERHEART_TRAIT_FULL_NAMES } from '../system/daggerheart/skills.mjs';
 import { PROJECTFU_ATTRIBUTE_FULL_NAMES } from '../system/projectfu/skills.mjs';
+import { DRAWSTEEL_CHARACTERISTIC_FULL_NAMES } from '../system/draw-steel/skills.mjs';
+import { DRAWSTEEL_DC_BY_DIFFICULTY } from '../system/draw-steel/dc-tables.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
@@ -12,6 +15,7 @@ function getSkillSlugMap() {
   if (system === 'dnd5e') return DND5E_SKILL_SLUG_MAP;
   if (system === 'daggerheart') return DAGGERHEART_TRAIT_FULL_NAMES;
   if (system === 'projectfu') return PROJECTFU_ATTRIBUTE_FULL_NAMES;
+  if (system === 'draw-steel') return DRAWSTEEL_CHARACTERISTIC_FULL_NAMES;
   return PF2E_SKILL_SLUG_MAP;
 }
 
@@ -92,6 +96,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
   constructor(options = {}) {
     super(options);
+    loadPlayerCSS();
     this._stateRestored = false;
 
     // Load saved position with validation
@@ -112,8 +117,8 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     const currentSystem = SystemAdapter.detectSystem();
     let showDCs = true;
 
-    if (currentSystem === 'pf2e') {
-      // PF2e: Check metagame setting
+    if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
+      // PF2e/SF2e: Check metagame setting
       showDCs = game.pf2e?.settings?.metagame?.dcs ?? true;
     } else if (currentSystem === 'dnd5e') {
       // D&D 5e: Check challenge visibility setting
@@ -525,9 +530,9 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         };
       }
 
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         if (checkType === 'save') {
-          // PF2e: Saving throw
+          // PF2e/SF2e: Saving throw
           const save = actor.saves?.[fullSlug];
           if (!save) {
             ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: fullSlug, actor: actor.name }));
@@ -638,6 +643,16 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
           return;
         }
+      } else if (currentSystem === 'draw-steel') {
+        // Draw Steel: Use actor.rollCharacteristic(characteristic, options)
+        const dsOptions = { types: ['test'] };
+        // Map numeric DC back to difficulty name
+        const dsDifficulty = Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY).find(([, d]) => d.dc === request.dc)?.[0];
+        if (dsDifficulty) dsOptions.difficulty = dsDifficulty;
+        if (request.isSecretRoll) {
+          dsOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        }
+        roll = await actor.rollCharacteristic(fullSlug, dsOptions);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         if (request.isSecretRoll) {
@@ -823,7 +838,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     try {
       let roll;
       let actionExecuted = false;
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         // Use action if provided, otherwise basic skill roll
         if (actionSlug && game.pf2e?.actions) {
           roll = await PlayerViewerApp._tryExecuteAction(actor, actionSlug, rollOptions);
@@ -891,6 +906,15 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
           return;
         }
+      } else if (currentSystem === 'draw-steel') {
+        // Draw Steel: Use actor.rollCharacteristic(characteristic, options)
+        const dsOptions = { types: ['test'] };
+        const dsDifficulty = Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY).find(([, d]) => d.dc === dc)?.[0];
+        if (dsDifficulty) dsOptions.difficulty = dsDifficulty;
+        if (rollOptions.rollMode) {
+          dsOptions.rollMode = rollOptions.rollMode;
+        }
+        roll = await actor.rollCharacteristic(fullSlug, dsOptions);
       } else {
         ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.UnsupportedSystem', { system: currentSystem }));
         return;
@@ -929,7 +953,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
     try {
       let roll;
-      if (currentSystem === 'pf2e') {
+      if (currentSystem === 'pf2e' || currentSystem === 'sf2e') {
         const save = actor.saves?.[saveSlug];
         if (!save) {
           ui.notifications.error(game.i18n.format('STORYFRAME.Notifications.Roll.SaveNotFound', { save: saveSlug, actor: actor.name }));

@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from './constants.mjs';
+import { loadCSS } from './css-loader.mjs';
 
 /**
  * Show scene editor dialog
@@ -14,6 +15,7 @@ import { MODULE_ID } from './constants.mjs';
  * @param {HTMLElement} options.journalElement - Journal element for images/actors
  */
 export async function showSceneEditor({ sceneId = null, sceneName = '', speakers = [], _journalElement = null } = {}) {
+  loadCSS('styles/scene-editor.css');
   // Remove existing editor if any
   document.querySelector('.storyframe-scene-editor')?.remove();
 
@@ -57,8 +59,10 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   let journalActors = [];
 
   async function extractJournalContent() {
-    // Find current journal content element
+    // Find current journal content element — check cinematic panel first, then standard journal
     const selectors = [
+      '.cinematic-scene-container .journal-content-body',
+      '.cinematic-player-journal-panel .journal-content-body',
       '.journal-entry-page.active .editor-content',
       '.journal-entry-page.active',
       '.journal-entry-pages',
@@ -120,6 +124,18 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
   await extractJournalContent();
 
+  // Gather all world actors (from the Actors tab), excluding loot/hazard/player-owned
+  const allWorldActors = [];
+  for (const actor of game.actors) {
+    if (actor.type === 'loot' || actor.type === 'hazard') continue;
+    if (actor.hasPlayerOwner) continue;
+    allWorldActors.push({
+      uuid: actor.uuid,
+      name: actor.name,
+      img: actor.img || 'icons/svg/mystery-man.svg',
+    });
+  }
+
   const i18nTitle = isEditing
     ? game.i18n.localize('STORYFRAME.SceneEditor.TitleEdit')
     : game.i18n.localize('STORYFRAME.SceneEditor.TitleCreate');
@@ -131,6 +147,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   const i18nNoSpeakers = game.i18n.localize('STORYFRAME.SceneEditor.NoSpeakersMessage');
   const i18nJournalImages = game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length });
   const i18nJournalActors = game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length });
+  const i18nWorldActors = game.i18n.format('STORYFRAME.SceneEditor.WorldActorsCount', { count: allWorldActors.length });
   const i18nCancel = game.i18n.localize('STORYFRAME.Dialogs.Cancel');
   const i18nSaveBtn = isEditing
     ? game.i18n.localize('STORYFRAME.SceneEditor.SaveChanges')
@@ -166,13 +183,21 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       </div>
 
       <div class="editor-section images-section" style="display: ${journalImages.length > 0 ? 'flex' : 'none'}">
-        <h3>${i18nJournalImages}</h3>
+        <h3 class="section-toggle"><i class="fas fa-caret-down section-collapse-icon"></i>${i18nJournalImages}</h3>
         <div class="source-grid images-grid"></div>
       </div>
 
       <div class="editor-section actors-section" style="display: ${journalActors.length > 0 ? 'flex' : 'none'}">
-        <h3>${i18nJournalActors}</h3>
+        <h3 class="section-toggle"><i class="fas fa-caret-down section-collapse-icon"></i>${i18nJournalActors}</h3>
         <div class="source-grid actors-grid"></div>
+      </div>
+
+      <div class="editor-section world-actors-section" style="display: ${allWorldActors.length > 0 ? 'flex' : 'none'}">
+        <div class="section-header">
+          <h3 class="section-toggle"><i class="fas fa-caret-down section-collapse-icon"></i>${i18nWorldActors}</h3>
+          <input type="text" class="world-actors-search" placeholder="${game.i18n.localize('STORYFRAME.SceneEditor.SearchActors')}" />
+        </div>
+        <div class="source-grid world-actors-grid"></div>
       </div>
     </div>
 
@@ -189,6 +214,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   const speakersList = editor.querySelector('.speakers-list');
   const imagesGrid = editor.querySelector('.images-grid');
   const actorsGrid = editor.querySelector('.actors-grid');
+  const worldActorsGrid = editor.querySelector('.world-actors-grid');
+  const worldActorsSearch = editor.querySelector('.world-actors-search');
   const btnAddCurrent = editor.querySelector('.btn-add-current');
   const btnSave = editor.querySelector('.btn-save');
   const btnCancel = editor.querySelector('.btn-cancel');
@@ -223,6 +250,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
     });
   }
@@ -244,10 +272,13 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
     if (!section) return;
     section.style.display = 'flex';
 
-    // Update count in header
+    // Update count in header (preserve collapse icon)
     const header = section.querySelector('h3');
     if (header) {
-      header.textContent = game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length });
+      const icon = header.querySelector('.section-collapse-icon');
+      header.textContent = '';
+      if (icon) header.appendChild(icon);
+      header.append(game.i18n.format('STORYFRAME.SceneEditor.JournalImagesCount', { count: journalImages.length }));
     }
 
     if (!imagesGrid) return;
@@ -303,6 +334,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
     });
   }
@@ -324,10 +356,13 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
     if (!section) return;
     section.style.display = 'flex';
 
-    // Update count in header
+    // Update count in header (preserve collapse icon)
     const header = section.querySelector('h3');
     if (header) {
-      header.textContent = game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length });
+      const icon = header.querySelector('.section-collapse-icon');
+      header.textContent = '';
+      if (icon) header.appendChild(icon);
+      header.append(game.i18n.format('STORYFRAME.SceneEditor.JournalActorsCount', { count: journalActors.length }));
     }
 
     if (!actorsGrid) return;
@@ -359,7 +394,96 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       });
+    });
+  }
+
+  let worldActorsFilter = '';
+  const WORLD_ACTORS_BATCH = 40;
+  let _worldActorsFiltered = [];
+  let _worldActorsRendered = 0;
+
+  function _makeActorAddHandler(actor) {
+    return () => {
+      editorSpeakers.push({
+        id: foundry.utils.randomID(),
+        name: actor.name, img: actor.img, actorUuid: actor.uuid,
+        label: actor.name, imagePath: actor.img,
+      });
+      renderSpeakers();
+      renderImages();
+      renderActors();
+      renderWorldActors();
+    };
+  }
+
+  function _appendWorldActorBatch() {
+    if (!worldActorsGrid) return;
+    const end = Math.min(_worldActorsRendered + WORLD_ACTORS_BATCH, _worldActorsFiltered.length);
+    const addToSceneTooltip = game.i18n.localize('STORYFRAME.UI.Tooltips.AddToScene');
+    const frag = document.createDocumentFragment();
+    for (let i = _worldActorsRendered; i < end; i++) {
+      const actor = _worldActorsFiltered[i];
+      const el = document.createElement('div');
+      el.className = 'source-item';
+      el.innerHTML = `<img src="${actor.img}" alt="${foundry.utils.escapeHTML(actor.name)}" loading="lazy">`
+        + `<span class="source-name">${foundry.utils.escapeHTML(actor.name)}</span>`
+        + `<button type="button" class="btn-add" data-tooltip="${addToSceneTooltip}"><i class="fas fa-plus"></i></button>`;
+      el.querySelector('.btn-add').addEventListener('click', _makeActorAddHandler(actor));
+      frag.appendChild(el);
+    }
+    worldActorsGrid.appendChild(frag);
+    _worldActorsRendered = end;
+  }
+
+  function renderWorldActors() {
+    const section = editor.querySelector('.editor-section.world-actors-section');
+    if (!section || !worldActorsGrid) return;
+
+    if (allWorldActors.length === 0) {
+      section.style.display = 'none';
+      return;
+    }
+    section.style.display = 'flex';
+
+    const available = allWorldActors.filter(actor =>
+      !editorSpeakers.some(s => s.actorUuid === actor.uuid)
+    );
+
+    const header = section.querySelector('h3');
+    if (header) {
+      const icon = header.querySelector('.section-collapse-icon');
+      header.textContent = '';
+      if (icon) header.appendChild(icon);
+      header.append(game.i18n.format('STORYFRAME.SceneEditor.WorldActorsCount', { count: available.length }));
+    }
+
+    _worldActorsFiltered = worldActorsFilter
+      ? available.filter(a => a.name.toLowerCase().includes(worldActorsFilter))
+      : available;
+
+    worldActorsGrid.innerHTML = '';
+    _worldActorsRendered = 0;
+    _appendWorldActorBatch();
+  }
+
+  // Infinite scroll — load more when near bottom
+  if (worldActorsGrid) {
+    worldActorsGrid.addEventListener('scroll', () => {
+      if (_worldActorsRendered >= _worldActorsFiltered.length) return;
+      const { scrollTop, scrollHeight, clientHeight } = worldActorsGrid;
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
+        _appendWorldActorBatch();
+      }
+    });
+  }
+
+  // Wire up world actors search
+  if (worldActorsSearch) {
+    worldActorsSearch.addEventListener('input', () => {
+      worldActorsFilter = worldActorsSearch.value.trim().toLowerCase();
+      renderWorldActors();
     });
   }
 
@@ -367,6 +491,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   renderSpeakers();
   renderImages();
   renderActors();
+  renderWorldActors();
 
   // Add current speakers button
   if (btnAddCurrent) {
@@ -403,6 +528,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       renderSpeakers();
       renderImages();
       renderActors();
+      renderWorldActors();
       ui.notifications.info(game.i18n.format('STORYFRAME.Notifications.Scene.SpeakersAdded', { count: addedCount }));
     });
   }
@@ -451,6 +577,7 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         renderSpeakers();
         renderImages();
         renderActors();
+        renderWorldActors();
       }
     } catch (err) {
       console.warn('StoryFrame | Drop failed:', err);
@@ -482,11 +609,15 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       label: s.label,
     }));
 
+    // Capture current playlist and background
+    const playingPlaylist = game.playlists.find(p => p.playing);
+    const currentBackground = game.storyframe.stateManager.getState()?.sceneBackground || null;
+
     if (isEditing) {
       // Update existing scene
       const updatedScenes = scenes.map(s =>
         s.id === sceneId
-          ? { ...s, name, speakers: cleanedSpeakers, updatedAt: Date.now() }
+          ? { ...s, name, speakers: cleanedSpeakers, playlistId: playingPlaylist?.id || s.playlistId || null, sceneBackground: currentBackground || s.sceneBackground || null, updatedAt: Date.now() }
           : s
       );
       await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
@@ -497,6 +628,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
         id: foundry.utils.randomID(),
         name,
         speakers: cleanedSpeakers,
+        playlistId: playingPlaylist?.id || null,
+        sceneBackground: currentBackground,
         createdAt: Date.now(),
       };
       scenes.push(newScene);
@@ -506,6 +639,14 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
 
     editor.remove();
   }
+
+  // Collapsible section toggles
+  editor.querySelectorAll('.section-toggle').forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      const section = toggle.closest('.editor-section');
+      if (section) section.classList.toggle('collapsed');
+    });
+  });
 
   // Event handlers
   btnSave.addEventListener('click', handleSave);
@@ -562,42 +703,26 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
   };
   document.addEventListener('keydown', escHandler);
 
-  // Watch journal for changes
-  let journalObserver = null;
 
-  // Find the active journal entry window
-  function findJournalContent() {
-    // Try multiple selectors for journal content
-    const selectors = [
-      '.journal-entry-page.active .editor-content',  // Edit mode
-      '.journal-entry-page.active',                   // View mode
-      '.journal-entry-pages',                         // General container
-      '.prosemirror',                                 // ProseMirror editor
-    ];
-
-    for (const selector of selectors) {
-      const element = document.querySelector(selector);
-      if (element && element.isConnected) {
-        return element;
-      }
-    }
-    return null;
-  }
-
-  const observeTarget = findJournalContent();
-  if (observeTarget) {
-    journalObserver = new MutationObserver(async () => {
+  // Re-extract journal content when the page changes.
+  let _refreshing = false;
+  const debouncedRefresh = foundry.utils.debounce(async () => {
+    if (!editor.isConnected || _refreshing) return;
+    _refreshing = true;
+    try {
       await extractJournalContent();
       renderImages();
       renderActors();
-    });
-    journalObserver.observe(observeTarget, {
-      childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: ['src', 'data-uuid'],
-    });
-  }
+    } finally {
+      _refreshing = false;
+    }
+  }, 300);
+
+  // Listen for StoryFrame's own journal content change hook (cinematic mode)
+  const journalHookId = Hooks.on('storyframe.journalContentChanged', debouncedRefresh);
+
+  // Listen for standard Foundry journal page renders
+  const journalRenderHookId = Hooks.on('renderJournalPageSheet', debouncedRefresh);
 
   // Cleanup on remove
   const observer = new MutationObserver((mutations) => {
@@ -605,7 +730,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       for (const node of mutation.removedNodes) {
         if (node === editor) {
           document.removeEventListener('keydown', escHandler);
-          if (journalObserver) journalObserver.disconnect();
+          Hooks.off('storyframe.journalContentChanged', journalHookId);
+          Hooks.off('renderJournalPageSheet', journalRenderHookId);
           observer.disconnect();
         }
       }

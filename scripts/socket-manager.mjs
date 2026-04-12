@@ -8,6 +8,16 @@ export class SocketManager {
   constructor() {
     this.socket = socketlib.registerModule(MODULE_ID);
 
+    // Track what the GM has broadcast to players (GM client only, in-memory)
+    this._gmBroadcastState = {
+      /** @type {Map<string, boolean>} userId → whether they have cinematic open */
+      playerCinematicStatus: new Map(),
+      /** Whether the GM has ever broadcast cinematic this session (prep banner dismissed permanently) */
+      hasBroadcasted: false,
+      playerViewersOpen: false,
+      playerSidebarsOpen: false,
+    };
+
     // Register handlers (runs on all clients)
     this.socket.register('updateSpeakers', this._handleUpdateSpeakers);
     this.socket.register('setActiveSpeaker', this._handleSetActiveSpeaker);
@@ -45,10 +55,121 @@ export class SocketManager {
     // Register blind roll notification handler
     this.socket.register('notifyBlindRoll', this._handleNotifyBlindRoll);
 
+    // Register player speaker handlers
+    this.socket.register('setSecondarySpeaker', this._handleSetSecondarySpeaker);
+    this.socket.register('addPlayerSpeaker', this._handleAddPlayerSpeaker);
+    this.socket.register('removePlayerSpeaker', this._handleRemovePlayerSpeaker);
+    this.socket.register('requestSpeakerFloor', this._handleRequestSpeakerFloor);
+    this.socket.register('clearSpeakerFloor', this._handleClearSpeakerFloor);
+    this.socket.register('clearSpeakerRequest', this._handleClearSpeakerRequest);
+
     // Register cinematic scene mode handlers
     this.socket.register('launchSceneMode', this._handleLaunchSceneMode);
+    this.socket.register('launchSceneModeForPlayer', this._handleLaunchSceneMode);
     this.socket.register('closeSceneMode', this._handleCloseSceneMode);
     this.socket.register('showImagePreview', this._handleShowImagePreview);
+    this.socket.register('showDialogue', this._handleShowDialogue);
+    this.socket.register('reportCinematicStatus', this._handleReportCinematicStatus.bind(this));
+    this.socket.register('queryCinematicStatus', this._handleQueryCinematicStatus.bind(this));
+
+    // Detect player reconnects (refresh) — they lose the cinematic view
+    if (game.user?.isGM) {
+      Hooks.on('userConnected', (user, connected) => {
+        if (user.isGM || !connected) return;
+        if (!game.storyframe.cinematicScene?.rendered) return;
+        const status = this._gmBroadcastState.playerCinematicStatus;
+        if (status.get(user.id)) {
+          status.set(user.id, false);
+          this._updateBroadcastUI();
+          ui.notifications.warn(game.i18n.format('STORYFRAME.CinematicScene.PlayerLostCinematic', { name: user.name }));
+        }
+      });
+    }
+  }
+
+  // --- Broadcast State Helpers (GM only) ---
+
+  /**
+   * Whether ALL active non-GM players have the cinematic open.
+   */
+  get allPlayersSeeScene() {
+    const status = this._gmBroadcastState.playerCinematicStatus;
+    const activePlayers = game.users.filter(u => !u.isGM && u.active);
+    if (activePlayers.length === 0) return false;
+    return activePlayers.every(u => status.get(u.id) === true);
+  }
+
+  /**
+   * Initialize the player status map with all active non-GM players set to false.
+   */
+  _initPlayerStatus() {
+    const status = this._gmBroadcastState.playerCinematicStatus;
+    status.clear();
+    for (const u of game.users.filter(u => !u.isGM && u.active)) {
+      status.set(u.id, false);
+    }
+  }
+
+  /**
+   * Mark all active non-GM players as seeing the cinematic.
+   */
+  _markAllPlayersSee() {
+    const status = this._gmBroadcastState.playerCinematicStatus;
+    for (const u of game.users.filter(u => !u.isGM && u.active)) {
+      status.set(u.id, true);
+    }
+  }
+
+  /**
+   * Update the prep banner, show-to-players button, and player popup in the GM DOM
+   * without a full re-render.
+   */
+  _updateBroadcastUI() {
+    if (!game.user?.isGM) return;
+    const allSee = this.allPlayersSeeScene;
+
+    // Update show-to-players button active state
+    const el = game.storyframe.cinematicScene?.element;
+    if (el) {
+      const btn = el.querySelector('.broadcast-status-btn');
+      if (btn) btn.classList.toggle('active', allSee);
+    }
+
+    // Show/remove prep banner — only before the first broadcast, never again after
+    const isPrepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode') ?? false;
+    const showBanner = isPrepMode && !this._gmBroadcastState.hasBroadcasted;
+    const existingBanner = document.body.querySelector('.cinematic-prep-banner');
+    if (showBanner && !existingBanner) {
+      const banner = document.createElement('div');
+      banner.className = 'cinematic-prep-banner';
+      banner.innerHTML = `<i class="fas fa-eye-slash" aria-hidden="true"></i><span>${game.i18n.localize('STORYFRAME.CinematicScene.PrepModeBanner')}</span>`;
+      document.body.appendChild(banner);
+    } else if (!showBanner && existingBanner) {
+      existingBanner.remove();
+    }
+
+    // Update player popup if open
+    this._updatePlayerPopupDOM();
+  }
+
+  /**
+   * Update just the player popup content (icons/buttons) without recreating it.
+   */
+  _updatePlayerPopupDOM() {
+    const popup = game.storyframe.cinematicScene?.element?.querySelector('.broadcast-player-popup');
+    if (!popup) return;
+    const status = this._gmBroadcastState.playerCinematicStatus;
+    for (const row of popup.querySelectorAll('.broadcast-player-row')) {
+      const userId = row.dataset.userId;
+      const seeing = status.get(userId) === true;
+      const icon = row.querySelector('.broadcast-player-status i');
+      if (icon) {
+        icon.className = seeing ? 'fas fa-eye' : 'fas fa-eye-slash';
+        icon.closest('.broadcast-player-status')?.classList.toggle('active', seeing);
+      }
+      const btn = row.querySelector('.broadcast-player-send');
+      if (btn) btn.classList.toggle('hidden', seeing);
+    }
   }
 
   // --- Public API (call from any client) ---
@@ -129,6 +250,59 @@ export class SocketManager {
 
   async requestRemoveSpeakerAltImage(speakerId, img) {
     return await this.socket.executeAsGM('removeSpeakerAltImage', { speakerId, img });
+  }
+
+  // --- Player Speaker API ---
+
+  /**
+   * Request GM to set secondary (responding) speaker.
+   * @param {string|null} speakerId
+   */
+  async requestSetSecondarySpeaker(speakerId) {
+    return await this.socket.executeAsGM('setSecondarySpeaker', speakerId);
+  }
+
+  /**
+   * Request GM to add a player-owned speaker.
+   * @param {Object} data - { actorUuid, imagePath, label, userId }
+   */
+  async requestAddPlayerSpeaker(data) {
+    return await this.socket.executeAsGM('addPlayerSpeaker', data);
+  }
+
+  /**
+   * Request GM to remove a player-owned speaker.
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestRemovePlayerSpeaker(speakerId, userId) {
+    return await this.socket.executeAsGM('removePlayerSpeaker', { speakerId, userId });
+  }
+
+  /**
+   * Request the speaker floor (add to request queue or auto-activate).
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestSpeakerFloor(speakerId, userId) {
+    return await this.socket.executeAsGM('requestSpeakerFloor', { speakerId, userId });
+  }
+
+  /**
+   * Player voluntarily steps down from secondary speaker.
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async requestClearSpeakerFloor(speakerId, userId) {
+    return await this.socket.executeAsGM('clearSpeakerFloor', { speakerId, userId });
+  }
+
+  /**
+   * GM dismisses a speaker request from the queue.
+   * @param {string} speakerId
+   */
+  async requestClearSpeakerRequest(speakerId) {
+    return await this.socket.executeAsGM('clearSpeakerRequest', speakerId);
   }
 
   /**
@@ -233,6 +407,7 @@ export class SocketManager {
    * Called by GM to ensure all players have the viewer open.
    */
   openAllPlayerViewers() {
+    this._gmBroadcastState.playerViewersOpen = true;
     this.socket.executeForEveryone('openPlayerViewer');
   }
 
@@ -240,6 +415,7 @@ export class SocketManager {
    * Close player viewer on all player clients.
    */
   closeAllPlayerViewers() {
+    this._gmBroadcastState.playerViewersOpen = false;
     this.socket.executeForEveryone('closePlayerViewer');
   }
 
@@ -248,6 +424,7 @@ export class SocketManager {
    * Called by GM to open sidebars for rolls/challenges.
    */
   openAllPlayerSidebars() {
+    this._gmBroadcastState.playerSidebarsOpen = true;
     this.socket.executeForEveryone('openPlayerSidebar');
   }
 
@@ -255,6 +432,7 @@ export class SocketManager {
    * Close player sidebar on all player clients.
    */
   closeAllPlayerSidebars() {
+    this._gmBroadcastState.playerSidebarsOpen = false;
     this.socket.executeForEveryone('closePlayerSidebar');
   }
 
@@ -274,10 +452,14 @@ export class SocketManager {
    * Otherwise broadcasts to all clients.
    */
   launchSceneMode() {
+    this._initPlayerStatus();
     const prepMode = game.settings.get(MODULE_ID, 'cinematicPrepMode');
     if (prepMode) {
+      this._gmBroadcastState.hasBroadcasted = false;
       this._handleLaunchSceneMode();
     } else {
+      this._gmBroadcastState.hasBroadcasted = true;
+      this._markAllPlayersSee();
       this.socket.executeForEveryone('launchSceneMode');
     }
   }
@@ -286,13 +468,28 @@ export class SocketManager {
    * Show cinematic scene to all players (broadcast from GM).
    */
   showSceneToPlayers() {
+    this._gmBroadcastState.hasBroadcasted = true;
+    this._markAllPlayersSee();
     this.socket.executeForEveryone('launchSceneMode');
+    this._updateBroadcastUI();
+  }
+
+  /**
+   * Show cinematic scene to a single player.
+   * @param {string} userId
+   */
+  showSceneToPlayer(userId) {
+    this._gmBroadcastState.hasBroadcasted = true;
+    this._gmBroadcastState.playerCinematicStatus.set(userId, true);
+    this.socket.executeAsUser('launchSceneModeForPlayer', userId);
+    this._updateBroadcastUI();
   }
 
   /**
    * Close cinematic scene mode on all clients.
    */
   closeSceneMode() {
+    this._gmBroadcastState.playerCinematicStatus.clear();
     this.socket.executeForEveryone('closeSceneMode');
   }
 
@@ -483,10 +680,20 @@ export class SocketManager {
    * Must call playerApp.showRollPrompt() to display UI.
    */
   _handlePromptSkillCheck(_requestData) {
+    // Ensure this roll exists in local state before rendering.
+    // The stateUpdate broadcast may arrive after this targeted prompt,
+    // causing the sidebar to render with stale state (missing the roll).
+    if (_requestData?.id && game.storyframe.stateManager) {
+      const state = game.storyframe.stateManager.getState();
+      if (state && !state.pendingRolls.some(r => r.id === _requestData.id)) {
+        state.pendingRolls.push(_requestData);
+      }
+    }
+
     if (game.storyframe.cinematicScene?.rendered) {
       game.storyframe.cinematicScene._onStateChange();
-    } else if (game.storyframe.playerSidebar?.rendered) {
-      game.storyframe.playerSidebar.render();
+    } else if (game.storyframe.playerSidebar) {
+      game.storyframe.playerSidebar.render(true);
     } else if (game.storyframe.playerApp) {
       game.storyframe.playerApp.showRollPrompt(_requestData);
     }
@@ -589,8 +796,66 @@ export class SocketManager {
   _handleShowImagePreview(src) {
     const scene = game.storyframe.cinematicScene;
     if (!scene?.rendered) return;
-    scene.previewImageSrc = src;
-    scene.render();
+    scene.showImagePreview(src);
+  }
+
+  /**
+   * Broadcast dialogue text to all clients for typewriter display.
+   * @param {Object} data - { text, fontFamily }
+   */
+  broadcastDialogue(data) {
+    this.socket.executeForOthers('showDialogue', data);
+  }
+
+  _handleShowDialogue(data) {
+    const scene = game.storyframe.cinematicScene;
+    if (!scene?.rendered) return;
+    const container = scene.element?.querySelector('.cinematic-scene-container');
+    if (!container || !game.storyframe.dialogue) return;
+
+    // Determine which text to show based on whether the player knows the language
+    let displayText = data.originalText;
+    let useFont = false;
+
+    if (data.lang) {
+      let knows = false;
+
+      // Check all actors the player owns (not just the assigned character)
+      const ownedActors = game.actors?.filter(a => a.isOwner && a.type === 'character') ?? [];
+      // Also include the assigned character in case it's not in the world actors
+      if (game.user?.character) ownedActors.push(game.user.character);
+      for (const actor of ownedActors) {
+        const knownLangs = actor.knownLanguages
+          ?? actor.system?.details?.languages?.value
+          ?? actor.system?.traits?.languages?.value
+          ?? [];
+        const langSet = knownLangs instanceof Set ? knownLangs : new Set(knownLangs);
+        if (langSet.has(data.lang)) {
+          knows = true;
+          break;
+        }
+      }
+
+      if (!knows) {
+        displayText = data.scrambledText;
+        useFont = true;
+      }
+    }
+
+    game.storyframe.dialogue.typeDialogue(container, displayText, {
+      speed: 'normal',
+      onComplete: () => {
+        setTimeout(() => {
+          game.storyframe.dialogue?.destroyDialogue(container);
+        }, 6000);
+      },
+    });
+
+    // Apply fantasy font only if the player doesn't know the language
+    if (useFont && data.fontFamily) {
+      const box = container.querySelector('.cinematic-dialogue-box');
+      if (box) box.style.fontFamily = `"${data.fontFamily}", serif`;
+    }
   }
 
   async _handleLaunchSceneMode() {
@@ -618,6 +883,103 @@ export class SocketManager {
     if (cinematic?.rendered) {
       cinematic.fadeOutAndClose();
     }
+  }
+
+  /**
+   * Handler: A player reports their cinematic status to the GM.
+   * @param {string} userId
+   * @param {boolean} hasOpen
+   */
+  _handleReportCinematicStatus(userId, hasOpen) {
+    if (!game.user?.isGM) return;
+    if (!game.storyframe.cinematicScene?.rendered) return;
+    console.log(`StoryFrame | Player status report: ${game.users.get(userId)?.name} = ${hasOpen}`);
+    const status = this._gmBroadcastState.playerCinematicStatus;
+    status.set(userId, hasOpen);
+    this._updateBroadcastUI();
+  }
+
+  /**
+   * Handler: Runs on player clients when GM queries cinematic status.
+   * Responds by reporting whether this player has the cinematic open.
+   */
+  _handleQueryCinematicStatus() {
+    if (game.user?.isGM) return;
+    const hasOpen = !!game.storyframe.cinematicScene?.rendered;
+    console.log(`StoryFrame | Cinematic query response: ${game.user.name} = ${hasOpen}`);
+    this.socket.executeAsGM('reportCinematicStatus', game.user.id, hasOpen);
+  }
+
+  /**
+   * Poll all players for their cinematic status.
+   * Call from GM client — each player will respond via reportCinematicStatus.
+   */
+  pollPlayerCinematicStatus() {
+    if (!game.user?.isGM) return;
+    // Don't reset status — just query. Responses will update individual entries.
+    // Ensure any new active players get a slot (defaults to current value or false).
+    for (const u of game.users.filter(u => !u.isGM && u.active)) {
+      if (!this._gmBroadcastState.playerCinematicStatus.has(u.id)) {
+        this._gmBroadcastState.playerCinematicStatus.set(u.id, false);
+      }
+    }
+    this.socket.executeForOthers('queryCinematicStatus');
+  }
+
+  // --- Player Speaker Handlers ---
+
+  async _handleSetSecondarySpeaker(speakerId) {
+    await game.storyframe.stateManager?.setSecondarySpeaker(speakerId);
+  }
+
+  async _handleAddPlayerSpeaker(data) {
+    // Validate setting is enabled
+    if (!game.settings.get(MODULE_ID, 'allowPlayerSpeakers')) return null;
+    return await game.storyframe.stateManager?.addPlayerSpeaker(data);
+  }
+
+  async _handleRemovePlayerSpeaker({ speakerId, userId }) {
+    await game.storyframe.stateManager?.removePlayerSpeaker(speakerId, userId);
+  }
+
+  async _handleRequestSpeakerFloor({ speakerId, userId }) {
+    const stateManager = game.storyframe.stateManager;
+    if (!stateManager) return;
+
+    // Validate setting is enabled
+    if (!game.settings.get(MODULE_ID, 'allowPlayerSpeakers')) return;
+
+    // If already secondary, no-op
+    if (stateManager.getState()?.secondarySpeaker === speakerId) return;
+
+    // Auto-activate mode: set directly as secondary
+    if (game.settings.get(MODULE_ID, 'playerSpeakerAutoActivate')) {
+      await stateManager.setSecondarySpeaker(speakerId);
+      // Clear any pending request for this speaker
+      await stateManager.clearSpeakerRequest(speakerId);
+    } else {
+      // Queue mode: add to request queue for GM approval
+      await stateManager.addSpeakerRequest({ speakerId, userId, timestamp: Date.now() });
+    }
+  }
+
+  async _handleClearSpeakerFloor({ speakerId, userId }) {
+    const stateManager = game.storyframe.stateManager;
+    if (!stateManager) return;
+    const state = stateManager.getState();
+    if (!state) return;
+
+    // Validate ownership: only clear if this user's speaker is the secondary
+    const speaker = (state.speakers || []).find(s => s.id === speakerId);
+    if (!speaker || speaker.userId !== userId) return;
+
+    if (state.secondarySpeaker === speakerId) {
+      await stateManager.setSecondarySpeaker(null);
+    }
+  }
+
+  async _handleClearSpeakerRequest(speakerId) {
+    await game.storyframe.stateManager?.clearSpeakerRequest(speakerId);
   }
 
   // --- Challenge Handlers ---

@@ -1,7 +1,11 @@
 <div class="cinematic-scene-container">
-  {{!-- Scene background image --}}
+  {{!-- Scene background image/video --}}
   {{#if sceneBackground}}
-  <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{#if isVideoBackground}}
+    <video class="cinematic-bg" src="{{sceneBackground}}" autoplay loop muted playsinline></video>
+    {{else}}
+    <div class="cinematic-bg" style="background-image: url('{{sceneBackground}}')"></div>
+    {{/if}}
   {{/if}}
 
 
@@ -12,20 +16,38 @@
   {{#if previewImageSrc}}
   <div class="cinematic-image-preview">
     <img src="{{previewImageSrc}}" class="preview-portrait">
+    <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.PopoutImage'}}">
+      <i class="fas fa-up-right-from-square"></i>
+    </button>
     <button type="button" class="preview-close-btn" data-action="closeImagePreview">
       <i class="fas fa-times"></i>
     </button>
   </div>
-  {{else if activeSpeaker}}
-  <div class="cinematic-spotlight" data-speaker-id="{{activeSpeaker.id}}">
-    <div class="spotlight-glow-cinematic"></div>
-    <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
-    <div class="spotlight-nameplate">
-      <span class="nameplate-text">{{activeSpeaker.name}}</span>
-      {{#if hasPartySheet}}
-      <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
-        <i class="fas fa-users" aria-hidden="true"></i>
-      </button>
+  {{else if hasAnySpeakerActive}}
+  <div class="cinematic-spotlight-stage{{#if secondarySpeaker}}{{#if activeSpeaker}} dual{{/if}}{{/if}}">
+    {{#if activeSpeaker}}
+    <div class="cinematic-spotlight primary" data-speaker-id="{{activeSpeaker.id}}">
+      <div class="spotlight-glow-cinematic"></div>
+      <img src="{{activeSpeaker.img}}" alt="{{activeSpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{activeSpeaker.name}}</span>
+        {{#if hasPartySheet}}
+        <button type="button" class="spotlight-party-btn" data-action="openPartySheet" data-tooltip="{{localize 'STORYFRAME.CinematicScene.PartySheet'}}">
+          <i class="fas fa-users" aria-hidden="true"></i>
+        </button>
+        {{/if}}
+      </div>
+    </div>
+    {{/if}}
+    {{!-- Secondary (responding) speaker --}}
+    <div class="cinematic-spotlight secondary" data-speaker-id="{{#if secondarySpeaker}}{{secondarySpeaker.id}}{{/if}}" {{#unless secondarySpeaker}}style="display:none"{{/unless}}>
+      <div class="spotlight-glow-cinematic"></div>
+      {{#if secondarySpeaker}}
+      <img src="{{secondarySpeaker.img}}" alt="{{secondarySpeaker.name}}" class="spotlight-portrait" loading="eager">
+      <div class="spotlight-nameplate">
+        <span class="nameplate-text">{{secondarySpeaker.name}}</span>
+      </div>
       {{/if}}
     </div>
   </div>
@@ -42,11 +64,12 @@
       <i class="fas fa-chevron-left"></i>
     </div>
     <div class="cinematic-filmstrip controls-{{speakerControlsMode}}" role="list">
-      {{#each inactiveSpeakers}}
-      <div class="filmstrip-speaker"
+      {{#each allSpeakers}}
+      <div class="filmstrip-speaker{{#if (lookup ../requestingSpeakerIds this.id)}} has-request{{/if}}"
            role="listitem"
            data-speaker-id="{{this.id}}"
-           data-tooltip="{{this.name}}">
+           data-tooltip="{{this.name}}"
+           {{#if this.isActive}}style="display:none"{{/if}}>
         <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
         <span class="filmstrip-name">{{this.name}}</span>
       </div>
@@ -58,8 +81,43 @@
   </div>
   {{/if}}
 
-  {{!-- Bottom row: camera feeds + PC portraits --}}
+  {{!-- Bottom row: camera feeds + PC portraits + player speaker controls --}}
   <div class="cinematic-bottom-row">
+    {{#if allowPlayerSpeakers}}
+    <div class="player-speaker-controls">
+      {{#if canJoinMore}}
+      <button type="button" class="player-speaker-btn join-btn" data-action="joinAsSpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.JoinAsSpeaker'}}">
+        <i class="fas fa-plus" aria-hidden="true"></i>
+        {{#unless hasPlayerSpeakers}}<span>{{localize "STORYFRAME.CinematicScene.JoinAsSpeaker"}}</span>{{/unless}}
+      </button>
+      {{/if}}
+      {{#each playerSpeakers}}
+      <div class="player-speaker-group" data-speaker-id="{{this.id}}">
+        {{#if (eq this.state "joined")}}
+        <button type="button" class="player-speaker-btn request-btn" data-action="requestFloor" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.RequestToSpeak'}}">
+          <i class="fas fa-hand-paper" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.RequestToSpeak"}}</span>{{/if}}
+        </button>
+        {{else if (eq this.state "requesting")}}
+        <button type="button" class="player-speaker-btn cancel-btn requesting" data-action="cancelFloorRequest" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.CancelRequest'}}">
+          <i class="fas fa-hand-paper" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.CancelRequest"}}</span>{{/if}}
+        </button>
+        {{else if (eq this.state "active")}}
+        <button type="button" class="player-speaker-btn stepdown-btn" data-action="stepDown" data-speaker-id="{{this.id}}" data-tooltip="{{localize 'STORYFRAME.CinematicScene.StepDown'}}">
+          <i class="fas fa-microphone-slash" aria-hidden="true"></i>
+          {{#if ../hasMultipleSpeakers}}<span>{{this.name}}</span>{{else}}<span>{{localize "STORYFRAME.CinematicScene.StepDown"}}</span>{{/if}}
+        </button>
+        {{/if}}
+      </div>
+      {{/each}}
+      {{#if hasPlayerSpeakers}}
+      <button type="button" class="player-speaker-btn leave-btn" data-action="leaveAsSpeaker" data-tooltip="{{localize 'STORYFRAME.CinematicScene.LeaveAsSpeaker'}}">
+        <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+      </button>
+      {{/if}}
+    </div>
+    {{/if}}
     {{#each pcRow}}
     <div class="cinematic-pc-item" data-action="openCharacterSheet" data-actor-uuid="{{this.actorUuid}}" data-user-id="{{this.userId}}" data-tooltip="{{this.name}}">
       <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
@@ -91,7 +149,7 @@
           {{#each this.rolls}}
           <button type="button" class="cinematic-roll-btn" data-action="executeRoll" data-request-id="{{this.id}}" data-check-type="{{this.checkType}}">
             <span class="roll-skill-name">{{this.skillName}}</span>
-            {{#if this.dc}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+            {{#if this.dc}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
           </button>
           {{/each}}
         </div>
@@ -130,7 +188,7 @@
                     {{#unless this.canRoll}}disabled{{/unless}}>
               {{#unless this.canRoll}}<i class="fas fa-lock proficiency-lock-icon" aria-hidden="true"></i>{{/unless}}
               <span class="roll-skill-name">{{this.skillName}}</span>
-              {{#if this.showDC}}<span class="dc-mini">DC {{this.dc}}</span>{{/if}}
+              {{#if this.showDC}}<span class="dc-mini">{{formatDC this.dc}}</span>{{/if}}
             </button>
             {{/each}}
           </div>
@@ -141,11 +199,38 @@
     </div>
   </div>
 
-  {{!-- Player chat log (top-right, collapsible) --}}
-  <div class="cinematic-player-chat {{#if playerChatExpanded}}expanded{{/if}}">
-    <button type="button" class="player-chat-toggle" data-action="togglePlayerChat">
+  {{!-- Journal button + panel (top-left) --}}
+  <div class="cinematic-player-journal">
+    <button type="button" class="player-utility-btn" data-action="toggleJournalSidebar"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.Journal'}}">
+      <i class="fas fa-book-open" aria-hidden="true"></i>
+    </button>
+    <div class="cinematic-player-journal-panel hidden"></div>
+  </div>
+
+  {{!-- Player utility buttons (top-right) --}}
+  <div class="cinematic-player-utilities">
+    <button type="button" class="player-utility-btn" data-action="togglePlayerVolume"
+            data-tooltip="{{localize 'STORYFRAME.UI.Tooltips.MusicVolume'}}">
+      <i class="fas fa-volume-up" aria-hidden="true"></i>
+    </button>
+    <button type="button" class="player-utility-btn" data-action="togglePlayerChat"
+            data-tooltip="{{localize 'STORYFRAME.CinematicScene.ChatLog'}}">
       <i class="fas fa-comments" aria-hidden="true"></i>
     </button>
+  </div>
+
+  {{!-- Player volume slider (top-right, collapsible) --}}
+  <div class="cinematic-player-volume {{#if playerVolumeExpanded}}expanded{{/if}}">
+    <div class="player-volume-content">
+      <i class="fas fa-volume-down" aria-hidden="true"></i>
+      <input type="range" class="player-volume-slider" min="0" max="1" step="0.05" value="{{currentVolume}}">
+      <i class="fas fa-volume-up" aria-hidden="true"></i>
+    </div>
+  </div>
+
+  {{!-- Player chat log (top-right, collapsible) --}}
+  <div class="cinematic-player-chat {{#if playerChatExpanded}}expanded{{/if}}">
     <div class="player-chat-content">
       <div class="side-panel-chat-messages player-chat-messages"></div>
     </div>

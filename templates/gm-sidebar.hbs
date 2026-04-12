@@ -48,7 +48,7 @@
           <button type="button" data-action="clearAllSpeakers" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.ClearAllNPCs"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RemoveAllNPCs"}}">
             <i class="fas fa-trash" aria-hidden="true"></i>
           </button>
-          <button type="button" class="btn-broadcast" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseViewerOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
+          <button type="button" class="btn-broadcast {{#if playerViewersOpen}}active{{/if}}" data-action="openPlayerWindows" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseViewerOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenViewerOnPlayers"}}">
             <i class="fas fa-tv" aria-hidden="true"></i>
           </button>
           <button type="button" class="btn-broadcast" data-action="launchSceneMode" data-tooltip="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}" aria-label="{{localize "STORYFRAME.CinematicScene.LaunchScene"}}">
@@ -191,7 +191,7 @@
           <i class="fas fa-hourglass-half" aria-hidden="true"></i>
         </button>
         {{/if}}
-        <button type="button" data-action="openPlayerSidebars" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseSidebarsOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenSidebarsOnPlayers"}}">
+        <button type="button" class="btn-player-broadcast {{#if playerSidebarsOpen}}active{{/if}}" data-action="openPlayerSidebars" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.OpenCloseSidebarsOnPlayers"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.OpenSidebarsOnPlayers"}}">
           <i class="fas fa-window-restore" aria-hidden="true"></i>
         </button>
         <button type="button" data-action="requestRollsFromSelection" data-tooltip="{{localize "STORYFRAME.UI.Tooltips.RequestRollsFromSelection"}}" aria-label="{{localize "STORYFRAME.UI.AriaLabels.RequestRollsFromSelection"}}">
@@ -425,7 +425,7 @@
                 <div class="opt-skills">
                   {{#each this.skillOptions}}
                   <span class="skill-dc-pill" data-check-type="{{this.checkType}}">
-                    {{this.displayText}}{{#if this.dc}} <strong>{{localize "STORYFRAME.ChallengeBuilder.DC"}} {{this.dc}}</strong>{{/if}}
+                    {{this.displayText}}{{#if this.dc}} <strong>{{formatDC this.dc}}</strong>{{/if}}
                     {{#if this.isSecret}}<i class="fas fa-eye-slash secret-marker"></i>{{/if}}
                     {{#if this.minProficiencyLabel}}<span class="prof-badge" data-prof="{{this.minProficiency}}">{{this.minProficiencyLabel}}</span>{{/if}}
                   </span>

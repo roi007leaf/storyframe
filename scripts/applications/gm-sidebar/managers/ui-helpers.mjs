@@ -47,8 +47,12 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
   // Use default width for drawer mode (user may have resized in floating mode)
   const defaultWidth = sidebar.constructor.DEFAULT_OPTIONS?.position?.width || 330;
 
-  // Check if it would go off-screen, if so position to the left instead
-  const maxLeft = window.innerWidth - defaultWidth;
+  // Account for FoundryVTT's right sidebar so we don't overlap its tab buttons
+  const foundrySidebar = document.getElementById('sidebar');
+  const sidebarWidth = foundrySidebar ? foundrySidebar.offsetWidth : 0;
+
+  // Check if it would overlap the Foundry sidebar or go off-screen
+  const maxLeft = window.innerWidth - defaultWidth - sidebarWidth;
   let adjustedLeft = newLeft;
 
   if (newLeft > maxLeft) {
@@ -477,8 +481,11 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   });
 
   // Close on click outside
+  // Use selector-based check for the trigger button since the original target
+  // reference becomes stale when the sidebar re-renders (destroying old DOM).
+  const triggerSelector = '.pending-rolls-btn, [data-action="showPendingRolls"]';
   const closeHandler = (e) => {
-    if (!popup.contains(e.target) && !target.contains(e.target)) {
+    if (!popup.contains(e.target) && !e.target.closest(triggerSelector)) {
       popup.remove();
       document.removeEventListener('click', closeHandler);
     }
@@ -494,7 +501,9 @@ export async function onShowPendingRolls(_event, target, sidebar) {
   };
   document.addEventListener('keydown', escHandler);
 
-  getPopupParent(target).appendChild(popup);
+  // Append to document.body so the popup survives sidebar re-renders
+  // (ApplicationV2 dialogs replace their content on render, destroying children).
+  document.body.appendChild(popup);
   popup.style.zIndex = _aboveSidebarZIndex(sidebar);
 
   // Adjust position if off-screen
@@ -750,7 +759,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
     const hasDc = check.dc != null && !isNaN(check.dc);
     const isVisible = hasDc && visibleDCs.has(String(check.dc));
     const secretIcon = check.isSecret ? '<i class="fas fa-eye-slash" style="font-size: 0.7em; opacity: 0.7; margin-left: 4px;"></i>' : '';
-    const dcDisplay = hasDc ? check.dc : '—';
+    const dcDisplay = hasDc ? SystemAdapter.formatDC(check.dc) : '—';
     return `
         <button type="button"
                 class="dc-option ${isVisible ? 'in-view' : ''}"
@@ -1053,21 +1062,7 @@ export function showSkillActionsMenu(event, skillSlug, sidebar) {
       // Normal click: open roll requester then send
       menu.remove();
 
-      const { getAllPlayerPCs } = await import('../../../system-adapter.mjs');
-      const pcs = await getAllPlayerPCs();
-      if (pcs.length === 0) {
-        ui.notifications.warn(game.i18n.localize('STORYFRAME.Notifications.NoPlayerCharactersFound'));
-        return;
-      }
-      const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
-      const checks = [{ skillName: actionSkill, dc: sidebar.currentDC, isSecret: sidebar.secretRollEnabled, checkType: 'skill', actionSlug }];
-      const result = await RollRequestDialog.subscribe(checks, pcs);
-      const selectedIds = result?.selectedIds || result || [];
-      const allowOnlyOne = result?.allowOnlyOne || false;
-      const batchGroupId = result?.batchGroupId ?? null;
-      if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, actionSkill, selectedIds, actionSlug, false, 'skill', batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
-      }
+      await SkillCheckHandlers.openRollRequesterAndSend(sidebar, actionSkill, 'skill', actionSlug);
     });
 
     // Mark as selected if already in global batch

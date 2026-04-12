@@ -32,7 +32,11 @@
       "WebFetch(domain:foundryvtt.com)",
       "WebFetch(domain:cyberpunk-red-gm.herokuapp.com)",
       "WebFetch(domain:cyberpunkred.wikidot.com)",
-      "WebFetch(domain:app.demiplane.com)"
+      "WebFetch(domain:app.demiplane.com)",
+      "Bash(git -C \"c:/Users/User/AppData/Local/FoundryVTT/Data/modules/storyframe\" log --oneline -10)",
+      "Bash(git -C \"c:/Users/User/AppData/Local/FoundryVTT/Data/modules/storyframe\" diff HEAD -- scripts/applications/cinematic/cinematic-gm-app.mjs)",
+      "Bash(git -C \"c:/Users/User/AppData/Local/FoundryVTT/Data/modules/storyframe\" diff HEAD -- scripts/applications/cinematic/cinematic-player-app.mjs)",
+      "Bash(git -C \"c:/Users/User/AppData/Local/FoundryVTT/Data/modules/storyframe\" stash list)"
     ]
   }
 }

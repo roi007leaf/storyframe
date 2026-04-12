@@ -1,8 +1,10 @@
 import { PlayerSidebarApp } from './scripts/applications/player-sidebar.mjs';
 import { PlayerViewerApp } from './scripts/applications/player-viewer.mjs';
 import { MODULE_ID } from './scripts/constants.mjs';
-import { handleJournalClose, handleJournalRender, handleDaggerheartPageRender,
-  peekCanvasStart } from './scripts/hooks/journal-hooks.mjs';
+import {
+  handleJournalClose, handleJournalRender, handleDaggerheartPageRender,
+  peekCanvasStart
+} from './scripts/hooks/journal-hooks.mjs';
 import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
@@ -83,7 +85,7 @@ function setupPF2eRepostIntegration() {
     // Need a sidebar instance for requestSkillCheck (used for DC/secret state)
     if (!game.storyframe.gmSidebar) {
       const system = game.system.id;
-      if (system === 'pf2e') {
+      if (system === 'pf2e' || system === 'sf2e') {
         const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppPF2e();
       } else if (system === 'dnd5e') {
@@ -95,6 +97,9 @@ function setupPF2eRepostIntegration() {
       } else if (system === 'projectfu') {
         const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+      } else if (system === 'draw-steel') {
+        const { GMSidebarAppDrawSteel } = await import('./scripts/applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+        game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
       } else {
         const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
         game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -304,6 +309,16 @@ function setupDamageRollTargetInterception() {
 // Hook: init (register settings, CONFIG)
 Hooks.once('init', () => {
 
+  // Register Handlebars helper for system-aware DC display
+  Handlebars.registerHelper('formatDC', function (dc) {
+    if (dc == null || isNaN(dc)) return '—';
+    if (game.system?.id === 'draw-steel') {
+      const labels = { 0: 'Easy', 12: 'Medium', 17: 'Hard' };
+      return labels[dc] || String(dc);
+    }
+    return `DC ${dc}`;
+  });
+
   // Create namespace if it doesn't exist (socketlib.ready may fire first)
   if (!game.storyframe) {
     game.storyframe = {
@@ -378,6 +393,13 @@ Hooks.once('init', () => {
     default: 140,
   });
 
+  game.settings.register(MODULE_ID, 'cinematicFilmstripSize', {
+    scope: 'client',
+    config: false,
+    type: Number,
+    default: 64,
+  });
+
   game.settings.register(MODULE_ID, 'cinematicJournalFontSize', {
     scope: 'client',
     config: false,
@@ -396,6 +418,7 @@ Hooks.once('init', () => {
       horizontal: 'STORYFRAME.Settings.PlayerViewerLayoutHorizontal',
     },
   });
+
 
   game.settings.register(MODULE_ID, 'gmWindowMinimized', {
     scope: 'client',
@@ -428,6 +451,22 @@ Hooks.once('init', () => {
   game.settings.register(MODULE_ID, 'gmSidebarVisible', {
     scope: 'client',
     config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'allowPlayerSpeakers', {
+    scope: 'world',
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
+  game.settings.register(MODULE_ID, 'playerSpeakerAutoActivate', {
+    name: 'STORYFRAME.Settings.PlayerSpeakerAutoActivate',
+    hint: 'STORYFRAME.Settings.PlayerSpeakerAutoActivateHint',
+    scope: 'world',
+    config: true,
     type: Boolean,
     default: false,
   });
@@ -539,7 +578,9 @@ Hooks.once('init', () => {
     ? 'prc,ins,ste,per,inv,ath'     // D&D 5e: Perception, Insight, Stealth, Persuasion, Investigation, Athletics
     : game.system.id === 'daggerheart'
       ? 'agi,str,fin,ins,pre,kno'   // Daggerheart: all 6 traits
-      : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
+      : game.system.id === 'draw-steel'
+        ? 'mig,agi,rea,int,pre'     // Draw Steel: all 5 characteristics
+        : 'per,dec,dip,itm,ste,prf';  // PF2e: Perception, Deception, Diplomacy, Intimidation, Stealth, Performance
 
   game.settings.register(MODULE_ID, 'quickButtonSkills', {
     name: 'STORYFRAME.Settings.QuickButtonSkills',
@@ -925,7 +966,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
         if (!game.storyframe.gmSidebar) {
           const system = game.system.id;
 
-          if (system === 'pf2e') {
+          if (system === 'pf2e' || system === 'sf2e') {
             const { GMSidebarAppPF2e } = await import('./scripts/applications/gm-sidebar/gm-sidebar-pf2e.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppPF2e();
           } else if (system === 'dnd5e') {
@@ -937,6 +978,9 @@ Hooks.on('getSceneControlButtons', (controls) => {
           } else if (system === 'projectfu') {
             const { GMSidebarAppProjectFU } = await import('./scripts/applications/gm-sidebar/gm-sidebar-projectfu.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+          } else if (system === 'draw-steel') {
+            const { GMSidebarAppDrawSteel } = await import('./scripts/applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+            game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
           } else {
             const { GMSidebarAppBase } = await import('./scripts/applications/gm-sidebar/gm-sidebar-base.mjs');
             game.storyframe.gmSidebar = new GMSidebarAppBase();
@@ -968,7 +1012,7 @@ Hooks.on('getSceneControlButtons', (controls) => {
     controls.tokens.tools.storyframe_scene = {
       name: 'storyframe_scene',
       title: 'STORYFRAME.ToolButtons.SceneMode',
-      icon: 'fas fa-film',
+      icon: 'fas fa-clapperboard',
       visible: true,
       button: true,
       onChange: (isActive) => {
@@ -980,11 +1024,6 @@ Hooks.on('getSceneControlButtons', (controls) => {
           if (control) control.activeTool = null;
         }, 50);
 
-        const state = game.storyframe.stateManager?.getState();
-        if (!state?.speakers?.length) {
-          ui.notifications.warn(game.i18n.localize('STORYFRAME.CinematicScene.NoSpeakers'));
-          return;
-        }
         game.storyframe.socketManager.launchSceneMode();
       },
     };
@@ -1023,9 +1062,37 @@ Hooks.once('ready', async () => {
   const { initMouseTracking } = await import('./scripts/speaker-wheel.mjs');
   initMouseTracking();
 
+  // Pre-warm vendor libraries in the background (non-blocking)
+  import('./scripts/vendor-loader.mjs').then(({ preload }) => {
+    preload('autoAnimate', 'sortable', 'motion');
+  }).catch(() => {}); // Silently swallow — libraries are optional enhancements
+
+  // Initialize TTS manager and dialogue typer
+  import('./scripts/tts-manager.mjs').then(({ TTSManager }) => {
+    const tts = new TTSManager();
+    game.storyframe.tts = tts;
+    // Restore voice configs from speaker state (voices may load async)
+    const restoreVoices = () => {
+      const state = game.storyframe.stateManager?.getState();
+      if (!state?.speakers) return;
+      for (const speaker of state.speakers) {
+        if (speaker.voiceConfig) {
+          tts.setVoice(speaker.id, speaker.voiceConfig);
+        }
+      }
+    };
+    // Try immediately, retry after voices load
+    restoreVoices();
+    window.speechSynthesis?.addEventListener?.('voiceschanged', restoreVoices);
+  }).catch(() => {});
+
+  import('./scripts/dialogue-typer.mjs').then((mod) => {
+    game.storyframe.dialogue = mod;
+  }).catch(() => {});
+
   // Setup inline check integrations (GM only)
   if (game.user.isGM) {
-    if (game.system.id === 'pf2e') {
+    if (game.system.id === 'pf2e' || game.system.id === 'sf2e') {
       setupPF2eRepostIntegration();
       setupPF2eActionEnricherIntegration();
     } else if (game.system.id === 'dnd5e') {
@@ -1139,8 +1206,9 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
     const viewer = game.storyframe.playerViewer;
     const visibleSpeakers = state?.speakers?.filter(s => !s.isHidden) ?? [];
     const hasSpeakers = visibleSpeakers.length > 0;
+    const prepLocked = game.settings.get(MODULE_ID, 'cinematicPrepMode') && !game.storyframe._playerViewerUnlocked;
 
-    if (hasSpeakers && !viewer.rendered) {
+    if (hasSpeakers && !viewer.rendered && !prepLocked) {
       viewer.render(true); // Auto-open when speakers added
     } else if (!hasSpeakers && viewer.rendered) {
       viewer.close(); // Close if no speakers
@@ -1153,8 +1221,9 @@ Hooks.on('updateScene', async (scene, changed, _options, _userId) => {
   if (!game.user.isGM && game.storyframe.playerSidebar) {
     const sidebar = game.storyframe.playerSidebar;
     const hasContent = PlayerViewerApp.hasPlayerRelevantContent(state, game.user.id);
+    const prepLocked = game.settings.get(MODULE_ID, 'cinematicPrepMode') && !game.storyframe._playerViewerUnlocked;
 
-    if (hasContent && !sidebar.rendered) {
+    if (hasContent && !sidebar.rendered && !prepLocked) {
       sidebar.render(true); // Auto-open when player has rolls/challenges
     } else if (!hasContent && sidebar.rendered) {
       sidebar.close(); // Close if no content

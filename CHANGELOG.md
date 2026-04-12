@@ -13,6 +13,239 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Foundry VTT v14 support**
 
+## [2.12.1] - 2026-03-31
+
+### Fixed
+
+- **Dialogue bar positioning** — moved dialogue input bar to sit above the PC camera row instead of overlapping the filmstrip and speaker nameplate controls
+- **Dialogue broadcast to players** — dialogue text is now sent via socket so players see the typewriter effect; players whose characters know the selected language see original text, others see scrambled fantasy font
+- **Speech-to-text auto-send** — dictated text now auto-sends after 2 seconds of silence instead of requiring manual Enter
+- **GM always sees original dialogue** — GM no longer sees scrambled text when selecting a fantasy language; only players who don't know the language see the scrambled version
+- **Style recalculation on cinematic close** — forces browser reflow after unloading cinematic CSS to prevent stale z-index overrides on Foundry UI elements
+
+### Changed
+
+- **Speech manager rewrite** — replaced text-to-speech focus with speech-to-text (dictation) as primary feature; microphone button in dialogue bar starts browser speech recognition; text-to-speech retained for voice preview in Edit Speaker dialog only
+
+## [2.12.0] - 2026-03-31
+
+### Added
+
+- **Journal auto-scroll** — teleprompter-style auto-scrolling for journal content in cinematic mode with adjustable speed (5 presets: 15–90 px/s), pause on manual scroll, and auto-stop at bottom
+- **Speaker visual state filters** — CSS filter effects for cinematic filmstrip: inactive speakers dimmed, active speakers highlighted, rolling pulse animation, and hidden speaker desaturation in the GM sidebar
+- **Scene mood themes** — four cinematic mood presets (flashback, dark, ethereal, dramatic) that apply GPU-accelerated CSS filters to speaker portraits and spotlight glows
+- **Spotlight spring animations** — speaker entrance and secondary speaker slide-in now use spring physics via the Motion library for more natural, cinematic transitions
+- **Speaker wheel staggered entrance** — wheel items animate in with a staggered spring effect when opened
+- **Sidebar list animations** — speaker gallery, challenge list, and pending rolls animate smoothly on add/remove/reorder via auto-animate
+- **SortableJS drag-and-drop** — skill and category reordering now uses SortableJS with smooth 200ms slide animations and touch support, with native drag-and-drop fallback if CDN is unavailable
+- **Cinematic dialogue bar** — type dialogue for the active speaker in cinematic mode; text appears as a typewriter effect below the spotlight and can optionally be read aloud via TTS; toggle with the speech bubble button in the GM controls; supports language selection with Polyglot integration for scrambled fantasy language fonts
+- **Speech-to-text dictation** — click the microphone button in the dialogue bar to dictate dialogue via the Web Speech Recognition API; interim results show as placeholder text, final text populates the input field; supports continuous dictation
+- **Per-speaker voice preview** — assign distinct browser voices to each speaker via the expanded Edit Speaker dialog; configure voice, pitch, and rate with a live preview button; voices persist in speaker state
+- **Polyglot integration** — dialogue bar includes a language dropdown populated from Polyglot (if installed); selecting a language scrambles the displayed text and renders it in the appropriate fantasy font while TTS still reads the original text
+- **Ambient spotlight particles** — floating canvas particles behind the cinematic spotlight for atmospheric depth
+- **Responsive cinematic layout** — media queries for narrow viewports: dual spotlights stack vertically, filmstrip shrinks and hides labels
+- **Vendor library loader** — lazy CDN loader with fallback URLs for auto-animate, SortableJS, Motion, and TypeIt; libraries pre-warm on module ready
+
+### Fixed
+
+- **DC preset dropdown styling** — added `dc-preset-dropdown.css` to `module.json` styles to ensure correct CSS layer priority in Foundry v13
+- **Skill reorder stacking context** — narrowed `transition: all` on skill categories to specific properties to prevent SortableJS transforms from trapping fixed-position popups
+
+### Changed
+
+- **Journal switching no longer auto-minimizes** — opening a different journal now replaces the current one; use the explicit minimize button to minimize
+
+## [2.11.1] - 2026-03-28
+
+### Fixed
+
+- **Landscape NPC portraits overflow in dual speaker mode** — horizontal images now scale down to fit within their spotlight container instead of extending off-screen or being clipped
+
+## [2.11.0] - 2026-03-25
+
+### Added
+
+- **Music playlist folder support** — the cinematic left panel now organizes playlists into collapsible folder groups matching your Foundry folder structure; folders can be expanded/collapsed by clicking the chevron or folder name; search results also show expandable playlist rows with individual track access
+- **Scene editor saves playlist and background** — creating or editing a speaker scene now automatically captures the currently playing playlist and scene background; loading a scene with no saved playlist stops all playing music and clears the background
+- **Scene editor reads cinematic journal content** — the "Create Scene" dialog now extracts images and actor links from the active cinematic journal page; switching journal pages while the editor is open automatically refreshes the available images and actors
+- **Scene editor search for world actors** — added a search input to the World Actors section for quickly finding specific actors; results filter as you type
+- **Scene editor collapsible sections** — Journal Images, Journal Actors, and World Actors sections can be collapsed/expanded by clicking their header
+- **World actors infinite scroll** — the World Actors grid in the scene editor loads 40 actors at a time with automatic loading on scroll, preventing browser freezes with large actor collections
+- **Scene gatherer search filter** — added a search input to the World Actors section in the Scene Gatherer dialog with lazy-loaded images for better performance
+
+### Fixed
+
+- **Scene editor world actors visual overlap** — fixed grid items overlapping by using fixed-size items instead of aspect-ratio, preventing layout instability during image loading
+
+## [2.10.2] - 2026-03-24
+
+### Fixed
+
+- **GM cinematic controls not clickable when side panel is open** — GM control buttons (background, player speakers, broadcast, exit) now render above the side panel and are always clickable regardless of panel state
+- **Speaker removal caused full re-render flash** — removing speakers from the filmstrip now uses targeted DOM patching instead of a full application re-render
+
+## [2.10.1] - 2026-03-24
+
+### Added
+
+- **Player Speaker Participation** — a new dual-spotlight conversation system that lets players actively participate as speakers in cinematic mode, solving the common issue of players accidentally speaking over each other or waiting in silence during social encounters
+
+  **How it works:**
+  1. **GM enables it** — click the people-arrows (⇄) toggle button in the GM cinematic controls (top-right); this can be toggled on/off at any time during a session
+  2. **Players join** — a "Join as Speaker" button appears in the player's bottom bar; if the player owns multiple characters, a picker popup lets them choose which PC to add; they can join with multiple PCs
+  3. **Players request the floor** — once joined, each PC gets a "Request to Speak" button; clicking it sends a request to the GM and shows a pulsing amber glow on the speaker's filmstrip portrait so everyone can see who wants to talk
+  4. **GM approves** — a request queue panel appears showing pending requests with approve/dismiss buttons; approving sets the player as the secondary (responding) speaker, shown side-by-side with the active NPC in a dual spotlight layout
+  5. **Player steps down** — the active player speaker can click "Step Down" to voluntarily leave the spotlight, returning to the "Request to Speak" state
+  6. **GM can also activate directly** — clicking a player-owned speaker in the filmstrip sets them as the secondary speaker (toggling on/off), bypassing the request queue
+
+  **Additional details:**
+  - The "Auto-Activate Player Speakers" world setting skips GM approval — player requests immediately activate as the responding speaker
+  - Player-added speakers show a small amber dot indicator on their filmstrip card
+  - The GM retains full control: can dismiss the secondary speaker, remove player speakers, or toggle the feature off
+  - Both spotlights are equal size with bottom-aligned portraits; the NPC uses a blue glow, the PC uses an amber/gold glow
+  - When no NPC is active, a PC speaker alone still displays in the spotlight
+
+## [2.10.0] - 2026-03-24
+
+### Added
+
+- **Video background support** — cinematic mode background now supports `.webm` and `.mp4` video files in addition to images; videos autoplay, loop, and are muted by default;
+
+## [2.9.0] - 2026-03-18
+
+### Added
+
+- **Starfinder 2e system support** — full compatibility with the SF2e system (`sf2e`), which shares the PF2e engine; Computers and Piloting skills are always available without requiring the sf2e-anachronism module; all PF2e features work identically (proficiency ranks, level-based DCs, difficulty adjustments, inline checks, action execution, lore skills, party detection)
+- **Simple Requests integration** — when the Simple Requests module is active, cinematic mode shows request buttons (common, important, urgent) in the bottom bar, along with request indicator badges on PC portraits and camera feeds; badges are color-coded by urgency level; clicking a button toggles the request on/off; GM gets a "Call Next" button to activate the top queued request, and can click any player's request badge to give them the floor directly
+
+### Fixed
+
+- **Journal checks not updating on page change** — switching between journal pages now correctly updates the skill checks, lore checks, and saves sections in the PCs tab; previously these sections were stale because the sidebar skipped re-parsing when the journal re-rendered
+
+## [2.8.0] - 2026-03-16
+
+### Added
+
+- **Raise My Hand integration** — when the Raise My Hand module is active, cinematic mode now shows raise-hand and urgent-speak buttons in the bottom bar, along with hand-raised indicator badges on PC portraits and camera feeds; supports both toggle and button modes, queue positions, speaking/urgent states
+- **Raise My Hand indicators on camera feeds** — camera feed items in cinematic mode display hand-raised badges with queue position, speaking (green megaphone), and urgent (red) states
+
+### Fixed
+
+- **Cinematic speaker switch flicker** — switching the active speaker no longer causes cameras and the player bar to flash; filmstrip cards are now pre-rendered for all speakers (active one hidden) so speaker switches toggle visibility instead of triggering a full re-render
+
+## [2.7.0] - 2026-03-15
+
+### Added
+
+- **Draw Steel system support** — full integration with the Draw Steel RPG system (`draw-steel`), including all 5 characteristics (Might, Agility, Reason, Intuition, Presence), tier-based difficulty (Easy/Medium/Hard), native journal enricher parsing, and power roll execution via `actor.rollCharacteristic()`
+- **System-aware DC display** — DC values now display contextually per system; Draw Steel shows difficulty tier names (Easy/Medium/Hard) instead of numeric DCs across all UI surfaces (sidebar, roll requests, challenges, cinematic mode)
+- **Draw Steel journal enricher integration** — parses native `<a class="roll-link" data-characteristic="..." data-difficulty="...">` elements from Draw Steel journals for one-click roll requests
+- **Draw Steel roll execution** — player rolls pass difficulty and type metadata to the Draw Steel system, producing properly formatted chat cards with tier outcomes
+
+## [2.6.2] - 2026-03-09
+
+### Fixed
+
+- **Performance: lazy CSS loading** — moved 19 of 20 stylesheets (~315KB, 251 `:hover` rules) out of the always-loaded `module.json` bundle; CSS is now loaded on-demand when each UI component first opens and unloaded when closed, reducing idle style recalculation overhead from ~2s to near-zero
+- **Performance: cinematic CSS unloaded on close** — cinematic mode's 3 stylesheets (~85KB) are removed from the document when the Frame closes, so their `:hover` rules and `backdrop-filter` declarations stop affecting FPS during normal gameplay
+- **Performance: targeted CSS transitions** — replaced 133 `transition: all` rules across all stylesheets with explicit property lists (`background-color`, `color`, `border-color`, `box-shadow`, `opacity`, `transform`), eliminating unnecessary layout-triggering transition calculations
+- **Performance: throttled mouse tracking** — the speaker wheel's global `mousemove` listener now uses `requestAnimationFrame` throttling and `{ passive: true }`, reducing event handler overhead from every raw mouse event to once per frame
+- **Prep banner duplicates on scene switch** — switching speaker scenes in cinematic mode no longer duplicates the "GM PREP MODE" banner; the relocate logic now removes all stale banners instead of potentially matching the wrong one via `querySelector`
+
+## [2.6.1] - 2026-03-06
+
+### Fixed
+
+- **Prep banner persists when closing the cinematic Frame** — the "GM Prep Mode — Players cannot see this" banner now disappears immediately when the Frame is closed; previously it remained visible at full opacity for the entire 1-second fade-out duration because the banner lives at `document.body` level and was not affected by the CSS fade animation applied to the app element
+
+## [2.6.0] - 2026-03-06
+
+### Added
+
+- **Per-player broadcast status popup** — hovering the broadcast button in cinematic mode shows a popup listing each connected player with a live eye icon indicating whether they have the cinematic open; individual "play" buttons let the GM send the scene to specific players, with a "Show to All" button at the bottom
+- **Live player status polling** — the popup actively queries each player client via socket to verify their cinematic state in real-time, rather than relying on GM-side tracking alone
+- **GM Prep Mode banner** — a prominent "GM PREP MODE" indicator displays at the top of the cinematic screen until the first broadcast, making it clear when players cannot see the scene; the banner is permanently dismissed after any broadcast
+- **Player reconnect detection** — when a player refreshes their browser during cinematic mode, the GM receives a warning notification and the player's status updates in the popup
+- **Player volume controls** — players now have an independent music volume slider in both the cinematic view and the player sidebar, allowing them to adjust playback volume without affecting the GM
+- **Improved cinematic icons** — the side panel toggle now uses a dice icon and the broadcast button uses a clapperboard icon for better clarity
+
+### Changed
+
+- **Broadcast button** — the cinematic broadcast button is now a status indicator with a hover popup; direct click removed in favor of the popup's "Show to All" and per-player buttons
+- **Cinematic left panel** — the scenes/music/journal panel now starts closed when launching cinematic mode from the token tools; it still auto-opens when launched from the GM sidebar (where a journal context exists)
+
+### Removed
+
+- **Legacy template and stylesheet** — removed unused `cinematic-scene.css` and `cinematic-scene.hbs` files that were superseded by the split cinematic template/style architecture
+
+## [2.5.2] - 2026-03-04
+
+### Fixed
+
+- **Cinematic speaker hide/show not updating for players** — toggling a speaker's visibility (`isHidden`) in cinematic mode now immediately updates the player view; previously, the change was not detected as a structural update and required a separate re-render to take effect
+
+## [2.5.1] - 2026-03-03
+
+### Fixed
+
+- **Carolingian UI chat text in cinematic mode** — chat messages in the cinematic side panel now correctly inherit the dark theme text styling from Carolingian UI (and other theme modules that scope their rules to `.chat-log.theme-dark`); theme classes from `#chat-log` are now propagated to the cinematic chat container on first population
+
+## [2.5.0] - 2026-03-02
+
+### Added
+
+- **Player journal panel** — players now have a full in-app journal panel (top-left button) with search, minimized journal pills, page tabs, font size slider, and a New Note button; replaces the non-functional sidebar toggle
+- **Player note creation** — players can create their own journal entries directly from the cinematic panel via the New Note button; the entry opens immediately for viewing and editing
+- **Pop-out journal images** — journal images opened, pop out into separate windows for easier reference during play; these windows are draggable and resizable, and their positions persist across sessions
+- **Font size slider in player journal** — matches the GM journal viewer; adjusts content size and persists the setting across sessions
+
+### Fixed
+
+- **Journal page tabs cut off** — increased player journal panel max-height to `calc(100vh - 80px)` so tall journals with many page tabs are no longer clipped; page tabs also marked `flex-shrink: 0`
+- **Minimized journal pills persist** — minimized journals in cinematic GM mode are now saved to scene state and restored on reload or scene switch; also saved when pressing the floppy disk icon in saved scenes
+- **Spotlight pulse animations removed** — the glow and portrait pulse animations on the active speaker have been removed for a cleaner cinematic look
+- **Foundry dialogs behind cinematic overlay** — "Create Page", journal page editor, and other ApplicationV2 document sheets now correctly appear above the cinematic overlay; fixed a CSS specificity conflict where the `#interface` ID selector was suppressing the higher z-index value on native `<dialog>` elements
+- **Missing i18n strings** — added `NewNote`, `EditJournal`, and `NoContent` keys to the `CinematicScene` locale section; the "No content" placeholder no longer shows the raw key string
+
+## [2.4.8] - 2026-03-01
+
+### Fixed
+
+- **Hidden active speaker invisible to players** — when the active speaker was hidden (`isHidden`), players saw a blank cinematic screen instead of the spotlight; the active speaker now always appears in the spotlight regardless of hidden state
+- **Player sidebar not opening on roll request** — when the GM sent a skill check request and the player sidebar was closed, it would not open automatically; the sidebar now opens to show pending rolls
+
+## [2.4.7] - 2026-03-01
+
+### Fixed
+
+- **Cinematic spotlight overlaps PC row** — increased bottom reserve spacing so the active speaker nameplate no longer overlaps the PC portraits row when there is only one speaker active and no filmstrip visible
+
+## [2.4.6] - 2026-03-01
+
+### Fixed
+
+- **Cinematic opens without speakers** — the scene mode toolbar button no longer requires active speakers to launch; you can now open the cinematic and set up music, backgrounds, etc. before adding any speakers
+
+## [2.4.5] - 2026-03-01
+
+### Added
+
+- **Playlist search in cinematic** — the music search bar now matches playlist names in addition to track names; matching playlists appear above track results and can be clicked to play
+- **Filmstrip resize handle** — drag the handle at the top of the filmstrip to increase or decrease speaker thumbnail size (saved per client)
+- **Camera resize handle auto-hide** — the camera feed resize handle is now hidden when no cameras are active
+
+### Fixed
+
+- **Music search no longer re-renders filmstrip** — typing in the music search bar now updates only the results area via targeted DOM manipulation instead of re-rendering the entire cinematic
+
+## [2.4.4] - 2026-03-01
+
+a resize handle auto-hide\*\* — the camera feed resize handle is now hidden when no cameras are active
+
+### Fixed
+
+- **Prep mode bypass via scene flags** — setting a cinematic background (or any state change that triggers `updateScene`) no longer auto-opens the player viewer/sidebar when prep mode is on
+
 ## [2.4.3] - 2026-03-01
 
 ### Added

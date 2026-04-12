@@ -9,15 +9,16 @@
              autofocus>
     </section>
 
+    {{#if hasSceneTokens}}
     <section class="actors-selection">
       <div class="actors-header">
-        <h3>{{i18n.tokenCount}}</h3>
-        <button type="button" class="select-all-btn">{{i18n.selectAll}}</button>
+        <h3>{{i18n.sceneTokenCount}}</h3>
+        <button type="button" class="select-all-btn" data-group="scene">{{i18n.selectAll}}</button>
       </div>
-      <div class="participants-grid">
-        {{#each tokens}}
+      <div class="participants-grid" data-group="scene">
+        {{#each sceneTokens}}
         <label class="participant-card">
-          <input type="checkbox" name="actor" value="{{@index}}" checked>
+          <input type="checkbox" name="actor" value="{{this.index}}" checked>
           <div class="participant-content">
             <img src="{{this.img}}" alt="{{this.name}}">
             <span class="participant-name">{{this.name}}</span>
@@ -27,6 +28,29 @@
         {{/each}}
       </div>
     </section>
+    {{/if}}
+
+    {{#if hasWorldActors}}
+    <section class="actors-selection world-actors-section">
+      <div class="actors-header">
+        <h3>{{i18n.worldActorCount}}</h3>
+        <input type="text" class="world-actor-search" placeholder="{{i18n.searchActors}}" />
+        <button type="button" class="select-all-btn" data-group="world">{{i18n.selectAll}}</button>
+      </div>
+      <div class="participants-grid" data-group="world">
+        {{#each worldActors}}
+        <label class="participant-card" data-name="{{this.nameLower}}">
+          <input type="checkbox" name="actor" value="{{this.index}}">
+          <div class="participant-content">
+            <img src="{{this.img}}" alt="{{this.name}}" loading="lazy">
+            <span class="participant-name">{{this.name}}</span>
+            <i class="fas fa-check-circle check-icon"></i>
+          </div>
+        </label>
+        {{/each}}
+      </div>
+    </section>
+    {{/if}}
   </div>
 
   <footer class="dialog-footer">

@@ -1,5 +1,10 @@
 import { MODULE_ID } from '../../constants.mjs';
 import { getAllPlayerPCs } from '../../system-adapter.mjs';
+import { loadCinematicCSS, unloadCinematicCSS } from '../../css-loader.mjs';
+import { onCinematicRender as rmhRender, onCinematicClose as rmhClose } from '../../integrations/raise-my-hand.mjs';
+import { onCinematicRender as srRender, onCinematicClose as srClose } from '../../integrations/simple-requests.mjs';
+import { animateSpeakerEntrance, animateSecondaryEntrance } from '../../spotlight-animator.mjs';
+import { SpotlightParticles } from '../../canvas-effects.mjs';
 
 /**
  * Base class for Cinematic Scene apps.
@@ -26,12 +31,14 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     actions: {
       openCharacterSheet: CinematicSceneBase._onOpenCharacterSheet,
       closeImagePreview: CinematicSceneBase._onCloseImagePreview,
+      popoutImagePreview: CinematicSceneBase._onPopoutImagePreview,
       openPartySheet: CinematicSceneBase._onOpenPartySheet,
     },
   };
 
   constructor(options = {}) {
     super(options);
+    loadCinematicCSS();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
     this.challengePanelExpanded = false;
@@ -44,6 +51,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
     this._prevBackgroundKey = '';
+    this._prevSecondaryKey = '';
+    this._prevRequestsKey = '';
+    this._prevPlayerSpeakersKey = '';
+    this._prevSpeakerIdsKeyRaw = [];
     this._debouncedRender = foundry.utils.debounce(() => this.render(), 150);
     // Camera row (A/V feed mirroring)
     this._cameraObserver = null;
@@ -70,31 +81,82 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       };
     }
 
+    const activeSpeakerId = state.activeSpeaker;
+    const secondarySpeakerId = state.secondarySpeaker;
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === activeSpeakerId);
     const allSpeakers = await this._resolveSpeakers(visibleSpeakers);
-    const activeSpeakerId = state.activeSpeaker;
+
+    // Mark active + secondary speaker so filmstrip can hide them without removing the card.
+    // This lets _swapActiveSpeaker toggle visibility instead of triggering a full re-render.
+    for (const s of allSpeakers) {
+      s.isActive = s.id === activeSpeakerId || s.id === secondarySpeakerId;
+    }
 
     let activeSpeaker = null;
+    let secondarySpeaker = null;
     let inactiveSpeakers = allSpeakers;
     if (activeSpeakerId) {
       activeSpeaker = allSpeakers.find(s => s.id === activeSpeakerId) || null;
       inactiveSpeakers = allSpeakers.filter(s => s.id !== activeSpeakerId);
+    }
+    if (secondarySpeakerId) {
+      secondarySpeaker = allSpeakers.find(s => s.id === secondarySpeakerId) || null;
+      inactiveSpeakers = inactiveSpeakers.filter(s => s.id !== secondarySpeakerId);
     }
 
     const partyPCs = await getAllPlayerPCs();
     const pcRow = partyPCs.map(p => ({ actorUuid: p.actorUuid, name: p.name, img: p.img, userId: p.userId }));
 
     // PF2e party sheet availability
-    const partyActor = game.system.id === 'pf2e'
+    const partyActor = (game.system.id === 'pf2e' || game.system.id === 'sf2e')
       ? game.actors.find(a => a.type === 'party')
       : null;
+
+    const allowPlayerSpeakers = game.settings.get(MODULE_ID, 'allowPlayerSpeakers');
+    const speakerRequests = (state.speakerRequests || []).map(req => {
+      const speaker = allSpeakers.find(s => s.id === req.speakerId);
+      return { ...req, speakerName: speaker?.name || game.i18n.localize('STORYFRAME.UI.Labels.Unknown') };
+    });
+
+    // For players: determine which of their PCs are speakers and their states
+    let playerSpeakers = [];
+    let hasPlayerSpeakers = false;
+    if (!isGM && allowPlayerSpeakers) {
+      const userId = game.user.id;
+      const ownedSpeakers = (state.speakers || []).filter(s => s.userId === userId);
+      playerSpeakers = ownedSpeakers.map(ps => {
+        const resolved = allSpeakers.find(s => s.id === ps.id);
+        let speakerState = 'joined';
+        if (secondarySpeakerId === ps.id) {
+          speakerState = 'active';
+        } else if (speakerRequests.some(r => r.speakerId === ps.id)) {
+          speakerState = 'requesting';
+        }
+        return {
+          id: ps.id,
+          name: resolved?.name || ps.label,
+          img: resolved?.img,
+          state: speakerState,
+        };
+      });
+      hasPlayerSpeakers = playerSpeakers.length > 0;
+    }
+
+    // Mark speakers that have pending requests (for glow indicators)
+    // Plain object for Handlebars lookup compatibility
+    const requestingSpeakerIds = {};
+    for (const req of speakerRequests) {
+      requestingSpeakerIds[req.speakerId] = true;
+    }
 
     return {
       isGM,
       activeSpeaker,
       activeSpeakerId,
+      secondarySpeaker,
+      secondarySpeakerId,
       inactiveSpeakers,
       allSpeakers,
       pcRow,
@@ -102,6 +164,18 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       previewImageSrc: this.previewImageSrc,
       speakerControlsMode: game.settings.get(MODULE_ID, 'speakerControlsMode') ?? 'hover',
       sceneBackground: state.sceneBackground || null,
+      isVideoBackground: /\.(webm|mp4)$/i.test(state.sceneBackground || ''),
+      allowPlayerSpeakers,
+      speakerRequests,
+      requestingSpeakerIds,
+      playerSpeakers,
+      hasPlayerSpeakers,
+      hasAnySpeakerActive: !!(activeSpeaker || secondarySpeaker),
+      hasMultipleSpeakers: playerSpeakers.length > 1,
+      canJoinMore: !isGM && allowPlayerSpeakers && (() => {
+        const joinedUuids = new Set((state.speakers || []).filter(s => s.userId === game.user.id).map(s => s.actorUuid));
+        return game.actors.some(a => a.isOwner && !a.pack && a.type === 'character' && !joinedUuids.has(a.uuid));
+      })(),
     };
   }
 
@@ -116,7 +190,11 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     // background changed.  Only compare speaker IDs (not mutable properties
     // like label/imagePath) because those can differ between scene-flag reads
     // and socket broadcasts, causing false-positive full re-renders.
-    const speakerIdsKey = (state.speakers || []).map(s => s.id).join('|');
+    // For non-GM users, include isHidden in the IDs key so that toggling
+    // speaker visibility triggers a structural re-render (the visible set changes).
+    const speakerIdsKey = game.user.isGM
+      ? (state.speakers || []).map(s => s.id).join('|')
+      : (state.speakers || []).map(s => `${s.id}:${!!s.isHidden}`).join('|');
     const speakerFlagsKey = game.user.isGM
       ? (state.speakers || []).map(s => `${s.id}:${!!s.isHidden}:${!!s.isNameHidden}`).join('|')
       : '';
@@ -124,38 +202,70 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     // a re-render but should only fire when the values genuinely change.
     const speakerPropsKey = (state.speakers || []).map(s => `${s.id}:${s.label ?? ''}:${s.imagePath ?? ''}`).join('|');
     const activeKey = state.activeSpeaker || '';
+    const secondaryKey = state.secondarySpeaker ?? '';
     const participantKey = (state.participants || []).map(p => p.id).join(',');
     const backgroundKey = state.sceneBackground ?? '';
+    const requestsKey = (state.speakerRequests || []).map(r => r.speakerId).join(',');
+    const playerSpeakersKey = game.settings.get(MODULE_ID, 'allowPlayerSpeakers') ? '1' : '0';
 
     const speakerListChanged = speakerIdsKey !== this._prevSpeakerIdsKey;
     const speakerPropsChanged = speakerPropsKey !== this._prevSpeakerPropsKey;
     const activeChanged = activeKey !== this._prevActiveKey;
+    const secondaryChanged = secondaryKey !== this._prevSecondaryKey;
     const participantsChanged = participantKey !== this._prevParticipantKey;
     const backgroundChanged = backgroundKey !== this._prevBackgroundKey;
     const flagsChanged = game.user.isGM && speakerFlagsKey !== this._prevSpeakerFlagsKey;
+    const requestsChanged = requestsKey !== this._prevRequestsKey;
+    const playerSpeakersChanged = playerSpeakersKey !== this._prevPlayerSpeakersKey;
 
     // Heavy structural change — full re-render
-    const structuralChange = speakerListChanged || participantsChanged || backgroundChanged;
+    const structuralChange = speakerListChanged || participantsChanged || backgroundChanged || playerSpeakersChanged;
 
     this._prevSpeakerIdsKey = speakerIdsKey;
     this._prevSpeakerPropsKey = speakerPropsKey;
     this._prevSpeakerFlagsKey = speakerFlagsKey;
     this._prevActiveKey = activeKey;
+    this._prevSecondaryKey = secondaryKey;
     this._prevParticipantKey = participantKey;
     this._prevBackgroundKey = backgroundKey;
+    this._prevRequestsKey = requestsKey;
+    this._prevPlayerSpeakersKey = playerSpeakersKey;
 
     if (structuralChange) {
+      // Check if this is purely a speaker removal (no additions) —
+      // we can handle that with a targeted DOM patch instead of full re-render
+      if (speakerListChanged && !participantsChanged && !backgroundChanged && !playerSpeakersChanged) {
+        const prevIds = new Set(this._prevSpeakerIdsKeyRaw || []);
+        const currIds = new Set((state.speakers || []).map(s => s.id));
+        const removed = [...prevIds].filter(id => !currIds.has(id));
+        const added = [...currIds].filter(id => !prevIds.has(id));
+        if (removed.length > 0 && added.length === 0) {
+          // Pure removal — patch DOM
+          this._prevSpeakerIdsKeyRaw = [...currIds];
+          this._removeSpeakersFromDOM(removed, state);
+          this._onFlagsChanged?.(state, flagsChanged);
+          this._refreshRollPanel();
+          if (requestsChanged) this._updateRequestIndicators?.(state);
+          return;
+        }
+      }
+      this._prevSpeakerIdsKeyRaw = (state.speakers || []).map(s => s.id);
       this.render();
-    } else if (activeChanged) {
-      // Active speaker switch — targeted DOM update (no full re-render)
+    } else if (secondaryChanged && !game.user.isGM) {
+      // Player: secondary change affects control buttons — full re-render
+      this.render();
+    } else if (activeChanged || secondaryChanged) {
+      // Active/secondary speaker switch — targeted DOM update (no full re-render)
       await this._swapActiveSpeaker(state);
       this._onFlagsChanged?.(state, flagsChanged);
       this._refreshRollPanel();
+      if (requestsChanged) this._updateRequestIndicators?.(state);
     } else {
       // Speaker property changes (name/image edits) — patch DOM in place
       if (speakerPropsChanged) this._patchSpeakerProps(state);
       this._onFlagsChanged?.(state, flagsChanged);
       this._refreshRollPanel();
+      if (requestsChanged) this._updateRequestIndicators?.(state);
     }
   }
 
@@ -167,16 +277,18 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!container) return;
 
     const isGM = game.user.isGM;
+    const newActiveId = state.activeSpeaker || '';
+    const newSecondaryId = state.secondarySpeaker || '';
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === newActiveId || s.id === newSecondaryId);
     const allResolved = await this._resolveSpeakers(visibleSpeakers);
-    const newActiveId = state.activeSpeaker || '';
     const newActive = newActiveId ? allResolved.find(s => s.id === newActiveId) : null;
-    const inactives = newActiveId ? allResolved.filter(s => s.id !== newActiveId) : allResolved;
+    const newSecondary = newSecondaryId ? allResolved.find(s => s.id === newSecondaryId) : null;
 
-    // --- Update spotlight ---
-    const oldSpotlight = container.querySelector('.cinematic-spotlight');
+    // --- Update primary spotlight ---
+    const stage = container.querySelector('.cinematic-spotlight-stage');
+    const oldSpotlight = container.querySelector('.cinematic-spotlight.primary') || container.querySelector('.cinematic-spotlight');
     const _oldNoActive = container.querySelector('.cinematic-no-active');
 
     if (newActive) {
@@ -202,13 +314,97 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
         // Update counter
         this._updateCounterDisplay?.(newActive.id);
       } else {
-        // Was "no active" or image preview — need full re-render
-        return this.render();
+        // Was "no active" — build stage + spotlight in DOM (avoids full re-render flash)
+        const newStage = document.createElement('div');
+        newStage.className = `cinematic-spotlight-stage${newSecondary ? ' dual' : ''}`;
+
+        const spot = document.createElement('div');
+        spot.className = 'cinematic-spotlight primary';
+        spot.dataset.speakerId = newActive.id;
+
+        let nameplateHTML;
+        if (isGM) {
+          const hiddenClass = newActive.isNameHidden ? ' name-is-hidden' : '';
+          const visIcon = newActive.isNameHidden ? 'fa-eye' : 'fa-eye-slash';
+          const visTooltip = newActive.isNameHidden
+            ? game.i18n.localize('STORYFRAME.CinematicScene.ShowName')
+            : game.i18n.localize('STORYFRAME.CinematicScene.HideName');
+          nameplateHTML = `<div class="spotlight-nameplate${hiddenClass}">`
+            + `<button type="button" class="spotlight-visibility-btn" data-action="toggleSpeakerVisibility" data-speaker-id="${newActive.id}" data-tooltip="${visTooltip}"><i class="fas ${visIcon}" aria-hidden="true"></i></button>`
+            + `<span class="nameplate-text">${newActive.name}</span>`
+            + `<button type="button" class="spotlight-deselect-btn" data-action="switchSpeaker" data-speaker-id="" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.DeselectSpeaker')}"><i class="fas fa-user-slash" aria-hidden="true"></i></button>`
+            + `<div class="speaker-counter"><button type="button" class="counter-btn" data-action="decrementCounter">\u2212</button><span class="counter-value">0</span><button type="button" class="counter-btn" data-action="incrementCounter">+</button></div>`
+            + `</div>`;
+        } else {
+          nameplateHTML = `<div class="spotlight-nameplate"><span class="nameplate-text">${newActive.name}</span></div>`;
+        }
+
+        spot.innerHTML = `<div class="spotlight-glow-cinematic"></div>`
+          + `<img src="${newActive.img}" alt="${newActive.name}" class="spotlight-portrait" loading="eager">`
+          + nameplateHTML;
+        newStage.appendChild(spot);
+
+        // Add empty secondary slot
+        const secSlot = document.createElement('div');
+        secSlot.className = 'cinematic-spotlight secondary';
+        secSlot.style.display = 'none';
+        secSlot.innerHTML = '<div class="spotlight-glow-cinematic"></div>';
+        newStage.appendChild(secSlot);
+
+        const noActiveEl = container.querySelector('.cinematic-no-active');
+        if (noActiveEl) { noActiveEl.replaceWith(newStage); } else {
+          // Insert after vignette overlay
+          const vignette = container.querySelector('.vignette-overlay');
+          if (vignette) { vignette.after(newStage); } else { container.prepend(newStage); }
+        }
+
+        // Animate entrance with spring physics (non-blocking)
+        animateSpeakerEntrance(spot);
       }
     } else {
-      // Deselected — swap spotlight for no-active placeholder (avoids full re-render
-      // which would tear down camera row and cause video feed flicker)
-      if (oldSpotlight) {
+      // No primary — if secondary is active, ensure stage exists for it
+      if (newSecondary && !stage) {
+        // Build stage with just the secondary (no primary)
+        const newStage = document.createElement('div');
+        newStage.className = 'cinematic-spotlight-stage';
+
+        // Hidden primary placeholder
+        const priSlot = document.createElement('div');
+        priSlot.className = 'cinematic-spotlight primary';
+        priSlot.style.display = 'none';
+        newStage.appendChild(priSlot);
+
+        // Build secondary spotlight
+        let secNameplateHTML = `<div class="spotlight-nameplate"><span class="nameplate-text">${newSecondary.name}</span>`;
+        if (isGM) {
+          secNameplateHTML += `<button type="button" class="spotlight-dismiss-btn" data-action="clearSecondarySpeaker" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.DismissSecondary')}"><i class="fas fa-times" aria-hidden="true"></i></button>`;
+        }
+        secNameplateHTML += `</div>`;
+        const secEl = document.createElement('div');
+        secEl.className = 'cinematic-spotlight secondary';
+        secEl.dataset.speakerId = newSecondary.id;
+        secEl.innerHTML = `<div class="spotlight-glow-cinematic"></div>`
+          + `<img src="${newSecondary.img}" alt="${newSecondary.name}" class="spotlight-portrait" loading="eager">`
+          + secNameplateHTML;
+        newStage.appendChild(secEl);
+
+        const noActiveEl = container.querySelector('.cinematic-no-active');
+        if (noActiveEl) { noActiveEl.replaceWith(newStage); } else {
+          const vignette = container.querySelector('.vignette-overlay');
+          if (vignette) { vignette.after(newStage); } else { container.prepend(newStage); }
+        }
+        // Skip the secondary update section below — already built
+        return this._updateFilmstrip(container, allResolved, newActiveId, newSecondaryId);
+      } else if (newSecondary && stage) {
+        // Stage exists, just hide the primary spotlight
+        if (oldSpotlight) oldSpotlight.style.display = 'none';
+      } else if (stage) {
+        // No secondary either — replace stage with no-active placeholder
+        const noActive = document.createElement('div');
+        noActive.className = 'cinematic-no-active';
+        noActive.innerHTML = '<i class="fas fa-masks-theater" aria-hidden="true"></i>';
+        stage.replaceWith(noActive);
+      } else if (oldSpotlight) {
         const noActive = document.createElement('div');
         noActive.className = 'cinematic-no-active';
         noActive.innerHTML = '<i class="fas fa-masks-theater" aria-hidden="true"></i>';
@@ -219,32 +415,73 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       if (deactivateBtn) deactivateBtn.closest('.side-panel-section')?.remove();
     }
 
-    // --- Update filmstrip ---
+    // --- Update secondary spotlight ---
+    const updatedStage = container.querySelector('.cinematic-spotlight-stage');
+    const oldSecondary = container.querySelector('.cinematic-spotlight.secondary');
+    if (newSecondary) {
+      if (oldSecondary?.querySelector('.spotlight-portrait')) {
+        // Update in place (element has content)
+        oldSecondary.dataset.speakerId = newSecondary.id;
+        const portrait = oldSecondary.querySelector('.spotlight-portrait');
+        portrait.src = newSecondary.img; portrait.alt = newSecondary.name;
+        const nameText = oldSecondary.querySelector('.nameplate-text');
+        if (nameText) nameText.textContent = newSecondary.name;
+        oldSecondary.style.display = '';
+      } else if (oldSecondary) {
+        // Empty shell — populate it in place
+        oldSecondary.dataset.speakerId = newSecondary.id;
+        let secNameplateHTML = `<div class="spotlight-nameplate"><span class="nameplate-text">${newSecondary.name}</span>`;
+        if (isGM) {
+          secNameplateHTML += `<button type="button" class="spotlight-dismiss-btn" data-action="clearSecondarySpeaker" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.DismissSecondary')}"><i class="fas fa-times" aria-hidden="true"></i></button>`;
+        }
+        secNameplateHTML += `</div>`;
+        oldSecondary.innerHTML = `<div class="spotlight-glow-cinematic"></div>`
+          + `<img src="${newSecondary.img}" alt="${newSecondary.name}" class="spotlight-portrait" loading="eager">`
+          + secNameplateHTML;
+        oldSecondary.style.display = '';
+        animateSecondaryEntrance(oldSecondary);
+      } else if (updatedStage) {
+        // No secondary element at all — create one
+        const secEl = document.createElement('div');
+        secEl.className = 'cinematic-spotlight secondary';
+        secEl.dataset.speakerId = newSecondary.id;
+        let secNameplateHTML = `<div class="spotlight-nameplate"><span class="nameplate-text">${newSecondary.name}</span>`;
+        if (isGM) {
+          secNameplateHTML += `<button type="button" class="spotlight-dismiss-btn" data-action="clearSecondarySpeaker" data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.DismissSecondary')}"><i class="fas fa-times" aria-hidden="true"></i></button>`;
+        }
+        secNameplateHTML += `</div>`;
+        secEl.innerHTML = `<div class="spotlight-glow-cinematic"></div>`
+          + `<img src="${newSecondary.img}" alt="${newSecondary.name}" class="spotlight-portrait" loading="eager">`
+          + secNameplateHTML;
+        updatedStage.appendChild(secEl);
+        animateSecondaryEntrance(secEl);
+      }
+    } else if (oldSecondary) {
+      oldSecondary.style.display = 'none';
+    }
+
+    // Toggle dual class on stage
+    if (updatedStage) {
+      const hasActive = !!container.querySelector('.cinematic-spotlight.primary:not([style*="display: none"])');
+      const hasSecondary = !!newSecondary;
+      updatedStage.classList.toggle('dual', hasActive && hasSecondary);
+    }
+
+    this._updateFilmstrip(container, allResolved, newActiveId, newSecondaryId);
+  }
+
+  _updateFilmstrip(container, allResolved, activeId, secondaryId) {
     const filmstrip = container.querySelector('.cinematic-filmstrip');
     const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
+    const spotlightIds = new Set([activeId, secondaryId].filter(Boolean));
 
-    if (filmstrip && inactives.length > 0) {
-      // Check if all inactive speakers have filmstrip cards — if any are missing
-      // (e.g. the previously-active speaker that was in the spotlight, not in filmstrip),
-      // fall back to a full re-render so the card gets created.
-      const filmstripIds = new Set(
-        [...filmstrip.querySelectorAll('.filmstrip-speaker')].map(c => c.dataset.speakerId),
-      );
-      if (!inactives.every(s => filmstripIds.has(s.id))) {
-        return this.render();
-      }
-
-      // All cards present — just toggle visibility
+    if (filmstrip) {
       for (const card of filmstrip.querySelectorAll('.filmstrip-speaker')) {
-        const id = card.dataset.speakerId;
-        card.style.display = (id === newActiveId) ? 'none' : '';
+        card.style.display = spotlightIds.has(card.dataset.speakerId) ? 'none' : '';
       }
     }
-
-    if (inactives.length > 0 && !filmstripContainer) {
-      return this.render();
-    }
-    if (inactives.length === 0 && filmstripContainer) {
+    const visibleInactives = allResolved.filter(s => !spotlightIds.has(s.id));
+    if (visibleInactives.length === 0 && filmstripContainer) {
       filmstripContainer.style.display = 'none';
     } else if (filmstripContainer) {
       filmstripContainer.style.display = '';
@@ -260,22 +497,21 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     if (!container) return;
 
     const isGM = game.user.isGM;
+    const activeId = state.activeSpeaker || '';
     const visibleSpeakers = isGM
       ? state.speakers || []
-      : (state.speakers || []).filter(s => !s.isHidden);
+      : (state.speakers || []).filter(s => !s.isHidden || s.id === activeId);
     const resolved = await this._resolveSpeakers(visibleSpeakers);
     const byId = new Map(resolved.map(s => [s.id, s]));
 
-    // Patch spotlight (active speaker)
-    const spotlight = container.querySelector('.cinematic-spotlight');
-    if (spotlight) {
+    // Patch spotlights (primary + secondary)
+    for (const spotlight of container.querySelectorAll('.cinematic-spotlight')) {
       const s = byId.get(spotlight.dataset.speakerId);
-      if (s) {
-        const portrait = spotlight.querySelector('.spotlight-portrait');
-        if (portrait && portrait.src !== s.img) { portrait.src = s.img; portrait.alt = s.name; }
-        const nameText = spotlight.querySelector('.nameplate-text');
-        if (nameText && nameText.textContent !== s.name) nameText.textContent = s.name;
-      }
+      if (!s) continue;
+      const portrait = spotlight.querySelector('.spotlight-portrait');
+      if (portrait && portrait.src !== s.img) { portrait.src = s.img; portrait.alt = s.name; }
+      const nameText = spotlight.querySelector('.nameplate-text');
+      if (nameText && nameText.textContent !== s.name) nameText.textContent = s.name;
     }
 
     // Patch filmstrip cards (inactive speakers)
@@ -287,6 +523,56 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       const nameEl = card.querySelector('.filmstrip-name');
       if (nameEl && nameEl.textContent !== s.name) nameEl.textContent = s.name;
       if (card.dataset.tooltip !== s.name) card.dataset.tooltip = s.name;
+    }
+  }
+
+  /**
+   * Targeted DOM removal for speakers — avoids full re-render.
+   * Removes filmstrip cards and clears spotlight if the removed speaker was active/secondary.
+   */
+  _removeSpeakersFromDOM(removedIds, _state) {
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) return;
+
+    const removedSet = new Set(removedIds);
+
+    // Remove filmstrip cards
+    for (const card of container.querySelectorAll('.filmstrip-speaker')) {
+      if (removedSet.has(card.dataset.speakerId)) card.remove();
+    }
+
+    // If active speaker was removed, swap to no-active
+    const spotlight = container.querySelector('.cinematic-spotlight.primary') || container.querySelector('.cinematic-spotlight');
+    if (spotlight && removedSet.has(spotlight.dataset.speakerId)) {
+      const noActive = document.createElement('div');
+      noActive.className = 'cinematic-no-active';
+      noActive.innerHTML = '<i class="fas fa-masks-theater" aria-hidden="true"></i>';
+      const stage = spotlight.closest('.cinematic-spotlight-stage');
+      if (stage) { stage.replaceWith(noActive); } else { spotlight.replaceWith(noActive); }
+      return; // Stage gone, nothing more to patch
+    }
+
+    // If secondary speaker was removed, hide it
+    const secondary = container.querySelector('.cinematic-spotlight.secondary');
+    if (secondary && removedSet.has(secondary.dataset.speakerId)) {
+      secondary.style.display = 'none';
+      secondary.dataset.speakerId = '';
+      const stage = container.querySelector('.cinematic-spotlight-stage');
+      if (stage) stage.classList.remove('dual');
+    }
+
+    // Update filmstrip visibility
+    const filmstrip = container.querySelector('.cinematic-filmstrip');
+    const filmstripContainer = container.querySelector('.cinematic-filmstrip-container');
+    if (filmstrip && filmstripContainer) {
+      const visibleCards = filmstrip.querySelectorAll('.filmstrip-speaker:not([style*="display: none"])');
+      filmstripContainer.style.display = visibleCards.length === 0 ? 'none' : '';
+    }
+
+    // Update player speaker controls (player side) — needs re-render for button state
+    if (!game.user.isGM) {
+      const controls = container.querySelector('.player-speaker-controls');
+      if (controls) this.render();
     }
   }
 
@@ -333,7 +619,8 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     }
 
     // Spotlight: hide until portrait image loaded (prevents layout-shift animation)
-    const spotlightImg = this.element?.querySelector('.spotlight-portrait');
+    const spotlightImg = this.element?.querySelector('.cinematic-spotlight.primary .spotlight-portrait')
+      ?? this.element?.querySelector('.spotlight-portrait');
     const spotlight = spotlightImg?.closest('.cinematic-spotlight');
     if (spotlight && spotlightImg) {
       if (this._introComplete) {
@@ -361,8 +648,9 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       }
     }
 
-    // Filmstrip scroll indicators
+    // Filmstrip scroll indicators + resize handle
     const filmstrip = this.element?.querySelector('.cinematic-filmstrip');
+    const filmstripContainer = this.element?.querySelector('.cinematic-filmstrip-container');
     if (filmstrip) {
       const updateIndicators = () => {
         const container = filmstrip.closest('.cinematic-filmstrip-container');
@@ -375,18 +663,48 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       filmstrip.addEventListener('scroll', updateIndicators);
       updateIndicators();
     }
+    if (filmstripContainer && !filmstripContainer.querySelector('.filmstrip-resize-handle')) {
+      // Apply saved filmstrip size (spotlight reads this variable directly)
+      const savedSize = game.settings.get(MODULE_ID, 'cinematicFilmstripSize') || 64;
+      const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
+      sceneContainer?.style.setProperty('--filmstrip-speaker-size', `${savedSize}px`);
+
+      const handle = document.createElement('div');
+      handle.className = 'filmstrip-resize-handle';
+      filmstripContainer.appendChild(handle);
+      handle.addEventListener('mousedown', (e) => this._onFilmstripResizeStart(e));
+    }
 
     // Seed state-change baseline
     const _seedState = game.storyframe.stateManager?.getState();
     if (_seedState) {
-      this._prevSpeakerIdsKey = (_seedState.speakers || []).map(s => s.id).join('|');
+      this._prevSpeakerIdsKey = game.user.isGM
+        ? (_seedState.speakers || []).map(s => s.id).join('|')
+        : (_seedState.speakers || []).map(s => `${s.id}:${!!s.isHidden}`).join('|');
       this._prevSpeakerPropsKey = (_seedState.speakers || []).map(s => `${s.id}:${s.label ?? ''}:${s.imagePath ?? ''}`).join('|');
       this._prevSpeakerFlagsKey = game.user.isGM
         ? (_seedState.speakers || []).map(s => `${s.id}:${s.isHidden}:${s.isNameHidden}`).join('|')
         : '';
       this._prevActiveKey = _seedState.activeSpeaker || '';
+      this._prevSecondaryKey = _seedState.secondarySpeaker ?? '';
       this._prevParticipantKey = (_seedState.participants || []).map(p => p.id).join(',');
       this._prevBackgroundKey = _seedState.sceneBackground || '';
+      this._prevRequestsKey = (_seedState.speakerRequests || []).map(r => r.speakerId).join(',');
+      this._prevPlayerSpeakersKey = game.settings.get(MODULE_ID, 'allowPlayerSpeakers') ? '1' : '0';
+      this._prevSpeakerIdsKeyRaw = (_seedState.speakers || []).map(s => s.id);
+    }
+
+    // Start ambient particles behind spotlight
+    const sceneContainer = this.element?.querySelector('.cinematic-scene-container');
+    if (sceneContainer && !this._spotlightParticles) {
+      this._spotlightParticles = new SpotlightParticles(sceneContainer, { count: 20, opacity: 0.35 });
+      this._spotlightParticles.start();
+    }
+
+    // Module integrations: inject controls and indicators
+    if (sceneContainer) {
+      rmhRender(sceneContainer);
+      srRender(sceneContainer);
     }
   }
 
@@ -415,7 +733,16 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   async _onClose(_options) {
     this._introComplete = false;
     this._teardownCameraRow();
+    // Stop ambient particles
+    this._spotlightParticles?.stop();
+    this._spotlightParticles = null;
     game.storyframe.cinematicScene = null;
+    unloadCinematicCSS();
+    // Force browsers to recalculate styles after removing cinematic CSS
+    // (prevents body:has() z-index overrides from persisting)
+    document.body.offsetHeight;
+    rmhClose();
+    srClose();
     document.getElementById('cinematic-context-menu')?.remove();
     this.rollPanelExpanded = false;
     this._lastPendingCount = 0;
@@ -426,6 +753,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     this._prevParticipantKey = '';
     this._prevSpeakerFlagsKey = '';
     this._prevBackgroundKey = '';
+    this._prevSecondaryKey = '';
+    this._prevRequestsKey = '';
+    this._prevPlayerSpeakersKey = '';
+    this._prevSpeakerIdsKeyRaw = [];
     // Restore Foundry's sidebar if we collapsed it on open
     if (this._sidebarWasOpen && ui.sidebar?._collapsed) {
       ui.sidebar.expand();
@@ -488,6 +819,7 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       isNameHidden: speaker.isNameHidden || false,
       hasAltImages: allImages.length > 1,
       canRemoveCurrentImage: (speaker.altImages || []).includes(img),
+      userId: speaker.userId || null,
     };
   }
 
@@ -782,6 +1114,39 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     document.addEventListener('mouseup', onUp);
   }
 
+  _onFilmstripResizeStart(e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    const startY = e.clientY;
+    const currentSize = parseFloat(
+      getComputedStyle(container).getPropertyValue('--filmstrip-speaker-size'),
+    ) || 64;
+
+    // Disable transitions during drag for seamless resize
+    container?.classList.add('filmstrip-resizing');
+
+    const onMove = (ev) => {
+      // Dragging up = bigger
+      const delta = startY - ev.clientY;
+      const newSize = Math.max(40, Math.min(160, currentSize + delta));
+      container?.style.setProperty('--filmstrip-speaker-size', `${newSize}px`);
+    };
+
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      container?.classList.remove('filmstrip-resizing');
+      const finalSize = parseFloat(
+        getComputedStyle(container).getPropertyValue('--filmstrip-speaker-size'),
+      ) || 64;
+      game.settings.set(MODULE_ID, 'cinematicFilmstripSize', finalSize);
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  }
+
   _syncCameraFeeds() {
     const bottomRow = this.element?.querySelector('.cinematic-bottom-row');
     if (!bottomRow) return;
@@ -875,6 +1240,10 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
     const hasFeeds = this._trackedVideoStreams.size > 0;
     const hasVisiblePCs = bottomRow.querySelector('.cinematic-pc-item:not([style*="display: none"])');
     bottomRow.classList.toggle('hidden', !hasFeeds && !hasVisiblePCs);
+
+    // Hide camera resize handle when no camera feeds are active
+    const resizeHandle = bottomRow.querySelector('.camera-row-resize-handle');
+    if (resizeHandle) resizeHandle.style.display = hasFeeds ? '' : 'none';
   }
 
   _teardownCameraRow() {
@@ -910,6 +1279,16 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       return;
     }
 
+    // Propagate theme classes from the main chat log so theme modules
+    // (e.g. Carolingian UI) apply their dark-mode styling inside the
+    // cinematic panel exactly as they do in #chat-log.
+    const chatLog = document.querySelector('#chat-log');
+    if (chatLog) {
+      const themeClasses = ['themed', 'theme-dark', 'theme-light']
+        .filter(c => chatLog.classList.contains(c));
+      if (themeClasses.length) container.classList.add(...themeClasses);
+    }
+
     // First-time population — fetch messages asynchronously.
     container.innerHTML = '';
     const limit = game.settings.get(MODULE_ID, 'cinematicChatMessageLimit') || 10;
@@ -928,6 +1307,23 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
       });
     });
     this._bindChatContextMenu(container);
+    this._bindChatDeleteAction(container);
+  }
+
+  _bindChatDeleteAction(container) {
+    container.addEventListener('click', (e) => {
+      const deleteBtn = e.target.closest('[data-action="deleteMessage"]');
+      if (!deleteBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      const msgEl = deleteBtn.closest('[data-message-id]');
+      const msgId = msgEl?.dataset.messageId;
+      if (!msgId) return;
+      const msg = game.messages.get(msgId);
+      if (!msg) return;
+      msgEl.remove();
+      msg.delete();
+    });
   }
 
   _bindChatContextMenu(container) {
@@ -1122,6 +1518,55 @@ export class CinematicSceneBase extends foundry.applications.api.HandlebarsAppli
   static _onCloseImagePreview() {
     this.previewImageSrc = null;
     this.render();
+  }
+
+  /**
+   * Show an image preview overlay via direct DOM injection.
+   * Used by the socket handler to avoid async render-queue timing issues.
+   * Sets previewImageSrc so future re-renders also include the preview.
+   * @param {string} src - Image URL to display
+   */
+  showImagePreview(src) {
+    this.previewImageSrc = src;
+
+    const container = this.element?.querySelector('.cinematic-scene-container');
+    if (!container) {
+      this.render();
+      return;
+    }
+
+    // Remove any existing preview
+    container.querySelector('.cinematic-image-preview')?.remove();
+
+    // Hide spotlight / no-active (template renders them mutually exclusive with preview)
+    const centreEl = container.querySelector('.cinematic-spotlight, .cinematic-no-active');
+    if (centreEl) centreEl.style.display = 'none';
+
+    // Build preview element matching the template markup
+    const preview = document.createElement('div');
+    preview.className = 'cinematic-image-preview';
+    preview.innerHTML = `
+      <img src="${foundry.utils.escapeHTML(src)}" class="preview-portrait">
+      <button type="button" class="preview-popout-btn" data-action="popoutImagePreview"
+              data-tooltip="${game.i18n.localize('STORYFRAME.CinematicScene.PopoutImage')}">
+        <i class="fas fa-up-right-from-square"></i>
+      </button>
+      <button type="button" class="preview-close-btn" data-action="closeImagePreview">
+        <i class="fas fa-times"></i>
+      </button>
+    `;
+
+    // Insert right after the vignette overlay (same visual layer as template-rendered preview)
+    const vignette = container.querySelector('.vignette-overlay');
+    if (vignette) {
+      vignette.insertAdjacentElement('afterend', preview);
+    } else {
+      container.prepend(preview);
+    }
+  }
+
+  static _onPopoutImagePreview() {
+    if (this.previewImageSrc) window.open(this.previewImageSrc, '_blank');
   }
 
   static _onOpenPartySheet() {

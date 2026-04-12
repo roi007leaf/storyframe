@@ -58,19 +58,43 @@ import {
 } from './system/projectfu/saves.mjs';
 import { getProjectFUDCOptions } from './system/projectfu/dc-tables.mjs';
 
+// Draw Steel imports
+import {
+  DRAWSTEEL_CHARACTERISTICS,
+  DRAWSTEEL_CHARACTERISTIC_SHORT_NAMES,
+  DRAWSTEEL_CHARACTERISTIC_NAME_MAP,
+} from './system/draw-steel/skills.mjs';
+import {
+  DRAWSTEEL_SAVES,
+  DRAWSTEEL_SAVE_SHORT_NAMES,
+  DRAWSTEEL_SAVE_NAME_MAP,
+} from './system/draw-steel/saves.mjs';
+import { getDrawSteelDCOptions, DRAWSTEEL_DC_BY_DIFFICULTY } from './system/draw-steel/dc-tables.mjs';
+
 /**
  * Detect the current game system
- * @returns {'pf2e'|'dnd5e'|'daggerheart'|'projectfu'|'other'}
+ * @returns {'pf2e'|'sf2e'|'dnd5e'|'daggerheart'|'projectfu'|'draw-steel'|'other'}
  */
 export function detectSystem() {
   const systemId = game.system.id;
 
   if (systemId === 'pf2e') return 'pf2e';
+  if (systemId === 'sf2e') return 'sf2e';
   if (systemId === 'dnd5e') return 'dnd5e';
   if (systemId === 'daggerheart') return 'daggerheart';
   if (systemId === 'projectfu') return 'projectfu';
+  if (systemId === 'draw-steel') return 'draw-steel';
 
   return 'other';
+}
+
+/**
+ * Check if the current system is PF2e or SF2e (which share the same engine)
+ * @returns {boolean}
+ */
+export function isPF2eFamily() {
+  const system = detectSystem();
+  return system === 'pf2e' || system === 'sf2e';
 }
 
 /**
@@ -81,6 +105,8 @@ export function getSkills() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
+      return { ...PF2E_SKILLS, ...SF2E_SKILLS };
     case 'pf2e': {
       if (game.modules.get('sf2e-anachronism')?.active) {
         return { ...PF2E_SKILLS, ...SF2E_SKILLS };
@@ -93,6 +119,8 @@ export function getSkills() {
       return DAGGERHEART_TRAITS;
     case 'projectfu':
       return PROJECTFU_ATTRIBUTES;
+    case 'draw-steel':
+      return DRAWSTEEL_CHARACTERISTICS;
     default:
       return {}; // No skills for unsupported systems
   }
@@ -106,6 +134,7 @@ export function getDCOptions() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return getPF2eDCOptions();
     case 'dnd5e':
@@ -114,6 +143,8 @@ export function getDCOptions() {
       return getDaggerheartDCOptions();
     case 'projectfu':
       return getProjectFUDCOptions();
+    case 'draw-steel':
+      return getDrawSteelDCOptions();
     default:
       return [];
   }
@@ -127,6 +158,7 @@ export function getDifficultyAdjustments() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_DIFFICULTY_ADJUSTMENTS;
     case 'dnd5e':
@@ -135,6 +167,8 @@ export function getDifficultyAdjustments() {
       return null; // Daggerheart doesn't use adjustments, DCs are absolute
     case 'projectfu':
       return null; // Fabula Ultima doesn't use adjustments, DLs are absolute
+    case 'draw-steel':
+      return null; // Draw Steel doesn't use adjustments, DCs are absolute
     default:
       return null;
   }
@@ -169,9 +203,11 @@ export function getSkillShortName(slug) {
   // System-specific short names
   const shortNames = {
     pf2e: PF2E_SKILL_SHORT_NAMES,
+    sf2e: PF2E_SKILL_SHORT_NAMES,
     dnd5e: DND5E_SKILL_SHORT_NAMES,
     daggerheart: DAGGERHEART_TRAIT_SHORT_NAMES,
     projectfu: PROJECTFU_ATTRIBUTE_SHORT_NAMES,
+    'draw-steel': DRAWSTEEL_CHARACTERISTIC_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -186,6 +222,7 @@ export function getSkillNameMap() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SKILL_NAME_MAP;
     case 'dnd5e':
@@ -194,6 +231,8 @@ export function getSkillNameMap() {
       return DAGGERHEART_TRAIT_NAME_MAP;
     case 'projectfu':
       return PROJECTFU_ATTRIBUTE_NAME_MAP;
+    case 'draw-steel':
+      return DRAWSTEEL_CHARACTERISTIC_NAME_MAP;
     default:
       return {};
   }
@@ -207,6 +246,7 @@ export function getSaves() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SAVES;
     case 'dnd5e':
@@ -215,6 +255,8 @@ export function getSaves() {
       return DAGGERHEART_SAVES;
     case 'projectfu':
       return PROJECTFU_SAVES;
+    case 'draw-steel':
+      return DRAWSTEEL_SAVES;
     default:
       return {}; // No saves for unsupported systems
   }
@@ -249,9 +291,11 @@ export function getSaveShortName(slug) {
   // System-specific short names
   const shortNames = {
     pf2e: PF2E_SAVE_SHORT_NAMES,
+    sf2e: PF2E_SAVE_SHORT_NAMES,
     dnd5e: DND5E_SAVE_SHORT_NAMES,
     daggerheart: DAGGERHEART_SAVE_SHORT_NAMES,
     projectfu: PROJECTFU_SAVE_SHORT_NAMES,
+    'draw-steel': DRAWSTEEL_SAVE_SHORT_NAMES,
   };
 
   return shortNames[system]?.[slug] || slug.substring(0, 3).toUpperCase();
@@ -266,6 +310,7 @@ export function getSaveNameMap() {
   const system = detectSystem();
 
   switch (system) {
+    case 'sf2e':
     case 'pf2e':
       return PF2E_SAVE_NAME_MAP;
     case 'dnd5e':
@@ -274,6 +319,8 @@ export function getSaveNameMap() {
       return DAGGERHEART_SAVE_NAME_MAP;
     case 'projectfu':
       return PROJECTFU_SAVE_NAME_MAP;
+    case 'draw-steel':
+      return DRAWSTEEL_SAVE_NAME_MAP;
     default:
       return {};
   }
@@ -292,19 +339,42 @@ export async function getAllPlayerPCs() {
     return { id: a.uuid, name: a.name, img: a.img, actorUuid: a.uuid, userId: owner?.id };
   };
 
-  if (game.system.id === 'pf2e') {
+  if (isPF2eFamily()) {
     const partyPCs = await getPF2ePartyPCs(toEntry);
     if (partyPCs) return partyPCs;
     // Fallback: all player-owned characters if no party found
   }
 
+  const validTypes = game.system.id === 'draw-steel' ? ['hero'] : ['character'];
   return game.actors
-    .filter(a => a.type === 'character' && a.hasPlayerOwner)
+    .filter(a => validTypes.includes(a.type) && a.hasPlayerOwner)
     .map(toEntry);
+}
+
+/**
+ * Format a DC value for display (system-aware).
+ * Most systems show the number. Draw Steel shows the difficulty tier name.
+ * @param {number|null} dc - The DC value
+ * @returns {string} Display string
+ */
+export function formatDC(dc) {
+  if (dc == null || isNaN(dc)) return '—';
+
+  const system = detectSystem();
+  if (system === 'draw-steel') {
+    // Map DC back to difficulty tier name
+    for (const [, data] of Object.entries(DRAWSTEEL_DC_BY_DIFFICULTY)) {
+      if (data.dc === dc) return game.i18n.localize(data.label);
+    }
+    return String(dc);
+  }
+
+  return String(dc);
 }
 
 export default {
   detectSystem,
+  isPF2eFamily,
   getSkills,
   getSaves,
   getDCOptions,
@@ -316,4 +386,5 @@ export default {
   getSkillNameMap,
   getSaveNameMap,
   getAllPlayerPCs,
+  formatDC,
 };

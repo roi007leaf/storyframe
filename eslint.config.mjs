@@ -28,6 +28,7 @@ export default [
         FilePicker: 'readonly',
         fromUuid: 'readonly',
         FormDataExtended: 'readonly',
+        JournalEntry: 'readonly',
         $: 'readonly',
       },
       ecmaVersion: 'latest',

@@ -30,16 +30,25 @@
   background: transparent;
 }
 
-/* All Foundry windows/dialogs must appear above the cinematic overlay (z-index 99999).
-   Covers ApplicationV2 (.application / dialog.application on body), legacy v1 (.app),
-   and non-app UI elements. */
-body:has(.storyframe.cinematic-scene)
-  :is(#interface .application, #interface .app, dialog.application) {
+/* ApplicationV2 apps and legacy v1 apps inside #interface must appear above the cinematic overlay.
+   Native <dialog> elements rendered directly on body are handled separately below. */
+body:has(.storyframe.cinematic-scene) :is(#interface .application, #interface .app) {
   z-index: 100000 !important;
+}
+
+/* Native <dialog> elements (e.g. "Create Page") rendered directly on body by FoundryVTT v13.
+   Kept as a separate rule — `:is()` with #interface would give it higher specificity and
+   suppress this 200000 value via the !important cascade. */
+body:has(.storyframe.cinematic-scene) dialog {
+  z-index: 200000 !important;
 }
 
 body:has(.storyframe.cinematic-scene)
   :is(#context-menu, #notifications, #dice-box-canvas, #storyframe-gm-sidebar, #file-picker) {
+  z-index: 100000 !important;
+}
+
+body:has(.storyframe.cinematic-scene) #sidebar {
   z-index: 100000 !important;
 }
 
@@ -53,6 +62,12 @@ body:has(.storyframe.cinematic-scene)
   z-index: 0;
 }
 
+video.cinematic-bg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
 .cinematic-scene-container {
   position: absolute;
   inset: 0;
@@ -63,6 +78,8 @@ body:has(.storyframe.cinematic-scene)
   --_panel-left-reserve: 0px;
   --_panel-right-reserve: 0px;
   --_camera-row-reserve: 0px;
+  --filmstrip-speaker-size: 64px;
+  --_filmstrip-visible: 0;
 }
 
 /* Track open panel widths for spotlight centering */
@@ -83,11 +100,15 @@ body:has(.storyframe.cinematic-scene)
 }
 
 .cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .cinematic-pc-item) {
-  --_camera-row-reserve: 60px;
+  --_camera-row-reserve: 76px;
 }
 
 .cinematic-scene-container:has(.cinematic-bottom-row:not(.hidden) .camera-feed-item) {
   --_camera-row-reserve: calc(var(--camera-feed-width, 140px) * 0.75 + 30px);
+}
+
+.cinematic-scene-container:has(.cinematic-filmstrip-container:not([style*='display: none'])) {
+  --_filmstrip-visible: 1;
 }
 
 @keyframes cinematic-fade-in {
@@ -136,7 +157,9 @@ body:has(.storyframe.cinematic-scene)
 .cinematic-scene-container .cinematic-spotlight {
   position: absolute;
   top: 16px;
-  bottom: calc(140px + var(--_camera-row-reserve));
+  bottom: calc(
+    (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve)
+  );
   left: 50%;
   transform: translateX(-50%);
   z-index: 5;
@@ -158,7 +181,6 @@ body:has(.storyframe.cinematic-scene)
     transparent 70%
   );
   border-radius: 50%;
-  animation: cinematic-glow-pulse 3s ease-in-out infinite;
   pointer-events: none;
   z-index: 0;
 }
@@ -175,7 +197,6 @@ body:has(.storyframe.cinematic-scene)
     0 0 60px rgba(94, 129, 172, 0.4),
     0 0 120px rgba(94, 129, 172, 0.15),
     0 20px 60px rgba(0, 0, 0, 0.8);
-  animation: cinematic-portrait-pulse 3s ease-in-out infinite;
   background: rgba(0, 0, 0, 0.3);
 }
 
@@ -192,6 +213,7 @@ body:has(.storyframe.cinematic-scene)
   display: flex;
   align-items: center;
   gap: var(--sf-space-sm, 8px);
+  white-space: nowrap;
 }
 
 .cinematic-scene-container .nameplate-text {
@@ -245,34 +267,6 @@ body:has(.storyframe.cinematic-scene)
   to {
     opacity: 1;
     transform: translateX(-50%) scale(1);
-  }
-}
-
-@keyframes cinematic-glow-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08);
-  }
-}
-
-@keyframes cinematic-portrait-pulse {
-  0%,
-  100% {
-    box-shadow:
-      0 0 60px rgba(94, 129, 172, 0.4),
-      0 0 120px rgba(94, 129, 172, 0.15),
-      0 20px 60px rgba(0, 0, 0, 0.8);
-  }
-  50% {
-    box-shadow:
-      0 0 80px rgba(94, 129, 172, 0.55),
-      0 0 160px rgba(94, 129, 172, 0.25),
-      0 20px 80px rgba(0, 0, 0, 0.8);
   }
 }
 
@@ -351,6 +345,39 @@ body:has(.storyframe.cinematic-scene)
   max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 48px);
   z-index: 8;
   transition: max-width 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Filmstrip resize handle (bottom edge) */
+.cinematic-scene-container .filmstrip-resize-handle {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 40px;
+  height: 8px;
+  cursor: ns-resize;
+  border-radius: 0 0 4px 4px;
+  background: rgba(255, 255, 255, 0.08);
+  transition: background 0.15s;
+  z-index: 1;
+}
+.cinematic-scene-container .filmstrip-resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1px;
+}
+.cinematic-scene-container .filmstrip-resize-handle:hover {
+  background: rgba(94, 129, 172, 0.3);
+}
+.cinematic-scene-container.filmstrip-resizing .filmstrip-speaker,
+.cinematic-scene-container.filmstrip-resizing .filmstrip-speaker img {
+  transition: none !important;
 }
 
 .cinematic-scene-container .cinematic-filmstrip {
@@ -432,8 +459,8 @@ body:has(.storyframe.cinematic-scene)
 }
 
 .cinematic-scene-container .filmstrip-speaker img {
-  width: 64px;
-  height: 64px;
+  width: var(--filmstrip-speaker-size, 64px);
+  height: var(--filmstrip-speaker-size, 64px);
   object-fit: contain;
   border-radius: var(--sf-radius-md, 8px);
   border: 2px solid rgba(255, 255, 255, 0.12);
@@ -450,7 +477,7 @@ body:has(.storyframe.cinematic-scene)
   font-size: 0.65rem;
   color: rgba(255, 255, 255, 0.6);
   text-align: center;
-  max-width: 72px;
+  max-width: calc(var(--filmstrip-speaker-size, 64px) + 8px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -734,4 +761,407 @@ body:has(.storyframe.cinematic-scene)
 
 .cinematic-scene-container .message-sender {
   display: flex;
+}
+
+/* ===== Dual Spotlight Stage ===== */
+.cinematic-spotlight-stage {
+  position: absolute;
+  top: 24px;
+  bottom: calc(
+    (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) + var(--_camera-row-reserve)
+  );
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
+  /* Grid with shared rows: portrait row (flexible) + nameplate row (auto, shared height) */
+  display: grid;
+  grid-template-rows: 1fr auto;
+  grid-auto-flow: column;
+  align-items: end;
+  justify-content: center;
+  gap: 0;
+  max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 48px);
+  transition: column-gap 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cinematic-spotlight-stage.dual {
+  column-gap: 2rem;
+}
+
+/* Override single spotlight positioning — now managed by stage.
+   Each spotlight spans both rows via subgrid so portrait + nameplate
+   share the stage's row tracks. */
+.cinematic-spotlight-stage .cinematic-spotlight {
+  position: relative;
+  top: auto;
+  bottom: auto;
+  left: auto;
+  transform: none;
+  max-width: none;
+  grid-row: 1 / -1;
+  display: grid;
+  grid-template-rows: subgrid;
+  align-items: end;
+  justify-items: center;
+  animation: cinematic-spotlight-fade-in 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cinematic-spotlight-fade-in {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.cinematic-spotlight-stage .cinematic-spotlight .spotlight-portrait {
+  max-width: 100%;
+  max-height: calc(
+    100vh - (var(--filmstrip-speaker-size) + 76px) * var(--_filmstrip-visible) -
+      var(--_camera-row-reserve) - 120px
+  );
+}
+
+.cinematic-spotlight-stage .cinematic-spotlight.primary {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(50vw - var(--_open-left-width) / 2 - var(--_open-right-width) / 2 - 48px);
+}
+
+.cinematic-spotlight-stage:not(.dual) .cinematic-spotlight.primary {
+  max-width: calc(100vw - var(--_open-left-width) - var(--_open-right-width) - 80px);
+}
+
+/* Secondary spotlight — same size, amber glow */
+.cinematic-spotlight-stage .cinematic-spotlight.secondary {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: calc(50vw - var(--_open-left-width) / 2 - var(--_open-right-width) / 2 - 48px);
+}
+
+.cinematic-spotlight.secondary .spotlight-glow-cinematic {
+  background: radial-gradient(
+    ellipse at center,
+    rgba(218, 165, 32, 0.5) 0%,
+    rgba(218, 165, 32, 0.15) 45%,
+    transparent 70%
+  ) !important;
+}
+
+.cinematic-spotlight.secondary .spotlight-portrait {
+  border-color: rgba(218, 165, 32, 0.6) !important;
+  box-shadow:
+    0 0 60px rgba(218, 165, 32, 0.4),
+    0 0 120px rgba(218, 165, 32, 0.15),
+    0 20px 60px rgba(0, 0, 0, 0.8) !important;
+}
+
+.cinematic-spotlight.secondary .spotlight-nameplate {
+  border-color: rgba(218, 165, 32, 0.35) !important;
+}
+
+/* Secondary dismiss button (GM only) */
+.spotlight-dismiss-btn {
+  background: transparent;
+  border: 1px solid rgba(218, 165, 32, 0.3);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(218, 165, 32, 0.7);
+  cursor: pointer;
+  padding: 4px 8px;
+  font-size: 0.85rem;
+  line-height: 1;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+  flex-shrink: 0;
+}
+
+.spotlight-dismiss-btn:hover {
+  color: rgba(255, 100, 100, 1);
+  border-color: rgba(255, 100, 100, 0.7);
+  background: rgba(255, 100, 100, 0.15);
+}
+
+/* ===== Speaker Request Queue ===== */
+.speaker-request-queue {
+  position: absolute;
+  top: 70px;
+  right: 16px;
+  z-index: 50;
+  background: rgba(0, 0, 0, 0.85);
+  border: 1px solid rgba(218, 165, 32, 0.4);
+  border-radius: var(--sf-radius-md, 8px);
+  backdrop-filter: blur(12px);
+  padding: var(--sf-space-sm, 8px);
+  min-width: 180px;
+  max-width: 280px;
+}
+
+.request-queue-header {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  padding-bottom: var(--sf-space-sm, 8px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: var(--sf-space-sm, 8px);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(218, 165, 32, 0.9);
+}
+
+.speaker-request-badge {
+  background: rgba(218, 165, 32, 0.3);
+  color: rgba(218, 165, 32, 1);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-left: auto;
+}
+
+.request-queue-item {
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  padding: 4px 0;
+}
+
+.request-speaker-name {
+  flex: 1;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.9);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.request-approve-btn,
+.request-dismiss-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--sf-radius-sm, 4px);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  padding: 4px 6px;
+  font-size: 0.75rem;
+  line-height: 1;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.request-approve-btn:hover {
+  color: rgba(100, 255, 100, 1);
+  border-color: rgba(100, 255, 100, 0.5);
+  background: rgba(100, 255, 100, 0.1);
+}
+
+.request-dismiss-btn:hover {
+  color: rgba(255, 100, 100, 1);
+  border-color: rgba(255, 100, 100, 0.5);
+  background: rgba(255, 100, 100, 0.1);
+}
+
+/* ===== Speaker Request Glow on Filmstrip ===== */
+.filmstrip-speaker.has-request {
+  animation: request-pulse 2s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(218, 165, 32, 0.6);
+  border-radius: var(--sf-radius-sm, 4px);
+}
+
+@keyframes request-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(218, 165, 32, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(218, 165, 32, 0.8);
+  }
+}
+
+/* ===== Player Speaker Controls ===== */
+.player-speaker-controls {
+  display: flex;
+  gap: var(--sf-space-sm, 8px);
+  align-items: center;
+  margin-right: var(--sf-space-md, 16px);
+  position: relative;
+}
+
+/* Allow popup to escape bottom row overflow */
+.cinematic-bottom-row:has(.speaker-picker-popup) {
+  overflow: visible !important;
+}
+
+/* Character picker popup — positioned by JS via data-anchor */
+.speaker-picker-popup {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  z-index: 100;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--sf-radius-md, 8px);
+  backdrop-filter: blur(12px);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6);
+  animation: picker-appear 0.15s ease-out;
+}
+
+@keyframes picker-appear {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.speaker-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: var(--sf-radius-sm, 4px);
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 0.85rem;
+  transition: background 0.12s;
+}
+
+.speaker-picker-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.speaker-picker-item img {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--sf-radius-sm, 4px);
+  object-fit: cover;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.player-speaker-btn {
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--sf-radius-md, 8px);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 8px 16px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  gap: var(--sf-space-sm, 8px);
+  backdrop-filter: blur(8px);
+  transition: all 0.2s ease;
+}
+
+.player-speaker-btn:hover {
+  background: rgba(0, 0, 0, 0.85);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: white;
+}
+
+.player-speaker-btn.join-btn:hover {
+  border-color: rgba(100, 200, 100, 0.6);
+  color: rgba(100, 255, 100, 1);
+}
+
+.player-speaker-btn.request-btn {
+  border-color: rgba(218, 165, 32, 0.4);
+  color: rgba(218, 165, 32, 0.9);
+}
+
+.player-speaker-btn.request-btn:hover {
+  border-color: rgba(218, 165, 32, 0.7);
+  color: rgba(218, 165, 32, 1);
+  background: rgba(218, 165, 32, 0.15);
+}
+
+.player-speaker-btn.requesting {
+  border-color: rgba(218, 165, 32, 0.6);
+  color: rgba(218, 165, 32, 1);
+  animation: request-pulse 2s ease-in-out infinite;
+}
+
+.player-speaker-btn.stepdown-btn {
+  border-color: rgba(218, 165, 32, 0.4);
+  color: rgba(218, 165, 32, 0.9);
+}
+
+.player-speaker-btn.stepdown-btn:hover {
+  border-color: rgba(255, 100, 100, 0.5);
+  color: rgba(255, 100, 100, 1);
+}
+
+.player-speaker-btn.leave-btn {
+  padding: 8px 10px;
+}
+
+.player-speaker-btn.leave-btn:hover {
+  border-color: rgba(255, 100, 100, 0.5);
+  color: rgba(255, 100, 100, 1);
+}
+
+/* PC item states for player speakers */
+.cinematic-pc-item.requesting {
+  animation: request-pulse 2s ease-in-out infinite;
+  border-radius: var(--sf-radius-sm, 4px);
+}
+
+/* Player-added speaker indicator on filmstrip — small amber dot */
+.filmstrip-speaker.player-speaker::after {
+  content: '';
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(218, 165, 32, 0.9);
+  box-shadow: 0 0 4px rgba(218, 165, 32, 0.6);
+  pointer-events: none;
+}
+
+.cinematic-pc-item.speaker-active {
+  box-shadow: 0 0 12px rgba(218, 165, 32, 0.6);
+  border-radius: var(--sf-radius-sm, 4px);
+  border: 2px solid rgba(218, 165, 32, 0.5);
+}
+
+/* ===== Responsive Dual Spotlight (narrow viewports) ===== */
+@media (max-width: 700px) {
+  .cinematic-spotlight-stage.dual {
+    grid-auto-flow: row;
+    column-gap: 0;
+    row-gap: 0.5rem;
+  }
+
+  .cinematic-spotlight-stage.dual .cinematic-spotlight {
+    max-width: 100%;
+  }
+
+  .cinematic-spotlight-stage.dual .spotlight-portrait {
+    max-height: 30vh;
+  }
+
+  .cinematic-spotlight-stage .spotlight-nameplate {
+    padding: var(--sf-space-xs, 4px) var(--sf-space-md, 16px);
+  }
+
+  .cinematic-spotlight-stage .nameplate-text {
+    font-size: 1rem;
+  }
+}
+
+/* ===== Responsive Filmstrip (narrow viewports) ===== */
+@media (max-width: 500px) {
+  .cinematic-filmstrip .filmstrip-speaker {
+    --filmstrip-speaker-size: 48px;
+  }
+  .cinematic-filmstrip .filmstrip-name {
+    display: none;
+  }
 }

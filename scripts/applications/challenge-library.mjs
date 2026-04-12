@@ -1,4 +1,5 @@
 import { MODULE_ID } from '../constants.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Challenge Library Manager Dialog
@@ -33,6 +34,7 @@ export class ChallengeLibraryDialog extends foundry.applications.api.HandlebarsA
 
   constructor(_selectedParticipants, gmSidebar, options = {}) {
     super(options);
+    loadCSS('styles/challenge-library.css');
     this.gmSidebar = gmSidebar;
   }
 

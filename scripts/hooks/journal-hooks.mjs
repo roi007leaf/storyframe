@@ -8,14 +8,49 @@ import { findCloseButton, findJournalContent } from '../utils/dom-utils.mjs';
 import { extractElement } from '../utils/element-utils.mjs';
 
 /**
+ * Per-sheet debounce state for journal render hooks.
+ * Uses leading+trailing edge: first call runs immediately,
+ * rapid subsequent calls (e.g. during journal search) are coalesced
+ * so only the last one runs after the debounce window.
+ */
+const _journalRenderState = new Map();
+const JOURNAL_RENDER_DEBOUNCE_MS = 200;
+
+/**
  * Unified handler for all journal sheet render hooks
  * Supports: JournalSheet, JournalEntrySheet5e, MetaMorphicJournalEntrySheet
  * @param {Object} sheet - The journal sheet instance
  * @param {*} html - The HTML element (jQuery, array, or raw HTMLElement)
  */
-export async function handleJournalRender(sheet, html) {
+export function handleJournalRender(sheet, html) {
   if (!game.user.isGM) return;
 
+  const sheetId = sheet.id;
+  const state = _journalRenderState.get(sheetId);
+
+  if (!state) {
+    // First call for this sheet (or after cooldown): run immediately
+    _handleJournalRenderImpl(sheet, html);
+    _journalRenderState.set(sheetId, {
+      timer: setTimeout(() => {
+        const s = _journalRenderState.get(sheetId);
+        _journalRenderState.delete(sheetId);
+        // If a call was queued during the window, run the latest one now
+        if (s?.pending) _handleJournalRenderImpl(s.pending.sheet, s.pending.html);
+      }, JOURNAL_RENDER_DEBOUNCE_MS),
+      pending: null,
+    });
+  } else {
+    // Within debounce window: store the latest args (DOM may have been replaced)
+    state.pending = { sheet, html };
+  }
+}
+
+/**
+ * Actual implementation of journal render handling.
+ * @private
+ */
+async function _handleJournalRenderImpl(sheet, html) {
   let element = extractElement(html, sheet);
   if (!element) {
     console.warn('StoryFrame: Could not extract element from journal sheet', html);
@@ -66,8 +101,9 @@ export async function handleJournalRender(sheet, html) {
   if (sidebar?.rendered) {
     // Sidebar is already open
     if (sidebar.parentInterface === sheet) {
-      // Already attached to this sheet, just refresh
-      sidebar.render();
+      // Already attached to this sheet — update journal checks for the new page.
+      // Only refreshes the checks/lore/saves sections, not the full sidebar.
+      sidebar.updateJournalChecks();
     } else if (!sidebar.parentInterface) {
       // Sidebar is open standalone (not attached to any journal)
       // Auto-attach it to this journal for better UX
@@ -76,7 +112,6 @@ export async function handleJournalRender(sheet, html) {
       sidebar._stopTrackingParent();
       sidebar._startTrackingParent();
       sidebar._positionAsDrawer(3);
-      // Render to update UI state
       sidebar.render();
       // Update all journal toggle buttons
       _updateAllJournalToggleButtons();
@@ -86,17 +121,6 @@ export async function handleJournalRender(sheet, html) {
   } else if (autoOpen) {
     // Sidebar not open, auto-open if setting enabled
     await _attachSidebarToSheet(sheet);
-  }
-
-  // MEJ renders page content async via renderSubSheet() — re-render sidebar
-  // after a short delay so extractJournalImages/Actors find populated content
-  if (sheet.constructor.name === 'EnhancedJournal') {
-    const sb = game.storyframe.gmSidebar;
-    if (sb?.rendered && sb.parentInterface === sheet) {
-      setTimeout(() => {
-        if (sb.rendered && sb.parentInterface === sheet) sb.render();
-      }, 300);
-    }
   }
 
   // Listen for minimize/maximize events on this journal
@@ -256,7 +280,7 @@ async function _attachSidebarToSheet(sheet) {
     // Instantiate correct subclass based on system
     const system = game.system.id;
 
-    if (system === 'pf2e') {
+    if (system === 'pf2e' || system === 'sf2e') {
       const { GMSidebarAppPF2e } = await import('../applications/gm-sidebar/gm-sidebar-pf2e.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppPF2e();
     } else if (system === 'dnd5e') {
@@ -268,6 +292,9 @@ async function _attachSidebarToSheet(sheet) {
     } else if (system === 'projectfu') {
       const { GMSidebarAppProjectFU } = await import('../applications/gm-sidebar/gm-sidebar-projectfu.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppProjectFU();
+    } else if (system === 'draw-steel') {
+      const { GMSidebarAppDrawSteel } = await import('../applications/gm-sidebar/gm-sidebar-draw-steel.mjs');
+      game.storyframe.gmSidebar = new GMSidebarAppDrawSteel();
     } else {
       const { GMSidebarAppBase } = await import('../applications/gm-sidebar/gm-sidebar-base.mjs');
       game.storyframe.gmSidebar = new GMSidebarAppBase();

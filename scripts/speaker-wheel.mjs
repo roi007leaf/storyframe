@@ -6,6 +6,8 @@
 
 import { MODULE_ID } from './constants.mjs';
 import { showSceneEditor } from './scene-editor.mjs';
+import { loadCSS } from './css-loader.mjs';
+import { animateWheelEntrance } from './spotlight-animator.mjs';
 
 // Remember last selected scene for the session
 let lastSelectedSceneId = null;
@@ -35,6 +37,7 @@ export function initMouseTracking() {
  * If a scene was previously selected, show it directly
  */
 export async function showSpeakerWheel() {
+  loadCSS('styles/speaker-wheel.css');
   // Save initial position for this wheel session
   initialWheelX = mouseX;
   initialWheelY = mouseY;
@@ -172,6 +175,7 @@ async function showSceneWheel(scenes) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**
@@ -324,6 +328,7 @@ async function showSceneSpeakers(sceneId) {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**
@@ -450,6 +455,7 @@ async function showSpeakersWheel() {
   document.addEventListener('keydown', escHandler);
 
   document.body.appendChild(wheel);
+  animateWheelEntrance(wheel);
 }
 
 /**

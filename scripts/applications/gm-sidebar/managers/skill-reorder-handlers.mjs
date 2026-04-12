@@ -1,12 +1,16 @@
 /**
  * Skill Reorder Handler for GM Sidebar
- * Handles drag-and-drop reordering of skills and categories
+ * Handles drag-and-drop reordering of skills and categories using SortableJS.
  */
 
 import { MODULE_ID } from '../../../constants.mjs';
+import { getSortable } from '../../../vendor-loader.mjs';
+
+let _sortableFailed = false;
 
 /**
- * Attach drag-and-drop handlers for skill and category reordering
+ * Attach drag-and-drop handlers for skill and category reordering.
+ * Uses SortableJS when available, otherwise falls back to native drag-and-drop.
  * @param {Object} sidebar - The sidebar instance
  */
 export function attachSkillReorderHandlers(sidebar) {
@@ -18,19 +22,78 @@ export function attachSkillReorderHandlers(sidebar) {
   // Clean up old handlers before attaching new ones
   cleanupSkillReorderHandlers(sidebar);
 
-  // Initialize handler storage
+  // Try SortableJS first, fall back to native
+  if (!_sortableFailed) {
+    _attachSortable(sidebar, skillCategories);
+  } else {
+    _attachNativeDrag(sidebar, skillCategories);
+  }
+}
+
+/**
+ * Attach SortableJS-based reordering (preferred)
+ */
+async function _attachSortable(sidebar, skillCategories) {
+  let Sortable;
+  try {
+    Sortable = await getSortable();
+  } catch {
+    _sortableFailed = true;
+    _attachNativeDrag(sidebar, skillCategories);
+    return;
+  }
+
+  if (!sidebar.element?.isConnected) return;
+
+  sidebar._sortableInstances = [];
+
+  // 1. Category reordering (drag by category header)
+  const categorySortable = new Sortable(skillCategories, {
+    animation: 200,
+    handle: '.category-label',
+    ghostClass: 'swap-target',
+    dragClass: 'dragging',
+    filter: '.saves-category',
+    onEnd: async () => {
+      await saveCategoryOrder(sidebar);
+    },
+  });
+  sidebar._sortableInstances.push(categorySortable);
+
+  // 2. Skill reordering within each category
+  const categoryContainers = skillCategories.querySelectorAll('.category-skills');
+  categoryContainers.forEach((container) => {
+    const categoryEl = container.closest('.skill-category');
+    const categoryKey = categoryEl?.dataset.categoryKey;
+
+    const skillSortable = new Sortable(container, {
+      animation: 150,
+      ghostClass: 'swap-target',
+      dragClass: 'dragging',
+      onEnd: async () => {
+        if (categoryKey) {
+          await saveSkillOrder(sidebar, categoryKey, categoryEl);
+        }
+      },
+    });
+    sidebar._sortableInstances.push(skillSortable);
+  });
+}
+
+/**
+ * Native drag-and-drop fallback (used when SortableJS fails to load)
+ */
+function _attachNativeDrag(sidebar, skillCategories) {
   if (!sidebar._reorderHandlers) {
     sidebar._reorderHandlers = {
       categoryDragover: null,
       categoryDrop: null,
-      elements: []
+      elements: [],
     };
   }
 
-  // Set up category drop zone on container
   setupCategoryDropZone(skillCategories, sidebar);
 
-  // Make category labels draggable and set up drop zones
   const categoryElements = skillCategories.querySelectorAll('.skill-category');
   categoryElements.forEach((categoryEl) => {
     const label = categoryEl.querySelector('.category-label');
@@ -38,13 +101,11 @@ export function attachSkillReorderHandlers(sidebar) {
       makeCategoryDraggable(label, categoryEl);
     }
 
-    // Set up drop zone for skills within this category
     const skillsContainer = categoryEl.querySelector('.category-skills');
     if (skillsContainer) {
       setupSkillDropZone(skillsContainer, categoryEl, sidebar);
     }
 
-    // Make skill buttons within this category draggable
     const skillWrappers = categoryEl.querySelectorAll('.skill-btn-wrapper');
     skillWrappers.forEach((wrapper) => {
       makeSkillDraggable(wrapper, sidebar, categoryEl);
@@ -52,9 +113,8 @@ export function attachSkillReorderHandlers(sidebar) {
   });
 }
 
-/**
- * Make a category label draggable for reordering
- */
+/* ---------- Native DnD helpers (fallback) ---------- */
+
 function makeCategoryDraggable(label, categoryEl) {
   label.setAttribute('draggable', 'true');
   label.style.cursor = 'grab';
@@ -70,7 +130,6 @@ function makeCategoryDraggable(label, categoryEl) {
     label.style.cursor = 'grab';
     categoryEl.classList.remove('dragging');
 
-    // Save on dragend since drop doesn't fire reliably when moving elements
     const container = categoryEl.parentElement;
     if (container && container.classList.contains('skill-categories')) {
       await saveCategoryOrder({ element: container.closest('.storyframe.gm-sidebar') });
@@ -78,9 +137,6 @@ function makeCategoryDraggable(label, categoryEl) {
   });
 }
 
-/**
- * Set up drop zone for category reordering
- */
 function setupCategoryDropZone(container, sidebar) {
   let targetCategory = null;
   let startCategory = null;
@@ -100,7 +156,6 @@ function setupCategoryDropZone(container, sidebar) {
     const dragging = container.querySelector('.skill-category.dragging');
     if (!dragging) return;
 
-    // Find closest category to cursor
     const categories = [...container.querySelectorAll('.skill-category:not(.dragging):not(.saves-category)')];
     let hoveredCategory = null;
     let minDistance = Infinity;
@@ -116,7 +171,6 @@ function setupCategoryDropZone(container, sidebar) {
       }
     }
 
-    // Only consider if cursor is within category bounds
     if (hoveredCategory) {
       const rect = hoveredCategory.getBoundingClientRect();
       if (e.clientY < rect.top || e.clientY > rect.bottom) {
@@ -124,7 +178,6 @@ function setupCategoryDropZone(container, sidebar) {
       }
     }
 
-    // Track target category and add visual feedback
     if (hoveredCategory) {
       targetCategory = hoveredCategory;
       categories.forEach(c => c.classList.remove('swap-target'));
@@ -133,27 +186,21 @@ function setupCategoryDropZone(container, sidebar) {
   };
 
   const dragendHandler = () => {
-    // Perform swap only once on dragend
     if (startCategory && targetCategory && startCategory !== targetCategory) {
       const parent = startCategory.parentNode;
       const startNext = startCategory.nextSibling;
       const targetNext = targetCategory.nextSibling;
 
-      // Swap the two elements
       if (startNext === targetCategory) {
-        // Adjacent: start is right before target
         parent.insertBefore(targetCategory, startCategory);
       } else if (targetNext === startCategory) {
-        // Adjacent: target is right before start
         parent.insertBefore(startCategory, targetCategory);
       } else {
-        // Not adjacent
         parent.insertBefore(startCategory, targetNext);
         parent.insertBefore(targetCategory, startNext);
       }
     }
 
-    // Clean up
     const categories = [...container.querySelectorAll('.skill-category')];
     categories.forEach(c => c.classList.remove('swap-target'));
     targetCategory = null;
@@ -171,16 +218,12 @@ function setupCategoryDropZone(container, sidebar) {
   container.addEventListener('dragover', dragoverHandler);
   container.addEventListener('drop', dropHandler);
 
-  // Store handlers for cleanup
   sidebar._reorderHandlers.categoryDragover = dragoverHandler;
   sidebar._reorderHandlers.categoryDrop = dropHandler;
   sidebar._reorderHandlers.container = container;
 }
 
-/**
- * Make a skill wrapper draggable for reordering within its category
- */
-function makeSkillDraggable(wrapper, sidebar, categoryEl) {
+function makeSkillDraggable(wrapper, _sidebar, categoryEl) {
   wrapper.setAttribute('draggable', 'true');
   wrapper.style.cursor = 'grab';
 
@@ -195,7 +238,6 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
     wrapper.style.cursor = 'grab';
     wrapper.classList.remove('dragging');
 
-    // Save on dragend since drop doesn't fire reliably when moving elements
     const categoryKey = categoryEl.dataset.categoryKey;
     if (categoryKey) {
       await saveSkillOrder({ element: categoryEl.closest('.storyframe.gm-sidebar') }, categoryKey, categoryEl);
@@ -203,10 +245,7 @@ function makeSkillDraggable(wrapper, sidebar, categoryEl) {
   });
 }
 
-/**
- * Set up drop zone for skills within a category
- */
-function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
+function setupSkillDropZone(skillsContainer, categoryEl, _sidebar) {
   let targetSkill = null;
   let startSkill = null;
 
@@ -225,7 +264,6 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
     const dragging = skillsContainer.querySelector('.skill-btn-wrapper.dragging');
     if (!dragging) return;
 
-    // Find skill directly under cursor
     const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper:not(.dragging)')];
     const hoveredSkill = skills.find(skill => {
       const rect = skill.getBoundingClientRect();
@@ -233,37 +271,29 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
         e.clientY >= rect.top && e.clientY <= rect.bottom;
     });
 
-    // Track the target skill for swap on drop
     if (hoveredSkill) {
       targetSkill = hoveredSkill;
-      // Add visual feedback
       skills.forEach(s => s.classList.remove('swap-target'));
       hoveredSkill.classList.add('swap-target');
     }
   });
 
   skillsContainer.addEventListener('dragend', () => {
-    // Perform swap only once on dragend
     if (startSkill && targetSkill && startSkill !== targetSkill) {
       const parent = startSkill.parentNode;
       const startNext = startSkill.nextSibling;
       const targetNext = targetSkill.nextSibling;
 
-      // Swap the two elements
       if (startNext === targetSkill) {
-        // Adjacent: start is right before target
         parent.insertBefore(targetSkill, startSkill);
       } else if (targetNext === startSkill) {
-        // Adjacent: target is right before start
         parent.insertBefore(startSkill, targetSkill);
       } else {
-        // Not adjacent
         parent.insertBefore(startSkill, targetNext);
         parent.insertBefore(targetSkill, startNext);
       }
     }
 
-    // Clean up
     const skills = [...skillsContainer.querySelectorAll('.skill-btn-wrapper')];
     skills.forEach(s => s.classList.remove('swap-target'));
     targetSkill = null;
@@ -272,11 +302,12 @@ function setupSkillDropZone(skillsContainer, categoryEl, sidebar) {
 
   skillsContainer.addEventListener('drop', async (e) => {
     e.preventDefault();
-    // Save new skill order for this category
     const categoryKey = categoryEl.dataset.categoryKey;
-    await saveSkillOrder(sidebar, categoryKey, categoryEl);
+    await saveSkillOrder({ element: categoryEl.closest('.storyframe.gm-sidebar') }, categoryKey, categoryEl);
   });
 }
+
+/* ---------- Persistence (shared between both modes) ---------- */
 
 /**
  * Save category order to settings
@@ -316,10 +347,8 @@ export function applySavedSkillOrder(skills, categoryKey) {
 
   if (!savedOrder || savedOrder.length === 0) return skills;
 
-  // Create a map of slug to skill
   const skillMap = new Map(skills.map(s => [s.slug, s]));
 
-  // Build ordered array based on saved order
   const ordered = [];
   for (const slug of savedOrder) {
     if (skillMap.has(slug)) {
@@ -328,7 +357,6 @@ export function applySavedSkillOrder(skills, categoryKey) {
     }
   }
 
-  // Add any skills not in saved order at the end
   ordered.push(...skillMap.values());
 
   return ordered;
@@ -340,7 +368,6 @@ export function applySavedSkillOrder(skills, categoryKey) {
 export function applySavedCategoryOrder(context) {
   const savedOrder = game.settings.get(MODULE_ID, 'skillCategoryOrder') || [];
 
-  // Category map
   const categoryMap = {
     'physical': { skills: context.physicalSkills, label: 'Physical' },
     'magical': { skills: context.magicalSkills, label: 'Magical' },
@@ -349,12 +376,10 @@ export function applySavedCategoryOrder(context) {
   };
 
   if (savedOrder.length === 0) {
-    // Use default order if no saved order
     context.orderedCategories = ['physical', 'magical', 'social', 'utility']
       .map(key => ({ key, ...categoryMap[key] }))
       .filter(cat => cat.skills && cat.skills.length > 0);
   } else {
-    // Use saved order
     context.orderedCategories = savedOrder
       .map(key => ({ key, ...categoryMap[key] }))
       .filter(cat => cat.skills && cat.skills.length > 0);
@@ -368,17 +393,22 @@ export function applySavedCategoryOrder(context) {
  * @param {Object} sidebar - The sidebar instance
  */
 export function cleanupSkillReorderHandlers(sidebar) {
+  // Clean up SortableJS instances
+  if (sidebar._sortableInstances) {
+    sidebar._sortableInstances.forEach(s => s.destroy());
+    sidebar._sortableInstances = [];
+  }
+
+  // Clean up native fallback handlers
   if (!sidebar._reorderHandlers) return;
 
   const handlers = sidebar._reorderHandlers;
 
-  // Remove container-level handlers
   if (handlers.categoryDragover && handlers.container) {
     handlers.container.removeEventListener('dragover', handlers.categoryDragover);
     handlers.container.removeEventListener('drop', handlers.categoryDrop);
   }
 
-  // Clear stored elements (event listeners will be garbage collected with elements)
   handlers.elements = [];
   handlers.categoryDragover = null;
   handlers.categoryDrop = null;

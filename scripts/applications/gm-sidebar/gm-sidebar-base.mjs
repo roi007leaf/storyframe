@@ -1,5 +1,7 @@
 import { MODULE_ID } from '../../constants.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
+import { loadGMSidebarCSS } from '../../css-loader.mjs';
+import { getAutoAnimate } from '../../vendor-loader.mjs';
 
 // Import manager modules
 import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
@@ -103,6 +105,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
 
   constructor(options = {}) {
     super(options);
+    loadGMSidebarCSS();
     this._stateRestored = false;
 
     // Tab state: 'npcs', 'pcs', 'challenges'
@@ -366,7 +369,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         pcsPanelCollapsed: this.pcsPanelCollapsed,
         currentSystem,
         dcOptions,
-        isPF2e: currentSystem === 'pf2e',
+        isPF2e: currentSystem === 'pf2e' || currentSystem === 'sf2e',
         isDND5e: currentSystem === 'dnd5e',
       };
     }
@@ -497,7 +500,7 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       journalChecksPanelCollapsed: this.journalChecksPanelCollapsed,
       journalImagesPanelCollapsed: this.journalImagesPanelCollapsed,
       currentSystem,
-      isPF2e: currentSystem === 'pf2e',
+      isPF2e: currentSystem === 'pf2e' || currentSystem === 'sf2e',
       isDND5e: currentSystem === 'dnd5e',
       dcPresets,
       journalCheckGroups, // Keep for backward compatibility
@@ -507,6 +510,8 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       journalActors,
       hasJournalActors: journalActors.length > 0,
       ...challengesContext,
+      playerViewersOpen: game.storyframe.socketManager?._gmBroadcastState?.playerViewersOpen ?? false,
+      playerSidebarsOpen: game.storyframe.socketManager?._gmBroadcastState?.playerSidebarsOpen ?? false,
     };
   }
 
@@ -516,6 +521,103 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
    */
   _parseChecksFromContent(_content) {
     return []; // Override in subclass
+  }
+
+  /**
+   * Update only the journal checks and lore sections in the PCs tab DOM.
+   * Called on journal page changes to avoid a full sidebar re-render.
+   */
+  updateJournalChecks() {
+    if (!this.rendered || !this.element) return;
+
+    // Re-extract checks from journal content
+    const journalCheckGroups = JournalHandlers.extractJournalChecks(this);
+    const { journalSkillGroups, journalLoreGroups, journalSaveGroups,
+      hasJournalChecks, hasJournalLore, hasJournalSaves } = this._groupJournalChecksByType(journalCheckGroups);
+
+    // Find the PCs tab scroll content
+    const scrollContent = this.element.querySelector('[data-tab-content="pcs"] .tab-scroll-content');
+    if (!scrollContent) return;
+
+    // Remove existing journal sections
+    scrollContent.querySelector('.journal-checks-inline')?.remove();
+    scrollContent.querySelector('.journal-lore-inline')?.remove();
+    scrollContent.querySelector('.journal-saves-inline')?.remove();
+
+    // Build new HTML fragments
+    const fragments = [];
+
+    if (hasJournalChecks) {
+      fragments.push(this._buildJournalSectionHTML('journal-checks-inline', 'journal-checks-grid',
+        game.i18n.localize('STORYFRAME.UI.Labels.JournalSkills'),
+        journalSkillGroups.map(g => this._buildCheckButtonHTML(g.skillName, g.skillName, 'skill'))));
+    }
+
+    if (hasJournalLore) {
+      fragments.push(this._buildJournalSectionHTML('journal-lore-inline', 'journal-checks-grid',
+        game.i18n.localize('STORYFRAME.UI.Labels.JournalLore'),
+        journalLoreGroups.map(g => this._buildCheckButtonHTML(g.skillName, g.displayName, 'skill'))));
+    }
+
+    if (hasJournalSaves) {
+      fragments.push(this._buildJournalSectionHTML('journal-saves-inline', 'journal-saves-grid',
+        game.i18n.localize('STORYFRAME.UI.Labels.JournalSaves'),
+        journalSaveGroups.map(g => this._buildSaveButtonHTML(g.skillName)), 'journal-save-wrapper'));
+    }
+
+    // Insert at the top of the scroll content
+    if (fragments.length > 0) {
+      const temp = document.createElement('div');
+      temp.innerHTML = fragments.join('');
+      // Insert in reverse so they end up in correct order at the top
+      const firstChild = scrollContent.firstChild;
+      while (temp.lastChild) {
+        scrollContent.insertBefore(temp.lastChild, firstChild);
+      }
+    }
+
+    // Re-setup journal check highlighting for the new buttons
+    JournalHandlers.setupJournalCheckHighlighting(this);
+  }
+
+  /** @private */
+  _buildJournalSectionHTML(sectionClass, gridClass, label, buttonHtmlArray) {
+    return `<div class="${sectionClass}">
+      <div class="section-divider"><span>${label}</span></div>
+      <div class="${gridClass}">${buttonHtmlArray.join('')}</div>
+    </div>`;
+  }
+
+  /** @private */
+  _buildCheckButtonHTML(skillName, displayName, checkType) {
+    const tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.SkillChecks', { skill: skillName });
+    const ariaLabel = game.i18n.format('STORYFRAME.UI.AriaLabels.SkillChecks', { skill: skillName });
+    return `<div class="journal-check-wrapper">
+      <button type="button" class="journal-skill-btn"
+              data-action="showCheckDCsPopup"
+              data-skill="${foundry.utils.escapeHTML(skillName)}"
+              data-check-type="${checkType}"
+              data-tooltip="${foundry.utils.escapeHTML(tooltip)}"
+              aria-label="${foundry.utils.escapeHTML(ariaLabel)}">
+        ${foundry.utils.escapeHTML(displayName)}
+      </button>
+    </div>`;
+  }
+
+  /** @private */
+  _buildSaveButtonHTML(skillName) {
+    const tooltip = game.i18n.format('STORYFRAME.UI.Tooltips.SavingThrows', { save: skillName });
+    const ariaLabel = game.i18n.format('STORYFRAME.UI.AriaLabels.SavingThrows', { save: skillName });
+    return `<div class="journal-save-wrapper">
+      <button type="button" class="journal-save-btn"
+              data-action="showCheckDCsPopup"
+              data-skill="${foundry.utils.escapeHTML(skillName)}"
+              data-check-type="save"
+              data-tooltip="${foundry.utils.escapeHTML(tooltip)}"
+              aria-label="${foundry.utils.escapeHTML(ariaLabel)}">
+        ${foundry.utils.escapeHTML(skillName)}
+      </button>
+    </div>`;
   }
 
   /**
@@ -663,6 +765,9 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
     // Attach skill reordering handlers
     SkillReorderHandlers.attachSkillReorderHandlers(this);
 
+    // Attach auto-animate to speaker gallery and challenge list
+    this._attachAutoAnimate();
+
     // Grid size slider — direct DOM update for real-time resizing
     const slider = this.element.querySelector('.grid-size-slider');
     if (slider) {
@@ -679,6 +784,34 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
         slider.dataset.tooltip = `Card size: ${size}px`;
       });
     }
+  }
+
+  /**
+   * Attach auto-animate to list containers for smooth add/remove/reorder transitions.
+   * Non-blocking — falls back silently if the library doesn't load.
+   */
+  _attachAutoAnimate() {
+    getAutoAnimate().then((autoAnimate) => {
+      if (!this.element || !autoAnimate) return;
+
+      // Speaker gallery — animate speaker card add/remove
+      const gallery = this.element.querySelector('.speaker-gallery');
+      if (gallery && !gallery._aaController) {
+        gallery._aaController = autoAnimate(gallery, { duration: 250, easing: 'ease-out' });
+      }
+
+      // Challenge list — animate challenge add/remove
+      const challengeList = this.element.querySelector('.challenge-list');
+      if (challengeList && !challengeList._aaController) {
+        challengeList._aaController = autoAnimate(challengeList, { duration: 200 });
+      }
+
+      // Pending rolls list
+      const rollsList = this.element.querySelector('.pending-rolls-list');
+      if (rollsList && !rollsList._aaController) {
+        rollsList._aaController = autoAnimate(rollsList, { duration: 200 });
+      }
+    }).catch(() => {}); // Silently swallow — library is optional
   }
 
   /**

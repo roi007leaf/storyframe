@@ -293,8 +293,8 @@ export function forceCheckVisibility(sidebar, scrollContainer, checkElements, up
 }
 
 /**
- * Setup MutationObserver to detect when new journal pages load (multi-page journals)
- * and trigger a re-render to pick up new images/actors
+ * Setup MutationObserver to detect when journal page content changes
+ * (page navigation, lazy loading, content editing) and update sidebar checks.
  */
 export function setupJournalContentObserver(sidebar) {
   // Clean up existing observer
@@ -311,7 +311,7 @@ export function setupJournalContentObserver(sidebar) {
 
   const parentElement = extractParentElement(sidebar.parentInterface);
 
-  // Watch the journal pages container for new content
+  // Watch the journal pages container for content changes
   const pagesContainer = parentElement.querySelector('.journal-entry-pages') ||
     parentElement.querySelector('.journal-entry-content') ||
     parentElement.querySelector('.enhanced-journal .content > section') ||
@@ -322,44 +322,49 @@ export function setupJournalContentObserver(sidebar) {
   // MEJ renders content async into .content > section — any element addition is new content
   const isMEJ = !!parentElement.querySelector('.enhanced-journal');
 
-  // Track how many page content elements we've seen (standard journals only)
-  let lastPageCount = isMEJ ? 0 : parentElement.querySelectorAll('.journal-page-content').length;
+  // Snapshot current content signature to detect actual changes
+  let lastSignature = _getContentSignature(pagesContainer);
 
   sidebar._journalContentObserver = new MutationObserver((mutations) => {
-    let hasNewPages = false;
+    let hasRelevantChange = false;
+
     for (const mutation of mutations) {
-      if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-        for (const node of mutation.addedNodes) {
+      if (mutation.type === 'childList' && (mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+        for (const node of [...mutation.addedNodes, ...mutation.removedNodes]) {
           if (node.nodeType === Node.ELEMENT_NODE) {
-            // MEJ: any element node added to the section is new page content
             if (isMEJ ||
               node.classList?.contains('journal-page-content') ||
+              node.classList?.contains('journal-entry-page') ||
               node.querySelector?.('.journal-page-content')) {
-              hasNewPages = true;
+              hasRelevantChange = true;
               break;
             }
           }
         }
       }
-      if (hasNewPages) break;
-    }
-
-    // Also check if page count increased (standard journals, covers nested additions)
-    if (!isMEJ) {
-      const currentPageCount = parentElement.querySelectorAll('.journal-page-content').length;
-      if (currentPageCount > lastPageCount) {
-        hasNewPages = true;
-        lastPageCount = currentPageCount;
+      // Detect page visibility toggles (class changes like active/hidden)
+      if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+        const target = mutation.target;
+        if (target.classList?.contains('journal-entry-page') ||
+            target.classList?.contains('journal-page-content')) {
+          hasRelevantChange = true;
+        }
       }
+      if (hasRelevantChange) break;
     }
 
-    if (hasNewPages) {
-      // Debounce re-render to avoid multiple rapid updates
+    // Verify the content actually changed by comparing signatures
+    if (hasRelevantChange) {
+      const newSignature = _getContentSignature(pagesContainer);
+      if (newSignature === lastSignature) return;
+      lastSignature = newSignature;
+
+      // Debounce to avoid multiple rapid updates
       if (sidebar._journalContentDebounce) {
         clearTimeout(sidebar._journalContentDebounce);
       }
       sidebar._journalContentDebounce = setTimeout(() => {
-        sidebar.render();
+        sidebar.updateJournalChecks();
       }, 150);
     }
   });
@@ -367,7 +372,24 @@ export function setupJournalContentObserver(sidebar) {
   sidebar._journalContentObserver.observe(pagesContainer, {
     childList: true,
     subtree: true,
+    attributes: true,
+    attributeFilter: ['class'],
   });
+}
+
+/**
+ * Build a lightweight signature of the current journal content for change detection.
+ * Uses the count and IDs/classes of page elements rather than full innerHTML.
+ * @private
+ */
+function _getContentSignature(container) {
+  const pages = container.querySelectorAll('.journal-entry-page, .journal-page-content');
+  const parts = [];
+  for (const page of pages) {
+    const visible = !page.classList.contains('hidden') && page.offsetParent !== null;
+    parts.push(`${page.dataset.pageId || page.className}:${visible}`);
+  }
+  return parts.join('|');
 }
 
 /**

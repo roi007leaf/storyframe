@@ -27,6 +27,8 @@
       "SkillOrderByCategoryHint": "Custom order of skills within each category (drag to reorder in GM Sidebar)",
       "SkillCategoryOrder": "Skill Category Order",
       "SkillCategoryOrderHint": "Custom order of skill categories (drag category labels to reorder in GM Sidebar)",
+      "PlayerSpeakerAutoActivate": "Auto-Activate Player Speakers",
+      "PlayerSpeakerAutoActivateHint": "When enabled, player speaker requests skip GM approval and immediately activate as the responding speaker.",
       "AddSpeakersHidden": "Add Speakers Hidden",
       "AddSpeakersHiddenHint": "When enabled, newly added speakers are hidden from players by default. You can reveal them individually using the eye icon.",
       "PlayerViewerLayoutGrid": "Grid",
@@ -119,8 +121,9 @@
         "SelectActors": "Select actors to add as speakers:",
         "GatherButton": "Populate & Save",
         "NoTokensOnScene": "No tokens found on the current scene",
-        "NoActorsFound": "No valid actors found on scene tokens",
-        "TokenCount": "{count} actor(s) on scene"
+        "NoActorsFound": "No valid actors found",
+        "TokenCount": "{count} actor(s) on scene",
+        "WorldActorCount": "{count} actor(s) in world"
       },
       "TargetSelector": {
         "Rolling": "Rolling",
@@ -163,6 +166,7 @@
         "OpeningSidebarsForPlayers": "Opening StoryFrame sidebars on all player clients",
         "ClosingSidebarsForPlayers": "Closing StoryFrame sidebars on all player clients"
       },
+      "NoAssignedCharacter": "You need an assigned character to join as a speaker",
       "Participant": {
         "NoPCsFound": "No player characters found",
         "PCsAdded": "Added {count} PC(s)",
@@ -365,6 +369,7 @@
         "ClearAllPCs": "Clear all PCs",
         "ConfigureQuickSkills": "Configure Quick Skills",
         "RequestRollsFromSelection": "Request Rolls from Selection",
+        "MusicVolume": "Music Volume",
         "DCPresets": "DC Presets",
         "AddPreset": "Add preset",
         "PartyLevel": "Party Level",
@@ -454,6 +459,11 @@
         "Standard": "Standard",
         "Hard": "Hard",
         "VeryHard": "Very Hard"
+      },
+      "DrawSteel": {
+        "Easy": "Easy",
+        "Medium": "Medium",
+        "Hard": "Hard"
       }
     },
     "Keybindings": {
@@ -491,13 +501,17 @@
       "Tracks": "Tracks",
       "RelaunchForPlayers": "Relaunch for Players",
       "ShowToPlayers": "Show to Players",
+      "PrepModeBanner": "GM Prep Mode — Players cannot see this",
+      "PlayerLostCinematic": "{name} refreshed — click Show to Players to re-sync",
+      "ShowToAll": "Show to All",
+      "ShownToPlayer": "Cinematic shown to {name}",
       "PendingLabel": "Pending",
       "ActiveLabel": "Active",
       "Minimize": "Minimize",
       "Journal": "Journal",
       "SearchJournals": "Search journals...",
       "NoJournalsFound": "No journals found",
-      "SearchTracks": "Search tracks...",
+      "SearchTracks": "Search playlists & tracks...",
       "ChatLog": "Chat Log",
       "SetBackground": "Set Scene Background",
       "ClearBackground": "Clear Background",
@@ -508,6 +522,9 @@
       "HideName": "Hide name",
       "EditName": "Edit name",
       "JournalFontSize": "Font Size",
+      "NewNote": "New Note",
+      "EditJournal": "Edit",
+      "NoContent": "No content.",
       "PartySheet": "Party Sheet",
       "OpenScene": "Open Scene",
       "SearchScenes": "Search scenes...",
@@ -515,8 +532,20 @@
       "ActiveScene": "Active",
       "PreviewScene": "Preview scene",
       "ClickToClose": "Click anywhere to close",
-      "ResetTrackVolumes": "Reset track volumes",
+      "PopoutImage": "Open in new tab",
+      "ResetTrackVolumes": "Reset volume",
       "Relaunched": "Cinematic scene relaunched for all players",
+      "TogglePlayerSpeakers": "Toggle Player Speakers",
+      "DismissSecondary": "Dismiss responding speaker",
+      "SpeakerRequests": "Speaker Requests",
+      "ApproveRequest": "Approve — set as responding speaker",
+      "DismissRequest": "Dismiss request",
+      "JoinAsSpeaker": "Join as Speaker",
+      "LeaveAsSpeaker": "Leave Speakers",
+      "RequestToSpeak": "Request to Speak",
+      "CancelRequest": "Cancel Request",
+      "StepDown": "Step Down",
+      "ChooseCharacter": "Choose which character to join as:",
       "Music": {
         "Shuffle": "Shuffle",
         "Previous": "Previous",
@@ -538,6 +567,10 @@
       "JournalActorsCount": "Journal Actors ({count})",
       "Current": "Current",
       "NoSpeakersMessage": "No speakers. Add from sources below or drag actors here.",
+      "WorldActorsCount": "World Actors ({count})",
+      "SearchActors": "Search actors...",
+      "SearchToShowActors": "Type in the search box to find actors",
+      "ShowMore": "Show more ({remaining} remaining)",
       "SaveChanges": "Save Changes",
       "CreateScene": "Create Scene"
     },
@@ -574,6 +607,11 @@
       "UpdatedInLibrary": "Updated \"{name}\" in library",
       "UpdateAndPresent": "Update & Present",
       "PresentChallenge": "Present Challenge"
+    },
+    "Integrations": {
+      "SimpleRequests": {
+        "CallNext": "Call next request"
+      }
     }
   }
 }

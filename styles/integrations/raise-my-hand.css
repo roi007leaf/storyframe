@@ -1,0 +1,134 @@
+/* ===================================================================
+   Raise My Hand — Cinematic Mode Integration
+   Styles for hand-raise indicators and control buttons in cinematic.
+   Loaded on-demand via css-loader when cinematic opens.
+   =================================================================== */
+
+/* Color tokens (match raise-my-hand module) */
+:root {
+  --rmh-yellow: #ffd43b;
+  --rmh-red: #ff0000;
+  --rmh-green: #51cf66;
+}
+
+/* ===== Control Buttons (left side of bottom bar) ===== */
+.rmh-cinematic-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding-right: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  margin-right: 2px;
+}
+
+/* Inherit storyframe's player-utility-btn base style automatically.
+   Only add raise-my-hand-specific overrides here. */
+
+/* Raise hand button: yellow when active */
+.rmh-cinematic-raise.active {
+  color: var(--rmh-yellow);
+  border-color: var(--rmh-yellow);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+.rmh-cinematic-raise.active:hover {
+  color: var(--rmh-yellow);
+}
+
+/* Urgent speak button: always red-tinted */
+.rmh-cinematic-urgent {
+  color: var(--rmh-red) !important;
+  border-color: rgba(255, 0, 0, 0.3);
+}
+
+.rmh-cinematic-urgent:hover {
+  color: var(--rmh-red) !important;
+  border-color: var(--rmh-red);
+  background: rgba(10, 10, 18, 0.95) !important;
+}
+
+.rmh-cinematic-urgent.active {
+  border-color: var(--rmh-red);
+  background: rgba(10, 10, 18, 0.95);
+}
+
+/* ===== Indicator Badges (PC portraits + camera views) ===== */
+
+/* Ensure positioning context on PC items */
+.cinematic-pc-item {
+  position: relative;
+}
+
+.rmh-cinematic-badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  display: flex;
+  align-items: center;
+  gap: 0.2em;
+  background: rgba(26, 26, 46, 0.9);
+  color: #fff;
+  padding: 0.15em 0.3em;
+  border-radius: 0.35em;
+  border: 1.5px solid var(--rmh-yellow);
+  font-size: 0.7em;
+  font-weight: bold;
+  z-index: 1;
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+.rmh-cinematic-badge .fa-hand-paper,
+.rmh-cinematic-badge .fa-bullhorn {
+  font-size: 0.85em;
+  color: var(--rmh-yellow);
+}
+
+.rmh-cinematic-badge .rmh-queue-position {
+  font-family: var(--font-primary);
+  line-height: 1;
+}
+
+/* Hide position span when empty (non-queue / speaking) */
+.rmh-cinematic-badge .rmh-queue-position:empty {
+  display: none;
+}
+
+/* Speaking state: green megaphone (first in queue) */
+.rmh-cinematic-badge.speaking {
+  border-color: var(--rmh-green);
+}
+
+.rmh-cinematic-badge.speaking .fa-bullhorn {
+  color: var(--rmh-green);
+}
+
+/* Urgent state: red (overrides speaking) */
+.rmh-cinematic-badge.urgent {
+  border-color: var(--rmh-red);
+}
+
+.rmh-cinematic-badge.urgent .fa-hand-paper,
+.rmh-cinematic-badge.urgent .fa-bullhorn {
+  color: var(--rmh-red);
+}
+
+/* ===== Responsive scaling for camera/player bar resize ===== */
+
+/* Scale badges with the cinematic bottom row size */
+.cinematic-bottom-row .rmh-cinematic-badge {
+  font-size: clamp(0.55em, 1.5cqi, 0.85em);
+}
+
+/* Camera feed badges: position inside the camera frame */
+.camera-feed-item {
+  position: relative;
+}
+
+.camera-feed-item .rmh-cinematic-badge {
+  top: 0.35em;
+  right: 0.35em;
+  font-size: 0.9em;
+  padding: 0.2em 0.4em;
+}

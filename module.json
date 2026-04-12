@@ -19,25 +19,7 @@
   ],
   "styles": [
     "styles/design-tokens.css",
-    "styles/gm-sidebar-base.css",
-    "styles/gm-sidebar-controls.css",
-    "styles/gm-sidebar-journal.css",
-    "styles/gm-sidebar-popups.css",
-    "styles/speaker-wheel.css",
-    "styles/scene-editor.css",
-    "styles/dc-presets.css",
-    "styles/dc-preset-dropdown.css",
-    "styles/player-viewer.css",
-    "styles/player-sidebar.css",
-    "styles/challenge-builder.css",
-    "styles/challenge-library.css",
-    "styles/roll-request-dialog.css",
-    "styles/scene-gatherer-dialog.css",
-    "styles/scene-picker-dialog.css",
-    "styles/target-selector-dialog.css",
-    "styles/cinematic/base.css",
-    "styles/cinematic/gm.css",
-    "styles/cinematic/player.css"
+    "styles/dc-preset-dropdown.css"
   ],
   "socket": true,
   "relationships": {

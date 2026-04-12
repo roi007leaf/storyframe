@@ -2,6 +2,7 @@ import { MODULE_ID } from '../constants.mjs';
 import * as SystemAdapter from '../system-adapter.mjs';
 import { createDCPresetDropdown } from '../utils/dc-preset-dropdown.mjs';
 import { PF2E_ACTION_VARIANTS } from '../system/pf2e/actions.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Challenge Builder Dialog
@@ -46,6 +47,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
 
   constructor(_selectedParticipants, options = {}) {
     super(options);
+    loadCSS('styles/challenge-builder.css');
     this.editMode = options.editMode || false;
     this.templateId = options.templateId || null;
     this.templateData = options.templateData || null;
@@ -522,7 +524,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
       loreSkills,
       hasLoreSkills: loreSkills.length > 0,
       hasSaves: saves.length > 0,
-      isPF2e: currentSystem === 'pf2e',
+      isPF2e: currentSystem === 'pf2e' || currentSystem === 'sf2e',
       hasInitialOption: !this.editMode,
       editMode: this.editMode,
       initialData,
@@ -918,7 +920,7 @@ export class ChallengeBuilderDialog extends foundry.applications.api.HandlebarsA
     }
 
     const currentSystem = SystemAdapter.detectSystem();
-    const isPF2e = currentSystem === 'pf2e';
+    const isPF2e = currentSystem === 'pf2e' || currentSystem === 'sf2e';
 
     const newSkillRow = document.createElement('div');
     newSkillRow.className = 'skill-dc-row';

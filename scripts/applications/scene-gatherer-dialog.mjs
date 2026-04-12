@@ -1,4 +1,5 @@
 import { MODULE_ID } from '../constants.mjs';
+import { loadCSS } from '../css-loader.mjs';
 
 /**
  * Dialog for gathering tokens from the current scene as StoryFrame speakers.
@@ -21,7 +22,7 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
     },
     position: {
       width: 520,
-      height: 'auto',
+      height: 600,
     },
     classes: ['storyframe', 'scene-gatherer-dialog-app'],
     actions: {
@@ -36,9 +37,13 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
     },
   };
 
-  constructor(tokens, options = {}) {
+  constructor(sceneTokens, worldActors = [], options = {}) {
     super(options);
-    this.tokens = tokens;
+    loadCSS('styles/scene-gatherer-dialog.css');
+    this.sceneTokens = sceneTokens;
+    this.worldActors = worldActors;
+    // Combined list for index-based selection (scene tokens first, then world actors)
+    this.tokens = [...sceneTokens, ...worldActors];
     this.resolve = null;
     this.promise = new Promise((resolve) => {
       this.resolve = resolve;
@@ -47,8 +52,8 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
 
   /**
    * Open the Scene Gatherer dialog.
-   * Gathers tokens from the current FoundryVTT scene, deduplicates by actor UUID,
-   * filters out tokens without actors and loot/hazard types.
+   * Gathers tokens from the current FoundryVTT scene and world actors,
+   * deduplicates by actor UUID, filters out loot/hazard types.
    * @returns {Promise<{sceneName: string, speakers: Array}|null>}
    */
   static async open() {
@@ -57,39 +62,51 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
       return SceneGathererDialog._instance.promise;
     }
 
-    const tokenDocs = canvas.scene?.tokens;
-    if (!tokenDocs || tokenDocs.size === 0) {
-      ui.notifications.warn(game.i18n.localize('STORYFRAME.Dialogs.SceneGatherer.NoTokensOnScene'));
-      return null;
-    }
-
     // Deduplicate by base actor ID — unlinked tokens each have a unique synthetic
     // actor UUID, so we use actorId (the world-level source actor) for dedup instead.
     const seen = new Set();
-    const tokens = [];
-    for (const tokenDoc of tokenDocs) {
-      const actor = tokenDoc.actor;
-      if (!actor) continue;
+    const sceneTokens = [];
+    const tokenDocs = canvas.scene?.tokens;
+
+    if (tokenDocs) {
+      for (const tokenDoc of tokenDocs) {
+        const actor = tokenDoc.actor;
+        if (!actor) continue;
+        if (actor.type === 'loot' || actor.type === 'hazard') continue;
+        if (actor.hasPlayerOwner) continue;
+        const dedupeKey = tokenDoc.actorId || actor.uuid;
+        if (seen.has(dedupeKey)) continue;
+        seen.add(dedupeKey);
+        // Prefer the world-level actor for UUID and data so speakers resolve correctly
+        const baseActor = game.actors.get(tokenDoc.actorId);
+        sceneTokens.push({
+          actorUuid: baseActor?.uuid || actor.uuid,
+          name: baseActor?.name || actor.name,
+          img: baseActor?.img || actor.img || tokenDoc.texture?.src || null,
+        });
+      }
+    }
+
+    // Gather world actors (from the Actors tab) that aren't already on the scene
+    const worldActors = [];
+    for (const actor of game.actors) {
       if (actor.type === 'loot' || actor.type === 'hazard') continue;
       if (actor.hasPlayerOwner) continue;
-      const dedupeKey = tokenDoc.actorId || actor.uuid;
-      if (seen.has(dedupeKey)) continue;
-      seen.add(dedupeKey);
-      // Prefer the world-level actor for UUID and data so speakers resolve correctly
-      const baseActor = game.actors.get(tokenDoc.actorId);
-      tokens.push({
-        actorUuid: baseActor?.uuid || actor.uuid,
-        name: baseActor?.name || actor.name,
-        img: baseActor?.img || actor.img || tokenDoc.texture?.src || null,
+      if (seen.has(actor.id)) continue;
+      seen.add(actor.id);
+      worldActors.push({
+        actorUuid: actor.uuid,
+        name: actor.name,
+        img: actor.img || null,
       });
     }
 
-    if (tokens.length === 0) {
+    if (sceneTokens.length === 0 && worldActors.length === 0) {
       ui.notifications.warn(game.i18n.localize('STORYFRAME.Dialogs.SceneGatherer.NoActorsFound'));
       return null;
     }
 
-    const dialog = new SceneGathererDialog(tokens);
+    const dialog = new SceneGathererDialog(sceneTokens, worldActors);
     SceneGathererDialog._instance = dialog;
     dialog.render(true);
     return dialog.promise;
@@ -97,14 +114,25 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
 
   async _prepareContext(_options) {
     const unknownLabel = game.i18n.localize('STORYFRAME.UI.Labels.Unknown');
-    const enrichedTokens = this.tokens.map(t => ({
-      actorUuid: t.actorUuid,
-      name: t.name || unknownLabel,
-      img: t.img || 'icons/svg/mystery-man.svg',
-    }));
+    const enrich = (t) => {
+      const name = t.name || unknownLabel;
+      return {
+        actorUuid: t.actorUuid,
+        name,
+        nameLower: name.toLowerCase(),
+        img: t.img || 'icons/svg/mystery-man.svg',
+      };
+    };
+
+    const enrichedSceneTokens = this.sceneTokens.map((t, i) => ({ ...enrich(t), index: i }));
+    const worldActorOffset = enrichedSceneTokens.length;
+    const enrichedWorldActors = this.worldActors.map((t, i) => ({ ...enrich(t), index: worldActorOffset + i }));
 
     return {
-      tokens: enrichedTokens,
+      sceneTokens: enrichedSceneTokens,
+      worldActors: enrichedWorldActors,
+      hasSceneTokens: enrichedSceneTokens.length > 0,
+      hasWorldActors: enrichedWorldActors.length > 0,
       defaultSceneName: canvas.scene?.name || '',
       i18n: {
         sceneName: game.i18n.localize('STORYFRAME.UI.Labels.SceneName'),
@@ -114,7 +142,9 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
         deselectAll: game.i18n.localize('STORYFRAME.UI.Labels.Deselect'),
         cancel: game.i18n.localize('STORYFRAME.Dialogs.Cancel'),
         gather: game.i18n.localize('STORYFRAME.Dialogs.SceneGatherer.GatherButton'),
-        tokenCount: game.i18n.format('STORYFRAME.Dialogs.SceneGatherer.TokenCount', { count: enrichedTokens.length }),
+        sceneTokenCount: game.i18n.format('STORYFRAME.Dialogs.SceneGatherer.TokenCount', { count: enrichedSceneTokens.length }),
+        worldActorCount: game.i18n.format('STORYFRAME.Dialogs.SceneGatherer.WorldActorCount', { count: enrichedWorldActors.length }),
+        searchActors: game.i18n.localize('STORYFRAME.UI.Placeholders.SearchActors'),
       },
     };
   }
@@ -126,16 +156,28 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
     const checkboxes = this.element.querySelectorAll('input[name="actor"]');
     checkboxes.forEach(cb => cb.addEventListener('change', () => this._updateSubmitState()));
 
-    // Wire up select-all toggle
-    const selectAllBtn = this.element.querySelector('.select-all-btn');
-    if (selectAllBtn) {
-      selectAllBtn.addEventListener('click', () => this._toggleSelectAll());
+    // Wire up per-group select-all toggles
+    const selectAllBtns = this.element.querySelectorAll('.select-all-btn');
+    for (const btn of selectAllBtns) {
+      btn.addEventListener('click', () => this._toggleSelectAll(btn.dataset.group));
     }
 
     // Wire up scene name input
     const nameInput = this.element.querySelector('input[name="sceneName"]');
     if (nameInput) {
       nameInput.addEventListener('input', () => this._updateSubmitState());
+    }
+
+    // Wire up world actor search filter
+    const worldSearch = this.element.querySelector('.world-actor-search');
+    if (worldSearch) {
+      worldSearch.addEventListener('input', () => {
+        const q = worldSearch.value.toLowerCase().trim();
+        const cards = this.element.querySelectorAll('.world-actors-section .participant-card');
+        for (const card of cards) {
+          card.style.display = !q || card.dataset.name.includes(q) ? '' : 'none';
+        }
+      });
     }
 
     this._updateSubmitState();
@@ -161,23 +203,27 @@ export class SceneGathererDialog extends foundry.applications.api.HandlebarsAppl
 
     submitBtn.disabled = !anyChecked || !hasName;
 
-    // Update select-all button text
-    const selectAllBtn = this.element.querySelector('.select-all-btn');
-    if (selectAllBtn) {
-      const allChecked = Array.from(
-        this.element.querySelectorAll('input[name="actor"]'),
-      ).every(cb => cb.checked);
-      selectAllBtn.textContent = allChecked
+    // Update per-group select-all button text
+    for (const btn of this.element.querySelectorAll('.select-all-btn')) {
+      const group = btn.dataset.group;
+      const grid = this.element.querySelector(`.participants-grid[data-group="${group}"]`);
+      if (!grid) continue;
+      const groupBoxes = Array.from(grid.querySelectorAll('input[name="actor"]'));
+      const allChecked = groupBoxes.length > 0 && groupBoxes.every(cb => cb.checked);
+      btn.textContent = allChecked
         ? game.i18n.localize('STORYFRAME.UI.Labels.Deselect')
         : game.i18n.localize('STORYFRAME.UI.Labels.SelectAll');
     }
   }
 
   /**
-   * Toggle all actor checkboxes on/off.
+   * Toggle all actor checkboxes in a group on/off.
+   * @param {string} group - The group identifier ('scene' or 'world')
    */
-  _toggleSelectAll() {
-    const checkboxes = Array.from(this.element.querySelectorAll('input[name="actor"]'));
+  _toggleSelectAll(group) {
+    const grid = this.element.querySelector(`.participants-grid[data-group="${group}"]`);
+    if (!grid) return;
+    const checkboxes = Array.from(grid.querySelectorAll('input[name="actor"]'));
     const allChecked = checkboxes.every(cb => cb.checked);
     checkboxes.forEach(cb => (cb.checked = !allChecked));
     this._updateSubmitState();

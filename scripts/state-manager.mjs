@@ -116,6 +116,18 @@ export class StateManager {
   }
 
   /**
+   * Set minimized journals list and persist.
+   * @param {Array} arr - Array of {id, pageId}
+   */
+  async setMinimizedJournals(arr) {
+    if (!this.state) return;
+    const scene = game.scenes.current;
+    if (!scene) return;
+    this.state.minimizedJournals = arr;
+    await scene.setFlag(MODULE_ID, FLAG_KEY, this.state);
+  }
+
+  /**
    * Update speakers list and persist.
    * @param {Array} speakers - New speakers array
    */
@@ -179,6 +191,52 @@ export class StateManager {
   async removeSpeakerAltImage(speakerId, img) {
     if (!this.speakerManager) return;
     return await this.speakerManager.removeSpeakerAltImage(speakerId, img);
+  }
+
+  /**
+   * Set secondary (responding) speaker.
+   * @param {string|null} speakerId - Speaker ID or null to clear
+   */
+  async setSecondarySpeaker(speakerId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.setSecondarySpeaker(speakerId);
+  }
+
+  /**
+   * Add a speaker request to the queue.
+   * @param {Object} request - { speakerId, userId, timestamp }
+   */
+  async addSpeakerRequest(request) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.addSpeakerRequest(request);
+  }
+
+  /**
+   * Remove a speaker request from the queue.
+   * @param {string} speakerId
+   */
+  async clearSpeakerRequest(speakerId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.clearSpeakerRequest(speakerId);
+  }
+
+  /**
+   * Add a player-owned speaker.
+   * @param {Object} data - { actorUuid, imagePath, label, userId }
+   */
+  async addPlayerSpeaker(data) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.addPlayerSpeaker(data);
+  }
+
+  /**
+   * Remove a player-owned speaker (validated by userId).
+   * @param {string} speakerId
+   * @param {string} userId
+   */
+  async removePlayerSpeaker(speakerId, userId) {
+    if (!this.speakerManager) return;
+    return await this.speakerManager.removePlayerSpeaker(speakerId, userId);
   }
 
   /**
