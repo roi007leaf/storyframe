@@ -2,6 +2,7 @@ import { MODULE_ID } from '../../constants.mjs';
 import * as SystemAdapter from '../../system-adapter.mjs';
 import { loadGMSidebarCSS } from '../../css-loader.mjs';
 import { getAutoAnimate } from '../../vendor-loader.mjs';
+import { parseStoryFrameCheckData } from '../../check-enricher.mjs';
 
 // Import manager modules
 import * as ChallengeHandlers from './managers/challenge-handlers.mjs';
@@ -266,10 +267,15 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
   async _handleDrop(event) {
     event.preventDefault();
 
-    const data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
+    const data = this._getDropData(event);
+
+    if (data?.type === 'StoryFrameCheck') {
+      this._handleStoryFrameCheckDrop(data);
+      return;
+    }
 
     // Only handle Actor drops
-    if (data.type !== 'Actor') return;
+    if (data?.type !== 'Actor') return;
 
     const actor = await fromUuid(data.uuid);
     if (!actor) {
@@ -288,6 +294,60 @@ export class GMSidebarAppBase extends foundry.applications.api.HandlebarsApplica
       label: actor.name,
       isNameHidden,
     });
+  }
+
+  /**
+   * Extract drag payload, with plain-text JSON fallback for StoryFrame checks.
+   * @private
+   */
+  _getDropData(event) {
+    let data = null;
+    try {
+      data = foundry.applications.ux.TextEditor.implementation.getDragEventData(event);
+    } catch (_error) {
+      data = null;
+    }
+
+    if (data?.type) return data;
+
+    const raw = event.dataTransfer?.getData('text/plain');
+    if (!raw) return data || {};
+
+    try {
+      return JSON.parse(raw);
+    } catch (_error) {
+      return data || {};
+    }
+  }
+
+  /**
+   * Add a dragged StoryFrame check to the batch queue.
+   * @private
+   */
+  _handleStoryFrameCheckDrop(data) {
+    const check = parseStoryFrameCheckData(data);
+    if (!check) return;
+
+    if (!this.batchedChecks) this.batchedChecks = [];
+
+    const dcPart = check.dc ?? 'current';
+    const actionPart = check.actionSlug ? `:${check.actionSlug}` : '';
+    const variantPart = check.actionVariant ? `:${check.actionVariant}` : '';
+    const checkId = `journal:${check.skillName}:${dcPart}${actionPart}${variantPart}`;
+
+    if (!this.batchedChecks.some((batched) => batched.checkId === checkId)) {
+      this.batchedChecks.push({
+        skill: check.skillName,
+        dc: check.dc,
+        isSecret: check.isSecret,
+        actionSlug: check.actionSlug,
+        actionVariant: check.actionVariant,
+        checkType: check.checkType,
+        checkId,
+      });
+    }
+
+    SkillCheckHandlers.updateBatchHighlights(this);
   }
 
   /**

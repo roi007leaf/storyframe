@@ -8,6 +8,7 @@ import {
 import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hooks/player-viewer-hooks.mjs';
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
+import { enforceSecretRollMessage } from './scripts/utils/secret-roll-utils.mjs';
 
 /**
  * Setup global listener for PF2e inline check repost buttons
@@ -1268,6 +1269,16 @@ Hooks.on('updateSetting', (setting, _value, _options, _userId) => {
 });
 
 // Hook: closeCheckModifiersDialog - detect if roll was made or cancelled
+Hooks.on('preCreateChatMessage', (message) => {
+  if (game.user.isGM) return;
+
+  enforceSecretRollMessage(
+    message,
+    window._storyframeCurrentBlindRoll,
+    game.users.filter((user) => user.isGM),
+  );
+});
+
 Hooks.on('closeCheckModifiersDialog', async (_dialog, _html) => {
   // Only on player side
   if (game.user.isGM) return;

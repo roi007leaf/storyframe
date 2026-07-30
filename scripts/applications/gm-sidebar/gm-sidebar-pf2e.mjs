@@ -1,6 +1,7 @@
 import * as SystemAdapter from '../../system-adapter.mjs';
 import { GMSidebarAppBase } from './gm-sidebar-base.mjs';
 import { PF2E_ACTION_DISPLAY_NAMES } from '../../system/pf2e/actions.mjs';
+import { parseStoryFrameCheckElements } from '../../check-enricher.mjs';
 
 /**
  * PF2e-specific GM Sidebar implementation
@@ -13,6 +14,8 @@ export class GMSidebarAppPF2e extends GMSidebarAppBase {
    */
   _parseChecksFromContent(content) {
     const checks = [];
+
+    checks.push(...parseStoryFrameCheckElements(content));
 
     // Save types for detection
     const saveTypes = new Set(['fortitude', 'reflex', 'will']);

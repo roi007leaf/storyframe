@@ -6,6 +6,10 @@
 import { extractParentElement } from '../../../utils/element-utils.mjs';
 import { findJournalContent } from '../../../utils/dom-utils.mjs';
 import * as SystemAdapter from '../../../system-adapter.mjs';
+import {
+  isStoryFrameCheckInsideNativeCheck,
+  parseStoryFrameCheckElement,
+} from '../../../check-enricher.mjs';
 
 /**
  * Extract checks from parent journal content
@@ -100,6 +104,21 @@ export function groupChecksBySkill(checks) {
  * Returns { skillName, dc } or null if the element can't be parsed.
  */
 function _getCheckElementInfo(el) {
+  // StoryFrame generated text check: span.sf-check[data-check]
+  if (el.dataset.check) {
+    const check = parseStoryFrameCheckElement(el);
+    if (!check) return null;
+
+    const entries = check.checkType === 'save'
+      ? SystemAdapter.getSaves()
+      : SystemAdapter.getSkills();
+    const displayName = entries[check.skillName]?.name || check.skillName;
+    return {
+      skillName: displayName.toLowerCase(),
+      dc: check.dc == null ? null : String(check.dc),
+    };
+  }
+
   // PF2e format: a.inline-check[data-pf2-check][data-pf2-dc]
   if (el.dataset.pf2Check) {
     return { skillName: el.dataset.pf2Check.toLowerCase(), dc: el.dataset.pf2Dc };
@@ -172,7 +191,9 @@ export function setupJournalCheckHighlighting(sidebar) {
   const dnd5eElements = scrollContainer.querySelectorAll(
     'span.roll-link-group[data-type="check"], span.roll-link-group[data-type="skill"], span.roll-link-group[data-type="save"]',
   );
-  const checkElements = [...pf2eElements, ...pf2eActionElements, ...dnd5eElements];
+  const storyFrameElements = [...scrollContainer.querySelectorAll('.sf-check[data-check]')]
+    .filter((el) => !isStoryFrameCheckInsideNativeCheck(el));
+  const checkElements = [...storyFrameElements, ...pf2eElements, ...pf2eActionElements, ...dnd5eElements];
   if (checkElements.length === 0) return;
 
   // Initialize visible checks Map on instance (persists across callbacks)

@@ -7,6 +7,13 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.1] - 2026-07-30
+
+### Fixed
+
+- **StoryFrame journal checks in GM tools** — generated skill and save checks are now recognized for sidebar display, viewport highlighting, drag-and-drop, and batch roll requests
+- **Secret roll visibility on PF2e v14** — secret requests now open the player's roll dialog as Blind instead of Public and remain visible only to GMs
+
 ## [3.0.0] - 2026-04-12
 
 ### Added

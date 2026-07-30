@@ -8,6 +8,7 @@ import { DAGGERHEART_TRAIT_FULL_NAMES } from '../system/daggerheart/skills.mjs';
 import { PROJECTFU_ATTRIBUTE_FULL_NAMES } from '../system/projectfu/skills.mjs';
 import { DRAWSTEEL_CHARACTERISTIC_FULL_NAMES } from '../system/draw-steel/skills.mjs';
 import { DRAWSTEEL_DC_BY_DIFFICULTY } from '../system/draw-steel/dc-tables.mjs';
+import { applySecretRollMode } from '../utils/secret-roll-utils.mjs';
 
 // Get the appropriate skill slug map for the current system
 function getSkillSlugMap() {
@@ -522,7 +523,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       }
       // Add blind roll mode if secret
       if (request.isSecretRoll) {
-        rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+        applySecretRollMode(
+          rollOptions,
+          game.release?.generation ?? 13,
+          CONST.DICE_ROLL_MODES,
+        );
         // Store info so createChatMessage hook can detect and notify GM
         window._storyframeCurrentBlindRoll = {
           requestId: requestId,
@@ -828,7 +833,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
     }
     // Add blind roll mode if secret
     if (isSecret) {
-      rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+      applySecretRollMode(
+        rollOptions,
+        game.release?.generation ?? 13,
+        CONST.DICE_ROLL_MODES,
+      );
     }
     // Add variant for PF2e actions (e.g. Create a Diversion: Gesture)
     if (actionVariant) {
@@ -948,7 +957,11 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
       rollOptions.dc = { value: dc };
     }
     if (isSecret) {
-      rollOptions.rollMode = CONST.DICE_ROLL_MODES.BLIND;
+      applySecretRollMode(
+        rollOptions,
+        game.release?.generation ?? 13,
+        CONST.DICE_ROLL_MODES,
+      );
     }
 
     try {
@@ -1094,7 +1107,10 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         actionOptions.difficultyClass = rollOptions.dc;
       }
 
-      // Add rollMode if provided (for secret rolls)
+      // Add current or legacy visibility mode if provided (for secret rolls)
+      if (rollOptions.messageMode) {
+        actionOptions.messageMode = rollOptions.messageMode;
+      }
       if (rollOptions.rollMode) {
         actionOptions.rollMode = rollOptions.rollMode;
       }
@@ -1183,6 +1199,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
 
       const statRollOptions = { item, skipDialog: rollOptions.skipDialog ?? false };
       if (rollOptions.dc) statRollOptions.dc = rollOptions.dc;
+      if (rollOptions.messageMode) statRollOptions.messageMode = rollOptions.messageMode;
       if (rollOptions.rollMode) statRollOptions.rollMode = rollOptions.rollMode;
 
       const result = await stat.roll(statRollOptions);
