@@ -15,6 +15,8 @@ export function findJournalContent(element) {
 
   // Try multiple selectors for different journal sheet types
   return (
+    element.querySelector('.sheet-main .tab-panel.active') ||
+    element.querySelector('.sheet-main') ||
     element.querySelector('.journal-entry-pages') ||
     element.querySelector('.journal-entry-content') ||
     element.querySelector('.enhanced-journal .content > section') ||

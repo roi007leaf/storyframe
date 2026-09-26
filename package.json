@@ -1,9 +1,10 @@
 {
   "name": "storyframe",
-  "version": "1.4.0",
+  "version": "3.1.0",
   "description": "StoryFrame - GM Journal Reader and Player Viewer for Foundry VTT",
   "main": "storyframe.mjs",
   "scripts": {
+    "test": "node --test tests/*.test.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

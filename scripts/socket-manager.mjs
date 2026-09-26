@@ -804,6 +804,7 @@ export class SocketManager {
    * @param {Object} data - { text, fontFamily }
    */
   broadcastDialogue(data) {
+    Hooks.callAll('storyframe.dialogueSent', data);
     this.socket.executeForOthers('showDialogue', data);
   }
 

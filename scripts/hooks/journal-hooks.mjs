@@ -4,6 +4,7 @@
  */
 
 import { MODULE_ID } from '../constants.mjs';
+import { loadCSS } from '../css-loader.mjs';
 import { findCloseButton, findJournalContent } from '../utils/dom-utils.mjs';
 import { extractElement } from '../utils/element-utils.mjs';
 
@@ -51,6 +52,7 @@ export function handleJournalRender(sheet, html) {
  * @private
  */
 async function _handleJournalRenderImpl(sheet, html) {
+  if (!game.user.isGM) return;
   let element = extractElement(html, sheet);
   if (!element) {
     console.warn('StoryFrame: Could not extract element from journal sheet', html);
@@ -80,6 +82,7 @@ async function _handleJournalRenderImpl(sheet, html) {
 
   // Enrich checks in journal content
   const { enrichChecks } = await import('../check-enricher.mjs');
+  if (!game.user.isGM) return;
   const contentArea = findJournalContent(element);
   if (contentArea) {
     enrichChecks(contentArea);
@@ -152,7 +155,7 @@ export async function handleJournalClose(sheet) {
   }
 
   // Find other open journals (all supported types)
-  const openJournals = Object.values(ui.windows).filter(
+  const openJournals = _journalWindows().filter(
     (app) => _isJournalApp(app) && app !== sheet && app.rendered,
   );
 
@@ -186,11 +189,16 @@ export async function handleJournalClose(sheet) {
  */
 function _isJournalApp(app) {
   return (
+    (app.document?.documentName === 'JournalEntry' && game.modules.get('campaign-codex')?.active && Boolean(app.document.getFlag('campaign-codex', 'type'))) ||
     app instanceof foundry.applications.sheets.journal.JournalEntrySheet ||
     app.constructor.name === 'JournalEntrySheet5e' ||
     app.constructor.name === 'MetaMorphicJournalEntrySheet' ||
     app.constructor.name === 'EnhancedJournal'
   );
+}
+
+function _journalWindows() {
+  return [...new Set([...Object.values(ui.windows), ...(foundry.applications.instances?.values() || [])])];
 }
 
 /**
@@ -323,7 +331,7 @@ async function _attachSidebarToSheet(sheet) {
  * @private
  */
 export function _updateAllJournalToggleButtons() {
-  const openJournals = Object.values(ui.windows).filter(
+  const openJournals = _journalWindows().filter(
     (app) => _isJournalApp(app) && app.rendered,
   );
 
@@ -514,11 +522,15 @@ let _activePopulateCleanup = null;
  * @param {HTMLElement} contentArea - The scrollable content area
  * @private
  */
-function _setupActorDragTransparency(sheet, element, contentArea) {
+export function _setupActorDragTransparency(sheet, element, contentArea) {
   const ACTOR_LINK_SELECTOR =
     'a.content-link[data-type="Actor"], a.content-link[data-uuid*="Actor."]';
   const actorLinks = contentArea.querySelectorAll(ACTOR_LINK_SELECTOR);
   if (!actorLinks.length) return;
+
+  // Drag previews live in this stylesheet, but it is otherwise loaded only
+  // when the GM sidebar opens. Journal actor dragging must work without it.
+  loadCSS('styles/gm-sidebar-journal.css');
 
   const DRAG_THRESHOLD = 5;
 

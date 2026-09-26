@@ -9,6 +9,9 @@ import { handlePlayerViewerClose, handlePlayerViewerRender } from './scripts/hoo
 import { SocketManager } from './scripts/socket-manager.mjs';
 import { StateManager } from './scripts/state-manager.mjs';
 import { enforceSecretRollMessage } from './scripts/utils/secret-roll-utils.mjs';
+import { initializeCampaignCodex } from './scripts/integrations/campaign-codex.mjs';
+
+Hooks.once('ready', initializeCampaignCodex);
 
 /**
  * Setup global listener for PF2e inline check repost buttons

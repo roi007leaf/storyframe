@@ -1,0 +1,13 @@
+.sf-codex-controls { display: flex; gap: 3px; margin-left: auto; }
+.sf-codex-controls button { width: auto; height: 24px; padding: 0 6px; font-size: 11px; }
+.sf-codex-dialog { --color-text-primary: #eee; --color-text-secondary: #ccc; --color-text-emphatic: #fff; --color-form-label: #eee; --color-form-hint: #bbb; background: #191b22; color: #eee; }
+.sf-codex-dialog .window-header, .sf-codex-dialog .window-content { background: #191b22; color: #eee; }
+.sf-codex-dialog label { display: block; margin: 8px 0; }
+.sf-codex-dialog input[type=text], .sf-codex-dialog select, .sf-codex-dialog textarea { width: 100%; background: #272b35; color: #eee; border: 1px solid #697184; }
+.sf-codex-dialog button { background: #303747; color: #eee; border: 1px solid #697184; }
+.sf-codex-dialog button:hover, .sf-codex-dialog button:focus-visible { background: #46546b; }
+.sf-codex-dialog button:disabled { opacity: .5; }
+.sf-codex-dialog .sf-codex-cast { display: flex; gap: 10px; align-items: center; }
+.sf-codex-cast img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; }
+.sf-codex-background { display: block; max-height: 160px; max-width: 100%; margin: 8px auto; object-fit: contain; }
+.sf-codex-dialog details { max-height: 250px; overflow: auto; }

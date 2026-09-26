@@ -1459,7 +1459,16 @@ export class CinematicGMApp extends CinematicSceneBase {
     const scenes = game.settings.get(MODULE_ID, 'speakerScenes') || [];
     const scene = scenes.find(s => s.id === sceneId);
     if (scene?.speakers) {
-      await game.storyframe.socketManager.requestUpdateSpeakers(scene.speakers);
+      let speakers = scene.codexJournalUuid
+        ? scene.speakers.map(({ codexUuid: _source, ...speaker }) => speaker)
+        : scene.speakers;
+      if (scene.codexJournalUuid && game.modules.get('campaign-codex')?.active) {
+        const { prepareSavedCodexScene } = await import('../../integrations/campaign-codex.mjs');
+        speakers = await prepareSavedCodexScene(scene);
+        await game.storyframe.stateManager.setActiveSpeaker(null);
+        await game.storyframe.stateManager.setSecondarySpeaker(null);
+      }
+      await game.storyframe.socketManager.requestUpdateSpeakers(speakers);
 
       // Stop all playing playlists, then start saved one (if any)
       for (const p of game.playlists) {
