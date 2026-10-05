@@ -683,7 +683,7 @@ export class PlayerViewerApp extends foundry.applications.api.HandlebarsApplicat
         actionSlug: request.actionSlug,
         total: isExternalRoll ? null : (roll.total ?? 0),
         // PF2e has degreeOfSuccess, D&D 5e doesn't
-        degreeOfSuccess: isExternalRoll ? null : (roll.degreeOfSuccess?.value || null),
+        degreeOfSuccess: isExternalRoll ? null : (roll.degreeOfSuccess ?? null),
         timestamp: Date.now(),
         chatMessageId: isExternalRoll ? null : (roll.message?.id || null),
       };

@@ -120,16 +120,23 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
   const result = await RollRequestDialog.subscribe(checks, pcs);
   if (!result) return;
 
-  const selectedIds = result.selectedIds ?? [];
-  const allowOnlyOne = result.allowOnlyOne || false;
-  const batchGroupId = result.batchGroupId ?? null;
+  await requestDialogCheck(sidebar, result.checks?.[0], result);
+}
 
-  // Per-check targetIds override the global selection; null means "use selectedIds".
-  const check = result.checks?.[0];
-  const targetIds = check?.targetIds ?? selectedIds;
-  if (!targetIds || targetIds.length === 0) return;
-
-  await requestSkillCheck(sidebar, skillSlug, targetIds, actionSlug, false, checkType, batchGroupId, allowOnlyOne, actionVariant, check?.isSecret ?? false);
+/** Send one surviving dialog row using its captured values and explicit targets. */
+export async function requestDialogCheck(sidebar, check, result, suppressNotifications = false) {
+  if (!check) return null;
+  const targetIds = check.targetIds ?? result.selectedIds ?? [];
+  if (targetIds.length === 0) return null;
+  const checkType = check.checkType || 'skill';
+  const skillSlug = checkType === 'save'
+    ? (SystemAdapter.getSaveSlugFromName(check.skillName) || check.skillName.toLowerCase())
+    : (SystemAdapter.getSkillSlugFromName(check.skillName) || check.skillName.toLowerCase());
+  return requestSkillCheck(
+    sidebar, skillSlug, targetIds, check.actionSlug || null, suppressNotifications,
+    checkType, result.batchGroupId ?? null, result.allowOnlyOne || false,
+    check.actionVariant || null, check.isSecret ?? false, check.dc,
+  );
 }
 
 /**
@@ -143,8 +150,11 @@ export async function openRollRequesterAndSend(sidebar, skillSlug, checkType, ac
  * @param {string} batchGroupId - Optional group ID for "allow only one" feature
  * @param {boolean} allowOnlyOne - Whether this roll is part of an "allow only one" group
  * @param {string} actionVariant - Optional action variant (e.g., 'gesture' for Create a Diversion)
+ * @param {boolean|null} isSecretOverride - Explicit secrecy from a dialog row
+ * @param {number|null|undefined} dcOverride - Captured row DC; undefined uses the sidebar DC
  */
-export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false, actionVariant = null, isSecretOverride = null) {
+export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSlug = null, suppressNotifications = false, checkType = 'skill', batchGroupId = null, allowOnlyOne = false, actionVariant = null, isSecretOverride = null, dcOverride = undefined) {
+  const dc = dcOverride === undefined ? sidebar.currentDC : dcOverride;
   const state = game.storyframe.stateManager.getState();
   if (!state) return { sentCount: 0, offlineCount: 0, missingSkillCount: 0, sentIds: new Set(), offlineIds: new Set(), missingIds: new Set(), offlineNames: new Set(), missingNames: new Set() };
 
@@ -215,7 +225,7 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
         checkType,
         actionSlug,
         actionVariant,
-        dc: sidebar.currentDC,
+        dc,
         isSecretRoll,
         timestamp: Date.now(),
         batchGroupId,
@@ -235,7 +245,7 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
       actorUuids: mtbActorUuids,
       skillSlug,
       checkType,
-      dc: sidebar.currentDC,
+      dc,
       isSecret: isSecretRoll,
     });
 
@@ -249,7 +259,7 @@ export async function requestSkillCheck(sidebar, skillSlug, actorUuids, actionSl
         const requestId = foundry.utils.randomID();
         const request = {
           id: requestId, actorUuid, userId: user.id, skillSlug, checkType,
-          actionSlug, actionVariant, dc: sidebar.currentDC, isSecretRoll,
+          actionSlug, actionVariant, dc, isSecretRoll,
           timestamp: Date.now(), batchGroupId, allowOnlyOne,
         };
         await game.storyframe.socketManager.requestAddPendingRoll(request);
@@ -343,16 +353,7 @@ export async function sendBatchSkillCheck(sidebar) {
     const checkTargetIds = check.targetIds ?? selectedIds;
     if (!checkTargetIds || checkTargetIds.length === 0) continue;
 
-    const previousDC = sidebar.currentDC;
-    const previousSecret = sidebar.secretRollEnabled;
-
-    sidebar.currentDC = check.dc;
-    sidebar.secretRollEnabled = check.isSecret || false;
-
-    const checkResult = await requestSkillCheck(sidebar, check.skillName, checkTargetIds, check.actionSlug, true, check.checkType || 'skill', batchGroupId, effectiveAllowOnlyOne, check.actionVariant ?? null);
-
-    sidebar.currentDC = previousDC;
-    sidebar.secretRollEnabled = previousSecret;
+    const checkResult = await requestDialogCheck(sidebar, check, { selectedIds, batchGroupId, allowOnlyOne: effectiveAllowOnlyOne }, true);
 
     checkResult.sentIds.forEach(id => uniqueSentIds.add(id));
     checkResult.offlineIds.forEach(id => uniqueOfflineIds.add(id));

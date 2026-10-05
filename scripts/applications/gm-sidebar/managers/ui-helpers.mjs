@@ -90,12 +90,14 @@ export function positionAsDrawer(sidebar, retryCount = 3) {
  * Start tracking parent journal sheet movements and state changes
  */
 export function startTrackingParent(sidebar) {
+  stopTrackingParent(sidebar);
   if (!sidebar.parentInterface?.element) {
     return;
   }
 
   // ApplicationV2 uses element directly (HTMLElement), not jQuery/array
   const element = extractParentElement(sidebar.parentInterface);
+  if (!element) return;
 
   // Create a MutationObserver to watch for style and class changes
   sidebar._parentObserver = new MutationObserver((mutations) => {
@@ -874,12 +876,7 @@ export async function onShowCheckDCsPopup(_event, target, sidebar) {
 
         const checks = [{ skillName: checkSlug, dc, isSecret, checkType, eligiblePcIds }];
         const result = await RollRequestDialog.subscribe(checks, pcs);
-        const selectedIds = result?.selectedIds || result || [];
-        const allowOnlyOne = result?.allowOnlyOne || false;
-        const batchGroupId = result?.batchGroupId ?? null;
-        if (selectedIds && selectedIds.length > 0) {
-          await SkillCheckHandlers.requestSkillCheck(sidebar, checkSlug, selectedIds, null, false, checkType, batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
-        }
+        if (result) await SkillCheckHandlers.requestDialogCheck(sidebar, result.checks?.[0], result);
       }
     });
 
@@ -954,12 +951,7 @@ export async function onApplyJournalCheck(_event, target, sidebar) {
 
       const checks = [{ skillName: skillSlug, dc, isSecret: false, checkType: 'skill', eligiblePcIds }];
       const result = await RollRequestDialog.subscribe(checks, pcs);
-      const selectedIds = result?.selectedIds || result || [];
-      const allowOnlyOne = result?.allowOnlyOne || false;
-      const batchGroupId = result?.batchGroupId ?? null;
-      if (selectedIds && selectedIds.length > 0) {
-        await SkillCheckHandlers.requestSkillCheck(sidebar, skillSlug, selectedIds, null, false, 'skill', batchGroupId, allowOnlyOne, null, result.checks[0].isSecret ?? false);
-      }
+      if (result) await SkillCheckHandlers.requestDialogCheck(sidebar, result.checks?.[0], result);
     } else {
       ui.notifications.warn(game.i18n.format('STORYFRAME.Notifications.SkillCheck.UnknownSkill', { skillName }));
     }
@@ -1191,23 +1183,7 @@ export function showActionVariantsPopup(event, actionSlug, sidebar) {
         const { RollRequestDialog } = await import('../../roll-request-dialog.mjs');
         const checks = [{ skillName: skillSlug, dc: sidebar?.currentDC, isSecret: sidebar?.secretRollEnabled, checkType: 'skill', actionSlug, actionVariant: variantSlug }];
         const result = await RollRequestDialog.subscribe(checks, pcs);
-        const selectedIds = result?.selectedIds || result || [];
-        const allowOnlyOne = result?.allowOnlyOne || false;
-        const batchGroupId = result?.batchGroupId ?? null;
-        if (selectedIds && selectedIds.length > 0) {
-          await SkillCheckHandlers.requestSkillCheck(
-            sidebar,
-            skillSlug,
-            selectedIds,
-            actionSlug,
-            false,
-            'skill',
-            batchGroupId,
-            allowOnlyOne,
-            variantSlug,
-            result.checks[0].isSecret ?? false,
-          );
-        }
+        if (result) await SkillCheckHandlers.requestDialogCheck(sidebar, result.checks?.[0], result);
       });
     });
 

@@ -7,6 +7,16 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.1] - 2026-10-05
+
+### Fixed
+
+- **Floating journal selection** — challenge and check wand buttons now find selected text in floating journal windows without requiring an attached StoryFrame sidebar.
+- **Roll request targets** — per-check drag links now take priority over global player selections, including submissions using only drag links.
+- **Queued roll DCs** — requests retain the DC shown in the roll request dialog when the sidebar DC changes before submission.
+- **Sidebar window tracking** — GM and player sidebars now disconnect old parent observers when rerendering, reattaching, or detaching.
+- **PF2e roll outcomes** — roll history now preserves all four degrees of success, including critical failures.
+
 ## [3.1.0] - 2026-09-26
 
 ### Added

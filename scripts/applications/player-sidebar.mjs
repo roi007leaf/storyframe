@@ -85,9 +85,11 @@ export class PlayerSidebarApp extends foundry.applications.api.HandlebarsApplica
    * Start tracking parent window movements
    */
   _startTrackingParent() {
+    this._stopTrackingParent();
     if (!this.parentViewer?.element) return;
 
     const element = extractParentElement(this.parentViewer);
+    if (!element) return;
 
     this._parentObserver = new MutationObserver((mutations) => {
       if (!this.rendered || !this.parentViewer) return;
