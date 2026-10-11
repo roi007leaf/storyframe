@@ -1461,7 +1461,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     if (scene?.speakers) {
       let speakers = scene.codexJournalUuid
         ? scene.speakers.map(({ codexUuid: _source, ...speaker }) => speaker)
-        : scene.speakers;
+        : foundry.utils.deepClone(scene.speakers);
       if (scene.codexJournalUuid && game.modules.get('campaign-codex')?.active) {
         const { prepareSavedCodexScene } = await import('../../integrations/campaign-codex.mjs');
         speakers = await prepareSavedCodexScene(scene);
@@ -1477,8 +1477,7 @@ export class CinematicGMApp extends CinematicSceneBase {
       if (scene.playlistId) {
         const playlist = game.playlists.get(scene.playlistId);
         if (playlist) {
-          const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
-          await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
+          await playlist.playAll();
         }
       }
 
@@ -1505,7 +1504,7 @@ export class CinematicGMApp extends CinematicSceneBase {
 
     const updatedScenes = scenes.map(s =>
       s.id === sceneId
-        ? { ...s, playlistId: playingPlaylist?.id || null, sceneBackground: state?.sceneBackground || null, minimizedJournals: this.minimizedJournals, updatedAt: Date.now() }
+        ? { ...s, speakers: foundry.utils.deepClone(state?.speakers || []), playlistId: playingPlaylist?.id || null, sceneBackground: state?.sceneBackground || null, minimizedJournals: this.minimizedJournals, updatedAt: Date.now() }
         : s
     );
     await game.settings.set(MODULE_ID, 'speakerScenes', updatedScenes);
@@ -2293,9 +2292,7 @@ export class CinematicGMApp extends CinematicSceneBase {
     }
     const playlist = game.playlists.get(playlistId);
     if (!playlist) return;
-    // Play all tracks simultaneously regardless of playlist mode
-    const updates = playlist.sounds.contents.map(s => ({ _id: s.id, playing: true }));
-    await playlist.updateEmbeddedDocuments('PlaylistSound', updates);
+    await playlist.playAll();
   }
 
   // --- Player Speaker Actions ---

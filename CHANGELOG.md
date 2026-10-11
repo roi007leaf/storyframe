@@ -7,6 +7,13 @@ All notable changes to StoryFrame will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.1.2] - 2026-10-11
+
+### Fixed
+
+- **Scene playlist playback** — loading a saved scene or starting a playlist now respects its sequential, shuffle, simultaneous, or soundboard playback mode.
+- **Saved NPC visibility** — creating and editing scenes now preserves NPC visibility and name visibility. Save State also captures the current speakers, and loading a scene no longer changes its saved speaker state during play.
+
 ## [3.1.1] - 2026-10-05
 
 ### Fixed

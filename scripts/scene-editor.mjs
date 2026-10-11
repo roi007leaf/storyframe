@@ -35,6 +35,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           // Preserve original properties for saving
           label: s.label,
           imagePath: s.imagePath,
+          isHidden: !!s.isHidden,
+          isNameHidden: !!s.isNameHidden,
         };
       } else {
         // For image speakers, preserve original properties
@@ -45,6 +47,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
           // Preserve original properties for saving
           label: s.label || s.name,
           imagePath: s.imagePath || s.img,
+          isHidden: !!s.isHidden,
+          isNameHidden: !!s.isNameHidden,
         };
       }
     })
@@ -520,6 +524,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
             // Preserve original properties for saving
             label: speaker.label || resolved.name,
             imagePath: speaker.imagePath || resolved.img,
+            isHidden: !!speaker.isHidden,
+            isNameHidden: !!speaker.isNameHidden,
           });
           addedCount++;
         }
@@ -607,6 +613,8 @@ export async function showSceneEditor({ sceneId = null, sceneName = '', speakers
       actorUuid: s.actorUuid,
       imagePath: s.imagePath,
       label: s.label,
+      isHidden: !!s.isHidden,
+      isNameHidden: !!s.isNameHidden,
     }));
 
     // Capture current playlist and background
